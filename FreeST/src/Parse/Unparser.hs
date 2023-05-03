@@ -98,6 +98,7 @@ showSortedVar x t = show x ++ ":" ++ show t
 instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
+  show K.Absorb  = "A"
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
