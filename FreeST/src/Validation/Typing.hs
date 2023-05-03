@@ -125,12 +125,9 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
-  unless (broughtToEnd t) (addError (UnendedSession p t))
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall new u
-  -- TODO: is there a better way of doing this for `new`?
-  -- check against a new 'Endable' kind?
-  void $ K.checkAgainst kEnv k t
+  void $ K.checkAgainstAbsorb kEnv t
   return $ Rename.subs t y u'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
@@ -264,29 +261,29 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   numberOfFields :: T.Type -> Int
   numberOfFields (T.Labelled _ _  tm) = Map.size tm
 
--- Check whether a type is brought to an End
-broughtToEnd :: T.Type -> Bool
-broughtToEnd = wellEnded Set.empty
+-- -- Check whether a type is brought to an End
+-- broughtToEnd :: T.Type -> Bool
+-- broughtToEnd = wellEnded Set.empty
 
-wellEnded :: Set.Set Variable -> T.Type -> Bool
-wellEnded _ T.Skip{} = False
-wellEnded _ T.End{} = True
-wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
-wellEnded _ T.Message{} = False
-wellEnded s (T.Labelled _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
-wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
-wellEnded s (T.Dualof _ t) = wellEnded s t
+-- wellEnded :: Set.Set Variable -> T.Type -> Bool
+-- wellEnded _ T.Skip{} = False
+-- wellEnded _ T.End{} = True
+-- wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
+-- wellEnded _ T.Message{} = False
+-- wellEnded s (T.Labelled _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
+-- wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
+-- wellEnded s (T.Dualof _ t) = wellEnded s t
 
--- Alternative 1 _ Only recursion variables are well ended (False negatives)
--- There are non well-formed functions in the Prelude (e.g., forkWith)
--- 327 examples, 213 failures, 12 pending
+-- -- Alternative 1 _ Only recursion variables are well ended (False negatives)
+-- -- There are non well-formed functions in the Prelude (e.g., forkWith)
+-- -- 327 examples, 213 failures, 12 pending
 
--- wellEnded s (T.Var _ var) = var `Set.member` s
--- wellEnded s (T.CoVar _ var) = var `Set.member` s -- ???
+-- -- wellEnded s (T.Var _ var) = var `Set.member` s
+-- -- wellEnded s (T.CoVar _ var) = var `Set.member` s -- ???
 
--- Alternative 2 _ All type variables are well ended (False positives)
--- Allows false positives: forkWith @Skip @Skip (id @Skip)
--- 327 examples, 43 failures, 12 pending
+-- -- Alternative 2 _ All type variables are well ended (False positives)
+-- -- Allows false positives: forkWith @Skip @Skip (id @Skip)
+-- -- 327 examples, 43 failures, 12 pending
 
-wellEnded _ (T.Var _ _) = True
--- wellEnded s (T.CoVar _ _) = True
+-- wellEnded _ (T.Var _ _) = True
+-- -- wellEnded s (T.CoVar _ _) = True
