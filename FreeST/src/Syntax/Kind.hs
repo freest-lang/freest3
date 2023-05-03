@@ -39,13 +39,15 @@ import qualified Data.Set as Set
 data PreKind = Session | Top | Absorb deriving (Ord, Eq)
 
 -- Multiplicity
-data Multiplicity = Un | Lin deriving Eq
-
+data Multiplicity = Un | Lin | MultVar Variable deriving (Ord, Eq)
+                 
 -- Kind
 data Kind = Kind Span Multiplicity PreKind
+          | KindVar Span Variable deriving (Ord, Eq)
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
+  getSpan (KindVar p _) = p
 
 -- instance Eq Kind whereP
 --   (Kind _ b1 m1) == (Kind _ b2 m2) = True
@@ -70,12 +72,15 @@ ua p = Kind p Un Absorb
 
 isLin :: Kind -> Bool
 isLin (Kind _ m _) = m == Lin
+isLin _ = False
+
 
 isUn :: Kind -> Bool
 isUn = not . isLin
 
 isSession :: Kind -> Bool
 isSession (Kind _ _ b) = b == Session
+isSession _ = False
 
 -- Kind environment
 

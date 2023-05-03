@@ -86,13 +86,13 @@ synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
 --   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
   checkContractive s a t
-  k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
+  ~k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
   unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
   if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
     then pure $ K.Kind p m K.Absorb
     else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
-  (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
+  ~(K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p m K.Top
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
@@ -122,7 +122,7 @@ checkAgainst' s kEnv expected t = do
 -- kind of the type. This is a refined version of checkAgainst for a better error messages
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
-  k@(K.Kind _ _ p) <- synthetise' s kEnv t
+  ~k@(K.Kind _ _ p) <- synthetise' s kEnv t
   when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
 checkAgainstAbsorb :: K.KindEnv -> T.Type -> FreestState K.Kind
@@ -142,7 +142,7 @@ lin = mult K.Lin
 -- Determine whether a given type is of a given multiplicity
 mult :: K.Multiplicity -> T.Type -> FreestState Bool
 mult m1 t = do
-  (K.Kind _ m2 _) <- synthetise' Set.empty Map.empty t
+  ~(K.Kind _ m2 _) <- synthetise' Set.empty Map.empty t
   return $ m2 == m1
 
 -- Type to kind multiplicity
