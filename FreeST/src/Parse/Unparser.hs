@@ -344,7 +344,7 @@ isCmp :: Variable -> Bool
 isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
 
 isAdd :: Variable -> Bool
-isAdd = isOp ["(+)", "(-)"]
+isAdd = isOp ["(+)", "(-)", "(+.)"]
 
 isMult :: Variable -> Bool
 isMult = isOp ["(*)", "(/)"]

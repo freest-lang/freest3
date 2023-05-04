@@ -70,6 +70,7 @@ import           Paths_FreeST ( getDataFileName )
   '&'      {TokenAmpersand _}
   '|>'     {TokenPipeOp _}
   '+'      {TokenPlus _}
+  '+.'     {TokenPlusF _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
   '^'      {TokenRaise _}
@@ -124,7 +125,7 @@ import           Paths_FreeST ( getDataFileName )
 %left '++'
 %nonassoc CMP    -- comparison (relational and equality)
 %right '::'      -- lists
-%left '+' '-'    -- aditive
+%left '+' '-' '+.'  -- aditive
 %left '*' '/'    -- multiplicative
 %right '^'       -- power
 %left NEG not    -- unary
@@ -219,6 +220,7 @@ Exp :: { E.Exp }
   | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
   | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
+  | Exp '+.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+.)") $3}
   | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
@@ -325,6 +327,7 @@ Op :: { Variable }
    | '&&'  {% mkAnd `fmap` mkSpan $1  }
    | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
    | '+'   {% mkPlus `fmap` mkSpan $1  }
+   | '+.'  {% flip mkVar "(+.)" `fmap` mkSpan $1}
    | '*'   {% mkTimes `fmap` mkSpan $1  }
    | '/'   {% mkDiv `fmap` mkSpan $1 }
    | '^'   {% mkPower `fmap` mkSpan $1 }

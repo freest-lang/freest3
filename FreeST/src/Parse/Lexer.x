@@ -84,6 +84,7 @@ tokens :-
   "|"                           { \p s -> TokenPipe (internalPos p) }
 -- Operators
   "+"			        { \p s -> TokenPlus (internalPos p) }
+  "+."            { \p s -> TokenPlusF (internalPos p)}
   "-"                           { \p s -> TokenMinus (internalPos p) }
   "*"				{ \p s -> TokenTimes (internalPos p) }
   "^"				{ \p s -> TokenRaise (internalPos p) }
@@ -131,8 +132,8 @@ tokens :-
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
-  (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
-  (@numspc@decimal\.@decimal)       { \p s -> TokenFloat (internalPos p) (read s)}
+  (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
+  @numspc@decimal"."@decimal      { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -171,6 +172,7 @@ data Token =
   | TokenAmpersand Span
   | TokenPipeOp Span
   | TokenPlus Span
+  | TokenPlusF Span
   | TokenRec Span
   | TokenDot Span
   | TokenLowerId Span String
@@ -252,6 +254,7 @@ instance Show Token where
   show (TokenAmpersand _) = "&"
   show (TokenPipeOp _) = "|>"
   show (TokenPlus _) = "+"
+  show (TokenPlusF _) = "+."
   show (TokenRec _) = "rec"
   show (TokenDot _) = "."
   show (TokenLowerId _ s) = "" ++ s
@@ -372,6 +375,7 @@ instance Located Token where
   getSpan (TokenAmpersand p) = p
   getSpan (TokenPipeOp p) = p
   getSpan (TokenPlus p) = p
+  getSpan (TokenPlusF p) = p
   getSpan (TokenRec p) = p
   getSpan (TokenDot p) = p
   getSpan (TokenLowerId p _) = p

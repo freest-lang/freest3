@@ -30,6 +30,7 @@ module Prelude where
 
 -- Int
 (+) : Int -> Int -> Int
+(+.) : Float -> Float -> Float
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
 (/) : Int -> Int -> Int
