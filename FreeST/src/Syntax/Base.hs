@@ -26,7 +26,11 @@ module Syntax.Base
   , Located(..)
   , negSpan
   , isWild
+  , isInternal
+  , getInternal
 ) where
+
+import           Data.Char ( isDigit )
 
 -- Default for the various syntactic categories
 
@@ -71,7 +75,9 @@ data Multiplicity = Un | Lin deriving Eq
 data Variable = Variable Span String
 
 instance Eq Variable where
-  (Variable _ x) == (Variable _ y) = x == y
+  x == y 
+    | isInternal x && isInternal y = getInternal x == getInternal y
+    | otherwise = intern x == intern y
   
 instance Ord Variable where
   (Variable _ x) <= (Variable _ y) = x <= y
@@ -95,6 +101,12 @@ mkVar = Variable
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"
+
+isInternal :: Variable -> Bool
+isInternal (Variable _ x) = isDigit (head x) && elem '#' x
+
+getInternal :: Variable -> String
+getInternal (Variable _ x) = takeWhile (isDigit) x
 
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is

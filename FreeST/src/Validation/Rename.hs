@@ -33,10 +33,13 @@ import qualified Syntax.Expression             as E
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
+                                                , free
                                                 )
 import           Util.Error                     ( internalError )
 import           Util.FreestState
 import qualified Data.Map.Strict               as Map
+import qualified Data.Set as Set
+import           Data.List                      ( sort )
 import           Control.Monad.State
 
 renameState :: FreestState ()
@@ -214,3 +217,16 @@ isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
 isFreeIn _ _                             = False
+
+
+firstFreeIndex :: T.Type -> Int
+firstFreeIndex t =
+  let freeVars = map read $ map getInternal $ sort $ Set.toList $ Subs.free t in
+  firstFreeIndex' 0 freeVars
+   
+firstFreeIndex' :: Int -> [Int] -> Int
+firstFreeIndex' i [] = i+1
+firstFreeIndex' i (j : xs) =
+  if j - i > 1
+  then i+1
+  else firstFreeIndex' j xs
