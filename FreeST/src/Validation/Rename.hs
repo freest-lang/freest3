@@ -42,6 +42,9 @@ import qualified Data.Set as Set
 import           Data.List                      ( sort )
 import           Control.Monad.State
 
+import Data.Char (isDigit)
+import Debug.Trace (trace)
+
 renameState :: FreestState ()
 renameState = do
   -- TypeVenv
@@ -76,6 +79,11 @@ instance Rename t => Rename (Bind K.Kind t) where
     t' <- rename (insertVar a a' tbs) pbs t
     return $ Bind p a' k t'
 
+instance {-# OVERLAPS #-} Rename (Bind K.Kind T.Type) where
+  rename tbs pbs (Bind p a@(Variable s name) k t) = do
+    let a' = mkNewVar (firstFreeIndex t) (Variable s (dropWhile (\c -> isDigit c || c == '#') name))
+    t' <- rename (insertVar a a' tbs) pbs (subs (T.Var (getSpan a) a') a t)
+    return $ Bind p a' k t'
 
 instance Rename (Bind T.Type E.Exp) where
   rename tbs pbs (Bind p x t e) = do
@@ -157,7 +165,7 @@ renameField tbs pbs (xs, e) = do
 -- Program and Type variables
 
 instance Rename Variable where
-  rename _ _ = renameVar
+  rename _ _ v = trace (show v) $ renameVar v
 
 -- Managing variables
 
@@ -221,12 +229,12 @@ isFreeIn _ _                             = False
 
 firstFreeIndex :: T.Type -> Int
 firstFreeIndex t =
-  let freeVars = map read $ map getInternal $ sort $ Set.toList $ Subs.free t in
-  firstFreeIndex' 0 freeVars
+  firstFreeIndex' 0 $
+    sort $ map (read . getInternal) $ filter isInternal $ Set.toList $ Subs.free t
    
 firstFreeIndex' :: Int -> [Int] -> Int
-firstFreeIndex' i [] = i+1
+firstFreeIndex' i [] = i
 firstFreeIndex' i (j : xs) =
-  if j - i > 1
-  then i+1
-  else firstFreeIndex' j xs
+  if i < j
+  then i
+  else firstFreeIndex' (i+1) xs
