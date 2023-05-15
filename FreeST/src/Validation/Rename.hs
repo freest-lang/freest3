@@ -103,6 +103,12 @@ instance {-# OVERLAPS #-} Rename (Bind K.Kind T.Type) where
     let t' = Subs.subs (T.Var (getSpan a) a') a t
     -- recursive renaming
     t'' <- rename (insertVar a a' tbs) pbs t'
+    -- debug
+    traceM ("$$$" ++ "\n" ++
+            (show t) ++ "\n" ++
+            show a' ++ "\n" ++ 
+            (show t') ++ "\n" ++
+            (show t'') ++ "\n")
     -- return
     return $ Bind p a' k t''
 
@@ -244,10 +250,10 @@ instance Rename Variable where
 -- Managing variables
 
 renameVar :: Variable -> FreestState Variable
-renameVar x = return x
-  -- do
-  -- n <- getNextIndex
-  -- return $ mkNewVar n x
+renameVar x = --return x
+  do
+  n <- getNextIndex
+  return $ mkNewVar n x
 
 insertVar :: Variable -> Variable -> Bindings -> Bindings
 insertVar x y = Map.insert (intern x) (intern y)
