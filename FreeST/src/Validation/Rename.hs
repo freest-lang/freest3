@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, FlexibleInstances #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
 
 module Validation.Rename
   ( renameState
@@ -31,7 +31,7 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
 import qualified Validation.Substitution       as Subs
-                                                ( subs
+                                                ( Subs(subs)
                                                 , unfold
                                                 , free
                                                 )
@@ -43,7 +43,7 @@ import           Data.List                      ( sort )
 import           Control.Monad.State
 
 import Data.Char (isDigit)
-import Debug.Trace (trace)
+import Debug.Trace (trace,traceM)
 
 renameState :: FreestState ()
 renameState = do
@@ -72,18 +72,89 @@ class Rename t where
 
 -- Binds
 
-
 instance Rename t => Rename (Bind K.Kind t) where
   rename tbs pbs (Bind p a k t) = do
     a' <- rename tbs pbs a
     t' <- rename (insertVar a a' tbs) pbs t
     return $ Bind p a' k t'
 
+-- instance Rename (Bind K.Kind E.Exp) where
+--   rename tbs pbs (Bind p a k t) = do
+--     -- a' = min( free(t) )
+--     let i = (firstFreeIndex t)
+--     let a' = mkNewVar i a
+--     -- [a'/a]t
+--     let t' = Subs.subs a' a t
+--     -- recursive renaming
+--     t'' <- rename (insertVar a a' tbs) pbs t'
+--     traceM ("$$$" ++ "\n" ++
+--             (show t) ++ "\n" ++
+--             show i ++ " >> " ++ show a' ++ "\n" ++ 
+--             (show t') ++ "\n" ++
+--             (show t'') ++ "\n")
+--     -- return
+--     return $ Bind p a' k t''
+
 instance {-# OVERLAPS #-} Rename (Bind K.Kind T.Type) where
-  rename tbs pbs (Bind p a@(Variable s name) k t) = do
-    let a' = mkNewVar (firstFreeIndex t) (Variable s (dropWhile (\c -> isDigit c || c == '#') name))
-    t' <- rename (insertVar a a' tbs) pbs (subs (T.Var (getSpan a) a') a t)
-    return $ Bind p a' k t'
+  rename tbs pbs b@(Bind p a k t) = do
+    -- a' = min( free(t) )
+    let a' = mkNewVar (firstFreeIndex t) a
+    -- [a'/a]t
+    let t' = Subs.subs (T.Var (getSpan a) a') a t
+    -- recursive renaming
+    t'' <- rename (insertVar a a' tbs) pbs t'
+    -- return
+    return $ Bind p a' k t''
+
+firstFreeIndex :: T.Type -> Int
+firstFreeIndex =
+      firstFreeIndex' 0 . sort . map (read . getInternal) . filter isInternal . Set.toList . Subs.free
+      where 
+          firstFreeIndex' :: Int -> [Int] -> Int
+          firstFreeIndex' i [] = i
+          firstFreeIndex' i (j : xs) =
+              if i < j
+              then i
+              else firstFreeIndex' (i+1) xs
+
+-- instance (Rename t, Indexable t, Subs.Subs Variable Variable t, Show t) => Rename (Bind K.Kind t) where
+--   rename tbs pbs b@(Bind p a k t) = do
+--     -- a' = min( free(t) )
+--     let i = (firstFreeIndex t)
+--     let a' = mkNewVar i a
+--     -- [a'/a]t
+--     let t' = Subs.subs a' a t
+--     -- recursive renaming
+--     t'' <- rename (insertVar a a' tbs) pbs t'
+--     -- debug
+--     traceM ("$$$" ++ "\n" ++
+--             (show t) ++ "\n" ++
+--             show i ++ " >> " ++ show a' ++ "\n" ++ 
+--             (show t') ++ "\n" ++
+--             (show t'') ++ "\n")
+--     -- return
+--     return $ Bind p a' k t''
+
+-- instance (Rename t, Indexable t, Subs.Subs T.Type Variable t, Show t) => Rename (Bind K.Kind t) where
+--   rename tbs pbs b@(Bind p a k t) = do
+--     -- a' = min( free(t) )
+--     let a' = mkNewVar (firstFreeIndex t) a
+--     -- [a'/a]t
+--     let t' = Subs.subs (T.Var (getSpan a) a') a t
+--     -- recursive renaming
+--     t'' <- rename (insertVar a a' tbs) pbs t'
+--     -- traceM ("$$$" ++ "\n" ++
+--     --         (show t) ++ "\n" ++
+--     --         (show t') ++ "\n" ++
+--     --         (show t'') ++ "\n")
+--     -- return
+--     return $ Bind p a' k t''
+
+-- instance {-# OVERLAPS #-} Rename (Bind K.Kind T.Type) where
+--   rename tbs pbs (Bind p a@(Variable s name) k t) = do
+--     let a' = mkNewVar (firstFreeIndex t) (Variable s (dropWhile (\c -> isDigit c || c == '#') name))
+--     t' <- rename (insertVar a a' tbs) pbs (subs (T.Var (getSpan a) a') a t)
+--     return $ Bind p a' k t'
 
 instance Rename (Bind T.Type E.Exp) where
   rename tbs pbs (Bind p x t e) = do
@@ -165,14 +236,18 @@ renameField tbs pbs (xs, e) = do
 -- Program and Type variables
 
 instance Rename Variable where
-  rename _ _ v = trace (show v) $ renameVar v
+  rename _ _ v = return v
+    -- v' <- renameVar v
+    -- traceM (show (getSpan v) ++ ": " ++ show v ++ " -> " ++ show v')
+    -- return v'
 
 -- Managing variables
 
 renameVar :: Variable -> FreestState Variable
-renameVar x = do
-  n <- getNextIndex
-  return $ mkNewVar n x
+renameVar x = return x
+  -- do
+  -- n <- getNextIndex
+  -- return $ mkNewVar n x
 
 insertVar :: Variable -> Variable -> Bindings -> Bindings
 insertVar x y = Map.insert (intern x) (intern y)
@@ -225,16 +300,3 @@ isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
 isFreeIn _ _                             = False
-
-
-firstFreeIndex :: T.Type -> Int
-firstFreeIndex t =
-  firstFreeIndex' 0 $
-    sort $ map (read . getInternal) $ filter isInternal $ Set.toList $ Subs.free t
-   
-firstFreeIndex' :: Int -> [Int] -> Int
-firstFreeIndex' i [] = i
-firstFreeIndex' i (j : xs) =
-  if i < j
-  then i
-  else firstFreeIndex' (i+1) xs

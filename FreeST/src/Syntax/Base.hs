@@ -75,9 +75,10 @@ data Multiplicity = Un | Lin deriving Eq
 data Variable = Variable Span String
 
 instance Eq Variable where
-  x == y 
-    | isInternal x && isInternal y = getInternal x == getInternal y
-    | otherwise = intern x == intern y
+  x == y = intern x == intern y
+  -- x == y 
+  --   | isInternal x && isInternal y = getInternal x == getInternal y
+  --   | otherwise = intern x == intern y
   
 instance Ord Variable where
   (Variable _ x) <= (Variable _ y) = x <= y
@@ -106,12 +107,16 @@ isInternal :: Variable -> Bool
 isInternal (Variable _ x) = isDigit (head x) && elem '#' x
 
 getInternal :: Variable -> String
-getInternal (Variable _ x) = takeWhile (isDigit) x
+getInternal (Variable _ x) = takeWhile isDigit x
+
+getName :: Variable -> String
+getName (Variable _ x) = dropWhile (\c -> isDigit c || c == '#') x
 
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is
 mkNewVar :: Int -> Variable -> Variable
-mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
+mkNewVar next v = 
+  Variable (getSpan v) (show next ++ '#' : getName v)
 
 -- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
 data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}

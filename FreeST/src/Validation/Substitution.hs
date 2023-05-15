@@ -14,7 +14,8 @@ Substitution and unfolding recursive types.
 -}
 
 module Validation.Substitution
-  ( subs
+  ( Subs
+  , subs
   , cosubs
   , subsAll
   , unfold
@@ -27,6 +28,7 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
+import qualified Syntax.Expression as E
 import           Util.Error ( internalError )
 import           Elaboration.Duality
 import qualified Data.Set as Set
@@ -65,9 +67,45 @@ instance Subs T.Type Variable T.Type where
   -- this function during the elaboration of dualofs
   --  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
 
+-- instance Subs Variable Variable T.Type where
+--   subs a' a t = subs (T.Var (getSpan a') a') a t
+
+
+-- instance Subs Variable Variable E.Exp where
+--   subs a' a v@(E.Var s y)
+--     | a == y    = E.Var s a'
+--     | otherwise = v
+--   -- Abstraction intro and elim
+--   subs a' a (E.Abs s m b) = E.Abs s m $ subs a' a b
+--   subs a' a (E.App s e1 e2) = E.App s (subs a' a e1) (subs a' a e2)
+--   -- Pair intro and elim
+--   subs a' a (E.Pair s e1 e2) = E.Pair s (subs a' a e1) (subs a' a e2)
+--   subs a' a (E.BinLet s v1 v2 e1 e2) = E.BinLet s v1 v2 (subs a' a e1) (subs a' a e2)
+--   -- Datatype elim
+--   subs a' a (E.Case s e fm) = E.Case s (subs a' a e) (Map.map (\(vs, e) -> (vs, subs a' a e)) fm)
+--   subs a' a (E.CasePat s e fl) = E.CasePat s (subs a' a e) (map (\(vs, e) -> (vs, subs a' a e)) fl)
+--   -- Type Abstraction intro and elim
+--   subs a' a (E.TypeAbs s b) = E.TypeAbs s $ subs a' a b
+--   subs a' a (E.TypeApp s e t') = E.TypeApp s (subs a' a e) t' -- (subs a' a t')
+--   -- Boolean elim
+--   subs a' a (E.Cond s e1 e2 e3) = E.Cond s (subs a' a e1) (subs a' a e2) (subs a' a e3)
+--   -- Let
+--   subs a' a (E.UnLet s v e1 e2) = E.UnLet s v (subs a' a e1) (subs a' a e2)
+--   -- default
+--   subs _ _ e = e
 
 instance (Subs T.Type Variable t) => Subs T.Type Variable (Bind k t) where
   subs t x (Bind p y k u) = Bind p y k (subs t x u)
+
+-- instance Subs Variable Variable (Bind T.Type E.Exp) where
+--   subs a' a (Bind p v t u)
+--     | a == v    = Bind p a' (subs (T.Var (getSpan a) a') a t) (subs a' a u)
+--     | otherwise = Bind p v  (subs (T.Var (getSpan a) a') a t) (subs a' a u)
+
+-- instance Subs Variable Variable (Bind K.Kind E.Exp) where
+--   subs a' a (Bind p v k u)
+--     | a == v    = Bind p a' k (subs a' a u)
+--     | otherwise = Bind p v  k (subs a' a u)
 
 -- CoVar subs, [t/co-x]u
 
