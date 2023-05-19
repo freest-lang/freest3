@@ -104,11 +104,11 @@ instance {-# OVERLAPS #-} Rename (Bind K.Kind T.Type) where
     -- recursive renaming
     t'' <- rename (insertVar a a' tbs) pbs t'
     -- debug
-    traceM ("$$$" ++ "\n" ++
-            (show t) ++ "\n" ++
-            show a' ++ "\n" ++ 
-            (show t') ++ "\n" ++
-            (show t'') ++ "\n")
+    -- traceM ("$$$" ++ "\n" ++
+    --         (show t) ++ "\n" ++
+    --         show a' ++ "\n" ++ 
+    --         (show t') ++ "\n" ++
+    --         (show t'') ++ "\n")
     -- return
     return $ Bind p a' k t''
 
