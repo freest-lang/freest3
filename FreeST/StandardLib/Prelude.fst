@@ -30,7 +30,6 @@ module Prelude where
 
 -- Int
 (+) : Int -> Int -> Int
-(+.) : Float -> Float -> Float
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
 (/) : Int -> Int -> Int
@@ -56,6 +55,10 @@ odd : Int -> Bool
 (>) : Int -> Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
+-- Double
+(+.) : Float -> Float -> Float
+(-.) : Float -> Float -> Float
+(*.) : Float -> Float -> Float
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool

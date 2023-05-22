@@ -41,7 +41,8 @@ $eol=[\n]
 
 @numspc = _*         -- numeric spacer 
 
-@decimal = $digit(@numspc$digit)*
+@decimal  = $digit(@numspc$digit)*
+@exponent = [eE][\-\+]?@decimal
 
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
@@ -86,7 +87,9 @@ tokens :-
   "+"			        { \p s -> TokenPlus (internalPos p) }
   "+."            { \p s -> TokenPlusF (internalPos p)}
   "-"                           { \p s -> TokenMinus (internalPos p) }
+  "-."      {\p s -> TokenMinusDot (internalPos p)}
   "*"				{ \p s -> TokenTimes (internalPos p) }
+  "*."      { \p s -> TokenTimesDot (internalPos p)}
   "^"				{ \p s -> TokenRaise (internalPos p) }
   "_"				{ \p s -> TokenWild (internalPos p) }
   ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
@@ -133,7 +136,7 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
-  @numspc@decimal"."@decimal      { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
+  (@numspc@decimal"."@decimal@exponent?|@numspc@decimal@exponent) { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -209,7 +212,9 @@ data Token =
   | TokenDualof Span
   | TokenFArrow Span
   | TokenMinus Span
+  | TokenMinusDot Span
   | TokenTimes Span
+  | TokenTimesDot Span
   | TokenRaise Span
   | TokenWild Span
   | TokenLT Span
@@ -291,7 +296,9 @@ instance Show Token where
   show (TokenDualof _) = "dualof"
   show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
+  show (TokenMinusDot _) = "-."
   show (TokenTimes _) = "*"
+  show (TokenTimesDot _) = "*."
   show (TokenRaise _) = "^"
   show (TokenWild _) = "_"
   show (TokenLT _) = "<"
