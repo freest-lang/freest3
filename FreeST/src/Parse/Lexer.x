@@ -136,7 +136,7 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
-  (@numspc@decimal"."@decimal@exponent?|@numspc@decimal@exponent) { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
+  ([\-\+]?@numspc@decimal"."@decimal@exponent?|@numspc@decimal@exponent) { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -411,7 +411,9 @@ instance Located Token where
   getSpan (TokenCase p) = p
   getSpan (TokenForall p) = p
   getSpan (TokenMinus p) = p
+  getSpan (TokenMinusDot p) = p
   getSpan (TokenTimes p) = p
+  getSpan (TokenTimesDot p) = p
   getSpan (TokenRaise p) = p
   getSpan (TokenLT p) = p
   getSpan (TokenGT p) = p

@@ -449,6 +449,7 @@ ProgVar :: { Variable }
   : LOWER_ID    {% flip mkVar (getText $1) `fmap` mkSpan $1 }
   | '(' Op ')'  {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s $ intern $2 }
   | '(' '-' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkMinus s }
+  | '(' '-.' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s "(-.)" }
 
 Constructor :: { Variable }
   : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
