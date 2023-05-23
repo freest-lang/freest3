@@ -84,7 +84,10 @@ initialCtx = Map.fromList
   , (var "(>=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x >= y)))
   , (var "minF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `min` y)))
   , (var "maxF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `max` y)))
-
+  , (var "truncate", PrimitiveFun (\(Float x) -> Integer $ truncate x))
+  , (var "round", PrimitiveFun (\(Float x) -> Integer $ round x))
+  , (var "ceiling", PrimitiveFun (\(Float x) -> Integer $ ceiling x))
+  , (var "floor", PrimitiveFun (\(Float x) -> Integer $ floor x))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
