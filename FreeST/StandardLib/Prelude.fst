@@ -63,6 +63,9 @@ odd : Int -> Bool
 (<.) : Float -> Float -> Float
 (>=.) : Float -> Float -> Float
 (<=.) : Float -> Float -> Float
+maxF : Float -> Float -> Float
+minF : Float -> Float -> Float
+
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
