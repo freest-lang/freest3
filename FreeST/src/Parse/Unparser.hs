@@ -341,7 +341,7 @@ isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops
 
 isCmp :: Variable -> Bool
-isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
+isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)", "(>.)", "(<.)", "(>=.)", "(<=.)"]
 
 isAdd :: Variable -> Bool
 isAdd = isOp ["(+)", "(-)", "(+.)", "(-.)"]

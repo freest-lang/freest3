@@ -94,8 +94,12 @@ tokens :-
   "_"				{ \p s -> TokenWild (internalPos p) }
   ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
   "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
+  ">."                { \p s -> TokenCmp (internalPos p) "(>.)"}
+  "<."                { \p s -> TokenCmp (internalPos p) "(<.)"}
   ">="  		        { \p s -> TokenCmp (internalPos p) "(>=)" }
   "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
+  ">=."                { \p s -> TokenCmp (internalPos p) "(>=.)"}
+  "<=."                { \p s -> TokenCmp (internalPos p) "(<=.)"}
   "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }

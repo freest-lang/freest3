@@ -84,9 +84,13 @@ initialCtx = Map.fromList
   , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x == y)))
   , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x /= y)))
   , (var "(<)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <  y)))
+  , (var "(>.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x > y)))
   , (var "(>)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >  y)))
+  , (var "(<.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x < y)))
   , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <= y)))
+  , (var "(<=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x <= y)))
   , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >= y)))
+  , (var "(>=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x >= y)))
   -- Chars
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
