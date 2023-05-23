@@ -84,8 +84,8 @@ import           Paths_FreeST ( getDataFileName )
   LS       {TokenLinS _}
   UT       {TokenUnT _}
   LT       {TokenLinT _}
-  -- UM       {TokenUnM _}
-  -- LM       {TokenLinM _}
+  UA       {TokenUnA _}
+  LA       {TokenLinA _}
   INT      {TokenInt _ _ }
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
@@ -412,7 +412,7 @@ LabelList :: { Map.Map Variable (T.Type -> T.Type) }
   | ArbitraryProgVar ',' LabelList {% checkDupField $1 $3 >>
                                     return (Map.insert $1 id $3) }
 
--- TYPE SEQUENCE
+-- TYPE SEQUANCE
 
 TypeSeq :: { [T.Type] }
   :              { [] }
@@ -427,6 +427,8 @@ Kind :: { K.Kind }
   | LS {% K.ls `fmap` mkSpan $1 }
   | UT {% K.ut `fmap` mkSpan $1 }
   | LT {% K.lt `fmap` mkSpan $1 }
+  | LA {% K.la `fmap` mkSpan $1 }
+  | UA {% K.ua `fmap` mkSpan $1 }
   -- | UM {% K.um `fmap` mkSpan $1 }
   -- | LM {% K.lm `fmap` mkSpan $1 }
 

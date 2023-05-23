@@ -15,7 +15,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
   ( Equivalence(..)
-  , Subsort(..)
   )
 where
 

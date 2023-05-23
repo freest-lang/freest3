@@ -21,8 +21,8 @@ module Syntax.Kind
   , ut
   , ls
   , us
-  -- , um
-  -- , lm
+  , ua
+  , la
   , isLin
   , isUn
   , isSession
@@ -36,7 +36,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- Pre-kind
-data PreKind = Session | Top deriving (Eq, Ord)
+data PreKind = Session | Top | Absorb deriving (Ord, Eq)
 
 -- Multiplicity
 data Multiplicity = Un | Lin deriving (Eq, Ord)
@@ -66,7 +66,9 @@ lt, ut, ls, us{-, um, lm-} :: Span -> Kind
 lt p = Kind p Lin Top 
 ut p = Kind p Un Top 
 ls p = Kind p Lin Session 
-us p = Kind p Un Session 
+us p = Kind p Un Session
+la p = Kind p Lin Absorb
+ua p = Kind p Un Absorb
 -- um p = Kind p Un Message
 -- lm p = Kind p Lin Message
 

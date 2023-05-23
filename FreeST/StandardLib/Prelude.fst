@@ -24,7 +24,7 @@ module Prelude where
 -- $$$$$$\ 
 -- \______|
 
-
+-- # Builtin
 
 -- Signatures for the builtin operators
 
@@ -81,9 +81,13 @@ fork : forall a:*T. (() 1-> a) -> ()
 error : forall a:*T . String -> a
 undefined : forall a:*T . a
   -- Session ops
-new : forall a:1S . () -> (a, dualof a)
+-- | Creates two endpoints of a channels of the given type.
+new : forall a:1A . () -> (a, dualof a)
 send : forall a:1T . a -> forall b:1S . !a;b 1-> b
+-- | Receives a value on a channel. Returns the received value and 
+-- | the continuation channel.
 receive : forall a:1T b:1S . ?a;b -> (a, b)
+-- | Closes a channel.
 close : End -> ()
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
@@ -148,9 +152,8 @@ flip f x y = f y x
 -- | Reverse application operator. Provides notational convenience, especially
 -- | when chaining channel operations. For example:
 -- | ```
--- | let (w,r) = !Int;!Bool;End in 
--- | w |> send 5 |> send True |> close;
--- | c |> receive |> receiveAndClose
+-- | f : !Int;!Bool;End -> () 
+-- | f c = c |> send 5 |> send True |> close
 -- | ```
 -- | Its binding precedence is higher than `$`.
 (|>) : forall a:*T b:*T. a -> (a -> b) -> b
@@ -315,7 +318,7 @@ send_ x ch = ch |> send x |> sink @*!a
 -- | Session initiation. Accepts a request for a linear session on a shared
 -- | channel. The requester uses a conventional `receive` to obtain the channel
 -- | end.
-accept : forall a:1S . *!a -> dualof a
+accept : forall a:1A . *!a -> dualof a
 accept ch =
     let (x, y) = new @a () in
     send x ch;
@@ -332,7 +335,7 @@ accept ch =
 -- |     -- send the string to be printed
 -- |     c |> send "Hello!" |> close
 -- | ```
-forkWith : forall a:1S b . (dualof a 1-> b) -> a
+forkWith : forall a:1A b . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new @a () in
     fork (\_:() 1-> f y);

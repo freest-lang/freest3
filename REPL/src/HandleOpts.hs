@@ -165,12 +165,12 @@ infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++
 -- | It is usually used to define functions, datatypes, or type abbreviations
 -- | -------------------------------------------------------
 
-multilineCmd :: String -> InputT REPLState ()
-multilineCmd xs' = do
+multilineCmd :: FreestS -> String -> InputT REPLState ()
+multilineCmd s xs' = do
   input <- liftS $ runInputT defaultSettings (readLoop (drop 2 xs'))
   f <- lift getFileName
-  st <- lift get
-  let s1 = parseDefs st f input
+--  st <- lift get
+  let s1 = parseDefs s f input
   let s2 = emptyPEnv $ execState (elaboration >> renameState >> typeCheck) s1
   if hasErrors s2
     then liftS $ putStrLn $ getErrors s2

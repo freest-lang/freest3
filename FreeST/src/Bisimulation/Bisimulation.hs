@@ -60,8 +60,8 @@ bisimilar t u =
 bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand expandPairBisim queue rules ps
  where
-  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
-        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
+  rules | allNormed ps = [reflex, headCongruence, bpa2,       filtering]
+        | otherwise    = [reflex, headCongruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 subtypeOf :: T.Type -> T.Type -> Bool
@@ -74,8 +74,8 @@ subG :: Grammar -> Bool
 subG g@(Grammar [xs, ys] ps) = --trace (show g) 
                                         expand expandPairSub queue rules ps
  where
-  rules | allNormed ps = [reflex, congruence, bpa2] -- no filtering
-        | otherwise    = [reflex, congruence, bpa1, bpa2] -- no filtering
+  rules | allNormed ps = [reflex, headCongruence, bpa2] -- no filtering
+        | otherwise    = [reflex, headCongruence, bpa1, bpa2] -- no filtering
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type PairExpander = Productions -> (Word, Word) -> Maybe Node
@@ -252,8 +252,10 @@ findFixedPoint branch rules ps | branch == branch' = branch
 reflex :: NodeTransformation
 reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
-congruence :: NodeTransformation
-congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
+-- No speedup coming from this rule
+
+headCongruence :: NodeTransformation
+headCongruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
  where
   congruentToAncestors :: (Word, Word) -> Bool
   congruentToAncestors p = or $ Set.map (congruentToPair p) a

@@ -18,6 +18,7 @@ module Validation.Kinding
   , checkAgainstSession
   , un
   , lin
+  , checkAgainstAbsorb
   , typeToKindMult
   )
 where
@@ -26,12 +27,13 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
 import           Validation.Contractive
-import           Validation.Subkind ( (<:), join )
+import           Validation.Subkind ( (<:), join, meet )
 import           Util.FreestState
 import           Util.Error
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor
+import           Data.List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -64,24 +66,32 @@ synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
   | a == b = do
     void $ checkAgainstSession' s kEnv u
-    return $ K.us p
+    return $ K.ua p
 synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ (T.Choice _) m)))
   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
-    return $ K.us p
+    return $ K.ua p
 -- Session types
 synthetise' _ _ (T.Skip   p) = return $ K.us p
-synthetise' _ _ (T.End    p) = return $ K.ls p
+synthetise' _ _ (T.End    p) = return $ K.la p
 synthetise' s kEnv (T.Semi p t u) = do
-  (K.Kind _ mt _) <- checkAgainstSession' s kEnv t
-  (K.Kind _ mu _) <- checkAgainstSession' s kEnv u
-  return $ K.Kind p (join mt mu) K.Session
+  ~k1@(K.Kind _ mt vt) <- synthetise' s kEnv t
+  ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
+  unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t k1))
+  unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u k2))
+  return $ K.Kind p (join mt mu) (meet vt vu)
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
 synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
-  tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
+  Map.foldl (flip meet) (K.ua p) <$> tMapM (synthetise' s kEnv) m
 -- Session or functional
-synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
-  checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
+synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
+--   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
+  checkContractive s a t
+  k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
+  unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
+  if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
+    then pure $ K.Kind p m K.Absorb
+    else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p m K.Top
@@ -116,6 +126,12 @@ checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
   when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
+checkAgainstAbsorb :: K.KindEnv -> T.Type -> FreestState K.Kind
+checkAgainstAbsorb kEnv t = do
+  ~k@(K.Kind _ _ p) <- synthetise kEnv t
+--  debugM $ show t ++ " : " ++ show k
+  when (p /= K.Absorb) (addError $ UnendedSession (getSpan t) t k) $> k
+--  return k
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
 un = mult K.Un
@@ -134,3 +150,11 @@ mult m1 t = do
 typeToKindMult :: Multiplicity -> K.Multiplicity
 typeToKindMult Lin = K.Lin
 typeToKindMult Un = K.Un
+
+-- Unnormed lifted to types
+unr :: Set.Set Variable -> T.Type -> Bool
+unr s (T.Semi _ t u) = unr s t || unr s u
+unr s (T.Rec _ (Bind _ a _ t)) = unr (Set.insert a s) t
+unr s (T.Labelled _ (T.Choice _) m) = all (unr s) (Map.elems m)
+unr s (T.Var _ a) = Set.member a s
+unr _ _ = False
