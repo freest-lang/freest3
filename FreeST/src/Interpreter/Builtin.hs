@@ -56,7 +56,6 @@ initialCtx = Map.fromList
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
   , (var "subtract", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ y - x)))
   , (var "(*)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x * y)))
-  , (var "(/)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y)))
   , (var "(^)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x ^ y)))
   , (var "abs", PrimitiveFun (\(Integer x) -> Integer $ abs x))
   , (var "mod", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `mod` y)))
@@ -88,6 +87,8 @@ initialCtx = Map.fromList
   , (var "round", PrimitiveFun (\(Float x) -> Integer $ round x))
   , (var "ceiling", PrimitiveFun (\(Float x) -> Integer $ ceiling x))
   , (var "floor", PrimitiveFun (\(Float x) -> Integer $ floor x))
+  , (var "recip" , PrimitiveFun (\(Float x) -> Float $ recip x))
+  , (var "(/)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x / y)))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
