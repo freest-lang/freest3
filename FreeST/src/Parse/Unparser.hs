@@ -188,7 +188,7 @@ instance Unparse T.Type where
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
   unparse (T.Var  _ a     ) = (maxRator, show a)
-  unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dual " ++ show a)
+  unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
