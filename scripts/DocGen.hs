@@ -1,6 +1,7 @@
+import Data.Char (isAlphaNum, isSpace)
 import Data.List (isPrefixOf, elemIndex, intercalate, sort)
 import Data.Maybe (fromJust, isJust)
--- import Debug.Trace (trace)
+import Debug.Trace (trace)
 import System.Environment
 
 main :: IO ()
@@ -57,19 +58,37 @@ showDoc_ name def doc =
 
 
 parseFileForDocs :: [String] -> [Doc]
-parseFileForDocs = scanForDoc [] [] "EMPTY"
+parseFileForDocs = scanForDoc [] "EMPTY" [] ""
     
-scanForDoc :: [Doc] -> [Doc] -> String -> [String] -> [Doc]
-scanForDoc sections docAcc secName [] 
+scanForDoc :: [Doc] -> String -> [Doc] -> String -> [String] -> [Doc]
+scanForDoc sections secName docAcc descAcc [] 
     | secName == "EMPTY" = docAcc
     | otherwise          = sections ++ [Section secName docAcc]
-scanForDoc sections docAcc secName (x:xs)
-    | isDoc x     = 
-        let (doc, xs') = captureDoc (stripDocHeader x) xs in
-        scanForDoc sections (docAcc ++ [doc]) secName xs'
+scanForDoc sections secName docAcc descAcc (x:xs)
+    -- sections
     | isSection x =
-        scanForDoc (sections ++ [Section secName (sort docAcc)]) [] (stripSecHeader x) xs
-    | otherwise   = scanForDoc sections docAcc secName xs
+        scanForDoc (sections ++ [Section secName (sort docAcc)]) (stripSecHeader x) [] "" xs
+    -- documentation
+    | isDoc x = 
+        -- let (doc, xs') = captureDoc (stripDocHeader x) xs in
+        -- scanForDoc sections (docAcc ++ [doc]) secName xs'
+        scanForDoc sections secName docAcc (descAcc ++ "\n" ++ stripDocHeader x) xs 
+    -- data
+    | isData x  = 
+        let (name, def, xs') = captureDef x xs in
+        scanForDoc sections secName (docAcc ++ [Data name def descAcc]) "" xs'
+    -- type
+    | isType x =
+        let (name, def, xs') = captureDef x xs in
+        scanForDoc sections secName (docAcc ++ [Type name def descAcc]) "" xs'
+    -- function
+    | isFunction x = 
+        let (name, sig) = captureSig x in
+        scanForDoc sections secName (docAcc ++ [Fun name sig descAcc]) "" xs
+    -- ignore all others
+    | otherwise = 
+        scanForDoc sections secName docAcc descAcc xs
+        
 
 captureDoc :: String -> [String] -> (Doc, [String])
 captureDoc docAcc (x:xs) 
@@ -111,6 +130,13 @@ isData = isPrefixOf "data"
 
 isType :: String -> Bool
 isType = isPrefixOf "type"
+
+-- TODO: is this right?
+isFunction :: String -> Bool
+isFunction s = 
+    case elemIndex ':' s of
+        Just i  -> all (\c -> isAlphaNum c || isSpace c || c == ',') $ take i s
+        Nothing -> False
 
 isSection :: String -> Bool
 isSection = isPrefixOf "-- # "
