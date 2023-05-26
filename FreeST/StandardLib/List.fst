@@ -125,7 +125,7 @@ scanl1 _ []           = []
 scanl1 f (x::[])      = [x]
 scanl1 f (x::(y::xs)) = x :: scanl f (f x y) xs 
 
--- | scanr f z [..., x1, x2] == [...,  x1 `f` (x2 `f` z) , x2 `f` z, z]
+-- scanr f z [..., x1, x2] == [...,  x1 `f` (x2 `f` z) , x2 `f` z, z]
 
 scanr : (Int -> Int -> Int) -> Int -> [Int] -> [Int]
 scanr _ x []      = [x]
