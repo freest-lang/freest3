@@ -44,7 +44,7 @@ import           Paths_FreeST ( getDataFileName )
   String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
-  '1->'     {TokenLinArrow _}
+  '1->'    {TokenLinArrow _}
   lambda   {TokenLambda _}
   Lambda   {TokenUpperLambda _}
   '@'      {TokenAt _}
@@ -56,7 +56,7 @@ import           Paths_FreeST ( getDataFileName )
   '['      {TokenLBracket _}
   ']'      {TokenRBracket _}
   ':'      {TokenColon _}
-  '::'      {TokenDoubleColon _}
+  '::'     {TokenDoubleColon _}
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
@@ -318,17 +318,19 @@ ExpList :: { E.Exp }
 
 
 Op :: { Variable }
-   : '||'  {% mkOr `fmap` mkSpan $1 }
-   | '&&'  {% mkAnd `fmap` mkSpan $1  }
-   | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
-   | '+'   {% mkPlus `fmap` mkSpan $1  }
-   | '*'   {% mkTimes `fmap` mkSpan $1  }
-   | '/'   {% mkDiv `fmap` mkSpan $1 }
-   | '^'   {% mkPower `fmap` mkSpan $1 }
-   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
-   | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
-   | '$'   {% flip mkVar "($)" `fmap` mkSpan $1 }
--- TODO: add List funs
+   : CMP  {% flip mkVar (getText $1) `fmap` mkSpan $1 }
+   | '||' {% mkOr       `fmap` mkSpan $1 }
+   | '&&' {% mkAnd      `fmap` mkSpan $1 }
+   | '+'  {% mkPlus     `fmap` mkSpan $1 }
+   | '*'  {% mkTimes    `fmap` mkSpan $1 }
+   | '/'  {% mkDiv      `fmap` mkSpan $1 }
+   | '^'  {% mkPower    `fmap` mkSpan $1 }
+   | '++' {% mkPlusPlus `fmap` mkSpan $1 }
+   | '|>' {% mkPipeGT   `fmap` mkSpan $1 }
+   | '$'  {% mkDollar   `fmap` mkSpan $1 }
+   | ';'  {% mkSemi     `fmap` mkSpan $1 }
+   -- | '[]' {% mkNil      `fmap` mkSpan $1 }
+   -- | '::' {% mkCons     `fmap` mkSpan $1 }
 
 ----------
 -- TYPE --

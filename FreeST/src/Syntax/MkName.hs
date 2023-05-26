@@ -8,6 +8,10 @@ module Syntax.MkName
   , mkDiv
   , mkPower
   , mkNeg
+  , mkDollar
+  , mkPlusPlus
+  , mkPipeGT
+  , mkSemi
   , mkTrue
   , mkFalse
   , mkList
@@ -31,7 +35,7 @@ import Syntax.Base
 mk :: String -> Span -> Variable
 mk = flip mkVar
 
-mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg :: Span -> Variable
+mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkPipeGT, mkSemi :: Span -> Variable
  
 mkWild = mk "_"
 mkOr = mk "(||)"
@@ -42,6 +46,10 @@ mkTimes = mk "(*)"
 mkDiv = mk "(/)"
 mkPower = mk "(^)"
 mkNeg = mk "negate"
+mkDollar = mk "($)"
+mkPlusPlus = mk "(++)"
+mkPipeGT = mk "(|>)"
+mkSemi = mk "(;)"
 
 mkTrue, mkFalse :: Span -> Variable 
 mkTrue  = mk "True"

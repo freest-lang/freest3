@@ -159,6 +159,15 @@ flip f x y = f y x
 (|>) : forall a:*T b:*T. a -> (a -> b) -> b
 (|>) x f = f x
 
+-- | Sequential composition. Takes two expressions, evaluates the former and
+-- | discards the result, then evaluates the latter. For example:
+-- | ```
+-- | 3 ; 4
+-- | evaluates to 4.
+-- | Its binding precedence is rather low.
+(;) : forall a:*T b:*T . a -> b -> b
+(;) x y = (\_:a -> y) x
+
 -- | Applies the function passed as the second argument to the third one and
 -- | uses the predicate in the first argument to evaluate the result, if it comes
 -- | as True it returns it, otherwise, it continues to apply the function on
