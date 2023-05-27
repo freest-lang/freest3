@@ -91,6 +91,7 @@ tokens :-
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
   ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
   "++"      { \p s -> TokenAppend (internalPos p)}
+  "^^"      { \p s -> TokenAppendString (internalPos p)}
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
@@ -210,6 +211,7 @@ data Token =
   | TokenConjunction Span
   | TokenDisjunction Span
   | TokenAppend Span
+  | TokenAppendString Span
   | TokenDiv Span
   | TokenDollar Span
   | TokenModule Span
@@ -291,6 +293,7 @@ instance Show Token where
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
   show (TokenAppend _) = "++"
+  show (TokenAppendString _) = "^^"
   show (TokenDiv _) = "/"
   show (TokenDollar _) = "$"
   show (TokenModule _) = "module"
@@ -411,6 +414,7 @@ instance Located Token where
   getSpan (TokenConjunction p) = p
   getSpan (TokenDisjunction p) = p
   getSpan (TokenAppend p) = p
+  getSpan (TokenAppendString p) = p
   getSpan (TokenDiv p) = p
   getSpan (TokenDollar p) = p
   getSpan (TokenModule p) = p

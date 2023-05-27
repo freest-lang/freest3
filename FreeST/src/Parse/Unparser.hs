@@ -130,9 +130,11 @@ data Precedence =
   | PNew     -- new T
   | PDisj    -- ||
   | PConj    -- &&
+  | PAppend  -- ++, ^^
   | PCmp     -- comparison (relational and equality)
   | PAdd     -- +, -
   | PMult    -- *, /
+  | PPower   -- ^
   | PDot     -- μ a:k . T
   | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
   | PSemi    -- T ; U
@@ -148,15 +150,17 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
+minRator, inRator, newRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
   :: Rator
 inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
+appendRator = (PAppend, Left)
 addRator = (PAdd, Left)
 multRator = (PMult, Left)
+powerRator = (PPower, Right)
 dotRator = (PDot, Right)
 arrowRator = (PArrow, Right)
 semiRator = (PSemi, Right)
@@ -270,6 +274,15 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
+  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+    (maxRator, "[" ++ intercalate ", " list ++ "]")
+    where
+      list = map (snd . unparse) (joinList e)
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAppend x =
+   (appendRator, l ++ showOp x ++ r)
+   where
+    l = bracket (unparse e1) Left appendRator
+    r = bracket (unparse e2) Right appendRator
   unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
@@ -280,10 +293,11 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
-    (maxRator, "[" ++ intercalate ", " list ++ "]")
-    where
-      list = map (snd . unparse) (joinList e)
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "^" =
+   (powerRator, l ++ showOp x ++ r)
+   where
+    l = bracket (unparse e1) Left powerRator
+    r = bracket (unparse e2) Right powerRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -341,6 +355,9 @@ isOp ops x = show x `elem` ops
 
 isCmp :: Variable -> Bool
 isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
+
+isAppend :: Variable -> Bool 
+isAppend = isOp ["(++)", "(^^)"]
 
 isAdd :: Variable -> Bool
 isAdd = isOp ["(+)", "(-)"]

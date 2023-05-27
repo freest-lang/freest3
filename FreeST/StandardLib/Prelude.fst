@@ -62,7 +62,7 @@ odd : Int -> Bool
 ord : Char -> Int
 chr : Int -> Char
   -- String
-(++) : String -> String -> String
+(^^) : String -> String -> String
 show : forall a:*T . a -> String
 -- read : ∀ a . String -> a
 readBool : String -> Bool
@@ -509,7 +509,7 @@ hGetContent ch =
   else 
     let (line, ch) = hGetLine ch in 
     let (contents, ch) = hGetContent ch in
-    (line ++ "\n" ++ contents, ch)
+    (line ^^ "\n" ^^ contents, ch)
 
 __hGenericGet_ : forall a:*T . (InStream -> (a, InStream)) -> InStreamProvider -> a
 __hGenericGet_ getF inp = 
@@ -584,7 +584,7 @@ __runPrinter _ printer =
     match printer with {
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrOut printer |> __runPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer |> __runPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter (),
         Close    printer -> close printer
     }
 
@@ -602,7 +602,7 @@ __runErrPrinter _ printer =
     match printer with {
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer |> __runErrPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
         Close    printer -> close printer
     }
 

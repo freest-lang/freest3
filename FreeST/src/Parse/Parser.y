@@ -73,6 +73,7 @@ import           Paths_FreeST ( getDataFileName )
   '*'      {TokenTimes _}
   '^'      {TokenRaise _}
   '++'     {TokenAppend _}
+  '^^'     {TokenAppendString _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -119,9 +120,8 @@ import           Paths_FreeST ( getDataFileName )
 %left '|>'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
-%left '++'
 %nonassoc CMP    -- comparison (relational and equality)
-%right '::'      -- lists
+%right '::' '++' '^^' -- lists & strings
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %right '^'       -- power
@@ -172,7 +172,9 @@ Decl :: { () }
   -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
+  | Pattern Op Pattern '=' Exp   {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $5}
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
+  | Pattern Op Pattern GuardsFun {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $4}
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -222,6 +224,7 @@ Exp :: { E.Exp }
   | Exp '/' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
   | Exp '^' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
   | Exp '++' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlusPlus s) $3 }
+  | Exp '^^' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCaretCaret s) $3 }
   | Exp '::' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
   | '-' App %prec NEG              {% mkSpanSpan $1 $2 >>= \s -> pure $ unOp (mkNeg s) $2 s }
   | App                            { $1 }
@@ -319,16 +322,17 @@ ExpList :: { E.Exp }
 
 Op :: { Variable }
    : CMP  {% flip mkVar (getText $1) `fmap` mkSpan $1 }
-   | '||' {% mkOr       `fmap` mkSpan $1 }
-   | '&&' {% mkAnd      `fmap` mkSpan $1 }
-   | '+'  {% mkPlus     `fmap` mkSpan $1 }
-   | '*'  {% mkTimes    `fmap` mkSpan $1 }
-   | '/'  {% mkDiv      `fmap` mkSpan $1 }
-   | '^'  {% mkPower    `fmap` mkSpan $1 }
-   | '++' {% mkPlusPlus `fmap` mkSpan $1 }
-   | '|>' {% mkPipeGT   `fmap` mkSpan $1 }
-   | '$'  {% mkDollar   `fmap` mkSpan $1 }
-   | ';'  {% mkSemi     `fmap` mkSpan $1 }
+   | '||' {% mkOr         `fmap` mkSpan $1 }
+   | '&&' {% mkAnd        `fmap` mkSpan $1 }
+   | '+'  {% mkPlus       `fmap` mkSpan $1 }
+   | '*'  {% mkTimes      `fmap` mkSpan $1 }
+   | '/'  {% mkDiv        `fmap` mkSpan $1 }
+   | '^'  {% mkPower      `fmap` mkSpan $1 }
+   | '++' {% mkPlusPlus   `fmap` mkSpan $1 }
+   | '^^' {% mkCaretCaret `fmap` mkSpan $1 }
+   | '|>' {% mkPipeGT     `fmap` mkSpan $1 }
+   | '$'  {% mkDollar     `fmap` mkSpan $1 }
+   | ';'  {% mkSemi       `fmap` mkSpan $1 }
    -- | '[]' {% mkNil      `fmap` mkSpan $1 }
    -- | '::' {% mkCons     `fmap` mkSpan $1 }
 

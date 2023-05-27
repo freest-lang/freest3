@@ -10,6 +10,7 @@ module Syntax.MkName
   , mkNeg
   , mkDollar
   , mkPlusPlus
+  , mkCaretCaret
   , mkPipeGT
   , mkSemi
   , mkTrue
@@ -35,7 +36,7 @@ import Syntax.Base
 mk :: String -> Span -> Variable
 mk = flip mkVar
 
-mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkPipeGT, mkSemi :: Span -> Variable
+mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkCaretCaret, mkPipeGT, mkSemi :: Span -> Variable
  
 mkWild = mk "_"
 mkOr = mk "(||)"
@@ -48,6 +49,7 @@ mkPower = mk "(^)"
 mkNeg = mk "negate"
 mkDollar = mk "($)"
 mkPlusPlus = mk "(++)"
+mkCaretCaret = mk "(^^)"
 mkPipeGT = mk "(|>)"
 mkSemi = mk "(;)"
 

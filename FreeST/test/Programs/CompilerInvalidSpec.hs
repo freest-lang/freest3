@@ -44,7 +44,7 @@ testInvalid test filename = do
     >> return (Just errorExpected)
     )
     [ Handler (\(e :: ExitCode) -> return $ exitProgram e)
-    , Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")
+    , Handler (\(e :: SomeException) -> return $ Just $ "(Internal error) "++show e)
     ]
   assert b
  where
