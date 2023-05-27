@@ -204,26 +204,26 @@ DataCon :: { (Variable, [T.Type]) }
 
 Exp :: { E.Exp }
   : let ProgVarWild '=' Exp in Exp {% mkSpanSpan $1 $6 >>= \s -> pure $ E.UnLet s $2 $4 $6 }
-  | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
   | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ condCase s $2 $4 $6}
-  | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
+  | match Exp with '{' MatchMap '}'{% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkCollect s')) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
+  | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
-  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
-  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
-  | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
-  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
-  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
-  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
-  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
-  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
-  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
-  | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
-  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkNeg s) $2 s }
+  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $3 $1 }
+  | Exp '||' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
+  | Exp '&&' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
+  | Exp CMP Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
+  | Exp '+' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
+  | Exp '-' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
+  | Exp '*' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
+  | Exp '/' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
+  | Exp '^' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
+  | Exp '++' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlusPlus s) $3 }
+  | Exp '::' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
+  | '-' App %prec NEG              {% mkSpanSpan $1 $2 >>= \s -> pure $ unOp (mkNeg s) $2 s }
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -231,8 +231,8 @@ App :: { E.Exp }
   | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
                                        \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
                                    }
-  | Primary                        { $1 }
   | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
+  | Primary                        { $1 }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
@@ -246,9 +246,9 @@ Primary :: { E.Exp }
   | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
   | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= leftSection $2 $3 } -- left section
   | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
-  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkMinus s) $2 s } -- right section (-)
+  | '(' Exp '-' ')'                {% mkSpanSpan $1 $4 >>= \s -> pure $ unOp (mkMinus s) $2 s } -- right section (-)
   | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
-  | '(' Exp ')'                    { $2 }
+  | '(' Exp ')'                    { $2 } -- TODO: fix the span to include the parenthesis
 
 
 Abs :: { (Multiplicity, E.Exp) }
