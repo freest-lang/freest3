@@ -39,7 +39,7 @@ data Type =
   | Labelled Span Sort TypeMap
   -- Session Types
   | Skip Span
-  | End Span
+  | End Span Polarity
   | Semi Span Type Type
   | Message Span Polarity Type
   -- Polymorphism and recursive types
@@ -48,7 +48,6 @@ data Type =
   | Var Span Variable
   -- Type operators
   | Dualof Span Type
---  | CoVar Span Variable
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type
@@ -61,22 +60,19 @@ instance Default Type where
   omission = Int
 
 instance Located Type where
-  getSpan (Int  p       ) = p
-  getSpan (Char p       ) = p
-  getSpan (String p     ) = p
-  getSpan (Arrow p _ _ _) = p
+  getSpan (Int  p        ) = p
+  getSpan (Char p        ) = p
+  getSpan (String p      ) = p
+  getSpan (Arrow p _ _ _ ) = p
   getSpan (Labelled p _ _) = p
-  getSpan (Skip p       ) = p
-  getSpan (End p        ) = p
-  getSpan (Semi p _ _   ) = p
-  getSpan (Message p _ _) = p
-  getSpan (Forall p _   ) = p
-  getSpan (Rec p _      ) = p
-  getSpan (Var p _      ) = p
-  -- getSpan (Abs p _      ) = p
-  -- getSpan (App p _ _    ) = p
+  getSpan (Skip p        ) = p
+  getSpan (End p _       ) = p
+  getSpan (Semi p _ _    ) = p
+  getSpan (Message p _ _ ) = p
+  getSpan (Forall p _    ) = p
+  getSpan (Rec p _       ) = p
+  getSpan (Var p _       ) = p
   getSpan (Dualof p _   ) = p
---  getSpan (CoVar p _   ) = p
 
 -- Derived forms
 unit :: Span -> Type 

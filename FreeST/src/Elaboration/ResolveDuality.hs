@@ -80,7 +80,7 @@ solveType _ t                = pure t
 solveDual :: Visited -> T.Type -> FreestState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
-solveDual _ t@T.End{}           = pure t
+solveDual _ (T.End p pol)       = pure $ (T.End p (dualof pol))
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
 solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
 solveDual v (T.Labelled p (T.Choice pol) m) =
@@ -120,9 +120,9 @@ changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Char   _       ) = T.Char p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
-changePos p (T.Labelled _ s m  ) = T.Labelled p s m
+changePos p (T.Labelled _ s m ) = T.Labelled p s m
 changePos p (T.Skip _         ) = T.Skip p
-changePos p (T.End  _         ) = T.End p
+changePos p (T.End _ pol      ) = T.End p pol
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Rec    _ xs    ) = T.Rec p xs

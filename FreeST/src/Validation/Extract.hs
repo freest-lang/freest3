@@ -20,7 +20,8 @@ module Validation.Extract
   , forall
   , output
   , input
-  , end
+  , endC
+  , endW
   , outChoiceMap
   , inChoiceMap
   , datatypeMap
@@ -84,11 +85,17 @@ message pol msg e t =
   messageErr u =
     addError (ExtractError (getSpan e) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
 
-end :: E.Exp -> T.Type -> FreestState ()
-end e t =
+endC :: E.Exp -> T.Type -> FreestState ()
+endC e t =
   case normalise t of
-    (T.End _) -> return ()
-    _ -> addError (ExtractError (getSpan e) "End" e t)
+    (T.End _ T.Out) -> return ()
+    _ -> addError (ExtractError (getSpan e) "EndC" e t)
+
+endW :: E.Exp -> T.Type -> FreestState ()
+endW e t =
+  case normalise t of
+    (T.End _ T.In) -> return ()
+    _ -> addError (ExtractError (getSpan e) "EndW" e t)
 
 outChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 outChoiceMap = choiceMap T.External "an external choice (&)"

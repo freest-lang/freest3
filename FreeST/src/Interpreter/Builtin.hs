@@ -36,8 +36,11 @@ receive ch = do
 close :: ChannelEnd -> IO Value 
 close ch = do 
   C.writeChan (snd ch) Unit 
-  C.readChan (fst ch)
   return Unit
+
+wait :: ChannelEnd -> IO Value 
+wait ch = do 
+  C.readChan (fst ch)
 
 ------------------------------------------------------------  
 -- SETUP, builtin functions
@@ -51,6 +54,7 @@ initialCtx = Map.fromList
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
+  , (var "wait", PrimitiveFun (\(Chan c) -> IOValue $ wait c))
   -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))

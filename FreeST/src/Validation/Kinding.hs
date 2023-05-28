@@ -70,8 +70,8 @@ synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ (T.Ch
   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
     return $ K.ua p
 -- Session types
-synthetise' _ _ (T.Skip   p) = return $ K.us p
-synthetise' _ _ (T.End    p) = return $ K.la p
+synthetise' _ _ (T.Skip p) = return $ K.us p
+synthetise' _ _ (T.End p _) = return $ K.la p
 synthetise' s kEnv (T.Semi p t u) = do
   ~k1@(K.Kind _ mt vt) <- synthetise' s kEnv t
   ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
