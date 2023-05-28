@@ -1,6 +1,6 @@
 data Tree = Leaf | Node Tree Int Tree
-type WTree:1S = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree};End
-type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree};End
+type WTree:1S = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree} ; EndC
+type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree} ; EndW
 
 sendTree : Tree -> WTree -> ()
 sendTree t c =
@@ -23,7 +23,7 @@ sendTree t c =
 receiveTree : RTree -> Tree
 receiveTree c =
   match c with {
-    Leaf c -> close c; Leaf,
+    Leaf c -> wait c; Leaf,
     Node c ->
       -- left
       let (r1, c) = receive c in
@@ -31,7 +31,7 @@ receiveTree c =
       -- root
       let (x, c) = receive c in
       -- right
-      let r2 = receiveAndClose @RTree c in
+      let r2 = receiveAndWait @RTree c in
       let t2 = receiveTree r2 in
       Node t1 x t2
   }

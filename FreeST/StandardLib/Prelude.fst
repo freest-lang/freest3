@@ -309,12 +309,12 @@ consume f ch =
 -- |     -- create channel endpoints
 -- |     let (c, s) = new @(?String; EndW) () in
 -- |     -- fork a thread that prints the received value (and closes the channel)
--- |     fork (\_:() 1-> c |> receiveAndClose @String |> putStrLn);
+-- |     fork (\_:() 1-> c |> receiveAndWait @String |> putStrLn);
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
-receiveAndClose : forall a:1T . ?a;EndW -> a 
-receiveAndClose c =
+receiveAndWait : forall a:1T . ?a;EndW -> a 
+receiveAndWait c =
     let (x, c) = receive c in 
     wait c;
     x
@@ -343,7 +343,7 @@ accept ch =
 -- | main : ()
 -- | main =
 -- |     -- fork a thread that receives a string and prints
--- |     let c = forkWith @(!String;EndW) @() (\s:(?String;End) 1-> s |> receiveAndClose @String |> putStrLn) in
+-- |     let c = forkWith @(!String;EndW) @() (\s:(?String;End) 1-> s |> receiveAndWait @String |> putStrLn) in
 -- |     -- send the string to be printed
 -- |     c |> send "Hello!" |> wait
 -- | ```
