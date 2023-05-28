@@ -22,6 +22,7 @@ class Duality t where
 
 instance Duality T.Type where 
   -- Session Types
+  dualof (T.End p pol) = T.End p (dualof pol)
   dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
   dualof (T.Message p pol t) = T.Message p (dualof pol) t
   dualof (T.Labelled p (T.Choice v) m) =
@@ -32,7 +33,7 @@ instance Duality T.Type where
   dualof u@(T.Rec p (Bind p' a k t)) =
     let t' = subs (T.Dualof p' (T.Var p' a)) a t in
       T.Rec p $ Bind p' a k (cosubs u a (dualof t'))
-  -- Non session-types, Skip & End
+  -- Non session-types, Skip
   dualof t = t
 
 instance Duality T.Polarity where

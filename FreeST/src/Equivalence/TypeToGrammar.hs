@@ -67,7 +67,7 @@ toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't t
   getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
-toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' t@(T.End _ _) = getLHS $ Map.singleton (show t) [bottom]
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
