@@ -319,6 +319,14 @@ receiveAndWait c =
     wait c;
     x
 
+-- | As in receiveAndWait only that the type is EndW and the function closes the
+-- | channel rather the waiting for the channel to be closed.
+receiveAndClose : forall a:1T . ?a;EndC -> a 
+receiveAndClose c =
+    let (x, c) = receive c in 
+    close c;
+    x
+
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
 receive_ : forall a:1T . *?a -> a
 receive_ ch = ch |> receive |> fst @a @*?a

@@ -12,7 +12,7 @@ type Stream = +{
 type StreamClient: 1S = +{ Add  : StreamClient
                          , Mult : StreamClient
                          , Const: !Int; StreamClient
-                         , EOS  : ?Int; End 
+                         , EOS  : ?Int; EndW 
                          }
 type StreamServer: 1S = dualof StreamClient
 
@@ -30,7 +30,7 @@ client c = c |> select Const
              |> select Mult
              |> select Add
              |> select EOS
-             |> receiveAndClose @Int
+             |> receiveAndWait @Int
 
 {-|
   An easy consumer: counts the number of nodes in the stream.  Copes

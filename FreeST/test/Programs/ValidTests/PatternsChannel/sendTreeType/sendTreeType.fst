@@ -33,8 +33,8 @@ aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf
 
 main : Tree
 main =
-  let (writer, reader) = new @(TreeChannel; End) () in
-  fork (\_:() 1-> write @End aTree writer |> close) ;
-  let (tree, reader) = read @End reader in
-  close reader;
+  let (writer, reader) = new @(TreeChannel; EndC) () in
+  fork (\_:() 1-> write @EndC aTree writer |> close) ;
+  let (tree, reader) = read @EndW reader in
+  wait reader;
   tree

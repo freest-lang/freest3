@@ -1,7 +1,7 @@
 type BoolServer : 1S = &{ And : ?Bool; ?Bool; !Bool; BoolServer
                         , Or  : ?Bool; ?Bool; !Bool; BoolServer
                         , Not : ?Bool; !Bool; BoolServer
-                        , Done: End
+                        , Done: EndW
                         }
 type BoolClient : 1S = dualof BoolServer
 
@@ -23,7 +23,7 @@ boolServer c =
       -- let c = send c (not n) in
       -- boolServer c,
       (boolServer (send (not n) c)),
-    Done c -> close c
+    Done c -> wait c
   }
 
 client1 : BoolClient -> Bool
