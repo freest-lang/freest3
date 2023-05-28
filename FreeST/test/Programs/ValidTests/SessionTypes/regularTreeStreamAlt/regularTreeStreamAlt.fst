@@ -62,7 +62,7 @@ stackSize ts =
 type TreeC : 1S = +{
   ValueC: !Int; TreeC,
   LeafC:  TreeC,
-  FinishC:   End }
+  FinishC:EndC }
 
 
 -- Sends a tree through a TreeC
@@ -99,7 +99,7 @@ receiveTree_ ts c =
       receiveTree_ (stackPush Leaf ts) c,
 
     FinishC  c ->
-      close c; 
+      wait c; 
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       snd @TreeStack @Tree $ stackPop ts

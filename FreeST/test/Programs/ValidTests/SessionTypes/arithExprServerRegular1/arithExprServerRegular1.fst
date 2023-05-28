@@ -12,7 +12,7 @@ type Stream = +{
 type StreamClient : 1S = +{ Add  : StreamClient
                           , Mult : StreamClient
                           , Const: !Int ; StreamClient
-                          , EOS  : ?Int ; End}
+                          , EOS  : ?Int ; EndC}
 type StreamServer : 1S = dualof StreamClient
 
 -- A sample client: (5*4)+(2*3)
@@ -44,7 +44,7 @@ evaluate s l =
     Const s -> let (n, s) = receive s in evaluate s (Cons n l),
     Add s   -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l),
     Mult s  -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l),
-    EOS s   -> send (headSingleton l) s |> close
+    EOS s   -> send (headSingleton l) s |> wait
   }
 
 head2 : IntList -> ((Int, Int), IntList)

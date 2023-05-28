@@ -3,7 +3,6 @@ data IList = Nil | Cons Int IList
 type IListW : 1S = +{NilC: Skip, ConsC: !Int; IListW}
 
 iListW : forall a: 1S . IList -> IListW;a -> a
-
 iListW xs c =
   case xs of {
     Nil -> select NilC c,
@@ -48,10 +47,10 @@ aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
-main = let (w, r) = new @(IListW;End) () in
-       fork @() (\_:()1-> iListW  @End aList w |> close);
-       let (i, r) = iLength' @End r in 
-       close r;
+main = let (w, r) = new @(IListW;EndC) () in
+       fork @() (\_:()1-> iListW @EndC aList w |> close);
+       let (i, r) = iLength' @EndW r in 
+       wait r;
        i
 
 -- main : IList

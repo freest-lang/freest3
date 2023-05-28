@@ -1,4 +1,4 @@
-type T : 1S = +{More: !Int;T, Stop: End}
+type T : 1S = +{More: !Int;T, Stop: EndC}
 
 main : Int
 main =
@@ -13,5 +13,5 @@ g r =
    	More r ->
       let (v, r) = receive r in
       v + g r,
-    Stop r -> close r; 0
+    Stop r -> wait r; 0
   }

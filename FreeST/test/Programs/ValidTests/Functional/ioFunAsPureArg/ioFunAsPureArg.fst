@@ -1,15 +1,12 @@
 main : Bool
 main =
-  let (s, r) = new @(!Int;End) () in
+  let (s, r) = new @(!Int;EndC) () in
   fork @() (\_:()1-> sender s 5);
-  if (div (f r) 2) == 5 then
-    True
-  else
-    False
+  (div (f r) 2) == 5
 
-f : ?Int;End -> Int
-f c = let (x, c) = receive c in close c; x
+f : ?Int;EndW -> Int
+f c = let (x, c) = receive c in wait c; x
 
-sender : !Int;End -> Int 1-> ()
+sender : !Int;EndC -> Int 1-> ()
 sender c i = send (i * 2) c |> close
 
