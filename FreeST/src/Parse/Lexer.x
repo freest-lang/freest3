@@ -106,7 +106,8 @@ tokens :-
   Char				{ \p s -> TokenCharT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
-  End			  	{ \p s -> TokenEnd (internalPos p) }
+  EndC			  	{ \p s -> TokenEndC (internalPos p) }
+  EndW			  	{ \p s -> TokenEndW (internalPos p) }
 -- Keywords
   (rec|μ)                       { \p s -> TokenRec (internalPos p) }
   let                           { \p s -> TokenLet (internalPos p) }
@@ -153,7 +154,8 @@ data Token =
   | TokenRBracket Span
   | TokenComma Span
   | TokenSkip Span
-  | TokenEnd Span
+  | TokenEndC Span
+  | TokenEndW Span
   | TokenColon Span
   | TokenDoubleColon Span
   | TokenUpperId Span String
@@ -235,7 +237,8 @@ instance Show Token where
   show (TokenRBracket _) = "]"
   show (TokenComma _) = ","
   show (TokenSkip _) = "Skip"
-  show (TokenEnd _) = "End"
+  show (TokenEndC _) = "EndC"
+  show (TokenEndW _) = "EndW"
   show (TokenColon _) = ":"
   show (TokenDoubleColon _) = "::"
   show (TokenUpperId _ c) = "" ++ c
@@ -356,7 +359,8 @@ instance Located Token where
   getSpan (TokenRBracket p) = p
   getSpan (TokenComma p) = p
   getSpan (TokenSkip p) = p
-  getSpan (TokenEnd p) = p
+  getSpan (TokenEndC p) = p
+  getSpan (TokenEndW p) = p
   getSpan (TokenColon p) = p
   getSpan (TokenDoubleColon p) = p
   getSpan (TokenUpperId p _) = p

@@ -83,12 +83,15 @@ undefined : forall a:*T . a
   -- Session ops
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () -> (a, dualof a)
+-- | Sends a value on a channel. Returns the continuation channel
 send : forall a:1T . a -> forall b:1S . !a;b 1-> b
 -- | Receives a value on a channel. Returns the received value and 
 -- | the continuation channel.
 receive : forall a:1T b:1S . ?a;b -> (a, b)
 -- | Closes a channel.
-close : End -> ()
+close : EndC -> ()
+-- | Waits for a channel to be closed.
+wait : EndW -> ()
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()
@@ -152,7 +155,7 @@ flip f x y = f y x
 -- | Reverse application operator. Provides notational convenience, especially
 -- | when chaining channel operations. For example:
 -- | ```
--- | f : !Int;!Bool;End -> () 
+-- | f : !Int;!Bool;EndC -> () 
 -- | f c = c |> send 5 |> send True |> close
 -- | ```
 -- | Its binding precedence is higher than `$`.
@@ -285,9 +288,9 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- | main : ()
 -- | main =
 -- |     -- create channel endpoints
--- |     let (c, s) = new @(?String; End) () in
+-- |     let (c, s) = new @(?String; EndW) () in
 -- |     -- fork a thread that prints the received value (and closes the channel)
--- |     fork (\_:() 1-> c |> consume @String @End putStrLn |> close);
+-- |     fork (\_:() 1-> c |> consume @String @End putStrLn |> wait);
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
@@ -297,23 +300,23 @@ consume f ch =
     f x;
     ch
 
--- | Receives a value from a channel that continues to `End`, closes the 
+-- | Receives a value from a channel that continues to `EndW`, closes the 
 -- | continuation and returns the value.
 -- | 
 -- | ```
 -- | main : ()
 -- | main =
 -- |     -- create channel endpoints
--- |     let (c, s) = new @(?String; End) () in
+-- |     let (c, s) = new @(?String; EndW) () in
 -- |     -- fork a thread that prints the received value (and closes the channel)
 -- |     fork (\_:() 1-> c |> receiveAndClose @String |> putStrLn);
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
-receiveAndClose : forall a:1T . ?a;End -> a 
+receiveAndClose : forall a:1T . ?a;EndW -> a 
 receiveAndClose c =
     let (x, c) = receive c in 
-    close c;
+    wait c;
     x
 
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
@@ -340,9 +343,9 @@ accept ch =
 -- | main : ()
 -- | main =
 -- |     -- fork a thread that receives a string and prints
--- |     let c = forkWith @(!String;End) @() (\s:(?String;End) 1-> s |> receiveAndClose @String |> putStrLn) in
+-- |     let c = forkWith @(!String;EndW) @() (\s:(?String;End) 1-> s |> receiveAndClose @String |> putStrLn) in
 -- |     -- send the string to be printed
--- |     c |> send "Hello!" |> close
+-- |     c |> send "Hello!" |> wait
 -- | ```
 forkWith : forall a:1A b . (dualof a 1-> b) -> a
 forkWith f =
@@ -359,9 +362,9 @@ forkWith f =
 -- | 
 -- | ```
 -- | type SharedCounter : *S = *?Counter
--- | type Counter : 1S = +{ Inc: End
--- |                      , Dec: End
--- |                      , Get: ?Int; End
+-- | type Counter : 1S = +{ Inc: EndW
+-- |                      , Dec: EndW
+-- |                      , Get: ?Int; EndW
 -- |                      }
 -- | 
 -- | -- | Handler for a counter
@@ -398,7 +401,7 @@ runServer handle state ch =
 type OutStream : 1S = +{ PutChar : !Char; OutStream
                        , PutStr  : !String; OutStream
                        , PutStrLn: !String; OutStream
-                       , Close   : End
+                       , Close   : EndC
                        }
 
 -- | Unrestricted session type for the `OutStream` type.
@@ -471,7 +474,7 @@ hPrint_ x c = __hGenericPut_ @a (hPrint @a) x c
 type InStream : 1S = +{ GetChar     : ?Char  ; InStream
                       , GetLine     : ?String; InStream
                       , IsEOF       : ?Bool  ; InStream
-                      , Close       : End
+                      , Close       : EndW
                       }
 
 -- | Unrestricted session type for the `OutStream` type.
@@ -479,7 +482,7 @@ type InStreamProvider : *S = *?InStream
 
 -- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
-hCloseIn ch = select Close ch |> close
+hCloseIn ch = ch |> select Close |> wait
 
 __hGenericGet : forall a:*T . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
 __hGenericGet sel ch = receive $ sel ch
@@ -585,7 +588,7 @@ __runPrinter _ printer =
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrOut printer |> __runPrinter (),
         PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter (),
-        Close    printer -> close printer
+        Close    printer -> wait printer
     }
 
 -- Stderr
@@ -603,7 +606,7 @@ __runErrPrinter _ printer =
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
         PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
-        Close    printer -> close printer
+        Close    printer -> wait printer
     }
 
 -- Stdin
