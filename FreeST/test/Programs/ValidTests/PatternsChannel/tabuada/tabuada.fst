@@ -22,7 +22,7 @@ type TabuadaC : 1S = +{ TabuadaSimples: !Int; TabuadaC
                       , TabuadaAte: !Int; !Int; TabuadaC
                       , MultiplosEntre: !Int; !Int; !Int; TabuadaC
                       , Solucao: ?Bool; ?Int; TabuadaC
-                      , Fim: End
+                      , Fim: EndC
                       }
 
 -- Este canal tem 3 servicos: TabuadaSimples, TabuadaAte e MultiplosEntre
@@ -37,7 +37,7 @@ initTabuadaServer : dualof TabuadaC -> ()
 initTabuadaServer c = tabuadaServer c Empty
 
 tabuadaServer : dualof TabuadaC -> IntList 1-> ()
-tabuadaServer (Fim            c) result = close c
+tabuadaServer (Fim            c) result = wait c
 -- Servicos
 tabuadaServer (TabuadaSimples c) result =
   let (x1, c) = receive c in
