@@ -1,4 +1,4 @@
-type Chan : 1S = +{Done: End, More: !Int;Chan}
+type Chan : 1S = +{Done: EndC, More: !Int;Chan}
 
 fives : Int -> Chan -> ()
 fives n c =
@@ -9,7 +9,7 @@ fives n c =
 sumFives : dualof Chan -> Int
 sumFives c =
   match c with {
-    Done c -> close c; 0,
+    Done c -> wait c; 0,
     More c ->
      let (n, c) = receive c in
      n + sumFives c
