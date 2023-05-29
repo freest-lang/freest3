@@ -41,7 +41,7 @@ import           Prelude                 hiding ( Left
 import qualified Data.Set as Set
 
 instance Show Span where
-  show (Span sp fp _)
+  show (Span sp fp _ _)
     | sp == fp  = showPos sp
     | otherwise = showPos sp ++ "-" ++ showPos fp ++ ""
     where

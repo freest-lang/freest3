@@ -37,27 +37,27 @@ type FreestStateT = StateT FreestS (Either ErrorType)
 
 mkSpan :: Located a => a -> FreestStateT Span
 mkSpan a = do
-  let (Span p1 p2 _) = getSpan a
+  let (Span p1 p2 src _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 src f) (Span p1 p2 src) <$> getModuleName
 
 mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
 mkSpanSpan a b = do
-  let (Span p1 _ _) = getSpan a
-  let (Span _ p2 _) = getSpan b
+  let (Span p1 _ src _) = getSpan a
+  let (Span _ p2 _   _) = getSpan b
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 src f) (Span p1 p2 src) <$> getModuleName
 
 mkSpanFromSpan :: Located a => Span -> a -> FreestStateT Span
-mkSpanFromSpan (Span p1 _ _) a = do
-  let (Span _ p2 _) = getSpan a
+mkSpanFromSpan (Span p1 _ _ _) a = do
+  let (Span _ p2 src _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 src f) (Span p1 p2 src) <$> getModuleName
 
 liftModToSpan :: Span -> FreestStateT Span
-liftModToSpan (Span p1 p2 _) = do
+liftModToSpan (Span p1 p2 src _) = do
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 src f) (Span p1 p2 src) <$> getModuleName
 
 -- Parse errors
 
@@ -132,7 +132,9 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
+  where s  = Span (startPos sl) (endPos sr) (source sl ++ " " ++ show op ++ " " ++ source sr) (defModule sl)
+        sl = getSpan l
+        sr = getSpan r
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr

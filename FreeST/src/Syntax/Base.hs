@@ -54,11 +54,12 @@ class Located t where
 data Span = Span
   { startPos     :: Pos
   , endPos       :: Pos
+  , source       :: String
   , defModule    :: FilePath
   } deriving (Eq, Ord)
 
 defaultSpan :: Span
-defaultSpan = Span defaultPos defaultPos ""
+defaultSpan = Span defaultPos defaultPos "" ""
 
 negSpan :: Span -> Span
 negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}

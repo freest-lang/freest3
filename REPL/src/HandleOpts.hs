@@ -137,7 +137,7 @@ showInfo b f var = f var >>= \case
     | b         -> lift $ putStrLn $ infoHeader (getSpan t) ++ infoData var t
     | otherwise -> do
         m <- getFromProg var
-        let s = uncurry (Span (startPos $ getSpan t)) (maybe defSpan mbLocExp m)
+        let s = uncurry (Span (startPos $ getSpan t)) (maybe defSpan mbLocExp m) (source $ getSpan t)
         getTypeNames >>= lift . putStrLn . (infoHeader s ++) . infoFun var t m
      where
        defSpan = (endPos $ getSpan t, defModule $ getSpan t)
