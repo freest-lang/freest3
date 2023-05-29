@@ -57,7 +57,7 @@ getTwo xs  =
 type Stream : 1S = +{
     NodeC: !Int; Stream,
     LeafC: Stream,
-    EndOfStreamC: End
+    EndOfStreamC: EndC
   }
 
 -- Writing trees on channels
@@ -91,7 +91,7 @@ recTree xs c =
       recTree (Cons (Node root left right) xs) c,
     LeafC c ->
       recTree (Cons Leaf xs) c,
-    EndOfStreamC c -> close c; getFromSingleton xs
+    EndOfStreamC c -> wait c; getFromSingleton xs
   }
 
 -- Babdly behaving writers
@@ -113,7 +113,7 @@ writeLeftTreeOnly c =
 
 main : Tree
 main =
-  let (w, r) = new @(Stream;End) () in
+  let (w, r) = new @(Stream;EndC) () in
 --  (fork[Skip] $ sendTree aTree w);
 --  (fork[Skip] $ writeNothing w);       -- 'P'
 --  (fork[Skip] $ writeTooMuch w);     -- 'X'
