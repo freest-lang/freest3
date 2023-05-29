@@ -68,18 +68,18 @@ reverseNE n c =
     |> pop  @(dualof NEStack ; a)
 
 -- A generic client working on an empty stack
-reverseE : Int -> dualof EStack;End -> ()
+reverseE : Int -> dualof EStack;EndC -> ()
 reverseE n c =
-  pushE  @End n c
-  |> reverseNE  @(dualof EStack;End) (n-1)
-  |> pop  @(dualof EStack;End)
+  pushE @EndC n c
+  |> reverseNE  @(dualof EStack;EndC) (n-1)
+  |> pop  @(dualof EStack;EndC)
   |> select Stop
   |> close
 
 main : ()
 main =
-  let (r, w) = new @(EStack;End) () in
-  fork  @() (\_:()1-> eStack  @End r |> close);
+  let (r, w) = new @(EStack;EndW) () in
+  fork  @() (\_:()1-> eStack @EndW r |> wait);
   reverseE 10 w
   -- reverseThree w
 
