@@ -23,8 +23,7 @@ type TermChannel : 1S  = +{
 computeService : dualof TermChannel;!Int;EndW -> ()
 computeService c =
   let (n1, c1) = receiveEval @(!Int ; EndW) c in
-  send n1 c1 
-  |> wait
+  c1 |> send n1 |> wait
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -58,6 +57,6 @@ client c = c |> select Add
 
 main : Int
 main =
-  let (w, r)  = new @(dualof TermChannel;!Int;EndC) () in
+  let (w, r) = new @(dualof TermChannel;!Int;EndC) () in
   fork @() (\_:()1-> computeService w);
   client r
