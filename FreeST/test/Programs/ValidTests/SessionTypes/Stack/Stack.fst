@@ -26,7 +26,7 @@ neStack x c =
     Pop  c -> send x c
   }
 
-aStackClient : dualof EStack;End -> Int
+aStackClient : dualof EStack;EndC -> Int
 aStackClient c =
   let c = select Push c in let c      = send  5 c in
   let c = select Pop  c in let (_, c) = receive c in
@@ -45,7 +45,7 @@ aStackClient c =
 
 main : Int
 main =
-  let (r, w) = new @(EStack;End) () in
-  fork @() (\_:()1-> eStack @End r |> close);
+  let (r, w) = new @(EStack;EndW) () in
+  fork @() (\_:()1-> eStack @EndW r |> wait);
   aStackClient w
     
