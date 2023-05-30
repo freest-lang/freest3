@@ -36,8 +36,8 @@ isZero n = n @Bool True (λ_:Bool -> False) (λ_:Bool -> False)
 toInt : Bin -> Int
 toInt n = n @Int 0 (λx:Int -> 2 * x) (λx:Int -> 2 * x + 1)
 
-succ' : Bin -> Bin
-succ' n = Λa => (one @a) (λs0:(a->a) -> s0 n@a) (λs1:(a->a) -> s1 n@a)
+-- succ' : Bin -> Bin
+-- succ' n = Λa => (one @a) (λs0:(a->a) -> s0 n@a) (λs1:(a->a) -> s1 n@a)
 
 -- succ' : Bin -> Bin
 -- succ' n = n @Bin
