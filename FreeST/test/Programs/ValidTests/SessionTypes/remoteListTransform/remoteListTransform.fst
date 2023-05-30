@@ -35,6 +35,6 @@ aCons = Cons 5 (Cons 4 (Cons 3 (Cons 2 (Cons 1 Nil))))
 main =
     let (w, r) = new @(IntListC;EndC) () in
     let _ = fork @() (\_:()1-> listSum @EndW r |> snd @Int @EndW |> wait) in
-    let (l, c) = transform @End aCons w in
+    let (l, c) = transform @EndC aCons w in
     close c;
     l
