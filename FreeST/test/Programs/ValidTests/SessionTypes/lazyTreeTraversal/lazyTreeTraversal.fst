@@ -83,7 +83,7 @@ aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf
 main : Int
 main =
   let (writer, reader) = new @(XploreTreeChan;EndC) () in
-  fork @() (\_:()1-> exploreTree @End writer aTree |> close);
+  fork @() (\_:()1-> exploreTree @EndC writer aTree |> close);
   let (reader, n) = server @EndW reader 1 in
   wait reader;
   n

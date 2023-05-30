@@ -28,7 +28,7 @@ readD c =
       putStr (show @Char '<');
       readD @a (readT @(dualof D ; a) c),
     Dollar c ->
-      print @Char '$';
+      putStr (show  @Char '$');
       c
   }
 readT : forall a: 1S . dualof T;a -> a
