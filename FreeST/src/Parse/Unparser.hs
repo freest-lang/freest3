@@ -39,7 +39,7 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 import qualified Data.Set as Set
-
+import Debug.Trace (trace,traceM)
 instance Show Span where
   show (Span sp fp _ _)
     | sp == fp  = showPos sp
@@ -180,6 +180,7 @@ class Unparse t where
 
 instance Show T.Type where
   show = snd . unparse
+  -- show = source . getSpan
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
@@ -244,6 +245,9 @@ showChoiceLabels m = intercalate ", "
 
 instance Show Exp where
   show = snd . unparse
+  -- show = source . getSpan
+  -- show e = let s = source $ getSpan e in trace s s
+  -- show _ = "Hello"
 
 instance Unparse Exp where
   -- Basic values
