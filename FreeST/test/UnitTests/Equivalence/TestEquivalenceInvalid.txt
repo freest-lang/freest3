@@ -121,20 +121,20 @@ rec a:1S  . (&{N:a;a;!Int, L:Skip};!Int)
 -- End 
 
 []
-!Int;End;!Char
-!Char;End;!Int
+!Int;EndC;!Char
+!Char;EndC;!Int
 
 []
-End
+EndC
 Skip
 
 []
-!(End)
+!(EndC)
 !(Skip)
 
 []
-!(!Int;End)
-!(?Int;End)
+!(!Int;EndC)
+!(?Int;EndC)
 
 -- Session types
 
