@@ -23,9 +23,9 @@ import qualified Syntax.Kind                   as K
 --     /  \
 --    *T  1S
 --     \ /  \
---      *S  1E
+--      *S  1A
 --       \  /
---        *E
+--        *A
 
 -- The Subsort class. Instances include Multiplicity, PreKind and Kind
 

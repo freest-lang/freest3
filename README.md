@@ -166,6 +166,7 @@ where the `SPEC_NAME` is one of the following:
 - Valid types tests: `TestTypesValid`
 - Invalid types tests: `TestTypesInvalid`
 - All types tests: `TestTypes`
+- Subkinding: `TestSubKindValid`
 
 We can also run them through:
 
