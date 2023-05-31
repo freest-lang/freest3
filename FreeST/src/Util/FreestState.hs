@@ -312,14 +312,14 @@ setModuleName moduleName = modify (\s -> s { moduleName })
 getModuleName :: MonadState FreestS m => m (Maybe FilePath)
 getModuleName = gets moduleName
 
-setImports :: MonadState FreestS m => Imports -> m ()
-setImports imports = modify (\s -> s { imports })
+-- setImports :: MonadState FreestS m => Imports -> m ()
+-- setImports imports = modify (\s -> s { imports })
 
 addImport :: MonadState FreestS m => FilePath -> m ()
 addImport imp = modify (\s -> s { imports = Set.insert imp (imports s) })
 
-getImports :: MonadState FreestS m => m Imports
-getImports = gets imports 
+-- getImports :: MonadState FreestS m => m Imports
+-- getImports = gets imports 
 
 
 
