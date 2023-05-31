@@ -10,7 +10,7 @@ where
 import           Data.List            (groupBy,sortOn,transpose,find)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
-import           Control.Monad        (zipWithM)
+import           Control.Monad        (when)
 import           Control.Monad.Extra  ((&&^))
 import           Control.Bool         (ifThenElseM)
 import           Syntax.Base
@@ -65,25 +65,18 @@ checkChanVar' :: Set.Set Variable -> [Pattern] -> FreestState ()
 checkChanVar' _ [] = return ()
 checkChanVar' cons xs
   -- mixture rule
-  | any isVar xs &&                                           -- if has at least one var and cons
-    any isCon xs = do
-    let varsF    = map pVar $ filter isVar xs                 -- get vars
-    let consF    =            filter isCon xs                 -- get constructors
-    let consFVar = Set.fromList $ map pVar consF              -- get constructors' names
-    let inter    = Set.intersection cons consFVar             -- intersection between actual constructors and our constructors 
-    if Set.null inter then do                                 -- if null they are channels
-      -- Channel pattern
-      mapM_ (\v -> addError                                   -- error for each variable, since there is channel patterns
-            $ InvalidVariablePatternChan (getSpan v) v) varsF
-      -- nested patterns
-      groupSortBy pName consF                                 -- group by name
-        & map (transpose . map pPats)                         -- get nested patterns and transpose them, each column each list
-        & mapM_ (mapM $ checkChanVar' cons)                   -- apply check 
-    else
-      -- Cons pattern
-      return ()
-  -- every other rule
-  | otherwise = return ()
+  | any isVar xs && any isCon xs = do                         -- if has at least one var and cons
+      let varsF    = map pVar $ filter isVar xs                 -- get vars
+      let consF    =            filter isCon xs                 -- get constructors
+      let consFVar = Set.fromList $ map pVar consF              -- get constructors' names
+      let inter    = Set.intersection cons consFVar             -- intersection between actual constructors and our constructors 
+      when (Set.null inter) ( do                                 -- if null they are channels
+        -- Channel pattern; error for each variable, since there is channel patterns
+        mapM_ (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
+        -- nested patterns: group by name; get nested patterns and transpose them, each column each list ; apply check
+        mapM_  (mapM (checkChanVar' cons) . transpose . map pPats) (groupSortBy pName consF)
+       )
+  | otherwise = return ()   -- every other rule
 
 -- filling functions -----------------------------------------------
 
@@ -149,10 +142,10 @@ ruleEmpty _ ((_,e):cs) = (\v -> replaceExp v v e) =<< v
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
-ruleVar (v:us) cs = match us =<< mapM replace cs                                  -- replaces vars for every equation
+ruleVar (v:us) cs = match us =<< mapM replace cs            -- replaces vars for every equation
   where replace (p:ps,e)
-          | isPat_ p     = return (ps,e)                                            -- if the variable is '_' there's no need to replace
-          | otherwise = (,) ps <$> replaceExp v (pVar p) e                        -- otherwise replace the variable in every expression
+          | isPat_ p     = return (ps,e)                    -- if the variable is '_' there's no need to replace
+          | otherwise = (,) ps <$> replaceExp v (pVar p) e  -- otherwise replace the variable in every expression
 
 -- con -------------------------------------------------------------
 ruleCon :: [Variable] -> [Equation] -> FreestState Exp
@@ -164,15 +157,15 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                             
   
 -- rule con aux 
 destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
-destruct l@((p:ps,_):cs) = mapM newVar (pPats p)                                    -- creates new vars, for the case expression and the algorithm
-                       <&> flip ((,,) (pVar p)) l'                                  -- transforms into a case
-  where l' = map (\(p:ps,e) -> (pPats p ++ ps, e)) l                                 -- unfolds the patterns
+destruct l@((p:ps,_):cs) = mapM newVar (pPats p)       -- creates new vars, for the case expression and the algorithm
+                       <&> flip ((,,) (pVar p)) l'     -- transforms into a case
+  where l' = map (\(p:ps,e) -> (pPats p ++ ps, e)) l   -- unfolds the patterns
 
 -- chan ------------------------------------------------------------
 ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                      -- group by constructor name
-                   & mapM destruct                                                        -- transforms into a case
-                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)        -- matches every case expression, with the case's missing variables
+ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                -- group by constructor name
+                   & mapM destruct                                                  -- transforms into a case
+                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)  -- matches every case expression, with the case's missing variables
                  <&> Case s (App s (Var s (mkCollect s)) (Var s v)) . Map.fromList  -- makes the case collect
   where s = getSpan v
 
@@ -180,10 +173,10 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                            
 ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
   cons <- constructors $ getDataType cs -- every [(Constructor,#variables)] of the column type
-  groupOn (isVar . head . fst) cs       -- groups in vars and cons, by order
-        & mapM (fill v cons)            -- every var is transformed into every constructor
-      <&> concat                        -- joins constructors with new constructors, keeping the order
-      >>= match (v:us)                  -- matches the result
+  -- groups in vars and cons, by order. every var is transformed into every constructor.
+  -- joins constructors with new constructors, keeping the order matches the result
+  (groupOn (isVar . head . fst) cs & mapM (fill v cons)) >>= match (v : us) . concat
+
 
 --rule mix aux
 fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
@@ -270,7 +263,7 @@ isVar (PatVar _) = True
 isVar _          = False
 
 isCon :: Pattern -> Bool
-isCon = not.isVar
+isCon = not . isVar
 
 -- get every constructor from the file
 getConstructors :: FreestState (Set.Set Variable)
@@ -281,14 +274,13 @@ getConstructors = Map.elems <$> getTEnv
 
 isChan :: Pattern -> FreestState Bool
 isChan (PatVar _)    = return False
-isChan (PatCons c _) = getConstructors
-                   <&> Set.notMember c
+isChan (PatCons c _) = getConstructors <&> Set.notMember c
 
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = isWild v
 
 newVar :: Pattern -> FreestState Variable
-newVar = R.renameVar.pVar
+newVar = R.renameVar . pVar
 
 -- newVar :: Int -> Pattern -> FreestState Variable
 -- newVar i p = R.renameVar $ updateVar $ pVar p
