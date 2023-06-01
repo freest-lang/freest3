@@ -131,7 +131,7 @@ data Precedence =
   | PConj    -- &&
   | PCmp     -- comparison (relational and equality)
   | PAdd     -- +, -, +., -.
-  | PMult    -- *, /, *.
+  | PMult    -- *, /, *., /.
   | PDot     -- μ a:k . T
   | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
   | PSemi    -- T ; U
@@ -347,7 +347,7 @@ isAdd :: Variable -> Bool
 isAdd = isOp ["(+)", "(-)", "(+.)", "(-.)"]
 
 isMult :: Variable -> Bool
-isMult = isOp ["(*)", "(/)", "(*.)"]
+isMult = isOp ["(*)", "(/)", "(*.)", "/."]
 
 showOp :: Variable -> String
 showOp x = spaced $ tail (init $ show x)

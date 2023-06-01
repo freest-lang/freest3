@@ -67,6 +67,7 @@ import           Paths_FreeST ( getDataFileName )
   '&&'     {TokenConjunction _}
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
+  '/.'     {TokenDivDot _}
   '&'      {TokenAmpersand _}
   '|>'     {TokenPipeOp _}
   '+'      {TokenPlus _}
@@ -128,7 +129,7 @@ import           Paths_FreeST ( getDataFileName )
 %nonassoc CMP    -- comparison (relational and equality)
 %right '::'      -- lists
 %left '+' '-' '+.' '-.' -- aditive
-%left '*' '/' '*.'    -- multiplicative
+%left '*' '/' '*.' '/.'   -- multiplicative
 %right '^'       -- power
 %left NEG not    -- unary
 %right MSG       -- !T and ?T
@@ -228,6 +229,7 @@ Exp :: { E.Exp }
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
   | Exp '*.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*.)") $3}
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
+  | Exp '/.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/.)") $3}
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
   | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
   | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
@@ -335,6 +337,7 @@ Op :: { Variable }
    | '*'   {% mkTimes `fmap` mkSpan $1  }
    | '*.'  {% flip mkVar "(*.)" `fmap` mkSpan $1}
    | '/'   {% mkDiv `fmap` mkSpan $1 }
+   | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}
    | '^'   {% mkPower `fmap` mkSpan $1 }
    | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
    | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }

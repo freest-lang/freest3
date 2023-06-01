@@ -32,6 +32,7 @@ module Prelude where
 (+) : Int -> Int -> Int
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
+(/) : Int -> Int -> Int
 div : Int -> Int -> Int
 (^) : Int -> Int -> Int
 mod : Int -> Int -> Int
@@ -58,11 +59,13 @@ odd : Int -> Bool
 (+.) : Float -> Float -> Float
 (-.) : Float -> Float -> Float
 (*.) : Float -> Float -> Float
-(/) : Float -> Float -> Float
+(/.) : Float -> Float -> Float
 (>.) : Float -> Float -> Float
 (<.) : Float -> Float -> Float
 (>=.) : Float -> Float -> Float
 (<=.) : Float -> Float -> Float
+absF : Float -> Float
+negateF : Float -> Float
 maxF : Float -> Float -> Float
 minF : Float -> Float -> Float
 truncate : Float -> Int
@@ -70,6 +73,13 @@ round : Float -> Int
 ceiling : Float -> Int
 floor : Float -> Int
 recip : Float -> Float
+pi : Float
+exp : Float -> Float
+log : Float -> Float
+sqrt : Float -> Float
+sin : Float -> Float
+cos : Float -> Float
+tan : Float -> Float
 
 -- Bool
 (&&) : Bool -> Bool -> Bool
