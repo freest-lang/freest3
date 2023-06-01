@@ -13,6 +13,7 @@ import           System.IO
 import           System.IO.Unsafe
 import           Data.Bifunctor (Bifunctor(bimap))
 import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
+import GHC.Float
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -110,6 +111,7 @@ initialCtx = Map.fromList
   , (var "expm1", PrimitiveFun (\(Float x) -> Float $ expm1 x))
   , (var "log1pexp", PrimitiveFun (\(Float x) -> Float $ log1pexp x))
   , (var "log1mexp", PrimitiveFun (\(Float x) -> Float $ log1mexp x))
+  , (var "fromInteger", PrimitiveFun (\(Integer x) -> Float $ Prelude.fromInteger (toInteger x)))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))

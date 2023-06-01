@@ -90,6 +90,7 @@ log1p: Float -> Float
 expm1: Float -> Float
 log1pexp: Float -> Float
 log1mexp: Float -> Float
+fromInteger: Int -> Float
 
 -- Bool
 (&&) : Bool -> Bool -> Bool
