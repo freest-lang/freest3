@@ -12,6 +12,7 @@ import qualified Data.Map as Map
 import           System.IO
 import           System.IO.Unsafe
 import           Data.Bifunctor (Bifunctor(bimap))
+import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -99,6 +100,16 @@ initialCtx = Map.fromList
   , (var "sin", PrimitiveFun (\(Float x) -> Float $ sin x))
   , (var "cos", PrimitiveFun (\(Float x) -> Float $ cos x))
   , (var "tan", PrimitiveFun (\(Float x) -> Float $ tan x))
+  , (var "asin", PrimitiveFun (\(Float x) -> Float $ asin x))
+  , (var "acos", PrimitiveFun (\(Float x) -> Float $ acos x))
+  , (var "atan", PrimitiveFun (\(Float x) -> Float $ atan x))
+  , (var "sinh", PrimitiveFun (\(Float x) -> Float $ sinh x))
+  , (var "cosh", PrimitiveFun (\(Float x) -> Float $ cosh x))
+  , (var "tanh", PrimitiveFun (\(Float x) -> Float $ tanh x))
+  , (var "log1p", PrimitiveFun (\(Float x) -> Float $ log1p x))
+  , (var "expm1", PrimitiveFun (\(Float x) -> Float $ expm1 x))
+  , (var "log1pexp", PrimitiveFun (\(Float x) -> Float $ log1pexp x))
+  , (var "log1mexp", PrimitiveFun (\(Float x) -> Float $ log1mexp x))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))

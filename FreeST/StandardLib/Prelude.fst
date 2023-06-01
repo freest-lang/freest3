@@ -80,6 +80,16 @@ sqrt : Float -> Float
 sin : Float -> Float
 cos : Float -> Float
 tan : Float -> Float
+asin: Float -> Float
+acos: Float -> Float
+atan: Float -> Float
+sinh: Float -> Float
+cosh: Float -> Float
+tanh: Float -> Float
+log1p: Float -> Float
+expm1: Float -> Float
+log1pexp: Float -> Float
+log1mexp: Float -> Float
 
 -- Bool
 (&&) : Bool -> Bool -> Bool
