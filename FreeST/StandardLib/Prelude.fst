@@ -374,7 +374,7 @@ forkWith f =
 -- | runCounterServer : dualof SharedCounter -> Diverge
 -- | runCounterServer = runServer @Counter @Int counterService 0 
 -- | ```
-runServer : forall a:1S b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
+runServer : forall a:1A b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
     runServer @a @b handle (handle state (accept @a ch)) ch 
 

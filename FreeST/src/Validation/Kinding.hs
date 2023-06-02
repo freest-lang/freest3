@@ -80,8 +80,8 @@ synthetise' s kEnv (T.Semi p t u) = do
   return $ K.Kind p (join mt mu) (meet vt vu)
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
-synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
-  Map.foldl (flip meet) (K.ua p) <$> tMapM (synthetise' s kEnv) m
+synthetise' s kEnv (T.Labelled p (T.Choice _) m) = do
+  Map.foldl (flip meet) (K.ua p) <$> tMapM (checkAgainstSession' s kEnv) m
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
 --   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
@@ -123,7 +123,7 @@ checkAgainst' s kEnv expected t = do
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
-  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
+  unless (p <: K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
 checkAgainstAbsorb :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstAbsorb kEnv t = do
@@ -131,6 +131,7 @@ checkAgainstAbsorb kEnv t = do
 --  debugM $ show t ++ " : " ++ show k
   when (p /= K.Absorb) (addError $ UnendedSession (getSpan t) t k) $> k
 --  return k
+
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
 un = mult K.Un
