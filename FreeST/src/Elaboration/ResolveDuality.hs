@@ -80,7 +80,7 @@ solveType _ t                = pure t
 solveDual :: Visited -> T.Type -> FreestState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
-solveDual _ (T.End p pol)       = pure $ (T.End p (dualof pol))
+solveDual _ (T.End p pol)       = pure (T.End p (dualof pol))
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
 solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
 solveDual v (T.Labelled p (T.Choice pol) m) =
@@ -91,10 +91,8 @@ solveDual v t@(T.Rec p b) = do
   return $ cosubs t (var b) (T.Rec p u)
 solveDual _ (T.Var p a) = pure $ T.Dualof p $ T.Var p a
 -- Dualof
-solveDual _ (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
-solveDual v d@(T.Dualof p t) = do
---  debugM $ "double dual -> " ++ show d
-
+solveDual _ (T.Dualof _ t@T.Var{}) = pure t
+solveDual v d@(T.Dualof p t) =
   addDualof d >> solveType v (changePos p t)
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
