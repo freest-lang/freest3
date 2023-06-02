@@ -74,59 +74,115 @@ Skip;Skip
 Skip
 Skip
 
--- End 
+-- EndC 
 
 []
-End
-End
+EndC
+EndC
 
 []
-End
-End;!Int
+EndC
+EndC;!Int
 
 []
-End;!Int
-End;?Int
+EndC;!Int
+EndC;?Int
 
 []
-End;!Int
-End;?Int
+EndC;!Int
+EndC;?Int
 
 []
-!Char;End;!Int
-!Char;End;?Int
+!Char;EndC;!Int
+!Char;EndC;?Int
 
 []
-(!Int;End;!Int);?Int
-!Int;End;!Int
+(!Int;EndC;!Int);?Int
+!Int;EndC;!Int
 
 []
-(rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int
-rec a:1S . +{A: !Int;a, B: End;a}
+(rec a:1S . +{A: !Int;a, B: Skip;EndC;Skip});!Int
+rec a:1S . +{A: !Int;a, B: EndC;a}
 
 []
-rec a:1S . rec b:1S . +{A: !Int;b, B:End;a}
-rec a:1S . rec b:1S . +{A: !Int;b, B:End;b}
+rec a:1S . rec b:1S . +{A: !Int;b, B:EndC;a}
+rec a:1S . rec b:1S . +{A: !Int;b, B:EndC;b}
 
 []
-rec a:1S  . &{N:!Int;!Int;a, L:End};?Int
-rec a:1S  . &{N:!Int;!Int;a, L:Skip};End
+rec a:1S  . &{N:!Int;!Int;a, L:EndC};?Int
+rec a:1S  . &{N:!Int;!Int;a, L:Skip};EndC
 
 []
-rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int);?(a;!(End);End;?Int)
-rec b:1S . !(rec a:1S . +{A: !Int;a, B: End;a});Skip;?(b;Skip;!(End);End;b;!b)
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;EndC;Skip});!Int);?(a;!(EndC);EndC;?Int)
+rec b:1S . !(rec a:1S . +{A: !Int;a, B: EndC;a});Skip;?(b;Skip;!(EndC);EndC;b;!b)
 
 []
-!(!Int;End)
-!(!Int;Skip;End;?Int)
+!(!Int;EndC)
+!(!Int;Skip;EndC;?Int)
 
 []
-∀ α: 1S . End;α;!Int
-∀ β: 1S . (End;β);Skip
+∀ α: 1S . EndC;α;!Int
+∀ β: 1S . (EndC;β);Skip
 
 []
-∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;End;α});!Int);?(a;!(End);End)
-∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;End;!a});Skip;?(b;Skip;!(End);End;β;!β)
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;EndC;α});!Int);?(a;!(EndC);EndC)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;EndC;!a});Skip;?(b;Skip;!(EndC);EndC;β;!β)
+
+
+-- EndW 
+
+[]
+EndW
+EndW
+
+[]
+EndW
+EndW;!Int
+
+[]
+EndW;!Int
+EndW;?Int
+
+[]
+EndW;!Int
+EndW;?Int
+
+[]
+!Char;EndW;!Int
+!Char;EndW;?Int
+
+[]
+(!Int;EndW;!Int);?Int
+!Int;EndW;!Int
+
+[]
+(rec a:1S . +{A: !Int;a, B: Skip;EndW;Skip});!Int
+rec a:1S . +{A: !Int;a, B: EndW;a}
+
+[]
+rec a:1S . rec b:1S . +{A: !Int;b, B:EndW;a}
+rec a:1S . rec b:1S . +{A: !Int;b, B:EndW;b}
+
+[]
+rec a:1S  . &{N:!Int;!Int;a, L:EndW};?Int
+rec a:1S  . &{N:!Int;!Int;a, L:Skip};EndW
+
+[]
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;EndW;Skip});!Int);?(a;!(EndW);EndW;?Int)
+rec b:1S . !(rec a:1S . +{A: !Int;a, B: EndW;a});Skip;?(b;Skip;!(EndW);EndW;b;!b)
+
+[]
+!(!Int;EndW)
+!(!Int;Skip;EndW;?Int)
+
+[]
+∀ α: 1S . EndW;α;!Int
+∀ β: 1S . (EndW;β);Skip
+
+[]
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;EndW;α});!Int);?(a;!(EndW);EndW)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;EndW;!a});Skip;?(b;Skip;!(EndW);EndW;β;!β)
+
 
 -- Functional and session, mixed
 
