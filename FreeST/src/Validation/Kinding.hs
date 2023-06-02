@@ -81,8 +81,9 @@ synthetise' s kEnv (T.Semi p t u) = do
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
 synthetise' s kEnv t@(T.Labelled p (T.Choice _) m) = do
-  ks <- tMapM (synthetise' s kEnv) m
-  return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (join m1 m2) (meet v1 v2)) (snd $ Map.elemAt 0 ks) ks
+  ks <- tMapM (checkAgainstSession' s kEnv) m
+  return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) ->
+                        K.Kind p (join m1 m2) (meet v1 v2)) (snd $ Map.elemAt 0 ks) ks
 --  Map.foldl (flip meet) (K.ua p) <$> tMapM (checkAgainstSession' s kEnv) m
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
