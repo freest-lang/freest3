@@ -15,7 +15,7 @@ module Validation.Subkind
   )
 where
 
-import qualified Syntax.Kind                   as K
+import qualified Syntax.Kind as K
 
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -38,7 +38,7 @@ instance Subsort K.Multiplicity where
 
 instance Subsort K.PreKind where
   K.Top <: K.Session = False
---  K.Session <: K.Absorb = False
+  K.Session <: K.Absorb = False
   _     <: _         = True
 
 instance Subsort K.Kind where
@@ -79,4 +79,4 @@ instance Meet K.PreKind where
   meet _         _         = K.Top
 
 instance Meet K.Kind where
-  meet (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (meet b1 b2)
+  meet (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (meet m1 m2) (meet b1 b2)

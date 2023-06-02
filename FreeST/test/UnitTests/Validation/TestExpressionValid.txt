@@ -82,13 +82,13 @@ Int
 (λ_:Char → λy:Int → y) 'a' 23
 Int
 
--- Rec skip
 
 (\x:(rec x: *S. Skip;EndC, Skip;EndW) -> λy:Int 1-> let (w,r) = x in close w; wait r; y) (new @(Skip;EndC) ()) 23
 Int
 
 (\x:(Skip;EndC,Skip;EndW) -> λy:Int 1-> let (r,w) = x in close r ; wait w ; y) (new @(Skip;EndC) ()) 23
 Int
+
 
 -- Substitution
 

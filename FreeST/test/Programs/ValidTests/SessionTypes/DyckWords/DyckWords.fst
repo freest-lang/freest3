@@ -13,7 +13,7 @@ S -> e | "[" S "]" S
 
 (where e stands for epsilon-productions)
 
-Example suggested by the authors Frank Pfenning, Ankush Das, Henry DeYoung, and Andreia Mordido.
+Example suggested by Frank Pfenning, Ankush Das, Henry DeYoung, and Andreia Mordido.
 
 -}
 
@@ -25,7 +25,7 @@ readD : forall a: 1S . dualof D;a -> a
 readD c =
   match c with {
     Lt c ->
-      putStr (show @Char '<');
+      print @Char '<';
       readD @a (readT @(dualof D ; a) c),
     Dollar c ->
       putStr (show  @Char '$');
