@@ -163,6 +163,7 @@ flip f x y = f y x
 -- | discards the result, then evaluates the latter. For example:
 -- | ```
 -- | 3 ; 4
+-- | ```
 -- | evaluates to 4.
 -- | Its binding precedence is rather low.
 (;) : forall a:*T b:*T . a -> b -> b
@@ -291,7 +292,8 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
-consume : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
+-- consume : forall a:*T b:1S . Consumer a -> ?a;b 1-> b
+consume : forall a:*T b:1S . (a -> ()) -> ?a;b 1-> b
 consume f ch =
     let (x, ch) = receive ch in
     f x;
@@ -649,7 +651,7 @@ __runReader _ reader =
 type FilePath = String
 
 -- Internal file handles
-data FileHandle = FileHandle () 
+data FileHandle = FileHandle ()
 
 -- Internal IOMode for opening files
 data IOMode = ReadMode | WriteMode | AppendMode
