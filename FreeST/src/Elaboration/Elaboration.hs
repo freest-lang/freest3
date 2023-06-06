@@ -69,6 +69,7 @@ elaboration = do
   --   From f x = E and f : T -> U
   --   build a lambda expression: f = \x : T -> E
   buildProg
+  -- debugM . ("Program " ++) <$> show =<< getVEnv
   -- debugM . ("Program " ++) <$> show =<< getProg
   -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
 

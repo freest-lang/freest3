@@ -1063,6 +1063,13 @@ dualof (!Int ; ?Char)
 ((Skip;(rec z: 1S.(rec y: 1S.(rec x: 1S.(+{A: z, B: Skip, C: dualof ?Int};(&{A:Skip, C: z};x))))));Skip)
 (rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
+[]
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
+
+[]
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndW
 
 -- Terminated Recursive Types
 
@@ -1195,4 +1202,3 @@ dualof (!Int ; ?Char)
 -- []
 -- rec y:1S. Skip ; y ; ?Int
 -- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
-
