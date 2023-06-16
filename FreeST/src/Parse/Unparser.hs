@@ -132,8 +132,8 @@ data Precedence =
   | PConj    -- &&
   | PAppend  -- ++, ^^
   | PCmp     -- comparison (relational and equality)
-  | PAdd     -- +, -
-  | PMult    -- *, /
+  | PAdd     -- +, -, +., -.
+  | PMult    -- *, /, *., /.
   | PPower   -- ^
   | PDot     -- μ a:k . T
   | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
@@ -187,6 +187,7 @@ instance Show T.Type where
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
+  unparse (T.Float _      ) = (maxRator, "Float")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
@@ -253,6 +254,7 @@ instance Unparse Exp where
   -- Basic values
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
+  unparse (E.Float _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
@@ -354,16 +356,16 @@ isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops
 
 isCmp :: Variable -> Bool
-isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
+isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)", "(>.)", "(<.)", "(>=.)", "(<=.)"]
 
 isAppend :: Variable -> Bool 
 isAppend = isOp ["(++)", "(^^)"]
 
 isAdd :: Variable -> Bool
-isAdd = isOp ["(+)", "(-)"]
+isAdd = isOp ["(+)", "(-)", "(+.)", "(-.)"]
 
 isMult :: Variable -> Bool
-isMult = isOp ["(*)", "(/)"]
+isMult = isOp ["(*)", "(/)", "(*.)", "/."]
 
 showOp :: Variable -> String
 showOp x = spaced $ tail (init $ show x)

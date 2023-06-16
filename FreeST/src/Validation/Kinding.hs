@@ -53,6 +53,7 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
 synthetise' _ _ (T.Int    p) = return $ K.ut p
+synthetise' _ _ (T.Float  p) = return $ K.ut p 
 synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
