@@ -33,6 +33,7 @@ data View = External | Internal deriving Eq
 data Type =
   -- Functional Types
     Int Span
+  | Float Span
   | Char Span
   | String Span
   | Arrow Span Multiplicity Type Type
@@ -62,6 +63,7 @@ instance Default Type where
 
 instance Located Type where
   getSpan (Int  p       ) = p
+  getSpan (Float p      ) = p
   getSpan (Char p       ) = p
   getSpan (String p     ) = p
   getSpan (Arrow p _ _ _) = p

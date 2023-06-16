@@ -40,6 +40,7 @@ import           Paths_FreeST ( getDataFileName )
   module   {TokenModule _}  
   import   {TokenImport _}  
   Int      {TokenIntT _}
+  Float    {TokenFloatT _}
   Char     {TokenCharT _}
   String   {TokenStringT _}
   '()'     {TokenUnit _}
@@ -66,12 +67,17 @@ import           Paths_FreeST ( getDataFileName )
   '&&'     {TokenConjunction _}
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
+  '/.'     {TokenDivDot _}
   '&'      {TokenAmpersand _}
   '|>'     {TokenPipeOp _}
   '+'      {TokenPlus _}
+  '+.'     {TokenPlusF _}
   '-'      {TokenMinus _}
+  '-.'     {TokenMinusDot _}
   '*'      {TokenTimes _}
+  '*.'     {TokenTimesDot _}
   '^'      {TokenRaise _}
+  '**'     {TokenRaiseTimes _}
   '++'     {TokenAppend _}
   '^^'     {TokenAppendString _}
   '_'      {TokenWild _}
@@ -88,6 +94,7 @@ import           Paths_FreeST ( getDataFileName )
   UA       {TokenUnA _}
   LA       {TokenLinA _}
   INT      {TokenInt _ _ }
+  FLOAT    {TokenFloat _ _}
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
   let      {TokenLet _}
@@ -122,9 +129,9 @@ import           Paths_FreeST ( getDataFileName )
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
 %right '::' '++' '^^' -- lists & strings
-%left '+' '-'    -- aditive
-%left '*' '/'    -- multiplicative
-%right '^'       -- power
+%left '+' '-' '+.' '-.' -- aditive
+%left '*' '/' '*.' '/.'   -- multiplicative
+%right '^' '**'       -- power
 %left NEG not    -- unary
 %right MSG       -- !T and ?T
 %right dualof
@@ -214,19 +221,24 @@ Exp :: { E.Exp }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $3 $1 }
-  | Exp '||' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
-  | Exp '&&' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
-  | Exp CMP Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
-  | Exp '+' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
-  | Exp '-' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
-  | Exp '*' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
-  | Exp '/' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
-  | Exp '^' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
-  | Exp '++' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlusPlus s) $3 }
+  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
+  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
+  | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
+  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
+  | Exp '+.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+.)") $3}
+  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
+  | Exp '-.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-.)") $3}
+  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
+  | Exp '*.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*.)") $3}
+  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
+  | Exp '/.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/.)") $3}
+  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
+  | Exp '**' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(**)") $3}
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
   | Exp '^^' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCaretCaret s) $3 }
-  | Exp '::' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
-  | '-' App %prec NEG              {% mkSpanSpan $1 $2 >>= \s -> pure $ unOp (mkNeg s) $2 s }
+  | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
+  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkNeg s) $2 s }
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -239,6 +251,7 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
+  | FLOAT                          {% let (TokenFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -327,7 +340,13 @@ Op :: { Variable }
    | '+'  {% mkPlus       `fmap` mkSpan $1 }
    | '*'  {% mkTimes      `fmap` mkSpan $1 }
    | '/'  {% mkDiv        `fmap` mkSpan $1 }
+   | '+.'  {% flip mkVar "(+.)" `fmap` mkSpan $1}
+   | '*'   {% mkTimes `fmap` mkSpan $1  }
+   | '*.'  {% flip mkVar "(*.)" `fmap` mkSpan $1}
+   | '/'   {% mkDiv `fmap` mkSpan $1 }
+   | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}   
    | '^'  {% mkPower      `fmap` mkSpan $1 }
+   | '**'  {% flip mkVar "(**)" `fmap` mkSpan $1}   
    | '++' {% mkPlusPlus   `fmap` mkSpan $1 }
    | '^^' {% mkCaretCaret `fmap` mkSpan $1 }
    | '|>' {% mkPipeGT     `fmap` mkSpan $1 }
@@ -343,6 +362,7 @@ Op :: { Variable }
 Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
+  | Float                         {% T.Float `fmap` mkSpan $1}
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
@@ -445,6 +465,7 @@ ProgVar :: { Variable }
   : LOWER_ID    {% flip mkVar (getText $1) `fmap` mkSpan $1 }
   | '(' Op ')'  {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s $ intern $2 }
   | '(' '-' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkMinus s }
+  | '(' '-.' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s "(-.)" }
 
 Constructor :: { Variable }
   : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }

@@ -62,6 +62,7 @@ instance Equivalence T.Type where
         && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
+    equiv _ _ (T.Float _) (T.Float _)                  = True
     equiv _ _ (T.Char _) (T.Char _)                    = True
     equiv _ _ (T.String _) (T.String _)                = True
     equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =

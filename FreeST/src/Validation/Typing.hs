@@ -45,6 +45,7 @@ import qualified Data.Set as Set
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
 synthetise _ (E.Int  p _  ) = return $ T.Int p
+synthetise _ (E.Float p _ ) = return $ T.Float p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p

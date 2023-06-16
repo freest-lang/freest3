@@ -20,6 +20,7 @@ import qualified Data.Map as Map
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
 import Debug.Trace (trace)
+
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
@@ -46,6 +47,7 @@ evalAndPrint name s e =
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
 eval _ _ _   _ (E.Unit _                      )    = return Unit
 eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
+eval _ _ _   _ (E.Float  _ f                  )    = return $ Float f        
 eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
 eval _ _ _   _ (E.String _ s                  )    = return $ String s
 eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx

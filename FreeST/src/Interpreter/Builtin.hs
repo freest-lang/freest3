@@ -12,6 +12,8 @@ import qualified Data.Map as Map
 import           System.IO
 import           System.IO.Unsafe
 import           Data.Bifunctor (Bifunctor(bimap))
+import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
+import GHC.Float
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -74,6 +76,44 @@ initialCtx = Map.fromList
   , (var "odd" , PrimitiveFun (\(Integer x) -> boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
+  -- Float
+  , (var "(+.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x + y)))
+  , (var "(-.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x - y)))
+  , (var "(*.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x * y)))
+  , (var "(/.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x / y)))
+  , (var "(>.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x > y)))
+  , (var "(<.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x < y)))
+  , (var "(<=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x <= y)))
+  , (var "(>=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x >= y)))
+  , (var "absF", PrimitiveFun (\(Float x) -> Float $ abs x))
+  , (var "negateF", PrimitiveFun (\(Float x) -> Float $ negate x))
+  , (var "minF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `min` y)))
+  , (var "maxF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `max` y)))
+  , (var "truncate", PrimitiveFun (\(Float x) -> Integer $ truncate x))
+  , (var "round", PrimitiveFun (\(Float x) -> Integer $ round x))
+  , (var "ceiling", PrimitiveFun (\(Float x) -> Integer $ ceiling x))
+  , (var "floor", PrimitiveFun (\(Float x) -> Integer $ floor x))
+  , (var "recip" , PrimitiveFun (\(Float x) -> Float $ recip x))
+  , (var "pi", Float pi )
+  , (var "exp", PrimitiveFun (\(Float x) -> Float $ exp x))
+  , (var "log", PrimitiveFun (\(Float x) -> Float $ log x))
+  , (var "sqrt", PrimitiveFun (\(Float x) -> Float $ sqrt x))
+  , (var "(**)", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x ** y)))
+  , (var "logBase", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ logBase x y)))
+  , (var "sin", PrimitiveFun (\(Float x) -> Float $ sin x))
+  , (var "cos", PrimitiveFun (\(Float x) -> Float $ cos x))
+  , (var "tan", PrimitiveFun (\(Float x) -> Float $ tan x))
+  , (var "asin", PrimitiveFun (\(Float x) -> Float $ asin x))
+  , (var "acos", PrimitiveFun (\(Float x) -> Float $ acos x))
+  , (var "atan", PrimitiveFun (\(Float x) -> Float $ atan x))
+  , (var "sinh", PrimitiveFun (\(Float x) -> Float $ sinh x))
+  , (var "cosh", PrimitiveFun (\(Float x) -> Float $ cosh x))
+  , (var "tanh", PrimitiveFun (\(Float x) -> Float $ tanh x))
+  , (var "log1p", PrimitiveFun (\(Float x) -> Float $ log1p x))
+  , (var "expm1", PrimitiveFun (\(Float x) -> Float $ expm1 x))
+  , (var "log1pexp", PrimitiveFun (\(Float x) -> Float $ log1pexp x))
+  , (var "log1mexp", PrimitiveFun (\(Float x) -> Float $ log1mexp x))
+  , (var "fromInteger", PrimitiveFun (\(Integer x) -> Float $ Prelude.fromInteger (toInteger x)))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))

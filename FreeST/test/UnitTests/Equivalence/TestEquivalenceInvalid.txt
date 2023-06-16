@@ -5,6 +5,10 @@ Int
 Char
 
 []
+Float
+Int
+
+[]
 Int -> Int
 Int 1-> Int
 
