@@ -341,9 +341,7 @@ Op :: { Variable }
    | '*'  {% mkTimes      `fmap` mkSpan $1 }
    | '/'  {% mkDiv        `fmap` mkSpan $1 }
    | '+.'  {% flip mkVar "(+.)" `fmap` mkSpan $1}
-   | '*'   {% mkTimes `fmap` mkSpan $1  }
    | '*.'  {% flip mkVar "(*.)" `fmap` mkSpan $1}
-   | '/'   {% mkDiv `fmap` mkSpan $1 }
    | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}   
    | '^'  {% mkPower      `fmap` mkSpan $1 }
    | '**'  {% flip mkVar "(**)" `fmap` mkSpan $1}   
