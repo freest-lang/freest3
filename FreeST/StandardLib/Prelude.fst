@@ -29,7 +29,7 @@ module Prelude where
 -- Signatures for the builtin operators
 
 -- Int
-(+) : Int -> Int -> Int
+-- (+) : Int -> Int -> Int
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
 (/) : Int -> Int -> Int
@@ -56,7 +56,7 @@ odd : Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
 -- Float
-(+.) : Float -> Float -> Float
+-- (+.) : Float -> Float -> Float
 (-.) : Float -> Float -> Float
 (*.) : Float -> Float -> Float
 (/.) : Float -> Float -> Float

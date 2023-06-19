@@ -1,5 +1,6 @@
 module Interpreter.Value
   ( Value(..)
+  , Basic(..)
   , Ctx
   , Channel -- Do we need this one?
   , ChannelEnd
@@ -18,12 +19,8 @@ import qualified Data.Map.Strict as Map
 import           System.IO                      ( Handle )
 
 data Value =
-    Unit
-  | Integer Int
-  | Float Double
-  | Character Char
+    BasicT Basic
   | Label String -- to be sent on channels
-  | String String
   | Cons Variable [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
   | Closure Variable Variable E.Exp Ctx -- The first variable is just the function name
@@ -34,20 +31,32 @@ data Value =
   | IOValue (IO Value)
   | Handle Handle
 
+data Basic =
+    Unit
+  | Integer Int
+  | Character Char
+  | String String
+  | Float Double
+  deriving Eq
+
+instance Show Basic where
+  show Unit           = "()"
+  show (Integer   i)  = show i
+  show (Character c)  = show c
+  show (String    s)  = s
+  show (Float     f)  = show f
+
 type Ctx = Map.Map Variable Value
 
 type ChannelEnd = (C.Chan Value, C.Chan Value)
 type Channel = (ChannelEnd, ChannelEnd)
 
 instance Show Value where
-  show Unit           = "()"
-  show (Integer   i)  = show i
-  show (Float     f)  = show f
-  show (Character c)  = show c
-  show (String    s)  = s
+  show (BasicT b) = show b
   show (Label     s)  = s
   show (Pair v1 v2 )  = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
   show (Cons c  xs )
+--   = "Cons " ++ show c ++ " " ++ show xs
     | c == mkCons defaultSpan = let ([y]:ys) = xs in "[" ++ show y ++ showNativeList ys ++ "]"
     | otherwise               = showCons c xs
   show Closure{}      = "<fun>"
@@ -77,9 +86,9 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
 
 
 showNativeList :: [[Value]] -> String
-showNativeList [[Cons _ []]]           = ""
-showNativeList ([Cons _ ([y]:ys)]:_) = "," ++ show y ++ showNativeList ys
-
+showNativeList []           = ""
+showNativeList ([Cons _ ([y]:ys)]:zs) = "," ++ show y ++ showNativeList ys ++ showNativeList zs
+showNativeList _ = ""
 
 instance Located Value where
   getSpan _ = defaultSpan

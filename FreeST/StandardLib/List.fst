@@ -1,9 +1,9 @@
 module List where
 
--- TODO: (++)
-(++) : [Int] -> [Int] -> [Int]
-[]      ++ ys = ys
-(x::xs) ++ ys = x :: (xs ++ ys) 
+-- -- TODO: (++)
+-- (++) : [Int] -> [Int] -> [Int]
+-- []      ++ ys = ys
+-- (x::xs) ++ ys = x :: (xs ++ ys) 
 
 head : [Int] -> Int
 head []       = error @Int "*** List.head: empty list"

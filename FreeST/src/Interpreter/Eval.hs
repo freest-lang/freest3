@@ -45,11 +45,11 @@ evalAndPrint name s e =
 
 
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
-eval _ _ _   _ (E.Unit _                      )    = return Unit
-eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
-eval _ _ _   _ (E.Float  _ f                  )    = return $ Float f        
-eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
-eval _ _ _   _ (E.String _ s                  )    = return $ String s
+eval _ _ _   _ (E.Unit _                      )    = return $ BasicT Unit
+eval _ _ _   _ (E.Int    _ i                  )    = return $ BasicT $ Integer i
+eval _ _ _   _ (E.Float  _ f                  )    = return $ BasicT $ Float f        
+eval _ _ _   _ (E.Char   _ c                  )    = return $ BasicT $ Character c
+eval _ _ _   _ (E.String _ s                  )    = return $ BasicT $ String s
 eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
 eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e))          = return $ Closure fun x e ctx
 eval fun tEnv ctx eenv (E.Var    _ x            )    = evalVar fun tEnv ctx eenv x
@@ -64,7 +64,7 @@ eval fun tEnv ctx eenv (E.App _ e1 e2) = eval fun tEnv ctx eenv e1 >>= \case
   (Closure fun x e ctx') -> do
     !v <- eval fun tEnv ctx eenv e2
     eval fun tEnv (Map.insert x v ctx') eenv e
-  Fork -> forkIO (void $ eval fun tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> Unit
+  Fork -> forkIO (void $ eval fun tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> BasicT Unit
   (PrimitiveFun f) -> do
     !v <- eval fun tEnv ctx eenv e2
     case f v of
@@ -109,7 +109,7 @@ evalVar _ tEnv ctx eenv x
   | Map.member x ctx             = return $ ctx Map.! x
   | x == mkFork defaultSpan      = return Fork
   | x == mkError                 =
-     return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
+     return $ PrimitiveFun (\(BasicT (String e)) -> exception (ErrorFunction (getSpan x) e))
   | x == mkUndefined             =
      return $ exception (UndefinedFunction (getSpan x))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
