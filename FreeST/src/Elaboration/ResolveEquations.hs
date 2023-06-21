@@ -48,13 +48,13 @@ solveEq _ _ p              = pure p
 -- | Build recursive types
 
 buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
+buildRecursiveTypes = getTEnv >>= setTEnv . Map.mapWithKey buildRec
   where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
 cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.map (\(k, t) -> (k, ) $ clean t) <$> getTEnv >>= setTEnv
+cleanUnusedRecs = getTEnv >>= setTEnv . Map.map (\(k, t) -> (k, ) $ clean t)
 
 clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))

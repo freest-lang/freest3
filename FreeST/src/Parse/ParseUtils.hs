@@ -16,45 +16,48 @@ Portability :  portable | non-portable (<reason>)
 module Parse.ParseUtils where
 
 import           Syntax.Base
-import           Syntax.Program
+-- import           Syntax.Program
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
-import           Syntax.MkName (mkTrue, mkFalse, mkTupleLabels)
-import qualified Validation.Subkind as SK
-import           Validation.Kinding (synthetise)
+-- import qualified Syntax.Kind as K
+import           Syntax.MkName (mkTrue, mkFalse) -- z, mkTupleLabels)
+-- import qualified Validation.Subkind as SK
+-- import           Validation.Kinding (synthetise)
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.FreestState
+-- import           Util.FreestState
+import           Parse.Phase
+import           Util.State.State
+import           Syntax.AST
 
 import           Control.Monad.State
 import           Data.List       ( find )
 import qualified Data.Map.Strict as Map
-import           Data.Bitraversable (bimapM)
+-- import           Data.Bitraversable (bimapM)
 
-type FreestStateT = StateT FreestS (Either ErrorType)
+-- type FreestStateT = StateT FreestS (Either ErrorType)
 
 -- Modules
 
-mkSpan :: Located a => a -> FreestStateT Span
+mkSpan :: Located a => a -> ParseState Span
 mkSpan a = do
   let (Span p1 p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
+mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState Span
 mkSpanSpan a b = do
   let (Span p1 _ _) = getSpan a
   let (Span _ p2 _) = getSpan b
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-mkSpanFromSpan :: Located a => Span -> a -> FreestStateT Span
+mkSpanFromSpan :: Located a => Span -> a -> ParseState Span
 mkSpanFromSpan (Span p1 _ _) a = do
   let (Span _ p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-liftModToSpan :: Span -> FreestStateT Span
+liftModToSpan :: Span -> ParseState Span
 liftModToSpan (Span p1 p2 _) = do
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
@@ -62,17 +65,18 @@ liftModToSpan (Span p1 p2 _) = do
 -- Parse errors
 
 -- checkDupField :: Variable -> T.TypeMap -> FreestState ()
-checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
+-- checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
+checkDupField :: Variable -> Map.Map Variable v -> ParseState ()
 checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
 
-checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
+checkDupCase :: Variable -> E.FieldMap -> ParseState ()
 checkDupCase x m =
   when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
 
-checkDupBind :: Variable -> [Variable] -> FreestStateT ()
+checkDupBind :: Variable -> [Variable] -> ParseState ()
 checkDupBind x xs
   | isWild x = return ()
   | otherwise = case find (== x) xs of
@@ -85,29 +89,29 @@ checkDupBind x xs
 --     Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
 --     Nothing                -> return ()
 
-checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT ()
+checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> ParseState ()
 checkDupCons (x, _) xts
   | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
   | otherwise =
-      gets (flip (Map.!?) x . varEnv) >>= \case
+      getFromSignatures x >>= \case
        Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
        Nothing -> return ()
   where
     compare (y, _) = y == x
     pos = maybe defaultSpan (getSpan . fst) (find compare xts)
 
-checkDupProgVarDecl :: Variable -> FreestStateT ()
+checkDupProgVarDecl :: Variable -> ParseState ()
 checkDupProgVarDecl x = do
-  vEnv <- gets varEnv
+  vEnv <- getSignatures
   case vEnv Map.!? x of
     Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos vEnv)
     Nothing -> return ()
  where
     pos vEnv = getSpan $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
 
-checkDupTypeDecl :: Variable -> FreestStateT ()
+checkDupTypeDecl :: Variable -> ParseState ()
 checkDupTypeDecl a = do
-  tEnv <- gets typeEnv
+  tEnv <- getTypes
   case tEnv Map.!? a of
     Just _   -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
     Nothing  -> return ()
@@ -115,10 +119,10 @@ checkDupTypeDecl a = do
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
 -- verifies if there is any duplicated var in any patern, or nested pattern
-checkDupVarPats :: [E.Pattern] -> FreestStateT ()
+checkDupVarPats :: [E.Pattern] -> ParseState ()
 checkDupVarPats ps = void $ checkDupVarPats' ps []
 
-checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT [Variable]
+checkDupVarPats' :: [E.Pattern] -> [Variable] -> ParseState [Variable]
 checkDupVarPats' [] vs = return vs
 checkDupVarPats' ((E.PatCons _ cs):xs) vs = checkDupVarPats' cs vs >>= checkDupVarPats' xs
 checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
@@ -137,10 +141,9 @@ binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
-
-leftSection :: Variable -> E.Exp -> Span -> FreestStateT E.Exp
+leftSection :: Variable -> E.Exp -> Span -> ParseState E.Exp
 leftSection op e s = do
-  venv <- getVEnv
+  venv <- getSignatures
   i <- getNextIndex
   let v = mkNewVar i (mkVar s "_x")
   let t = genFstType (venv Map.! op)

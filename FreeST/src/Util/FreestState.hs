@@ -127,11 +127,11 @@ addToPEnvChoices xs =
   modify (\s -> s
     { parseEnvChoices = parseEnvChoices s ++ xs })
 
-getPEnvChoices :: FreestState ParseEnvChoices
-getPEnvChoices = gets parseEnvChoices
+-- getPEnvChoices :: FreestState ParseEnvChoices
+-- getPEnvChoices = gets parseEnvChoices
 
-setPEnvChoices :: ParseEnvChoices -> FreestState ()
-setPEnvChoices parseEnvChoices  = modify (\s -> s { parseEnvChoices })
+-- setPEnvChoices :: ParseEnvChoices -> FreestState ()
+-- setPEnvChoices parseEnvChoices  = modify (\s -> s { parseEnvChoices })
 
 -- | NEXT VAR
 
@@ -214,7 +214,7 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 addDualof :: T.Type -> FreestState ()
 addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
-  case tn Map.!? (getSpan t) of
+  case tn Map.!? getSpan t of
     Just (T.Dualof _ _) -> return ()
     Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
