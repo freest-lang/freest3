@@ -153,6 +153,8 @@ instance Located ErrorType where
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
 
+  setSpan x _ = x -- TODO: not used at the moment
+
 
 instance Message ErrorType where
   title _ sty = msgHeader (red sty "error:") sty

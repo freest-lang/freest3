@@ -50,6 +50,11 @@ negPos (i, j) = (negate i, negate j)
 
 class Located t where
   getSpan :: t -> Span
+  setSpan :: t -> Span -> t
+  
+  setSrc :: t -> String -> t
+  setSrc x src = setSpan x s{source = src}
+    where s = getSpan x
 
 data Span = Span
   { startPos     :: Pos
@@ -82,6 +87,7 @@ instance Ord Variable where
   
 instance Located Variable where
   getSpan (Variable p _) = p
+  setSpan (Variable _ v) s = Variable s v
 
 instance Default Variable where
   omission p = mkVar p "omission"

@@ -17,7 +17,8 @@ https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 -}
 
 module Parse.Unparser
-  ( showFieldMap
+  ( Unparse(..)
+  , showFieldMap
   , showBindType
   , showBindExp
   , showBindTerm
@@ -246,8 +247,6 @@ showChoiceLabels m = intercalate ", "
 instance Show Exp where
   show = snd . unparse
   -- show = source . getSpan
-  -- show e = let s = source $ getSpan e in trace s s
-  -- show _ = "Hello"
 
 instance Unparse Exp where
   -- Basic values

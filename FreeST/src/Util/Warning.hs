@@ -34,6 +34,8 @@ instance Located WarningType where
   getSpan (NoPrelude f)             = defaultSpan {defModule = f}
   getSpan (NonExhaustiveCase p _ _) = p
 
+  setSpan x _ = x -- TODO: not used at the moment
+
 instance Message WarningType where
   title _  sty = msgHeader (yellow sty "warning:") sty
   
