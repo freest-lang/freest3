@@ -81,5 +81,5 @@ showNativeList ([Cons _ ([y]:ys)]:_) = "," ++ show y ++ showNativeList ys
 
 instance Located Value where
   getSpan _ = defaultSpan
-  setSpan x _ = x -- TODO: not used at the moment
+  setSpan _ x = x -- TODO: not used at the moment
 

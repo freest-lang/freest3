@@ -79,7 +79,7 @@ instance KeepSrc Prog where
     keepSrc = defaultKeepSrcMapKeys
 
 defaultKeepSrc :: (Unparse a, Located a) => a -> a
-defaultKeepSrc x = setSrc x $ snd $ unparse x
+defaultKeepSrc x = setSrc (snd $ unparse x) x
 
 -- defaultKeepSrcMap :: Map a k -> Map a k
 -- defaultKeepSrcMap m = Map.map 

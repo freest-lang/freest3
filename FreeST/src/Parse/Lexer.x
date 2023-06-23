@@ -418,7 +418,7 @@ instance Located Token where
   getSpan (TokenImport p) = p
 --  pos t = error $ show t
 
-  setSpan x _ = x -- TODO: not used at the moment
+  setSpan _ x = x -- TODO: not used at the moment
 
 getText :: Token -> String
 getText (TokenUpperId _ x) = x

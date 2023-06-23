@@ -78,19 +78,19 @@ instance Located Type where
   getSpan (Dualof p _   ) = p
 --  getSpan (CoVar p _   ) = p
 
-  setSpan (Int _) s = Int s
-  setSpan (Char _) s = Char s
-  setSpan (String _) s = String s
-  setSpan (Arrow _ m t1 t2) s = Arrow s m t1 t2
-  setSpan (Labelled _ st tm) s = Labelled s st tm
-  setSpan (Skip _) s = Skip s
-  setSpan (End _) s = End s
-  setSpan (Semi _ t1 t2) s = Semi s t1 t2
-  setSpan (Message _ p t) s = Message s p t 
-  setSpan (Forall _ b) s = Forall s b
-  setSpan (Rec _ b) s = Rec s b
-  setSpan (Var _ v) s = Var s v
-  setSpan (Dualof _ t) s = Dualof s t
+  setSpan s (Int _) = Int s
+  setSpan s (Char _) = Char s
+  setSpan s (String _) = String s
+  setSpan s (Arrow _ m t1 t2) = Arrow s m t1 t2
+  setSpan s (Labelled _ st tm) = Labelled s st tm
+  setSpan s (Skip _) = Skip s
+  setSpan s (End _) = End s
+  setSpan s (Semi _ t1 t2) = Semi s t1 t2
+  setSpan s (Message _ p t) = Message s p t 
+  setSpan s (Forall _ b) = Forall s b
+  setSpan s (Rec _ b) = Rec s b
+  setSpan s (Var _ v) = Var s v
+  setSpan s (Dualof _ t) = Dualof s t
 
 -- Derived forms
 unit :: Span -> Type 

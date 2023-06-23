@@ -47,7 +47,7 @@ data Kind = Kind Span Multiplicity PreKind
 instance Located Kind where
   getSpan (Kind p _ _) = p
 
-  setSpan (Kind _ m p) s = Kind s m p 
+  setSpan s (Kind _ m p) = Kind s m p 
 
 -- instance Eq Kind whereP
 --   (Kind _ b1 m1) == (Kind _ b2 m2) = True

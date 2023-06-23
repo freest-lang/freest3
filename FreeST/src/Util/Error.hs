@@ -152,7 +152,7 @@ instance Located ErrorType where
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
 
-  setSpan x _ = x -- TODO: not used at the moment
+  setSpan _ x = x -- TODO: not used at the moment
 
 
 instance Message ErrorType where
