@@ -23,6 +23,7 @@ import           Util.CmdLine
 import           Util.Error
 import           Util.FreestState
 import           Util.Warning
+import           Util.KeepSrc
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
 
@@ -55,7 +56,7 @@ checkAndRun runOpts = do
   when (hasErrors s2) (die $ getErrors s2)
 
   -- | Solve type declarations and dualof operators
-  let s3 = emptyPEnv $ execState elaboration s2
+  let s3 = {-keepSrcState $-} emptyPEnv $ execState elaboration s2
   when (hasErrors s3) (die $ getErrors s3)
 
   -- | Rename
@@ -101,3 +102,20 @@ checkAndRun runOpts = do
         $ forkHandlers xs e 
       where
         s = defaultSpan
+
+    keepSrcState :: FreestS -> FreestS
+    keepSrcState state = state{
+      -- varEnv
+        varEnv = keepSrc $ varEnv state
+      -- prog
+      , prog = keepSrc $ prog state
+      -- typeEnv
+      , typeEnv = keepSrc $ typeEnv state
+      -- parseEnv
+      , parseEnv = keepSrc $ parseEnv state
+      -- parseEnvPat
+      -- , parseEnvPat = keepSrc $ parseEnvPat s2
+      -- parseEnvChoices
+      -- , parseEnvChoices = keepSrc $ parseEnvChoices s2
+      }
+

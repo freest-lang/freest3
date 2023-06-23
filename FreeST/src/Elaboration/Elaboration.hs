@@ -18,6 +18,7 @@ import           Syntax.Program ( VarEnv, isDatatypeContructor )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
+import           Util.KeepSrc
 import           Validation.Kinding (synthetise)
 import qualified Validation.Subkind as SK (join)
 
@@ -85,7 +86,7 @@ fixConsTypes = do
     fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> FreestState T.Type
     fixConsType kEnv m (T.Arrow s _ t u) = do
       (K.Kind _ m' _) <- synthetise kEnv t
-      T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
+      fmap keepSrc $ T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
       where kindToTypeMult K.Un = Un
             kindToTypeMult K.Lin = Lin
     fixConsType _ _ t = pure t
@@ -95,7 +96,7 @@ fixConsTypes = do
 elabVEnv :: VarEnv -> FreestState ()
 elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv . quantifyLowerFreeVars =<< elaborate t)
   where quantifyLowerFreeVars t = 
-          foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t)) t (Set.filter (isLower.head.show) $ free t)
+          foldr (\v t -> keepSrc $ T.Forall p (T.Bind p v (K.ut p) t)) t (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
 
 elabPEnv :: ParseEnv -> FreestState ()
@@ -116,9 +117,9 @@ buildFunBody f as e = getFromVEnv f >>= \case
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
+    fmap keepSrc $ E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
+    fmap keepSrc $ E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromVEnv f

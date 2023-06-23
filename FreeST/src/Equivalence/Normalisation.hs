@@ -22,6 +22,7 @@ import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( subs )
 import           Util.Error                     ( internalError )
+import           Util.KeepSrc
 
 normalise :: T.Type -> T.Type
 normalise (T.Semi p t u)
@@ -33,6 +34,6 @@ normalise t = t
 
 append :: Span -> T.Type -> T.Type -> T.Type
 append _ t               (T.Skip _) = t
-append p (T.End _)       _          = T.End p
-append p (T.Semi p1 t u) v          = T.Semi p1 t (append p u v)
-append p t               u          = T.Semi p t u
+append p (T.End _)       _          = keepSrc $ T.End p
+append p (T.Semi p1 t u) v          = keepSrc $ T.Semi p1 t (append p u v)
+append p t               u          = keepSrc $ T.Semi p t u
