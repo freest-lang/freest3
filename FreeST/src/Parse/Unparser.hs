@@ -180,8 +180,8 @@ class Unparse t where
 -- Type
 
 instance Show T.Type where
-  show = snd . unparse
-  -- show = source . getSpan
+  -- show = snd . unparse
+  show = source . getSpan
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
@@ -245,8 +245,8 @@ showChoiceLabels m = intercalate ", "
 -- Expression
 
 instance Show Exp where
-  show = snd . unparse
-  -- show = source . getSpan
+  -- show = snd . unparse
+  show = source . getSpan
 
 instance Unparse Exp where
   -- Basic values
