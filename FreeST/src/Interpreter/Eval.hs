@@ -93,7 +93,7 @@ evalCase name s tEnv ctx eenv m (Cons x xs) =
   case m Map.!? x of
     Nothing ->
       let msg = "Non-exhaustive patterns in function " ++ show name in
-      die $ showErrors True "" Map.empty (RuntimeError s msg)
+      die $ showErrors True "" (RuntimeError s msg)
     Just (patterns, e) -> 
       let lst            = zip patterns xs in
       let ctx1 = foldl (\acc (c, y : _) -> Map.insert c y acc) ctx lst in 
@@ -112,4 +112,4 @@ evalVar _ tEnv ctx eenv x
      return $ exception (UndefinedFunction (getSpan x))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
   where
-    exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err
+    exception err = unsafePerformIO $ die $ showErrors False "" err

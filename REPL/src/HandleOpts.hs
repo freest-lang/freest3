@@ -14,7 +14,6 @@ import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
-import           Util.GetTOps
 import           Utils
 import qualified Validation.Kinding as K
 import           Validation.Rename ( renameState )
@@ -57,7 +56,7 @@ freestLoadAndRun s f msg _ _ = do
          (lift $ putStrLn msg)
 
 freestError :: ErrorType -> REPLState ()
-freestError = lift . putStrLn . showErrors True "<FreeST>" Map.empty
+freestError = lift . putStrLn . showErrors True "<FreeST>"
 
 -- | -------------------------------------------------------
 -- | Reloads the previously loaded file
@@ -89,7 +88,7 @@ typeOf [] = lift $ putStrLn "syntax: ':t <expression-to-synthetise-type>'"
 typeOf q = do
   let query = mkVar defaultSpan q in
     getFromVEnv query >>= \case
-     Just t -> getTypeNames >>= \tn -> lift $ putStrLn $ q ++ " : " ++ show (getDefault tn t)
+     Just t -> lift $ putStrLn $ q ++ " : " ++ show t
      Nothing -> lift $ putStrLn $ q ++ " is not in scope."
 
 -- | -------------------------------------------------------
@@ -138,7 +137,7 @@ showInfo b f var = f var >>= \case
     | otherwise -> do
         m <- getFromProg var
         let s = uncurry (Span (startPos $ getSpan t)) (maybe defSpan mbLocExp m) (source $ getSpan t)
-        getTypeNames >>= lift . putStrLn . (infoHeader s ++) . infoFun var t m
+        lift $ putStrLn $ (infoHeader s ++) $ infoFun var t m
      where
        defSpan = (endPos $ getSpan t, defModule $ getSpan t)
        mbLocExp e  = let se = getSpan e in (endPos se, defModule se)
@@ -155,9 +154,9 @@ infoData x t = (if isDatatype t then "\ndata " else "\ntype ")
       | x == var b = " : " ++ show (binder b) ++ " = " ++ showData x (body b)
     showData _ t = show t
     
-infoFun :: Variable -> T.Type -> Maybe E.Exp -> TypeOpsEnv -> String
-infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++ 
-      maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show (getDefault tn e)) mbe
+infoFun :: Variable -> T.Type -> Maybe E.Exp -> String
+infoFun var t mbe = "\n" ++ show var ++ " : " ++ show t ++ 
+      maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show e) mbe
 
 -- | -------------------------------------------------------
 -- | Handles a multiline command.

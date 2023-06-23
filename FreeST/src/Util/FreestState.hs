@@ -57,7 +57,6 @@ data FreestS = FreestS {
   , varEnv     :: VarEnv
   , prog       :: Prog
   , typeEnv    :: TypeEnv
-  , typenames  :: TypeOpsEnv
   , warnings   :: Warnings
   , errors     :: Errors
   , nextIndex  :: Int
@@ -79,7 +78,6 @@ initialState = FreestS { runOpts    = defaultOpts
                        , varEnv     = initialVEnv
                        , prog       = Map.empty
                        , typeEnv    = initialTEnv
-                       , typenames  = Map.empty
                        , warnings   = []
                        , errors     = []
                        , nextIndex  = 0
@@ -200,33 +198,13 @@ getFromTEnv b = do
 setTEnv :: TypeEnv -> FreestState ()
 setTEnv typeEnv = modify (\s -> s { typeEnv })
 
--- | TYPENAMES
-
-addTypeName :: Span -> T.Type -> FreestState ()
-addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
-
-getTypeNames :: MonadState FreestS m => m TypeOpsEnv
-getTypeNames = gets typenames
-
-findTypeName :: Span -> T.Type -> FreestState T.Type
-findTypeName p t = Map.findWithDefault t p <$> getTypeNames
-
-addDualof :: T.Type -> FreestState ()
-addDualof d@(T.Dualof p t) = do
-  tn <- getTypeNames
-  case tn Map.!? (getSpan t) of
-    Just (T.Dualof _ _) -> return ()
-    Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
-    Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
-addDualof t = internalError "Util.FreestState.addDualof" t
-
 -- | WARNINGS
 
 getWarnings :: FreestS -> String
 getWarnings s =
    (intercalate "\n" . map f . take 10 . reverse . warnings) s
   where
-    f = showWarnings (runFilePath $ runOpts s) (typenames s)
+    f = showWarnings (runFilePath $ runOpts s)
 
 hasWarnings :: FreestS -> Bool
 hasWarnings = not . null . warnings
@@ -238,7 +216,7 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 getErrors :: FreestS -> String
 getErrors s = (intercalate "\n" . map f . take 10 . reverse . errors) s
-  where f = showErrors (isStylable $ runOpts s) (runFilePath $ runOpts s) (typenames s)
+  where f = showErrors (isStylable $ runOpts s) (runFilePath $ runOpts s)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors

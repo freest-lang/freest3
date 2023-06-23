@@ -6,8 +6,7 @@ import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.GetTOps
-
+import           Parse.Unparser
 
 -- | Stylable error messages
 
@@ -17,29 +16,29 @@ type Stylable = Bool
 
 class Message a where
   title :: a -> Stylable -> Span -> FilePath -> String
-  msg   :: a -> Stylable -> TypeOpsEnv -> Either String String -> String
+  msg   :: a -> Stylable -> Either String String -> String
   
 
 class Show a => Style a where
-  style :: (Stylable -> String -> String) -> Stylable -> TypeOpsEnv -> a -> String 
+  style :: (Stylable -> String -> String) -> Stylable -> a -> String 
 
 instance Style T.Type where
-  style f sty tops  = f sty . show . getDefault tops
+  style f sty = f sty . show 
   
 instance Style E.Exp where
-  style f sty tops  = f sty . show . getDefault tops
+  style f sty = f sty . show 
 
 instance Style K.Kind where
-  style f sty _ = f sty . show
+  style f sty = f sty . show
 
 instance Style Variable where
-  style f sty _ = {-quote . -} f sty . show
+  style f sty = {-quote . -} f sty . show
 
 instance Style VarEnv where
-  style f sty _ = f sty . show
+  style f sty = f sty . show
   
 instance Style FilePath where
-  style f sty _ = quote . f sty
+  style f sty = quote . f sty
 
 
 quote :: String -> String

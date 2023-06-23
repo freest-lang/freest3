@@ -56,7 +56,7 @@ library:
     - Util.FreestState
     - Util.CmdLine
 #    - Util.PreludeLoader
-    - Util.GetTOps
+    # - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind

@@ -73,7 +73,7 @@ solveType v (T.Forall p (Bind p' a k t)) =
   fmap keepSrc $ T.Forall p . Bind p' a k <$> solveType v t
 solveType v (  T.Rec    p b) = fmap keepSrc $ T.Rec p <$> solveBind solveType v b
 -- Dualof
-solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
+solveType v d@(T.Dualof p t) = solveDual v (changePos p t)
 
 -- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
@@ -95,8 +95,7 @@ solveDual _ (T.Var p a) = pure $ keepSrc $ T.Dualof p $ T.Var p a
 solveDual _ (T.Dualof _ (T.Var p a)) = pure $ keepSrc $ T.Var p a
 solveDual v d@(T.Dualof p t) = do
 --  debugM $ "double dual -> " ++ show d
-
-  addDualof d >> solveType v (changePos p t)
+  solveType v (changePos p t)
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
 

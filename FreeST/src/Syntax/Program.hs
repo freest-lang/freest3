@@ -2,7 +2,6 @@ module Syntax.Program
   ( TypeEnv
   , VarEnv
   , Prog
-  , TypeOpsEnv
   , PreludeNames
   , noConstructors
   , isDatatypeContructor
@@ -26,11 +25,6 @@ type VarEnv = Map.Map Variable T.Type
 
 -- The names of the functions from the Prelude
 type PreludeNames = [Variable]
-
--- Mapping between positions & type operators (Typename & Dualof)
--- Used to give better error messages
-
-type TypeOpsEnv = Map.Map Span T.Type
 
 -- The definitions of the named functions in a program
 type Prog = Map.Map Variable E.Exp
