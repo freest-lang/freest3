@@ -39,7 +39,9 @@ instance KeepSrc E.Exp where
 instance KeepSrc T.Type where
     keepSrc (T.Arrow s m t1 t2) = defaultKeepSrc $
         T.Arrow s m (keepSrc t1) (keepSrc t2)
-    keepSrc (T.Labelled s srt tm) = defaultKeepSrc $
+    keepSrc (T.Labelled s T.Record tm) = defaultKeepSrc $
+        T.Labelled s T.Record (defaultKeepSrcMapKeys tm)
+    keepSrc (T.Labelled s srt tm) = --defaultKeepSrc $
         T.Labelled s srt (defaultKeepSrcMapKeys tm)
     keepSrc (T.Semi s t1 t2) = defaultKeepSrc $
         T.Semi s (keepSrc t1) (keepSrc t2)
