@@ -34,14 +34,14 @@ instance ResolveDuality ParseEnv where
   resolve = tMapM (\(as, e) -> (as, ) <$> resolve e)
 
 instance ResolveDuality E.Exp where
-  resolve (E.Abs p m b         ) = fmap keepSrc $ E.Abs p m <$> resolve b
-  resolve (E.App  p e1 e2      ) = fmap keepSrc $ E.App p <$> resolve e1 <*> resolve e2
-  resolve (E.Pair p e1 e2      ) = fmap keepSrc $ E.Pair p <$> resolve e1 <*> resolve e2
-  resolve (E.BinLet p x y e1 e2) = fmap keepSrc $ E.BinLet p x y <$> resolve e1 <*> resolve e2
-  resolve (E.Case p e m        ) = fmap keepSrc $ E.Case p <$> resolve e <*> resolveFieldMap m
-  resolve (E.TypeApp p e t  )    = fmap keepSrc $ E.TypeApp p <$> resolve e <*> resolve t
-  resolve (E.TypeAbs p b    )    = fmap keepSrc $ E.TypeAbs p <$> resolve b
-  resolve (E.UnLet p x e1 e2)    = fmap keepSrc $ E.UnLet p x <$> resolve e1 <*> resolve e2
+  resolve (E.Abs p m b         ) = E.Abs p m <$> resolve b
+  resolve (E.App  p e1 e2      ) = E.App p <$> resolve e1 <*> resolve e2
+  resolve (E.Pair p e1 e2      ) = E.Pair p <$> resolve e1 <*> resolve e2
+  resolve (E.BinLet p x y e1 e2) = E.BinLet p x y <$> resolve e1 <*> resolve e2
+  resolve (E.Case p e m        ) = E.Case p <$> resolve e <*> resolveFieldMap m
+  resolve (E.TypeApp p e t  )    = E.TypeApp p <$> resolve e <*> resolve t
+  resolve (E.TypeAbs p b    )    = E.TypeAbs p <$> resolve b
+  resolve (E.UnLet p x e1 e2)    = E.UnLet p x <$> resolve e1 <*> resolve e2
   resolve e                      = return e
 
 -- This should be an instance but it overlaps with that one of ParseEnv
@@ -63,15 +63,15 @@ type Visited = Set.Set Variable
 solveType :: Visited -> T.Type -> FreestState T.Type
 -- Functional Types
 solveType v (T.Arrow p pol t u) =
-  fmap keepSrc $ T.Arrow p pol <$> solveType v t <*> solveType v u
-solveType v (T.Labelled p s m   ) = fmap keepSrc $ T.Labelled p s <$> tMapM (solveType v) m
+  T.Arrow p pol <$> solveType v t <*> solveType v u
+solveType v (T.Labelled p s m   ) = T.Labelled p s <$> tMapM (solveType v) m
 -- Session Types
-solveType v (T.Semi    p t   u) = fmap keepSrc $ T.Semi p <$> solveType v t <*> solveType v u
-solveType v (T.Message p pol t) = fmap keepSrc $ T.Message p pol <$> solveType v t
+solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
+solveType v (T.Message p pol t) = T.Message p pol <$> solveType v t
 -- Polymorphism and recursive types
 solveType v (T.Forall p (Bind p' a k t)) =
-  fmap keepSrc $ T.Forall p . Bind p' a k <$> solveType v t
-solveType v (  T.Rec    p b) = fmap keepSrc $ T.Rec p <$> solveBind solveType v b
+  T.Forall p . Bind p' a k <$> solveType v t
+solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
 solveType v d@(T.Dualof p t) = solveDual v (changePos p t)
 
@@ -82,17 +82,17 @@ solveDual :: Visited -> T.Type -> FreestState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
 solveDual _ t@T.End{}           = pure t
-solveDual v (T.Semi    p t   u) = fmap keepSrc $ T.Semi p <$> solveDual v t <*> solveDual v u
-solveDual v (T.Message p pol t) = fmap keepSrc $ T.Message p (dualof pol) <$> solveType v t
+solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
+solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
 solveDual v (T.Labelled p (T.Choice pol) m) =
-  fmap keepSrc $ T.Labelled p (T.Choice $ dualof pol) <$> tMapM (solveDual v) m
+  T.Labelled p (T.Choice $ dualof pol) <$> tMapM (solveDual v) m
 -- Recursive types
 solveDual v t@(T.Rec p b) = do
   u <- solveDBind solveDual v b
   return $ cosubs t (var b) (T.Rec p u)
 solveDual _ (T.Var p a) = pure $ keepSrc $ T.Dualof p $ T.Var p a
 -- Dualof
-solveDual _ (T.Dualof _ (T.Var p a)) = pure $ keepSrc $ T.Var p a
+solveDual _ (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
 solveDual v d@(T.Dualof p t) = do
 --  debugM $ "double dual -> " ++ show d
   solveType v (changePos p t)

@@ -56,7 +56,7 @@ checkAndRun runOpts = do
   when (hasErrors s2) (die $ getErrors s2)
 
   -- | Solve type declarations and dualof operators
-  let s3 = {-keepSrcState $-} emptyPEnv $ execState elaboration s2
+  let s3 = emptyPEnv $ execState elaboration $ keepSrcState s2
   when (hasErrors s3) (die $ getErrors s3)
 
   -- | Rename

@@ -86,7 +86,7 @@ fixConsTypes = do
     fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> FreestState T.Type
     fixConsType kEnv m (T.Arrow s _ t u) = do
       (K.Kind _ m' _) <- synthetise kEnv t
-      fmap keepSrc $ T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
+      T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
       where kindToTypeMult K.Un = Un
             kindToTypeMult K.Lin = Lin
     fixConsType _ _ t = pure t

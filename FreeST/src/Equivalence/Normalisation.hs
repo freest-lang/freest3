@@ -17,7 +17,7 @@ module Equivalence.Normalisation
   )
 where
 
-import           Syntax.Base                    ( Span, Bind(..) )
+import           Syntax.Base                    ( Span(source), setSrc, Bind(..) )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( subs )
@@ -34,6 +34,6 @@ normalise t = t
 
 append :: Span -> T.Type -> T.Type -> T.Type
 append _ t               (T.Skip _) = t
-append p (T.End _)       _          = keepSrc $ T.End p
-append p (T.Semi p1 t u) v          = keepSrc $ T.Semi p1 t (append p u v)
+append p (T.End s)       _          = setSrc (source s) $ T.End p
+append p (T.Semi p1 t u) v          = T.Semi p1 t (append p u v)
 append p t               u          = keepSrc $ T.Semi p t u
