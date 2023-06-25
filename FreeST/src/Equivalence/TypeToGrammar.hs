@@ -30,6 +30,7 @@ import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
+import           Parse.Unparser
 import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict               as Map
@@ -52,7 +53,7 @@ typeToGrammar t = collect [] t >> toGrammar t
 toGrammar :: T.Type -> TransState Word
 -- Syntactic equality
 toGrammar t = case fatTerminal t of
-  Just t' ->  getLHS $ Map.singleton (show t') []
+  Just t' ->  getLHS $ Map.singleton (snd $ unparse t') []
   Nothing -> toGrammar' t
 
 toGrammar' :: T.Type -> TransState Word
@@ -67,7 +68,7 @@ toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't t
   getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
-toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' t@(T.End _) = getLHS $ Map.singleton (snd $ unparse t) [bottom]
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
@@ -83,9 +84,9 @@ toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar t
   getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
+toGrammar' t@T.Var{} = getLHS $ Map.singleton (snd $ unparse t) []
 -- Type operators
-toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (show t) []
+toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (snd $ unparse t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
