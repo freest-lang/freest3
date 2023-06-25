@@ -60,10 +60,10 @@ checkAndRun runOpts = do
   when (hasErrors s3) (die $ getErrors s3)
 
   -- | Rename
-  let s4 = execState renameState s3
+  let s4 = execState renameState $ keepSrcState s3
 
   -- | Type check
-  let s5 = execState typeCheck s4
+  let s5 = keepSrcState $ execState typeCheck $ keepSrcState s4
   when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings s5)
   when (hasErrors s5)  (die $ getErrors s5)
 
