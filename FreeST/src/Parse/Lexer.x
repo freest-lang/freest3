@@ -333,7 +333,7 @@ trim = reverse . trim' . reverse . trim'
 -- POSITIONS
 
 internalPos :: AlexPosn -> String -> Span
-internalPos (AlexPn _ l c) src = let p = (l, c) in Span p p src ""
+internalPos (AlexPn _ l c) src = let p = (l, c) in Span p p "" ""
 
 -- TODO: proper spans?, proper filename
 instance Located Token where
