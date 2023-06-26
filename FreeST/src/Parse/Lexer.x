@@ -46,92 +46,92 @@ $greekId = [λ ∀ Λ μ]
 @stringLiteral = \"(\\.|[^\"]|\n)*\"
 
 tokens :-
-  $white*$eol+                  { \p s -> TokenNL (internalPos p s) }
+  $white*$eol+                  { \p s -> TokenNL (internalPos p) }
   $white+                       ;
   $white*"--".*                 ;
   @blockComment                 ;
-  module                        { \p s -> TokenModule(internalPos p s) }
-  where                         { \p s -> TokenWhere (internalPos p s) }
-  import                        { \p s -> TokenImport (internalPos p s) }
-  ("->"|→|"*->"|"*→")           { \p s -> TokenUnArrow (internalPos p s) } 
-  ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p s) }
-  ("\"|λ)                       { \p s -> TokenLambda (internalPos p s) } --" -- HACK: stop syntax highlighting going wild
-  ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p s) }
-  ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p s) }
-  "@"                           { \p s -> TokenAt (internalPos p s)}
-  "("				{ \p s -> TokenLParen (internalPos p s) }
-  ")"				{ \p s -> TokenRParen (internalPos p s) }
-  "["				{ \p s -> TokenLBracket (internalPos p s) }
-  "]"			        { \p s -> TokenRBracket (internalPos p s) }
-  "{"				{ \p s -> TokenLBrace (internalPos p s) }
-  "}"			        { \p s -> TokenRBrace (internalPos p s) }
-  ","				{ \p s -> TokenComma (internalPos p s) }
-  ":"                           { \p s -> TokenColon (internalPos p s) }
-  "::"                           { \p s -> TokenDoubleColon (internalPos p s) }
-  ";"	       	      	  	{ \p s -> TokenSemi (internalPos p s) }
-  "!"                           { \p s -> TokenMOut (internalPos p s) }
-  "?"				{ \p s -> TokenMIn (internalPos p s) }
-  "&"				{ \p s -> TokenAmpersand (internalPos p s) }
-  "|>"				{ \p s -> TokenPipeOp (internalPos p s) }
-  "."                           { \p s -> TokenDot (internalPos p s) }
-  "="                           { \p s -> TokenEq (internalPos p s) }
-  "|"                           { \p s -> TokenPipe (internalPos p s) }
+  module                        { \p s -> TokenModule(internalPos p) }
+  where                         { \p s -> TokenWhere (internalPos p) }
+  import                        { \p s -> TokenImport (internalPos p) }
+  ("->"|→|"*->"|"*→")           { \p s -> TokenUnArrow (internalPos p) } 
+  ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p) }
+  ("\"|λ)                       { \p s -> TokenLambda (internalPos p) } --" -- HACK: stop syntax highlighting going wild
+  ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
+  ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
+  "@"                           { \p s -> TokenAt (internalPos p)}
+  "("				{ \p s -> TokenLParen (internalPos p) }
+  ")"				{ \p s -> TokenRParen (internalPos p) }
+  "["				{ \p s -> TokenLBracket (internalPos p) }
+  "]"			        { \p s -> TokenRBracket (internalPos p) }
+  "{"				{ \p s -> TokenLBrace (internalPos p) }
+  "}"			        { \p s -> TokenRBrace (internalPos p) }
+  ","				{ \p s -> TokenComma (internalPos p) }
+  ":"                           { \p s -> TokenColon (internalPos p) }
+  "::"                           { \p s -> TokenDoubleColon (internalPos p) }
+  ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
+  "!"                           { \p s -> TokenMOut (internalPos p) }
+  "?"				{ \p s -> TokenMIn (internalPos p) }
+  "&"				{ \p s -> TokenAmpersand (internalPos p) }
+  "|>"				{ \p s -> TokenPipeOp (internalPos p) }
+  "."                           { \p s -> TokenDot (internalPos p) }
+  "="                           { \p s -> TokenEq (internalPos p) }
+  "|"                           { \p s -> TokenPipe (internalPos p) }
 -- Operators
-  "+"			        { \p s -> TokenPlus (internalPos p s) }
-  "-"                           { \p s -> TokenMinus (internalPos p s) }
-  "*"				{ \p s -> TokenTimes (internalPos p s) }
-  "^"				{ \p s -> TokenRaise (internalPos p s) }
-  "_"				{ \p s -> TokenWild (internalPos p s) }
-  ">"  	          		{ \p s -> TokenCmp (internalPos p s) "(>)" }
-  "<"  	          		{ \p s -> TokenCmp (internalPos p s) "(<)" }
-  ">="  		        { \p s -> TokenCmp (internalPos p s) "(>=)" }
-  "<="  		        { \p s -> TokenCmp (internalPos p s) "(<=)" }
-  "=="  		        { \p s -> TokenCmp (internalPos p s) "(==)" }
-  "/="  		        { \p s -> TokenCmp (internalPos p s) "(/=)" }
-  ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p s) }
-  ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p s) }
-  "++"      { \p s -> TokenAppend (internalPos p s)}
-  "/"  		                { \p s -> TokenDiv (internalPos p s) }
-  "$"  		                { \p s -> TokenDollar (internalPos p s) }
+  "+"			        { \p s -> TokenPlus (internalPos p) }
+  "-"                           { \p s -> TokenMinus (internalPos p) }
+  "*"				{ \p s -> TokenTimes (internalPos p) }
+  "^"				{ \p s -> TokenRaise (internalPos p) }
+  "_"				{ \p s -> TokenWild (internalPos p) }
+  ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
+  "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
+  ">="  		        { \p s -> TokenCmp (internalPos p) "(>=)" }
+  "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
+  "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
+  "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
+  ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
+  ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
+  "++"      { \p s -> TokenAppend (internalPos p)}
+  "/"  		                { \p s -> TokenDiv (internalPos p) }
+  "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
-  "*S"                          { \p s -> TokenUnS (internalPos p s) }
-  "1S"                          { \p s -> TokenLinS (internalPos p s) }
-  "*T"                          { \p s -> TokenUnT (internalPos p s) }
-  "1T"                          { \p s -> TokenLinT (internalPos p s) }
-  "1A"                          { \p s -> TokenLinA (internalPos p s) }
-  "*A"                          { \p s -> TokenUnA (internalPos p s) } -- TODO: remove later
+  "*S"                          { \p s -> TokenUnS (internalPos p) }
+  "1S"                          { \p s -> TokenLinS (internalPos p) }
+  "*T"                          { \p s -> TokenUnT (internalPos p) }
+  "1T"                          { \p s -> TokenLinT (internalPos p) }
+  "1A"                          { \p s -> TokenLinA (internalPos p) }
+  "*A"                          { \p s -> TokenUnA (internalPos p) } -- TODO: remove later
 -- Basic types
-  Int			        { \p s -> TokenIntT (internalPos p s) }
-  Char				{ \p s -> TokenCharT (internalPos p s) }
-  String			{ \p s -> TokenStringT (internalPos p s) }
-  Skip				{ \p s -> TokenSkip (internalPos p s) }
-  End			  	{ \p s -> TokenEnd (internalPos p s) }
+  Int			        { \p s -> TokenIntT (internalPos p) }
+  Char				{ \p s -> TokenCharT (internalPos p) }
+  String			{ \p s -> TokenStringT (internalPos p) }
+  Skip				{ \p s -> TokenSkip (internalPos p) }
+  End			  	{ \p s -> TokenEnd (internalPos p) }
 -- Keywords
-  (rec|μ)                       { \p s -> TokenRec (internalPos p s) }
-  let                           { \p s -> TokenLet (internalPos p s) }
-  in                            { \p s -> TokenIn (internalPos p s) }
-  data                          { \p s -> TokenData (internalPos p s) }
-  type                          { \p s -> TokenType (internalPos p s) }
-  otherwise			{ \p s -> TokenOtherwise (internalPos p s) }
-  if				{ \p s -> TokenIf (internalPos p s) }
-  then				{ \p s -> TokenThen (internalPos p s) }
-  else				{ \p s -> TokenElse (internalPos p s) }
---  new				{ \p s -> TokenNew (internalPos p s) }
-  select		        { \p s -> TokenSelect (internalPos p s) }
-  match				{ \p s -> TokenMatch (internalPos p s) }
-  with				{ \p s -> TokenWith (internalPos p s) }
-  case				{ \p s -> TokenCase (internalPos p s) }
-  of				{ \p s -> TokenOf (internalPos p s) }
-  (forall|∀)                    { \p s -> TokenForall (internalPos p s) }
-  dualof			{ \p s -> TokenDualof (internalPos p s) }
+  (rec|μ)                       { \p s -> TokenRec (internalPos p) }
+  let                           { \p s -> TokenLet (internalPos p) }
+  in                            { \p s -> TokenIn (internalPos p) }
+  data                          { \p s -> TokenData (internalPos p) }
+  type                          { \p s -> TokenType (internalPos p) }
+  otherwise			{ \p s -> TokenOtherwise (internalPos p) }
+  if				{ \p s -> TokenIf (internalPos p) }
+  then				{ \p s -> TokenThen (internalPos p) }
+  else				{ \p s -> TokenElse (internalPos p) }
+--  new				{ \p s -> TokenNew (internalPos p) }
+  select		        { \p s -> TokenSelect (internalPos p) }
+  match				{ \p s -> TokenMatch (internalPos p) }
+  with				{ \p s -> TokenWith (internalPos p) }
+  case				{ \p s -> TokenCase (internalPos p) }
+  of				{ \p s -> TokenOf (internalPos p) }
+  (forall|∀)                    { \p s -> TokenForall (internalPos p) }
+  dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
-  \(\)				{ \p s -> TokenUnit (internalPos p s) }
-  (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p s) (read s) }
-  @char				{ \p s -> TokenChar (internalPos p s) (read s) }
-  @stringLiteral		{ \p s -> TokenString (internalPos p s) (read s) }
+  \(\)				{ \p s -> TokenUnit (internalPos p) }
+  (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
+  @char				{ \p s -> TokenChar (internalPos p) (read s) }
+  @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
-  @lowerId                      { \p s -> TokenLowerId (internalPos p s) s }
-  @upperId                      { \p s -> TokenUpperId (internalPos p s) s }
+  @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
+  @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
 {
 
@@ -308,7 +308,7 @@ scanTokens input filename =
       case alexScan inp 0 of
         AlexEOF -> Right []
         AlexError _ ->
-          let p = internalPos pos input in -- TODO: is this correct????
+          let p = internalPos pos in
           Left $ LexicalError (Span (startPos p) (endPos p) "" filename) (show $ head input)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
@@ -332,8 +332,8 @@ trim = reverse . trim' . reverse . trim'
 
 -- POSITIONS
 
-internalPos :: AlexPosn -> String -> Span
-internalPos (AlexPn _ l c) src = let p = (l, c) in Span p p "" ""
+internalPos :: AlexPosn -> Span
+internalPos (AlexPn _ l c) = let p = (l, c) in Span p p "" ""
 
 -- TODO: proper spans?, proper filename
 instance Located Token where
