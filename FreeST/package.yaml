@@ -55,6 +55,7 @@ library:
 #    - Util.PrettyError
     - Util.FreestState
     - Util.CmdLine
+    - Util.KeepSrc
 #    - Util.PreludeLoader
     # - Util.GetTOps
     - Parse.Lexer 
