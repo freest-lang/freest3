@@ -49,7 +49,7 @@ solveEq _ _ p              = pure p
 
 buildRecursiveTypes :: FreestState ()
 buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
+  where buildRec x (k, t) = (k, setSrc (source $ getSpan t) $ T.Rec (getSpan x) (Bind (getSpan x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
