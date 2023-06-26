@@ -199,7 +199,7 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right arrowRator
   unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
     where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Variant m) = (maxRator, {-"[" ++-} showDatatype m {-++ "]"-})
   unparse (T.Labelled _ T.Record m) 
     | Map.null m = (maxRator, "()")
     | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
