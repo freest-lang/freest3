@@ -33,7 +33,12 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.FreestState
+-- import           Util.FreestState
+import           Parse.Phase
+import           Elaboration.Phase
+import           Validation.Phase  -- (Prog, Typing)
+import           Util.State.State
+import           Syntax.AST
 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
@@ -41,14 +46,14 @@ import qualified Data.Set        as Set
 import Syntax.MkName (mkTupleLabels)
 
 
-function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+function :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 function e t =
   case normalise t of
     (T.Arrow _ _ u v) -> return (u, v)
     u               -> let p = getSpan e in
       addError (ExtractError p "an arrow" e u) $> (omission p, omission p)
 
-pair :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+pair :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 pair e t =
   case normalise t of
     (T.Labelled _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
@@ -58,20 +63,20 @@ pair e t =
   where l0 = (mkTupleLabels !! 0) defaultSpan
         l1 = (mkTupleLabels !! 1) defaultSpan 
 
-forall :: E.Exp -> T.Type -> FreestState T.Type
+forall :: E.Exp -> T.Type -> TypingState T.Type
 forall e t =
   case normalise t of
     u@T.Forall{} -> return u
     u            -> let p = getSpan e in
       addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
 
-output :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+output :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 output = message T.Out "an output"
 
-input :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+input :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 input = message T.In "an input"
 
-message :: T.Polarity -> String -> E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+message :: T.Polarity -> String -> E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 message pol msg e t =
   case normalise t of
     u@(T.Message p pol' b) ->
@@ -80,23 +85,23 @@ message pol msg e t =
       if pol == pol' then return (b, v) else messageErr u
     u -> messageErr u
  where
-  messageErr :: T.Type -> FreestState (T.Type, T.Type)
+  messageErr :: T.Type -> TypingState (T.Type, T.Type)
   messageErr u =
     addError (ExtractError (getSpan e) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
 
-end :: E.Exp -> T.Type -> FreestState ()
+end :: E.Exp -> T.Type -> TypingState ()
 end e t =
   case normalise t of
     (T.End _) -> return ()
     _ -> addError (ExtractError (getSpan e) "End" e t)
 
-outChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
+outChoiceMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 outChoiceMap = choiceMap T.External "an external choice (&)"
 
-inChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
+inChoiceMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 inChoiceMap = choiceMap T.Internal "an internal choice (+)"
 
-choiceMap :: T.View -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
+choiceMap :: T.View -> String -> E.Exp -> T.Type -> TypingState T.TypeMap
 choiceMap view msg e t =
   case normalise t of
     (T.Labelled _ (T.Choice view') m) ->
@@ -107,18 +112,18 @@ choiceMap view msg e t =
       else choiceErr t
     u -> choiceErr u
  where
-  choiceErr :: T.Type -> FreestState T.TypeMap
+  choiceErr :: T.Type -> TypingState T.TypeMap
   choiceErr u =
     addError (ExtractError (getSpan e) msg e u) $> Map.empty
 
-datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
+datatypeMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Labelled _ T.Variant m) -> return m
     u                ->
       addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
 
-choiceBranch :: Span -> T.TypeMap -> Variable -> T.Type -> FreestState T.Type
+choiceBranch :: Span -> T.TypeMap -> Variable -> T.Type -> TypingState T.Type
 choiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
   Nothing -> addError (BranchNotInScope p x t) $> omission p

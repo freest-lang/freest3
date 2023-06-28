@@ -28,12 +28,18 @@ import           Syntax.Program
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Util.Error
-import           Util.FreestState
+-- import           Util.FreestState
 import           Util.Warning
 import           Bisimulation.Bisimulation ( bisimilar )
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import qualified Validation.Rename as Rename ( subs )
+
+import           Parse.Phase
+import           Elaboration.Phase
+import           Validation.Phase  -- (Prog, Typing)
+import           Util.State.State hiding (void)
+import           Syntax.AST
 
 import           Control.Monad.State ( when
                                      , unless, evalState, MonadState (get)
@@ -42,7 +48,7 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
+synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
 synthetise _ (E.Int  p _  ) = return $ T.Int p
 synthetise _ (E.Float p _ ) = return $ T.Float p
@@ -50,33 +56,33 @@ synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
 synthetise kEnv e@(E.Var p x) =
-  getFromVEnv x >>= \case
+  getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
-      when (K.isLin k) $ removeFromVEnv x
+      when (K.isLin k) $ removeFromSignatures x
       return s
     Nothing -> do
       let p = getSpan x
           s = omission p
       addError (VarOrConsNotInScope p x)
-      addToVEnv x s
+      addToSignatures x s
       return s
 -- Unary let
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
-  addToVEnv x t1
+  addToSignatures x t1
   t2 <- synthetise kEnv e2
   difference kEnv x
   return t2
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
-  vEnv1 <- getVEnv -- Redundant when mult == Lin
-  addToVEnv x t1
+  vEnv1 <- getSignatures -- Redundant when mult == Lin
+  addToSignatures x t1
   t2 <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
-    vEnv2 <- getVEnv
+    vEnv2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv vEnv1 vEnv2)
   return $ T.Arrow p mult t1 t2
 -- Application, the special cases first
@@ -95,7 +101,7 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
+  void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ T.tuple p [u1, u2]
   -- Send e1 e2
@@ -123,7 +129,7 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
-  ~(T.Forall _ (Bind _ y k u')) <- Extract.forall new u
+  ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
   return $ Rename.subs t y u'
 -- Type application
@@ -142,8 +148,8 @@ synthetise kEnv (E.Pair p e1 e2) = do
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
-  addToVEnv x u1
-  addToVEnv y u2
+  addToSignatures x u1
+  addToSignatures y u2
   t2 <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
@@ -151,22 +157,22 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
-  vEnv <- getVEnv
+  vEnv <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
                                  (return ([], [])) fm'
   mapM_ (checkEquivTypes e kEnv t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
-  setVEnv v
+  setSignatures v
   return t
 
 synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
-              -> FreestState ([T.Type], [VarEnv])
-              -> FreestState ([T.Type], [VarEnv])
+              -> TypingState ([T.Type], [VarEnv])
+              -> TypingState ([T.Type], [VarEnv])
 synthetiseMap kEnv vEnv (xs, e) state = do
   (ts, envs) <- state
   t          <- synthetise kEnv e
-  env        <- getVEnv
-  setVEnv vEnv
+  env        <- getSignatures
+  setSignatures vEnv
   return (returnType xs t : ts, env : envs)
  where
   returnType :: [Variable] -> T.Type -> T.Type
@@ -176,25 +182,26 @@ synthetiseMap kEnv vEnv (xs, e) state = do
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
-difference :: K.KindEnv -> Variable -> FreestState ()
+difference :: K.KindEnv -> Variable -> TypingState ()
 difference kEnv x = do
-  getFromVEnv x >>= \case
+  getFromSignatures x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
       when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
-  removeFromVEnv x
+  removeFromSignatures x
 
 -- CHECKING AGAINST A GIVEN TYPE
 
 -- | Check an expression against a given type
-checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> FreestState ()
+checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> TypingState ()
+
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
-  addToVEnv x u1
-  addToVEnv y u2
+  addToSignatures x u1
+  addToSignatures y u2
   checkAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
@@ -213,13 +220,14 @@ checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
-checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
+checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()
 checkEquivTypes exp kEnv expected actual =
   -- unless (equivalent kEnv actual expected) $
   unless (bisimilar actual expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
-checkEquivEnvs :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) ->
+                   E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> TypingState ()
 checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =
   -- unless (equivalent kEnv vEnv1 vEnv2) $
   unless (Map.keysSet vEnv1 == Map.keysSet vEnv2) $
@@ -227,7 +235,7 @@ checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =
 
 -- Build abstractions for each case element
 
-buildMap :: Span -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
+buildMap :: Span -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
 buildMap p fm tm = do
   when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
@@ -235,7 +243,7 @@ buildMap p fm tm = do
         fmS = Map.size fm
 
 buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
-                 -> FreestState ([Variable], E.Exp)
+                 -> TypingState ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
     if n /= length xs
@@ -257,6 +265,8 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
 
   numberOfFields :: T.Type -> Int
   numberOfFields (T.Labelled _ _  tm) = Map.size tm
+
+
 
 -- -- Check whether a type is brought to an End
 -- broughtToEnd :: T.Type -> Bool

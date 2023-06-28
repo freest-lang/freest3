@@ -1,6 +1,6 @@
 module Elaboration.Match
-  ( addMissingVars
-  , checkChoices
+  (addMissingVars
+  -- , checkChoices
   , checkNumArgs
   , checkChanVar
   , matchFuns
@@ -19,10 +19,16 @@ import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
 import           Util.Error
-import           Util.FreestState
+-- import           Util.FreestState
 import           Data.Maybe           (isJust)
 import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
+
+import           Util.State.State 
+import Parse.Phase
+import Elaboration.Phase
+
+
 
 import           Debug.Trace -- debug (used on debugM function)
 
@@ -30,20 +36,20 @@ type Equation = ([Pattern],Exp)
 
 -- Function validation before translation --------------------------
 
--- check if there is choices with the same name as contructors
-checkChoices :: ParseEnvChoices -> FreestState ()
-checkChoices pec = do
-  cons <- Set.toList <$> getConstructors -- [Variable]
-  map (\c -> (find (== c) cons,c)) pec
-    & filter (isJust . fst)
-    & mapM_ (\(Just cons,chan) -> addError 
-            $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
+-- -- check if there is choices with the same name as contructors
+-- checkChoices :: ParseEnvChoices -> FreestState ()
+-- checkChoices pec = do
+--   cons <- Set.toList <$> getConstructors -- [Variable]
+--   map (\c -> (find (== c) cons,c)) pec
+--     & filter (isJust . fst)
+--     & mapM_ (\(Just cons,chan) -> addError 
+--             $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
 
 -- check if the number of arguments is the same for every function definition
-checkNumArgs :: ParseEnvPat -> FreestState ()
+checkNumArgs :: ParseEnvPat -> PatternState ()
 checkNumArgs = tMapWithKeyM_ checkNumArgs'
 
-checkNumArgs' :: Variable -> [([Pattern],Exp)] -> FreestState ()
+checkNumArgs' :: Variable -> [([Pattern],Exp)] -> PatternState ()
 checkNumArgs' fn lines  
   | allSame $ map (length.fst) lines = return ()                  -- if every line has the same amount of arguments all is fine
   | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn   -- if not there's an error
@@ -51,17 +57,17 @@ checkNumArgs' fn lines
         allSame _ = True
 
 -- check if there is a mixture of channel patterns
-checkChanVar :: ParseEnvPat -> FreestState ()
+checkChanVar :: ParseEnvPat -> PatternState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ (mapM (checkChanVar' cons) . prep) penv) 
   where prep = transpose . map fst
 
-checkChanVarCase :: FieldList -> FreestState ()
+checkChanVarCase :: FieldList -> PatternState ()
 checkChanVarCase fl = getConstructors >>=
   (\cons -> mapM_ (checkChanVar' cons) $ prep fl)
   where prep = transpose . map fst
 
-checkChanVar' :: Set.Set Variable -> [Pattern] -> FreestState ()
+checkChanVar' :: Set.Set Variable -> [Pattern] -> PatternState ()
 checkChanVar' _ [] = return ()
 checkChanVar' cons xs
   -- mixture rule
@@ -95,19 +101,20 @@ fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all li
 
 -- match -----------------------------------------------------------
 
-matchFuns :: ParseEnvPat -> FreestState ParseEnv
+matchFuns :: ParseEnvPat -> PatternState ParseEnv
 matchFuns = mapM matchFun
 
-matchFun :: [Equation] -> FreestState ([Variable],Exp)
+matchFun :: [Equation] -> PatternState ([Variable],Exp)
 matchFun xs@((ps,_):_) = mapM newVar ps                       -- creates new vars for the posterior lambda creation
                      >>= \args -> (,) args <$> match args xs 
 
-match :: [Variable] -> [Equation] -> FreestState Exp
+
+match :: [Variable] -> [Equation] -> PatternState Exp
 match vs x = do
   ifThenElseM (isRuleChan  x)                                 -- observes if it has channel patterns
               (ruleChan vs x) (match' vs x)
 
-match' :: [Variable] -> [Equation] -> FreestState Exp
+match' :: [Variable] -> [Equation] -> PatternState Exp
 match' vs x                                                   -- then goes to check other rules
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
@@ -126,9 +133,9 @@ isRuleCon   :: [Equation] -> Bool
 isRuleCon = all (check . fst)   -- every pattern has to be a constructor
   where check p = not (null p) && isCon (head p)
 
-isRuleChan  :: [Equation] -> FreestState Bool
+isRuleChan  :: [Equation] -> PatternState Bool
 isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be Con, in adition to all being channels 
-  where b1 = return $ not (isRuleEmpty cs) 
+  where b1 = return $ not (isRuleEmpty cs)
                    && not (isRuleVar cs) 
                    && isRuleCon cs
         b2 = and <$> mapM (isChan . head . fst) cs
@@ -136,19 +143,19 @@ isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be 
 -- rules -----------------------------------------------------------
 
 -- empty -----------------------------------------------------------
-ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
+ruleEmpty :: [Variable] -> [Equation] -> PatternState Exp
 ruleEmpty _ ((_,e):cs) = (\v -> replaceExp v v e) =<< v
   where v = R.renameVar $ mkWild defaultSpan
 
 -- var -------------------------------------------------------------
-ruleVar :: [Variable] -> [Equation] -> FreestState Exp
+ruleVar :: [Variable] -> [Equation] -> PatternState Exp
 ruleVar (v:us) cs = match us =<< mapM replace cs            -- replaces vars for every equation
   where replace (p:ps,e)
           | isPat_ p     = return (ps,e)                    -- if the variable is '_' there's no need to replace
           | otherwise = (,) ps <$> replaceExp v (pVar p) e  -- otherwise replace the variable in every expression
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [Equation] -> FreestState Exp
+ruleCon :: [Variable] -> [Equation] -> PatternState Exp
 ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                                 -- group by constructor name
                   & mapM destruct                                                   -- transforms into a case
                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)   -- matches every case expression, with the case's missing variables
@@ -156,13 +163,13 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                             
   where s = getSpan v
   
 -- rule con aux 
-destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
+destruct :: [Equation] -> PatternState (Variable, [Variable], [Equation])
 destruct l@((p:ps,_):cs) = mapM newVar (pPats p)       -- creates new vars, for the case expression and the algorithm
                        <&> flip ((,,) (pVar p)) l'     -- transforms into a case
   where l' = map (\(p:ps,e) -> (pPats p ++ ps, e)) l   -- unfolds the patterns
 
 -- chan ------------------------------------------------------------
-ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleChan :: [Variable] -> [([Pattern],Exp)] -> PatternState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                -- group by constructor name
                    & mapM destruct                                                  -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)  -- matches every case expression, with the case's missing variables
@@ -170,7 +177,7 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                            
   where s = getSpan v
 
 -- mix -------------------------------------------------------------
-ruleMix :: [Variable] -> [Equation] -> FreestState Exp
+ruleMix :: [Variable] -> [Equation] -> PatternState Exp
 ruleMix (v:us) cs = do
   cons <- constructors $ getDataType cs -- every [(Constructor,#variables)] of the column type
   -- groups in vars and cons, by order. every var is transformed into every constructor.
@@ -179,13 +186,13 @@ ruleMix (v:us) cs = do
 
 
 --rule mix aux
-fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
+fill :: Variable -> [(Variable,Int)] -> [Equation] -> PatternState [Equation]
 fill v cons cs 
   | hasVar cs = fill' v cons cs         -- if there is a var, then all are transformed into every constructor
   | otherwise = return cs               -- if it's a constructor ignore
   where hasVar = isVar . head . fst . head
 
-fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
+fill' :: Variable -> [(Variable,Int)] -> [Equation] -> PatternState [Equation]
 fill' _ _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons      -- concats the new constructors with the rest 
                                   <*> fill' v cons cs
@@ -198,8 +205,8 @@ getDataType :: [([Pattern], Exp)] -> Variable
 getDataType cs = filter (isCon . head . fst) cs & pVar . head . fst . head
 
 -- returns constructors and the amount of variables they need
-constructors :: Variable -> FreestState [(Variable,Int)]
-constructors c = findCons c . map (snd . snd) . Map.toList <$> getTEnv  -- finds the constructors from the data type with the constructor c
+constructors :: Variable -> PatternState [(Variable,Int)]
+constructors c = findCons c . map (snd . snd) . Map.toList <$> getTypes  -- finds the constructors from the data type with the constructor c
 
 findCons :: Variable -> [T.Type] -> [(Variable,Int)]
 findCons _ [] = []
@@ -217,7 +224,7 @@ getKeys (T.Labelled _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
 -- replace Variables -----------------------------------------------
-replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
+replaceExp :: Variable -> Variable -> Exp -> PatternState Exp
 replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
 replaceExp v p (Abs     s m b)        = Abs     s m <$> replaceBind v p b
 replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp  v p e1 <*> replaceExp v p e2
@@ -235,7 +242,7 @@ replaceExp v p (CasePat s e flp)      = do
                <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e
 
-replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
+replaceBind :: Variable -> Variable -> Bind a Exp -> PatternState (Bind a Exp)
 replaceBind v p b@(Bind {var=v1,body=exp}) = replaceExp v p exp
                                          <&> (\e -> b {var=replaceVar v p v1,body=e})
 
@@ -244,7 +251,7 @@ replaceVar (Variable _ name) (Variable _ name1) v@(Variable span name2)
   | name1 == name2 = Variable span name
   | otherwise      = v
 
-substitute :: Variable -> Variable -> ([Variable],Exp) -> FreestState ([Variable],Exp)
+substitute :: Variable -> Variable -> ([Variable],Exp) -> PatternState ([Variable],Exp)
 substitute v p (vs,e) = (,) (map (replaceVar v p) vs) <$> replaceExp v p e
 
 -- aux
@@ -266,25 +273,25 @@ isCon :: Pattern -> Bool
 isCon = not . isVar
 
 -- get every constructor from the file
-getConstructors :: FreestState (Set.Set Variable)
-getConstructors = Map.elems <$> getTEnv
-              <&> map (getKeys.snd)
+getConstructors :: PatternState (Set.Set Variable)
+getConstructors = Map.elems <$> getTypes
+              <&> map (getKeys . snd)
               <&> concat
               <&> Set.fromList
 
-isChan :: Pattern -> FreestState Bool
+isChan :: Pattern -> PatternState Bool
 isChan (PatVar _)    = return False
 isChan (PatCons c _) = getConstructors <&> Set.notMember c
 
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = isWild v
 
-newVar :: Pattern -> FreestState Variable
+newVar :: Pattern -> PatternState Variable
 newVar = R.renameVar . pVar
 
--- newVar :: Int -> Pattern -> FreestState Variable
--- newVar i p = R.renameVar $ updateVar $ pVar p
---   where updateVar v = Variable (getSpan v) ("param"++(show i))
+-- -- newVar :: Int -> Pattern -> FreestState Variable
+-- -- newVar i p = R.renameVar $ updateVar $ pVar p
+-- --   where updateVar v = Variable (getSpan v) ("param"++(show i))
 
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply

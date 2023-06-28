@@ -18,7 +18,8 @@ import           Test.HUnit                     ( assertFailure
                                                 , assertEqual
                                                 )
 import           Test.Hspec
-import           Util.FreestState
+-- import           Util.FreestState
+import           Util.State.State hiding (void)
 
 import           System.FilePath
 import           Data.List

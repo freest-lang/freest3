@@ -6,13 +6,14 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Util.FreestState
-
+-- import           Util.FreestState
+import           Elaboration.Phase
+import           Util.State.State
 
 -- | Elaboration: Substitutions over Type, Exp, TypeMap, FieldMap, and Binds
 
 class Elaboration t where
-  elaborate :: t -> FreestState t
+  elaborate :: t -> ElabState t
 
 instance Elaboration T.Type where
   elaborate (  T.Labelled p s m ) = T.Labelled p s <$> elaborate m
@@ -21,7 +22,7 @@ instance Elaboration T.Type where
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
   elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
-  elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
+  elaborate n@(T.Var    p tname ) = getFromTypes tname >>= \case
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
   elaborate (T.Dualof p t) = T.Dualof p <$> elaborate t

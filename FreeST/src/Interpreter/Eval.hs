@@ -9,10 +9,15 @@ import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import           Syntax.Program
+import           Syntax.Program hiding (Prog)
 import           Syntax.MkName
 import           Util.Error
-import           Util.FreestState
+-- import           Util.FreestState
+import Util.State.State hiding (void)
+import Validation.Phase
+import           Parse.Phase
+import           Elaboration.Phase
+import           Syntax.AST
 
 import           Control.Concurrent ( forkIO )
 import           Data.Functor
@@ -25,11 +30,11 @@ import Debug.Trace (trace)
 -- EVALUATION
 ------------------------------------------------------------
 
-evalAndPrint :: Variable -> FreestS -> E.Exp -> IO ()
+evalAndPrint :: Variable -> FreestTyping -> E.Exp -> IO ()
 evalAndPrint name s e = 
   addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx -> do
 
-  res <- eval name (typeEnv s) ctx (prog s) e
+  res <- eval name (getTypesS s) ctx (getDefsS s) e
   case res of
     IOValue io -> io >>= print
     _          -> print res
@@ -85,7 +90,7 @@ eval fun tEnv ctx eenv (E.UnLet _ x e1 e2) = do
   eval fun tEnv (Map.insert x v ctx) eenv e2
 eval fun tEnv ctx eenv (E.Case s e m) = eval fun tEnv ctx eenv e >>=  evalCase fun s tEnv ctx eenv m 
 
-evalCase :: Variable -> Span -> TypeEnv -> Ctx -> Prog -> E.FieldMap -> Value -> IO Value
+evalCase :: Variable -> Span -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
 evalCase name _ tEnv ctx eenv m (Chan c) = do
   (Label !v, !c) <- receive c
   let (patterns : _, e) = m Map.! mkVar defaultSpan v
@@ -102,7 +107,7 @@ evalCase name s tEnv ctx eenv m (Cons x xs) =
       eval name tEnv ctx1 eenv e 
 evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
-evalVar :: Variable -> TypeEnv -> Ctx -> Prog -> Variable -> IO Value
+evalVar :: Variable -> Types -> Ctx -> Prog -> Variable -> IO Value
 evalVar _ tEnv ctx eenv x
   | isDatatypeContructor x tEnv  = return $ Cons x []
   | Map.member x eenv            = eval x tEnv ctx eenv (eenv Map.! x)

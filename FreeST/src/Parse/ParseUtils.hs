@@ -26,8 +26,8 @@ import qualified Syntax.Type as T
 import           Util.Error
 -- import           Util.FreestState
 import           Parse.Phase
-import           Util.State.State
-import           Syntax.AST
+import           Util.State.State hiding (void)
+-- import           Syntax.AST
 
 import           Control.Monad.State
 import           Data.List       ( find )

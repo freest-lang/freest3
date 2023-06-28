@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns, TypeFamilies #-}
 module FreeST
   ( main
   , checkAndRun
@@ -7,7 +7,8 @@ module FreeST
 where
 
 
-import           Elaboration.Elaboration ( elaboration )
+import           Elaboration.Elaboration -- ( elaboration )
+import           Elaboration.Phase
 import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
 import           Interpreter.Value
@@ -25,13 +26,15 @@ import           Util.Error
 import           Util.Warning
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
+
 import           Parse.Phase
+import           Validation.Phase
 import           Util.State.State
 import           Syntax.AST
 
 
 
-import           Control.Monad.State ( when, unless, execState )
+import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
@@ -58,39 +61,44 @@ checkAndRun runOpts = do
   s2 <- parseAndImport s1{extra = (extra s1){runOpts}}
   when (hasErrors s2) (die $ getErrors runOpts s2)
 
-  -- -- | Solve type declarations and dualof operators
-  -- let s3 = emptyPEnv $ execState elaboration s2
-  -- when (hasErrors s3) (die $ getErrors s3)
+  let (oldDef, s2') = parseToElab s2
 
-  -- -- | Rename
-  -- let s4 = execState renameState s3
-
-  -- -- | Type check
-  -- let s5 = execState typeCheck s4
-  -- when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings s5)
-  -- when (hasErrors s5)  (die $ getErrors s5)
-
-  -- -- | Check whether a given function signature has a corresponding
-  -- --   binding
-  -- let venv = Map.keysSet (noConstructors (typeEnv s5) (varEnv s5))
-  -- let p = Map.keysSet (prog s5)
-  -- let bs = Set.difference (Set.difference venv p) (builtins s5)
+  -- | Solve type declarations and dualof operators
+  let (prog, s3) = runState (elaboration oldDef (parseToPattern s2)) s2'
+  when (hasErrors s3) (die $ getErrors runOpts s3)
   
-  -- unless (Set.null bs) $
-  --   die $ getErrors $ Set.foldr (noSig (varEnv s5)) initialState bs
+  -- | Rename
+  let s4 = execState renameState (elabToTyping prog s3)
+
+  -- | Type check
+  let s5 = execState (typeCheck runOpts) s4
+  when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings runOpts s5)
+  when (hasErrors s5)  (die $ getErrors runOpts s5)
+
+  -- | Check whether a given function signature has a corresponding
+  --   binding
+  let venv = Map.keysSet (noConstructors (types $ ast s5) (signatures $ ast s5))
+  let p = Map.keysSet (definitions $ ast s5)
+  let bs1 = Set.difference (Set.difference venv p) bs -- (builtins s5)
+
+  unless (Set.null bs1) $
+    die $ getErrors runOpts $ initialS {errors = Set.foldr (noSig (getSignaturesS s5)) [] bs1}
   
-  -- -- | Check if main was left undefined, eval and print result otherwise
-  -- let m = getMain runOpts
-  -- when (m `Map.member` varEnv s5) $ evalAndPrint m s5 $
-  --   forkHandlers 
-  --     [ ("__runStdout", "__stdout")
-  --     , ("__runStderr", "__stderr")
-  --     , ("__runStdin", "__stdin")] 
-  --     (prog s5 Map.! m)
+  -- | Check if main was left undefined, eval and print result otherwise
+  let m = getMain runOpts
+
+  
+  when (m `Map.member` getSignaturesS s5) $ evalAndPrint m s5 $
+    forkHandlers 
+      [ ("__runStdout", "__stdout")
+      , ("__runStderr", "__stderr")
+      , ("__runStdin", "__stdin")] 
+      (getDefsS s5 Map.! m)
 
   where
-    noSig :: VarEnv -> Variable -> FreestS Parse -> FreestS Parse
-    noSig venv f acc = acc { errors = SignatureLacksBinding (getSpan f) f (venv Map.! f) : errors acc }
+    noSig :: Signatures -> Variable -> Errors -> Errors
+--    noSig venv f acc = acc { errors = SignatureLacksBinding (getSpan f) f (venv Map.! f) : errors acc }
+    noSig venv f acc = SignatureLacksBinding (getSpan f) f (venv Map.! f) : acc
       
     preludeHasErrors :: FilePath -> FreestS Parse -> FreestS Parse -> FreestS Parse
     preludeHasErrors f s0 s1
@@ -105,3 +113,27 @@ checkAndRun runOpts = do
         $ forkHandlers xs e 
       where
         s = defaultSpan
+
+
+
+parseToPattern :: FreestParse -> FreestPattern
+parseToPattern s = s {ast = (ast s){definitions = Map.empty}, extra = void}
+
+
+parseToElab :: FreestParse -> (Definitions Parse, FreestElab)
+parseToElab s = (definitions $ ast s, s {ast=newAst, extra = void})
+  where newAst = initialAST{types=types $ ast s, signatures=signatures $ ast s}
+
+  -- (definitions $ ast s, s {ast=newAst, nextIndex=nextIndex s,
+  --                                errors=errors s, warnings=warnings s,
+  --                                typenames=typenames s,
+  --                                extra = void})
+
+
+elabToTyping :: Map.Map Variable E.Exp -> FreestElab -> FreestTyping
+elabToTyping defs s = s {ast=newAst, extra = void}
+  where newAst = AST {types=types $ ast s, signatures=signatures $ ast s, definitions = defs}
+
+-- elabToTyping defs s = s {ast=newAst, nextIndex=nextIndex s,
+--                           errors=errors s, warnings=warnings s,
+--                           typenames=typenames s, extra = void}

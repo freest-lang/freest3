@@ -23,9 +23,12 @@ import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error         ( internalError )
-import           Util.FreestState   ( initialState
-                                    , errors
-                                    )
+-- import           Util.FreestState   ( initialState
+--                                     , errors
+--                                     )
+import Validation.Phase
+import Util.State.State
+
 import           Validation.Kinding ( synthetise )
 import           Validation.Subkind ( (<:) )
 import qualified Validation.Substitution as Subs
@@ -92,7 +95,7 @@ instance Equivalence T.Type where
 isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType kEnv t = null (errors state) && K.isSession kind
  where
-  (kind, state) = runState (synthetise kEnv t) initialState
+  (kind, state) = runState (synthetise kEnv t) initialTyp
 
 {-
 -- An alternative is below. Lighter, but I don't have a proof that the

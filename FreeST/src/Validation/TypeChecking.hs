@@ -22,21 +22,25 @@ import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program ( noConstructors, VarEnv )
 import qualified Syntax.Type as T
-import           Util.FreestState
+-- import           Util.FreestState
 import           Util.Error
 -- import           Util.PreludeLoader ( userDefined )
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as Typing -- Again
 
+import           Parse.Phase
+import           Elaboration.Phase
+import           Validation.Phase hiding (Typing)
+import           Util.State.State
+import           Syntax.AST
 
 import           Control.Monad.Extra ( allM, unlessM )
 import           Control.Monad.State ( when, get, unless )
 import           Control.Monad
-
 import qualified Data.Map.Strict as Map
 
-typeCheck :: FreestState ()
-typeCheck = do
+typeCheck :: RunOpts -> TypingState ()
+typeCheck runOpts = do
   -- vEnv <- getVEnv -- Function signatures
   -- eEnv <- getProg -- Function bodies
   -- tn   <- getTypeNames -- Type Names
@@ -47,30 +51,30 @@ typeCheck = do
   --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
-  mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTEnv
+  mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTypes
 
   -- * Check the formation of all function signatures
-  mapM_ (K.synthetise Map.empty) =<< getVEnv
+  mapM_ (K.synthetise Map.empty) =<< getSignatures
   -- Gets the state and only continues if there are no errors so far
   s <- get
   unless (hasErrors s) $ do
     -- * Check function bodies
-    tMapWithKeyM_ (checkFunBody (varEnv s)) =<< getProg
+    tMapWithKeyM_ (checkFunBody (signatures $ ast s)) =<< getDefs
     -- * Check the main function
-    checkMainFunction
+    checkMainFunction runOpts
     -- * Checking final environment for linearity
     checkLinearity
+  return ()
 
--- Check a given function body against its type; make sure all linear
--- variables are used.
-checkFunBody :: VarEnv -> Variable -> E.Exp -> FreestState ()
+-- -- Check a given function body against its type; make sure all linear
+-- -- variables are used.
+checkFunBody :: VarEnv -> Variable -> E.Exp -> TypingState ()
 checkFunBody venv f e =
   forM_ (venv Map.!? f) (Typing.checkAgainst Map.empty e)
 
-checkMainFunction :: FreestState ()
-checkMainFunction = do
-  vEnv <- getVEnv
-  runOpts <- getOpts
+checkMainFunction :: RunOpts -> TypingState ()
+checkMainFunction runOpts = do
+  vEnv <- getSignatures
   let main = getMain runOpts
 
   if main `Map.member` vEnv
@@ -83,9 +87,9 @@ checkMainFunction = do
     else when (isMainFlagSet runOpts) $
       addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
 
-checkLinearity :: FreestState ()
+checkLinearity :: TypingState ()
 checkLinearity = do
-  venv <- getVEnv
+  venv <- getSignatures
   m <- filterM (K.lin . snd) (Map.toList venv)
   unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
 

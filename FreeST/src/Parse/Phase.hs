@@ -56,8 +56,10 @@ initialWithFile runFilePath = initial Extra{..}
 -- type ParseState = State (FreestState Parse)
 -- type ParseState = FreestState Parse
 
+type FreestParse = FreestS Parse
 type ParseState = StateT (FreestS Parse) (Either ErrorType)
-
+type ParseEnvPat = Definitions Parse
+  
 setModuleName :: ModuleName -> ParseState ()
 setModuleName moduleName = modify (\s -> s{extra = (extra s){moduleName}})
 

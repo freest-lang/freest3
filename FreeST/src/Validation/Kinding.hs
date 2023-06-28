@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-|
 Module      :  Validation.Kinding
@@ -27,8 +28,13 @@ import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
 import           Validation.Contractive
 import           Validation.Subkind ( (<:), join, meet )
-import           Util.FreestState
+-- import           Util.FreestState
 import           Util.Error
+
+import           Parse.Phase
+import           Validation.Phase
+import           Util.State.State
+import           Syntax.AST
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor
@@ -39,18 +45,18 @@ import qualified Data.Set as Set
 -- Exported Functions: Top-level definitions of those defined in this module
 
 -- synthetise :: MonadState FreestS m => K.KindEnv -> T.Type -> m K.Kind
-synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
+synthetise :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 synthetise kenv = synthetise' (Map.keysSet kenv) kenv
 
-checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
+checkAgainst :: MonadState (FreestS a) m =>  K.KindEnv -> K.Kind -> T.Type -> m K.Kind
 checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 
-checkAgainstSession :: K.KindEnv -> T.Type -> FreestState K.Kind
+checkAgainstSession :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 -- Kinding
 -- Returns the kind of a given type
-synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
+synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 -- Functional types
 synthetise' _ _ (T.Int    p) = return $ K.ut p
 synthetise' _ _ (T.Float  p) = return $ K.ut p 
@@ -107,13 +113,13 @@ synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: K.PolyVars -> Variable -> T.Type -> FreestState ()
+checkContractive :: MonadState (FreestS a) m => K.PolyVars -> Variable -> T.Type -> m ()
 checkContractive s a t = let p = getSpan t in
   unless (contractive s a t) $ addError (TypeNotContractive p t a)
 
 -- Check a type against a given kind
 
-checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
+checkAgainst' :: MonadState (FreestS a) m => K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> m K.Kind
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
   unless (actual <: expected)
@@ -121,27 +127,27 @@ checkAgainst' s kEnv expected t = do
 
 -- Check whether a given type is of a session kind. In any case return the
 -- kind of the type. This is a refined version of checkAgainst for a better error messages
-checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
+checkAgainstSession' :: MonadState (FreestS a) m => K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
   unless (p <: K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
-checkAgainstAbsorb :: K.KindEnv -> T.Type -> FreestState K.Kind
+checkAgainstAbsorb :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 checkAgainstAbsorb kEnv t = do
   ~k@(K.Kind _ _ p) <- synthetise kEnv t
   when (p /= K.Absorb) (addError $ UnendedSession (getSpan t) t k) $> k
 --  return k
 
 -- Determine whether a given type is unrestricted
-un :: T.Type -> FreestState Bool
+un :: MonadState (FreestS a) m => T.Type -> m Bool
 un = mult K.Un
 
 -- Determine whether a given type is linear
-lin :: T.Type -> FreestState Bool
+lin :: MonadState (FreestS a) m => T.Type -> m Bool
 lin = mult K.Lin
 
 -- Determine whether a given type is of a given multiplicity
-mult :: K.Multiplicity -> T.Type -> FreestState Bool
+mult :: MonadState (FreestS a) m => K.Multiplicity -> T.Type -> m Bool
 mult m1 t = do
   (K.Kind _ m2 _) <- synthetise' Set.empty Map.empty t
   return $ m2 == m1

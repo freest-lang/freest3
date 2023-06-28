@@ -544,19 +544,17 @@ parseDefs :: FreestS Parse -> FilePath -> String -> FreestS Parse
 parseDefs s filename input =
   either (\e -> s { errors = [e] }) id (execStateT (parse input filename terms) s)
 
-
 parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
-  let filename = getModule initial  
+  let filename = getFName initial  
 --  s <- parseProgram (initial {moduleName = Nothing})   
   s <- parseProgram (setModule initial Nothing)
   let baseName = takeBaseName (getFName s)
-
   case getModule s of
     Just name
-      | name == baseName -> doImports (fromJust filename) (Set.singleton name) (Set.toList (getImps s)) s
+      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (getImps s)) s
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
-    Nothing   -> doImports (fromJust filename) Set.empty (Set.toList (getImps s)) s
+    Nothing   -> doImports filename Set.empty (Set.toList (getImps s)) s
   where
     doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
     doImports _ _ [] s = return s
@@ -583,6 +581,7 @@ parseAndImport initial = do
         pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
       else
         doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
+
 
 -- TODO: test MissingModHeader
 
