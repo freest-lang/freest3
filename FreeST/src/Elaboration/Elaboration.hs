@@ -83,12 +83,12 @@ patternMatching s = do
 elab :: ElabState Prog
 elab = do
   solveEquations
-  (Dual.resolve =<< getTypes) >>= setTypes
-  replaceVEnv =<< getSignatures
-  replacePEnv =<< getDefs
-  (Dual.resolve =<< getSignatures) >>= setSignatures
-  (Dual.resolve =<< getDefs) >>= setDefs
-  buildProg =<< getDefs
+  getTypes >>= Dual.resolve >>= setTypes
+  getSignatures >>= replaceVEnv
+  getDefs >>= replacePEnv
+  getSignatures >>= Dual.resolve >>= setSignatures
+  getDefs >>= Dual.resolve >>= setDefs
+  getDefs >>= buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
   -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
 
