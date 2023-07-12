@@ -24,7 +24,7 @@ import System.Timeout
 import Test.HUnit ( assertFailure )
 import Test.Hspec
 -- import Util.FreestState
-import           Util.State.State hiding (void)
+import           Util.State hiding (void)
 
 data TestResult = Timeout | Passed | Failed
 

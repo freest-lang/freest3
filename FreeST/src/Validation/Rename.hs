@@ -32,7 +32,7 @@ import qualified Syntax.Kind as K
 import           Syntax.Program ( noConstructors )
 import qualified Syntax.Type as T
 import           Util.Error ( internalError )
-import           Util.State.State
+import           Util.State
 import           Validation.Phase
 import qualified Validation.Substitution as Subs
 

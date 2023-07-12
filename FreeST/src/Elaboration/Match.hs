@@ -14,7 +14,7 @@ import           Syntax.Expression
 import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import qualified Validation.Rename as R
 
 import           Control.Bool (ifThenElseM)

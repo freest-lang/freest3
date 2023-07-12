@@ -19,7 +19,7 @@ import           Syntax.MkName
 import           Syntax.Program (noConstructors)
 import           Util.CmdLine
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Util.Warning
 import           Validation.Phase
 import           Validation.Rename ( renameState )

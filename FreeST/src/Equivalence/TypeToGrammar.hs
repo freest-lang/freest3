@@ -23,7 +23,7 @@ import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error ( internalError )
-import           Util.State.State ( tMapM, tMapM_)
+import           Util.State ( tMapM, tMapM_)
 import qualified Validation.Substitution as Substitution ( subsAll )
 import           Validation.Terminated ( terminated )
 

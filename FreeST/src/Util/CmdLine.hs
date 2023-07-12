@@ -1,7 +1,7 @@
 module Util.CmdLine where
 
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Syntax.Base
 
 import           Control.Bool ( whenM )

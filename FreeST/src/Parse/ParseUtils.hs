@@ -21,7 +21,7 @@ import qualified Syntax.Expression as E
 import           Syntax.MkName (mkTrue, mkFalse)
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State hiding (void)
+import           Util.State hiding (void)
 
 import           Control.Monad.State
 import           Data.List ( find )

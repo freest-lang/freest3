@@ -6,7 +6,7 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Util.State.State
+import           Util.State
 
 -- | Replace: Substitutions over Type, Exp, TypeMap, FieldMap, and Binds
 

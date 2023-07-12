@@ -8,7 +8,7 @@ import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Util.Error
-import           Util.State.State
+import           Util.State
 
 import           Control.Monad.State
 import qualified Data.Map as Map

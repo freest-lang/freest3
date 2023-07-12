@@ -3,7 +3,7 @@ module Validation.Phase where
 
 import           Syntax.AST
 import qualified Syntax.Expression as E
-import           Util.State.State
+import           Util.State
 
 import           Data.Void
 

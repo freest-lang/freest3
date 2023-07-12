@@ -54,7 +54,7 @@ library:
     - Util.Warning
 #    - Util.PrettyError
     - Util.FreestState
-    - Util.State.State
+    - Util.State
     - Util.CmdLine
 #    - Util.PreludeLoader
     - Util.GetTOps

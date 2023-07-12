@@ -12,7 +12,7 @@ import qualified Syntax.Expression as E
 import           Syntax.MkName
 import           Syntax.Program hiding (Prog)
 import           Util.Error
-import           Util.State.State hiding (void)
+import           Util.State hiding (void)
 import           Validation.Phase
 import           Syntax.AST
 

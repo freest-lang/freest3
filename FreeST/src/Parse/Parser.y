@@ -13,7 +13,7 @@ import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
 import           Parse.Phase
-import           Util.State.State
+import           Util.State
 import           Syntax.AST
   
 import           Control.Monad.State

@@ -22,7 +22,7 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import qualified Validation.Kinding as K
 import           Validation.Phase hiding (Typing)
 import qualified Validation.Typing as Typing -- Again

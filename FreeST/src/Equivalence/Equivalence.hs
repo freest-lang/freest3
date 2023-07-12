@@ -23,7 +23,7 @@ import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error ( internalError )
-import           Util.State.State
+import           Util.State
 import           Validation.Phase
 
 import           Control.Monad.State ( runState )

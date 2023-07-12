@@ -19,7 +19,7 @@ import qualified Syntax.Kind as K
 import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Validation.Kinding (synthetise)
 import           Validation.Phase -- (Prog, Typing)
 import qualified Validation.Subkind as SK (join)

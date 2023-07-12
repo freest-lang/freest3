@@ -29,7 +29,7 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Util.Error
-import           Util.State.State hiding (void)
+import           Util.State hiding (void)
 import           Util.Warning
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?

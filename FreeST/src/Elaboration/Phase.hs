@@ -4,8 +4,7 @@ module Elaboration.Phase where
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import           Util.State.State
-import           Parse.Phase
+import           Util.State
 
 import           Data.Void
 

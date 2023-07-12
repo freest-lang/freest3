@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
-module Util.State.State where
+module Util.State where
 
 import           Syntax.AST
 import           Syntax.Base

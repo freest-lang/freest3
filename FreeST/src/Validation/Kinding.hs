@@ -27,7 +27,7 @@ import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Validation.Contractive
 import           Validation.Subkind ( (<:), join, meet )
 

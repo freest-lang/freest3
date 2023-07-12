@@ -5,7 +5,7 @@ import           Elaboration.Phase
 import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor

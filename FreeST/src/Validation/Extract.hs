@@ -34,7 +34,7 @@ import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
 import           Util.Error
 import           Validation.Phase
-import           Util.State.State
+import           Util.State
 
 import           Data.Functor
 import qualified Data.Map.Strict as Map

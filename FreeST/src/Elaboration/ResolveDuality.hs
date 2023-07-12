@@ -12,7 +12,7 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State.State
+import           Util.State
 import           Validation.Substitution
 
 import           Data.Functor
