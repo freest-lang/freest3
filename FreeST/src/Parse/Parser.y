@@ -12,7 +12,6 @@ import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
 import           Parse.Phase
 import           Util.State.State
 import           Syntax.AST

@@ -9,30 +9,21 @@ where
 
 import           Elaboration.Elaboration -- ( elaboration )
 import           Elaboration.Phase
-import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
-import           Interpreter.Value
-import           Parse.ParseUtils
 import           Parse.Parser ( parseProgram, parseAndImport )
+import           Parse.Phase
+import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
 import           Syntax.MkName
-import           Syntax.Program (noConstructors, VarEnv)
-import qualified Syntax.Type as T
+import           Syntax.Program (noConstructors)
 import           Util.CmdLine
 import           Util.Error
--- import           Util.FreestState
+import           Util.State.State
 import           Util.Warning
+import           Validation.Phase
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
-
-import           Parse.Phase
-import           Validation.Phase
-import           Util.State.State
-import           Syntax.AST
-
-
 
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
@@ -52,9 +43,9 @@ checkAndRun runOpts = do
   s0 <- initialWithFile <$> getDataFileName "Prelude.fst"
   s1 <- preludeHasErrors (runFilePath runOpts) s0 <$> parseProgram s0
   -- | Prelude entries without body are builtins  
-  let venv = Map.keysSet (noConstructors (getTypesS s1) (getSignaturesS s1))
+  let sigs = Map.keysSet (noConstructors (getTypesS s1) (getSignaturesS s1))
   let penv = Map.keysSet (getDefsS s1)
-  let bs = Set.difference venv penv
+  let bs = Set.difference sigs penv
 
   -- | Parse
 --  s2 <- parseAndImport s1{builtins=bs, runOpts}
@@ -77,9 +68,9 @@ checkAndRun runOpts = do
 
   -- | Check whether a given function signature has a corresponding
   --   binding
-  let venv = Map.keysSet (noConstructors (types $ ast s5) (signatures $ ast s5))
+  let sigs = Map.keysSet (noConstructors (types $ ast s5) (signatures $ ast s5))
   let p = Map.keysSet (definitions $ ast s5)
-  let bs1 = Set.difference (Set.difference venv p) bs -- (builtins s5)
+  let bs1 = Set.difference (Set.difference sigs p) bs -- (builtins s5)
 
   unless (Set.null bs1) $
     die $ getErrors runOpts $ initialS {errors = Set.foldr (noSig (getSignaturesS s5)) [] bs1}
@@ -97,8 +88,8 @@ checkAndRun runOpts = do
 
   where
     noSig :: Signatures -> Variable -> Errors -> Errors
---    noSig venv f acc = acc { errors = SignatureLacksBinding (getSpan f) f (venv Map.! f) : errors acc }
-    noSig venv f acc = SignatureLacksBinding (getSpan f) f (venv Map.! f) : acc
+--    noSig sigs f acc = acc { errors = SignatureLacksBinding (getSpan f) f (sigs Map.! f) : errors acc }
+    noSig sigs f acc = SignatureLacksBinding (getSpan f) f (sigs Map.! f) : acc
       
     preludeHasErrors :: FilePath -> FreestS Parse -> FreestS Parse -> FreestS Parse
     preludeHasErrors f s0 s1

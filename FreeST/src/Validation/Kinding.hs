@@ -24,21 +24,15 @@ module Validation.Kinding
 where
 
 import           Syntax.Base
-import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
+import           Util.Error
+import           Util.State.State
 import           Validation.Contractive
 import           Validation.Subkind ( (<:), join, meet )
--- import           Util.FreestState
-import           Util.Error
-
-import           Parse.Phase
-import           Validation.Phase
-import           Util.State.State
-import           Syntax.AST
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor
-import           Data.List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 

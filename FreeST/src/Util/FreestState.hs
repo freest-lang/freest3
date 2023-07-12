@@ -13,7 +13,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Util.FreestState where
+module Util.FreestState
+  (Errors, errors, getErrors, initialState ) where
 
 import           Syntax.Base
 import           Syntax.MkName
@@ -36,6 +37,11 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 import           Debug.Trace -- debug (used on debugM function)
+
+
+type TypeEnv = Map.Map Variable (K.Kind, T.Type)
+type VarEnv = Map.Map Variable T.Type
+type Prog = Map.Map Variable Exp
 
 -- | The typing state
 

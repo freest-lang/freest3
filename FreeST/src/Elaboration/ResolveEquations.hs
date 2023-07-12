@@ -1,24 +1,22 @@
-{-# LANGUAGE NamedFieldPuns, TupleSections, LambdaCase #-}
+{-# LANGUAGE TupleSections, LambdaCase #-}
 module Elaboration.ResolveEquations(solveEquations) where
 
+import           Elaboration.Phase
 import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
+import           Util.State.State
 import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
 import           Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-import           Elaboration.Phase
-import           Util.State.State
-import           Syntax.AST
 
 
 type Visited = Set.Set Variable
 
--- | Solve equations (TypeEnv)
+-- | Solve equations (Types)
 
 solveEquations :: ElabState ()
 solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs

@@ -15,26 +15,17 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParseUtils where
 
+import           Parse.Phase
 import           Syntax.Base
--- import           Syntax.Program
 import qualified Syntax.Expression as E
--- import qualified Syntax.Kind as K
-import           Syntax.MkName (mkTrue, mkFalse) -- z, mkTupleLabels)
--- import qualified Validation.Subkind as SK
--- import           Validation.Kinding (synthetise)
+import           Syntax.MkName (mkTrue, mkFalse)
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
-import           Parse.Phase
 import           Util.State.State hiding (void)
--- import           Syntax.AST
 
 import           Control.Monad.State
-import           Data.List       ( find )
+import           Data.List ( find )
 import qualified Data.Map.Strict as Map
--- import           Data.Bitraversable (bimapM)
-
--- type FreestStateT = StateT FreestS (Either ErrorType)
 
 -- Modules
 
@@ -64,8 +55,6 @@ liftModToSpan (Span p1 p2 _) = do
 
 -- Parse errors
 
--- checkDupField :: Variable -> T.TypeMap -> FreestState ()
--- checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
 checkDupField :: Variable -> Map.Map Variable v -> ParseState ()
 checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
@@ -102,21 +91,21 @@ checkDupCons (x, _) xts
 
 checkDupProgVarDecl :: Variable -> ParseState ()
 checkDupProgVarDecl x = do
-  vEnv <- getSignatures
-  case vEnv Map.!? x of
-    Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos vEnv)
+  sigs <- getSignatures
+  case sigs Map.!? x of
+    Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos sigs)
     Nothing -> return ()
  where
-    pos vEnv = getSpan $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
+    pos sigs = getSpan $ fst $ Map.elemAt (Map.findIndex x sigs) sigs
 
 checkDupTypeDecl :: Variable -> ParseState ()
 checkDupTypeDecl a = do
-  tEnv <- getTypes
-  case tEnv Map.!? a of
-    Just _   -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
+  tys <- getTypes
+  case tys Map.!? a of
+    Just _   -> addError $ MultipleTypeDecl (getSpan a) a (pos tys)-- (getSpan s)
     Nothing  -> return ()
  where
-    pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
+    pos tys = getSpan $ fst $ Map.elemAt (Map.findIndex a tys) tys
 
 -- verifies if there is any duplicated var in any patern, or nested pattern
 checkDupVarPats :: [E.Pattern] -> ParseState ()
@@ -143,10 +132,10 @@ unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
 leftSection :: Variable -> E.Exp -> Span -> ParseState E.Exp
 leftSection op e s = do
-  venv <- getSignatures
+  sigs <- getSignatures
   i <- getNextIndex
   let v = mkNewVar i (mkVar s "_x")
-  let t = genFstType (venv Map.! op)
+  let t = genFstType (sigs Map.! op)
   return $ E.Abs s Un (Bind s v t
              (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
   where

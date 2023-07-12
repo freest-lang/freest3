@@ -227,7 +227,7 @@ addDualof d@(T.Dualof p t) = do
     Just (T.Dualof _ _) -> return ()
     Just u -> S.modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> S.modify (\s -> s { typenames = Map.insert p d tn })
-addDualof t = internalError "Util.FreestState.addDualof" t
+addDualof t = internalError "Util.State.addDualof" t
 
 -- | Debug Function
 

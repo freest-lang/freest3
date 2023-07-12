@@ -4,21 +4,16 @@ module Elaboration.ResolveDuality
   )
 where
 
-
 import           Elaboration.Duality
+import           Elaboration.Phase
+import           Syntax.AST
 import           Syntax.Base
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
-import           Validation.Substitution
-
-
-import           Elaboration.Phase
 import           Util.State.State
-import           Syntax.AST
+import           Validation.Substitution
 
 import           Data.Functor
 import qualified Data.Set as Set

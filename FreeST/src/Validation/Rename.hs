@@ -27,31 +27,28 @@ module Validation.Rename
 where
 
 import           Syntax.Base
-import           Syntax.Program                 ( noConstructors )
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import qualified Validation.Substitution       as Subs
-                                                ( subs
-                                                , unfold
-                                                )
-import           Util.Error                     ( internalError )
--- import           Util.FreestState
-import Util.State.State
-import qualified Data.Map.Strict               as Map
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program ( noConstructors )
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
+import           Util.State.State
+import           Validation.Phase
+import qualified Validation.Substitution as Subs
+
 import           Control.Monad.State hiding (void)
-import Validation.Phase
+import qualified Data.Map.Strict as Map
 
 renameState :: TypingState ()
 renameState = do
-  -- TypeVenv
-  tEnv <- getTypes
+  -- Types
+  tys <- getTypes
   -- | Why do we need to rename the tenv ??
-  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
-  -- setTEnv tEnv'
-  -- VarEnv + ExpEnv, together
-  vEnv <- getSignatures
-  tMapWithKeyM_ renameFun (noConstructors tEnv vEnv)
+  -- tys' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tys
+  -- setTypes tys'
+  -- Signatures + Definitions, together
+  sigs <- getSignatures
+  tMapWithKeyM_ renameFun (noConstructors tys sigs)
 
 renameFun :: Variable -> T.Type -> TypingState ()
 renameFun f t = do

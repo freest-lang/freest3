@@ -19,34 +19,29 @@ module Validation.Typing
   )
 where
 
+import           Bisimulation.Bisimulation ( bisimilar )
 import           Parse.Unparser () -- debug
+import           Syntax.AST
 import           Syntax.Base
-import           Syntax.MkName
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
+import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Util.Error
--- import           Util.FreestState
+import           Util.State.State hiding (void)
 import           Util.Warning
-import           Bisimulation.Bisimulation ( bisimilar )
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
+import           Validation.Phase
 import qualified Validation.Rename as Rename ( subs )
-
-import           Parse.Phase
-import           Elaboration.Phase
-import           Validation.Phase  -- (Prog, Typing)
-import           Util.State.State hiding (void)
-import           Syntax.AST
 
 import           Control.Monad.State ( when
                                      , unless, evalState, MonadState (get)
                                      )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
@@ -77,13 +72,13 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
-  vEnv1 <- getSignatures -- Redundant when mult == Lin
+  sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
   t2 <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
-    vEnv2 <- getSignatures
-    checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv vEnv1 vEnv2)
+    sigs2 <- getSignatures
+    checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
   return $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
@@ -157,22 +152,22 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
-  vEnv <- getSignatures
-  ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
+  sigs <- getSignatures
+  ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
   mapM_ (checkEquivTypes e kEnv t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return t
 
-synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
-              -> TypingState ([T.Type], [VarEnv])
-              -> TypingState ([T.Type], [VarEnv])
-synthetiseMap kEnv vEnv (xs, e) state = do
+synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
+              -> TypingState ([T.Type], [Signatures])
+              -> TypingState ([T.Type], [Signatures])
+synthetiseMap kEnv sigs (xs, e) state = do
   (ts, envs) <- state
   t          <- synthetise kEnv e
   env        <- getSignatures
-  setSignatures vEnv
+  setSignatures sigs
   return (returnType xs t : ts, env : envs)
  where
   returnType :: [Variable] -> T.Type -> T.Type
@@ -226,12 +221,12 @@ checkEquivTypes exp kEnv expected actual =
   unless (bisimilar actual expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
-checkEquivEnvs :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) ->
-                   E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> TypingState ()
-checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =
-  -- unless (equivalent kEnv vEnv1 vEnv2) $
-  unless (Map.keysSet vEnv1 == Map.keysSet vEnv2) $
-    addError (error p (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
+checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
+                   E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
+checkEquivEnvs p error exp kEnv sigs1 sigs2 =
+  -- unless (equivalent kEnv sigs1 sigs2) $
+  unless (Map.keysSet sigs1 == Map.keysSet sigs2) $
+    addError (error p (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)
 
 -- Build abstractions for each case element
 

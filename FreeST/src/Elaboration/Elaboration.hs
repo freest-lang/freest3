@@ -2,40 +2,36 @@
 
 module Elaboration.Elaboration
   ( elaboration
-  -- , Elaboration(..)
   )
 where
 
-import           Elaboration.Replace
 import qualified Elaboration.Match as Match
+import           Elaboration.Phase
+import           Elaboration.Replace
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
+import           Parse.Phase
+import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program ( VarEnv, isDatatypeContructor )
+import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
-import           Validation.Kinding (synthetise)
-import qualified Validation.Subkind as SK (join)
-import           Parse.Phase
-import           Elaboration.Phase
-import           Validation.Phase  -- (Prog, Typing)
 import           Util.State.State
-import           Syntax.AST
+import           Validation.Kinding (synthetise)
+import           Validation.Phase -- (Prog, Typing)
+import qualified Validation.Subkind as SK (join)
 
-import           Control.Monad (when)
 import           Control.Monad.State
+import           Data.Char (isLower)
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
-import           Validation.Substitution (free)
-import qualified Syntax.Base as T
-import           Data.Char (isLower)
 import qualified Data.Set as Set
-import Debug.Trace 
+import qualified Syntax.Base as T
+import           Validation.Substitution (free)
 
 -- | Elaborate main functions
 -- | 1. Resolves pattern matching (removes patterns)
@@ -84,8 +80,8 @@ elab :: ElabState Prog
 elab = do
   solveEquations
   getTypes >>= Dual.resolve >>= setTypes
-  getSignatures >>= replaceVEnv
-  getDefs >>= replacePEnv
+  getSignatures >>= replaceSignatures
+  getDefs >>= replaceDefinitions
   getSignatures >>= Dual.resolve >>= setSignatures
   getDefs >>= Dual.resolve >>= setDefs
   getDefs >>= buildProg
@@ -95,11 +91,11 @@ elab = do
 -- | Fix the multiplicity of the data constructor types
 fixConsTypes :: PatternState ()
 fixConsTypes = do
-  tEnv <- getTypes
+  tys <- getTypes
   -- if this is the first step in the elaboration, there are still type names in signatures,
   -- so we need a non-empty kind environment. Empty env otherwise.
-  let kEnv = Map.map fst tEnv
-  getSignatures >>= tMapWithKeyM_ \k v -> when (isDatatypeContructor k tEnv)
+  let kEnv = Map.map fst tys
+  getSignatures >>= tMapWithKeyM_ \k v -> when (isDatatypeContructor k tys)
     (fixConsType kEnv K.Un v >>= addToSignatures k)
   where
     fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> PatternState T.Type
@@ -110,18 +106,18 @@ fixConsTypes = do
             kindToTypeMult K.Lin = Lin
     fixConsType _ _ t = pure t
 
--- | Elaboration over environments (VarEnv + ParseEnv)
+-- | Elaboration over environments (Signatures & Definitions)
 
-replaceVEnv :: Signatures -> ElabState ()
-replaceVEnv = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
+replaceSignatures :: Signatures -> ElabState ()
+replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
   where quantifyLowerFreeVars t = 
           foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t))
                 t
                 (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
 
-replacePEnv :: ParseEnv -> ElabState ()
-replacePEnv = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< replace e)
+replaceDefinitions :: ParseEnv -> ElabState ()
+replaceDefinitions = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< replace e)
 
 -- | Build a program from the parse env
 

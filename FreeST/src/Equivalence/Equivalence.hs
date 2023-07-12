@@ -22,22 +22,16 @@ import           Bisimulation.Bisimulation ( bisimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Util.Error         ( internalError )
--- import           Util.FreestState   ( initialState
---                                     , errors
---                                     )
-import Validation.Phase
-import Util.State.State
+import           Util.Error ( internalError )
+import           Util.State.State
+import           Validation.Phase
 
-import           Validation.Kinding ( synthetise )
-import           Validation.Subkind ( (<:) )
-import qualified Validation.Substitution as Subs
-                                                ( unfold
-                                                , subs
-                                                )
 import           Control.Monad.State ( runState )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import           Validation.Kinding ( synthetise )
+import           Validation.Subkind ( (<:) )
+import qualified Validation.Substitution as Subs ( unfold, subs)
 
 -- DEPRECATED: use Bisimulation.bisimilar
 
@@ -115,7 +109,7 @@ isSessionType _ _  = False
 
 -- No need: just compare the Map.keysSet
 --
--- instance Equivalence VarEnv where
+-- instance Equivalence Signatures where
 --   equivalent kenv env1 env2 =
 --     Map.size env1
 --       == Map.size env2

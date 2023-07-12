@@ -33,12 +33,8 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
-import           Parse.Phase
-import           Elaboration.Phase
-import           Validation.Phase  -- (Prog, Typing)
+import           Validation.Phase
 import           Util.State.State
-import           Syntax.AST
 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
@@ -60,7 +56,7 @@ pair e t =
       return (m Map.! l0, m Map.! l1)
     u              -> let p = getSpan u in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
-  where l0 = (mkTupleLabels !! 0) defaultSpan
+  where l0 = head mkTupleLabels defaultSpan
         l1 = (mkTupleLabels !! 1) defaultSpan 
 
 forall :: E.Exp -> T.Type -> TypingState T.Type

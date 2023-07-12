@@ -7,30 +7,24 @@ module Elaboration.Match
   )
 where
 
-import           Data.List            (groupBy,sortOn,transpose,find)
-import           Data.Function        ((&))
-import           Data.Functor         ((<&>))
-import           Control.Monad        (when)
-import           Control.Monad.Extra  ((&&^))
-import           Control.Bool         (ifThenElseM)
+import           Elaboration.Phase
+import           Parse.Phase
 import           Syntax.Base
-import           Syntax.MkName
 import           Syntax.Expression
-import qualified Syntax.Type       as T
-import qualified Validation.Rename as R
+import           Syntax.MkName
+import qualified Syntax.Type as T
 import           Util.Error
--- import           Util.FreestState
-import           Data.Maybe           (isJust)
-import qualified Data.Set          as Set
-import qualified Data.Map.Strict   as Map
+import           Util.State.State
+import qualified Validation.Rename as R
 
-import           Util.State.State 
-import Parse.Phase
-import Elaboration.Phase
-
-
-
-import           Debug.Trace -- debug (used on debugM function)
+import           Control.Bool (ifThenElseM)
+import           Control.Monad (when)
+import           Control.Monad.Extra ((&&^))
+import           Data.Function ((&))
+import           Data.Functor ((<&>))
+import           Data.List (groupBy,sortOn,transpose)
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 type Equation = ([Pattern],Exp)
 

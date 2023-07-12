@@ -13,18 +13,19 @@ import Data.Bifunctor
 
 type family XDef a -- = [([E.Pattern], E.Exp)]
 
--- type TypeEnv = Map.Map Variable (K.Kind, T.Type)
+-- | The definitions of the datatypes and types declared in a program
 type Types = Map.Map Variable (K.Kind, T.Type)
 
--- type VarEnv = Map.Map Variable T.Type
+-- | The signatures of the functions names (including the primitive
+-- operators) and parameters, and the datatype constructors
 type Signatures = Map.Map Variable T.Type
 
--- type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
--- type ParseEnv    = Map.Map Variable ([Variable], Exp)
--- type Prog = Map.Map Variable E.Exp
+-- | The definitions of the named functions in a program
+-- Parse, PatternMatching -> Map Variable [([Pattern], Exp)]
+-- Elaboration            -> Map Variable ([Variable], Exp)
+-- Validation             -> Map Variable Exp
 type Definitions a = Map.Map Variable (XDef a)
   
---  moduleName :: Maybe FilePath
 
 data AST a = AST
   { types       :: Types
