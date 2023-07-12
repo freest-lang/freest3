@@ -7,14 +7,12 @@ module Parse.Phase where
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import           Util.State.State
 import           Util.Error
+import           Util.State.State
 
 import           Control.Monad.State
--- import           Data.Bifunctor
-import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import Data.Void
+import qualified Data.Set as Set
 
 type Imports = Set.Set FilePath
 type ModuleName = Maybe FilePath
@@ -40,7 +38,6 @@ initialExtraParse = Extra { .. }
     imports     = Set.empty
     pEnvChoices = []
     runOpts     = defaultOpts
-
 
 -- | State with file name
 
@@ -84,15 +81,12 @@ getImps = imports . extra
 
 addToPEnvChoices :: [Variable] -> ParseState ()
 addToPEnvChoices vs = modify (\s -> s{extra = (extra s){pEnvChoices = pEnvChoices (extra s) ++ vs}})
--- addToPEnvChoices vs = modify (\s -> s{extra = third (++ vs) (extra s)})
 
--- addToPEnvPat :: MonadState (FreestS Parse) m => Variable -> [E.Pattern] -> E.Exp -> m ()
 addToPEnvPat :: Variable -> [E.Pattern] -> E.Exp -> ParseState ()
 addToPEnvPat x xs e =
   modify (\s -> s { ast = (ast s)
    { definitions = Map.insertWith add x [(xs, e)] (definitions $ ast s)} })
     where add b a = (++) a b
-
 
 -- | FILE NAME
 
