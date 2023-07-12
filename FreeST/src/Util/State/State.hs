@@ -14,9 +14,10 @@ import           Util.Warning
 import qualified Control.Monad.State as S
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
+import           Data.Maybe
 import qualified Data.Traversable as Traversable
 import           Data.Void
-import           Data.Maybe
+import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
@@ -227,3 +228,10 @@ addDualof d@(T.Dualof p t) = do
     Just u -> S.modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> S.modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
+
+-- | Debug Function
+
+debugM :: S.MonadState (FreestS a) m => String -> m ()
+debugM err = do
+  i <- getNextIndex
+  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"

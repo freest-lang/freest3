@@ -6,7 +6,7 @@ module Elaboration.Elaboration
   )
 where
 
-import           Elaboration.Elaborate
+import           Elaboration.Replace
 import qualified Elaboration.Match as Match
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
@@ -84,8 +84,8 @@ elab :: ElabState Prog
 elab = do
   solveEquations
   (Dual.resolve =<< getTypes) >>= setTypes
-  elabVEnv =<< getSignatures
-  elabPEnv =<< getDefs
+  replaceVEnv =<< getSignatures
+  replacePEnv =<< getDefs
   (Dual.resolve =<< getSignatures) >>= setSignatures
   (Dual.resolve =<< getDefs) >>= setDefs
   buildProg =<< getDefs
@@ -112,14 +112,16 @@ fixConsTypes = do
 
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
-elabVEnv :: Signatures -> ElabState ()
-elabVEnv = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< elaborate t)
+replaceVEnv :: Signatures -> ElabState ()
+replaceVEnv = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
   where quantifyLowerFreeVars t = 
-          foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t)) t (Set.filter (isLower.head.show) $ free t)
+          foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t))
+                t
+                (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
 
-elabPEnv :: ParseEnv -> ElabState ()
-elabPEnv = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< elaborate e)
+replacePEnv :: ParseEnv -> ElabState ()
+replacePEnv = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< replace e)
 
 -- | Build a program from the parse env
 

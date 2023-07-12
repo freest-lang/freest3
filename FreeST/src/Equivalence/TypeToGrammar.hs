@@ -23,7 +23,7 @@ import qualified Syntax.Type                   as T
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Validation.Terminated          ( terminated )
-import           Elaboration.Elaborate          ( changePos )
+import           Elaboration.Replace          ( changePos )
 import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
 import           Util.Error                     ( internalError )
