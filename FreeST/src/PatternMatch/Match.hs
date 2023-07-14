@@ -1,4 +1,4 @@
-module Elaboration.Match
+module PatternMatch.Match
   (addMissingVars
   -- , checkChoices
   , checkNumArgs
@@ -7,8 +7,8 @@ module Elaboration.Match
   )
 where
 
-import           Elaboration.Phase
-import           Parse.Phase
+import qualified Parse.Phase as PP
+import           PatternMatch.Phase
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.MkName
@@ -40,7 +40,7 @@ type Equation = ([Pattern],Exp)
 --             $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
 
 -- check if the number of arguments is the same for every function definition
-checkNumArgs :: ParseEnvPat -> PatternState ()
+checkNumArgs :: PP.Defs -> PatternState ()
 checkNumArgs = tMapWithKeyM_ checkNumArgs'
 
 checkNumArgs' :: Variable -> [([Pattern],Exp)] -> PatternState ()
@@ -51,7 +51,7 @@ checkNumArgs' fn lines
         allSame _ = True
 
 -- check if there is a mixture of channel patterns
-checkChanVar :: ParseEnvPat -> PatternState ()
+checkChanVar :: PP.Defs -> PatternState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ (mapM (checkChanVar' cons) . prep) penv) 
   where prep = transpose . map fst
@@ -80,7 +80,7 @@ checkChanVar' cons xs
 
 -- filling functions -----------------------------------------------
 
-addMissingVars :: ParseEnvPat -> ParseEnvPat
+addMissingVars :: PP.Defs -> PP.Defs
 addMissingVars = Map.map fillVars
 
 -- fills every function definition with its own max length of arguments
@@ -95,7 +95,7 @@ fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all li
 
 -- match -----------------------------------------------------------
 
-matchFuns :: ParseEnvPat -> PatternState ParseEnv
+matchFuns :: PP.Defs -> PatternState Defs
 matchFuns = mapM matchFun
 
 matchFun :: [Equation] -> PatternState ([Variable],Exp)

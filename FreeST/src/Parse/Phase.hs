@@ -24,6 +24,10 @@ type instance XDef Parse = [([E.Pattern], E.Exp)] -- ~ ParseEnvPat
 type instance XExtra Parse = Extra 
   -- (ModuleName, Imports, ParseEnvChoices, RunOpts)
 
+type ParseS = FreestS Parse
+type ParseState = StateT ParseS (Either ErrorType)
+type Defs = Definitions Parse
+  
 data Extra = Extra
   { moduleName  :: ModuleName
   , imports     :: Imports
@@ -49,14 +53,6 @@ initialWithFile runFilePath = initial Extra{..}
     pEnvChoices = []
     runOpts     = defaultOpts{runFilePath}
 
-    
--- type ParseState = State (FreestState Parse)
--- type ParseState = FreestState Parse
-
-type FreestParse = FreestS Parse
-type ParseState = StateT (FreestS Parse) (Either ErrorType)
-type ParseEnvPat = Definitions Parse
-  
 setModuleName :: ModuleName -> ParseState ()
 setModuleName moduleName = modify (\s -> s{extra = (extra s){moduleName}})
 

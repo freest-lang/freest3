@@ -1,17 +1,12 @@
 {-# LANGUAGE LambdaCase, FlexibleInstances, BlockArguments , TypeFamilies #-}
 
-module Elaboration.Elaboration
-  ( elaboration
-  )
-where
+module Elaboration.Elaboration (elaboration) where
 
-import qualified Elaboration.Match as Match
-import           Elaboration.Phase
+-- import qualified Elaboration.Match as Match
 import           Elaboration.Replace
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
-import           Parse.Phase
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
@@ -21,45 +16,22 @@ import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
 import           Validation.Kinding (synthetise)
-import           Validation.Phase -- (Prog, Typing)
 import qualified Validation.Subkind as SK (join)
+import qualified PatternMatch.Phase as PMP
+import           Elaboration.Phase
+import qualified Validation.Phase as VP
 
-import           Control.Monad.State
+import           Control.Monad.State hiding (void)
 import           Data.Char (isLower)
-import           Data.Functor
+import           Data.Functor hiding (void)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Syntax.Base as T
 import           Validation.Substitution (free)
 
--- | Elaborate main functions
--- | 1. Resolves pattern matching (removes patterns)
--- | 2. Resolves typenames, duality & builds the program
-elaboration :: ParseEnvPat -> FreestPattern -> ElabState Prog
-elaboration s initS = do
-  let s1 = execState (patternMatching s) initS
-  put (convertState s1)
-  elab
-  where
-    convertState :: FreestPattern -> FreestElab
-    convertState s = s {ast = (ast s){definitions = definitions (ast s)}
-                       , extra = extra s}
-
--- | 1. Fix the multiplicity of the data constructor types
--- | 2. Checks if there are choices with the same name as constructors (no need for now)
--- | 3. Checks correct number of arguments
--- | 4. Checks correct channels' pattern matching
--- | 5. Adds missing Vars to malformed functions
--- | 6. Remove all patterns
-patternMatching :: ParseEnvPat -> PatternState ()
-patternMatching s = do
-  fixConsTypes
-  --  Match.checkChoices =<< getPEnvChoices
-  Match.checkNumArgs s
-  Match.checkChanVar s
-  let s1 = Match.addMissingVars s
-  Match.matchFuns s1 >>= setDefs
+elaboration :: PMP.PatternS -> (VP.Defs, ElabS)
+elaboration patternS = runState elaboration' (patternToElab patternS)
 
 -- | 1. Solve the equations' system.
 -- |    From this point, there are no type names on the function signatures
@@ -76,8 +48,9 @@ patternMatching s = do
 --      type operators on ExpEnv;
 --      From f x = E and f : T -> U
 --      build a lambda expression: f = \x : T -> E
-elab :: ElabState Prog
-elab = do
+elaboration' :: ElabState VP.Defs
+elaboration'  = do
+  fixConsTypes
   solveEquations
   getTypes >>= Dual.resolve >>= setTypes
   getSignatures >>= replaceSignatures
@@ -88,8 +61,12 @@ elab = do
   -- debugM . ("Program " ++) <$> show =<< getProg
   -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
 
+
+patternToElab :: PMP.PatternS -> ElabS
+patternToElab s = s {ast = (ast s){definitions = definitions (ast s)}, extra = void}
+
 -- | Fix the multiplicity of the data constructor types
-fixConsTypes :: PatternState ()
+fixConsTypes :: ElabState ()
 fixConsTypes = do
   tys <- getTypes
   -- if this is the first step in the elaboration, there are still type names in signatures,
@@ -98,7 +75,7 @@ fixConsTypes = do
   getSignatures >>= tMapWithKeyM_ \k v -> when (isDatatypeContructor k tys)
     (fixConsType kEnv K.Un v >>= addToSignatures k)
   where
-    fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> PatternState T.Type
+    fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> ElabState T.Type
     fixConsType kEnv m (T.Arrow s _ t u) = do
       (K.Kind _ m' _) <- synthetise kEnv t
       T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
@@ -116,12 +93,12 @@ replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFr
                 (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
 
-replaceDefinitions :: ParseEnv -> ElabState ()
+replaceDefinitions :: Defs -> ElabState ()
 replaceDefinitions = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< replace e)
 
 -- | Build a program from the parse env
 
-buildProg :: ParseEnv -> ElabState (Map.Map Variable E.Exp)
+buildProg :: Defs -> ElabState (Map.Map Variable E.Exp)
 buildProg = Map.foldlWithKey (\prog pv (ps,e) -> addToProg prog pv =<< buildFunBody pv ps e)
              (return Map.empty)
   where addToProg acc pv e = acc >>= \prog -> return $ Map.insert pv e prog
@@ -142,4 +119,5 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp _ xs _ = do
     t <- fromJust <$> getFromSignatures f
     addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
+
 

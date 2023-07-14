@@ -26,7 +26,7 @@ import           System.IO.Unsafe ( unsafePerformIO )
 -- EVALUATION
 ------------------------------------------------------------
 
-evalAndPrint :: Variable -> FreestTyping -> E.Exp -> IO ()
+evalAndPrint :: Variable -> TypingS -> E.Exp -> IO ()
 evalAndPrint name s e = 
   addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx -> do
 
@@ -45,7 +45,7 @@ evalAndPrint name s e =
         $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
 
 
-eval :: Variable -> Types -> Ctx -> Prog -> E.Exp -> IO Value
+eval :: Variable -> Types -> Ctx -> Defs -> E.Exp -> IO Value
 eval _ _ _   _ (E.Unit _                      )    = return Unit
 eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
 eval _ _ _   _ (E.Float  _ f                  )    = return $ Float f        
@@ -103,7 +103,7 @@ evalCase name s tys ctx eenv m (Cons x xs) =
       eval name tys ctx1 eenv e 
 evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
-evalVar :: Variable -> Types -> Ctx -> Prog -> Variable -> IO Value
+evalVar :: Variable -> Types -> Ctx -> Defs -> Variable -> IO Value
 evalVar _ tys ctx eenv x
   | isDatatypeContructor x tys  = return $ Cons x []
   | Map.member x eenv            = eval x tys ctx eenv (eenv Map.! x)
