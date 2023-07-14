@@ -57,11 +57,11 @@ checkAndRun runOpts = do
   when (hasErrors patternS) (die $ getErrors runOpts patternS)
 
   -- | Elaboration
-  let (prog, elabS) = elaboration patternS
+  let (defs, elabS) = elaboration patternS
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
   -- | Rename & TypeCheck
-  let s4 = execState (renameState >> typeCheck runOpts) (elabToTyping prog elabS)
+  let s4 = execState (renameState >> typeCheck runOpts) (elabToTyping defs elabS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
   when (hasErrors s4)  (die $ getErrors runOpts s4)
   
@@ -101,6 +101,6 @@ checkAndRun runOpts = do
       where
         s = defaultSpan
 
-elabToTyping :: Map.Map Variable E.Exp -> ElabS -> TypingS
+elabToTyping :: Validation.Phase.Defs -> ElabS -> TypingS
 elabToTyping defs s = s {ast=newAst, extra = void}
   where newAst = AST {types=types $ ast s, signatures=signatures $ ast s, definitions = defs}

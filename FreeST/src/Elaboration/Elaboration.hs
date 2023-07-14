@@ -57,7 +57,7 @@ elaboration'  = do
   getDefs >>= replaceDefinitions
   getSignatures >>= Dual.resolve >>= setSignatures
   getDefs >>= Dual.resolve >>= setDefs
-  getDefs >>= buildProg
+  getDefs >>= buildDefs
   -- debugM . ("Program " ++) <$> show =<< getProg
   -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
 
@@ -98,10 +98,10 @@ replaceDefinitions = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps 
 
 -- | Build a program from the parse env
 
-buildProg :: Defs -> ElabState (Map.Map Variable E.Exp)
-buildProg = Map.foldlWithKey (\prog pv (ps,e) -> addToProg prog pv =<< buildFunBody pv ps e)
+buildDefs :: Defs -> ElabState VP.Defs 
+buildDefs = Map.foldlWithKey (\def pv (ps,e) -> addToDefs def pv =<< buildFunBody pv ps e)
              (return Map.empty)
-  where addToProg acc pv e = acc >>= \prog -> return $ Map.insert pv e prog
+  where addToDefs acc pv e = acc >>= \def -> return $ Map.insert pv e def
 
 buildFunBody :: Variable -> [Variable] -> E.Exp -> ElabState E.Exp
 buildFunBody f as e = getFromSignatures f >>= \case
