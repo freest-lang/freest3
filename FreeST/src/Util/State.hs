@@ -49,6 +49,7 @@ initial ext = FreestS {
   , extra = ext
   }
 
+-- Dummy phase. This instance allows calling functions from a generic context
 data Gen
 type instance XExtra Gen  = Void
 
@@ -185,7 +186,7 @@ getMain opts = fromMaybe mkMain maybeMain
   where maybeMain = mainFunction opts
 
 
--- | OTHER MODULE
+-- | OTHER MODULE?
 
 -- typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
 -- typeListToRcdType []             = Map.empty
