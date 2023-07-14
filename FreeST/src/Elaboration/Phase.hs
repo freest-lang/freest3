@@ -20,3 +20,7 @@ type Defs = Definitions Elab
 
 extraElab :: XExtra Elab
 extraElab = void
+
+initialElab :: FreestS Elab
+initialElab = initial void
+

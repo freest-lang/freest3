@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NamedFieldPuns, FlexibleContexts, TypeFamilies #-}
 module Util.State where
 
 import           Syntax.AST
@@ -140,6 +139,9 @@ hasErrors = not . null . errors
 
 addError :: S.MonadState (FreestS a) m => ErrorType -> m ()
 addError e = S.modify (\s -> s { errors = e : errors s })
+  
+setErrors :: S.MonadState (FreestS a) m => Errors -> m ()
+setErrors errors = S.modify (\s -> s { errors })
   
 -- | WARNINGS
 

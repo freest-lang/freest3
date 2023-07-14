@@ -16,7 +16,7 @@ import qualified Data.Set as Set
 
 type Imports = Set.Set FilePath
 type ModuleName = Maybe FilePath
-type ParseEnvChoices = [Variable]
+type ChoicesLabels = [Variable]
 
 data Parse
 
@@ -31,7 +31,7 @@ type Defs = Definitions Parse
 data Extra = Extra
   { moduleName  :: ModuleName
   , imports     :: Imports
-  , pEnvChoices :: ParseEnvChoices
+  , pEnvChoices :: ChoicesLabels
   , runOpts     :: RunOpts
   }
 

@@ -69,6 +69,11 @@ library:
     - Validation.TypeChecking
     - Interpreter.Builtin
     - Interpreter.Eval
+    - Parse.Phase
+    - PatternMatch.Phase
+    - Elaboration.Phase
+    - Validation.Phase
+    - PatternMatch.PatternMatch
 
 executables:
   freest:

@@ -3,6 +3,7 @@ module FreeST
   ( main
   , checkAndRun
   , isDev
+  , elabToTyping
   )
 where
 
