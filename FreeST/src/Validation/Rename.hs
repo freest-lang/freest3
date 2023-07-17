@@ -36,7 +36,6 @@ import qualified Validation.Substitution       as Subs
                                                 )
 import           Util.Error                     ( internalError )
 import           Util.FreestState
-import           Util.KeepSrc
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 
@@ -89,21 +88,21 @@ instance Rename (Bind T.Type E.Exp) where
 
 instance Rename T.Type where
   -- Labelled
-  rename tbs pbs (T.Labelled p s m)   = fmap keepSrc $ T.Labelled p s <$> tMapM (rename tbs pbs) m
+  rename tbs pbs (T.Labelled p s m)  = T.Labelled p s <$> tMapM (rename tbs pbs) m
   -- Functional types
-  rename tbs pbs (T.Arrow p m t u)   = fmap keepSrc $ T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
-  rename tbs pbs (T.Message p pol t) = fmap keepSrc $ T.Message p pol <$> rename tbs pbs t
+  rename tbs pbs (T.Arrow p m t u)   = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
+  rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
   -- Session types
-  rename tbs pbs (T.Semi p t u)      = fmap keepSrc $ T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
+  rename tbs pbs (T.Semi p t u)      = T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Polymorphism
-  rename tbs pbs (T.Forall p b)      = fmap keepSrc $ T.Forall p <$> rename tbs pbs b
+  rename tbs pbs (T.Forall p b)      = T.Forall p <$> rename tbs pbs b
   -- Functional or session
   rename tbs pbs (T.Rec    p b)
-    | isProperRec b = fmap keepSrc $ T.Rec p <$> rename tbs pbs b
+    | isProperRec b = T.Rec p <$> rename tbs pbs b
     | otherwise     = rename tbs pbs (body b)
-  rename tbs _ (T.Var    p a     ) = return $ keepSrc $ T.Var p (findWithDefaultVar a tbs)
+  rename tbs _ (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
   rename tbs _ (T.Dualof p (T.Var p' a)) =
-    return $ keepSrc $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
+    return $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
 --rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
   rename _ _ t@T.Dualof{}          = internalError "Validation.Rename.rename" t
@@ -115,31 +114,31 @@ instance Rename T.Type where
 
 instance Rename E.Exp where
   -- Variable
-  rename _ pbs (E.Var p x) = return $ keepSrc $ E.Var p (findWithDefaultVar x pbs)
+  rename _ pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
   -- Abstraction intro and elim
-  rename tbs pbs (E.Abs p m b) = fmap keepSrc $ E.Abs p m <$> rename tbs pbs b
-  rename tbs pbs (E.App p e1 e2) = fmap keepSrc $ E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2
+  rename tbs pbs (E.Abs p m b) = E.Abs p m <$> rename tbs pbs b
+  rename tbs pbs (E.App p e1 e2) = E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2
   -- Pair intro and elim
-  rename tbs pbs (E.Pair p e1 e2) = fmap keepSrc $ E.Pair p <$> rename tbs pbs e1 <*> rename tbs pbs e2
+  rename tbs pbs (E.Pair p e1 e2) = E.Pair p <$> rename tbs pbs e1 <*> rename tbs pbs e2
   rename tbs pbs (E.BinLet p x y e1 e2) = do
     x'  <- rename tbs pbs x
     y'  <- rename tbs pbs y
     e1' <- rename tbs pbs e1
     e2' <- rename tbs (insertVar y y' (insertVar x x' pbs)) e2
-    return $ keepSrc $ E.BinLet p x' y' e1' e2'
+    return $ E.BinLet p x' y' e1' e2'
   -- Datatype elim
   rename tbs pbs (E.Case p e fm) =
-    fmap keepSrc $ E.Case p <$> rename tbs pbs e <*> tMapM (renameField tbs pbs) fm
+    E.Case p <$> rename tbs pbs e <*> tMapM (renameField tbs pbs) fm
   -- Type application & TypeAbs
-  rename tbs pbs (E.TypeAbs p b) = fmap keepSrc $ E.TypeAbs p <$> rename tbs pbs b
+  rename tbs pbs (E.TypeAbs p b) = E.TypeAbs p <$> rename tbs pbs b
   rename tbs pbs (E.TypeApp p e t) =
-    fmap keepSrc $ E.TypeApp p <$> rename tbs pbs e <*> rename tbs pbs t
+    E.TypeApp p <$> rename tbs pbs e <*> rename tbs pbs t
   -- Let
   rename tbs pbs (E.UnLet p x e1 e2) = do
     x'  <- rename tbs pbs x
     e1' <- rename tbs pbs e1
     e2' <- rename tbs (insertVar x x' pbs) e2
-    return $ keepSrc $ E.UnLet p x' e1' e2'
+    return $ E.UnLet p x' e1' e2'
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ _ e = return e
 
