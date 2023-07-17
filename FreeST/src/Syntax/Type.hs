@@ -58,7 +58,7 @@ type TypeMap = Map.Map Variable Type
 data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
-  omission = Int
+  omission = setSrc "Int" . Int
 
 instance Located Type where
   getSpan (Int  p       ) = p
