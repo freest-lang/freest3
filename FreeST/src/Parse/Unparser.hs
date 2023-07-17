@@ -82,6 +82,9 @@ instance Show T.Polarity where
 -- Note: show should be aligned with the creation of new variables;
 -- see Syntax.Variables
 
+instance Unparse Variable where
+  unparse v = (maxRator, show v)
+
 instance Show Variable where
   show = showVar
 
