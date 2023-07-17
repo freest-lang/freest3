@@ -117,9 +117,9 @@ buildFunBody f as e = getFromVEnv f >>= \case
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    fmap keepSrc $ E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
+    fmap forceKeepSrc $ E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    fmap keepSrc $ E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
+    fmap forceKeepSrc $ E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromVEnv f
