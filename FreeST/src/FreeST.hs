@@ -114,7 +114,7 @@ checkAndRun runOpts = do
       -- parseEnv
       , parseEnv = keepSrc $ parseEnv state
       -- parseEnvPat
-      -- , parseEnvPat = keepSrc $ parseEnvPat s2
+      , parseEnvPat = keepSrc $ parseEnvPat state
       -- parseEnvChoices
       -- , parseEnvChoices = keepSrc $ parseEnvChoices s2
       }

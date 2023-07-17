@@ -9,6 +9,7 @@ import           Syntax.Type as T
 import           Syntax.Expression as E
 import           Syntax.Kind as K
 import           Syntax.Program ( VarEnv, TypeEnv, Prog )
+import           Util.FreestState ( ParseEnvPat )
 
 class KeepSrc a where
     keepSrc :: a -> a
@@ -16,6 +17,8 @@ class KeepSrc a where
 instance KeepSrc E.Exp where
     keepSrc (E.Var s v) = defaultKeepSrc $
         E.Var s (keepSrc v)
+    keepSrc (E.Abs s m (Bind s' v t e)) = defaultKeepSrc $
+        E.Abs s m (Bind s' (keepSrc v) (keepSrc t) (keepSrc e))
     keepSrc (E.App s e1 e2) = defaultKeepSrc $
         E.App s (keepSrc e1) (keepSrc e2)
     keepSrc (E.Pair s e1 e2) = defaultKeepSrc $
@@ -83,10 +86,19 @@ instance KeepSrc TypeEnv where
 instance KeepSrc Prog where
     keepSrc = defaultKeepSrcMapKeys
 
+instance KeepSrc ParseEnvPat where
+    keepSrc = Map.fromList . map (\(k, vs) -> (keepSrc k, map (\(ps, e) -> (map keepSrc ps, keepSrc e)) vs)) . Map.toList
+
 defaultKeepSrc :: (Unparse a, Located a) => a -> a
 defaultKeepSrc x 
-    | null $ source $ getSpan x = setSrc (snd $ unparse x) x
+    | null $ source $ getSpan x = updateSrc x
     | otherwise                 = x
+
+forceKeepSrc :: (KeepSrc a, Unparse a, Located a) => a -> a
+forceKeepSrc = updateSrc . keepSrc
+
+updateSrc :: (Unparse a, Located a) => a -> a
+updateSrc x = setSrc (snd $ unparse x) x
 
 -- defaultKeepSrcMap :: Map a k -> Map a k
 -- defaultKeepSrcMap m = Map.map 
