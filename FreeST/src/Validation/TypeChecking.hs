@@ -31,8 +31,8 @@ import           Control.Monad
 import           Control.Monad.State ( get )
 import qualified Data.Map.Strict as Map
 
-typeCheck :: RunOpts -> TypingState ()
-typeCheck runOpts = do
+typeCheck :: TypingState ()
+typeCheck = do
   -- * Check the formation of all type decls
   mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTypes
   -- * Check the formation of all function signatures
@@ -43,7 +43,7 @@ typeCheck runOpts = do
     -- * Check function bodies
     tMapWithKeyM_ (checkFunBody (signatures $ ast s)) =<< getDefs
     -- * Check the main function
-    checkMainFunction runOpts
+    checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
 
@@ -53,8 +53,9 @@ checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
 checkFunBody sigs f e =
   forM_ (sigs Map.!? f) (Typing.checkAgainst Map.empty e)
 
-checkMainFunction :: RunOpts -> TypingState ()
-checkMainFunction runOpts = do
+checkMainFunction :: TypingState ()
+checkMainFunction = do
+  runOpts <- getRunOpts
   sigs <- getSignatures
   let main = getMain runOpts
   if main `Map.member` sigs

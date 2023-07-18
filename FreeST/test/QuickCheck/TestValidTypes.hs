@@ -41,7 +41,7 @@ kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultS
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ execState (synthetise kindEnv t) initialTyp
+  null $ errors $ execState (synthetise kindEnv t) (initialTyp defaultOpts)
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property

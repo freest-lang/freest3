@@ -24,7 +24,7 @@ kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultS
 
 kinded :: Type -> Bool
 kinded t = null (errors s)
-  where (_, s) = runState (synthetise kindEnv t) initialTyp --  "Kind synthesis")
+  where (_, s) = runState (synthetise kindEnv t) (initialTyp defaultOpts) --  "Kind synthesis")
 
 prop_not_bisimilar :: NonBisimPair -> Property
 prop_not_bisimilar (NonBisimPair t u) = kinded t && kinded u ==> not (t `bisimilar` u)

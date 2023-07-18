@@ -38,7 +38,7 @@ isExpr :: (Validation.Phase.Defs, ElabS) -> Exp -> Type -> TestExpectation
 isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = let ((t',e'), s') = runState resolveBoth prelude in
-         execState (test t' e' s') (elabToTyping defs s')
+         execState (test t' e' s') (elabToTyping defaultOpts defs s')
 
   test t e s' = do
     setErrors (errors s')
@@ -48,20 +48,6 @@ isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (error
     checkAgainst Map.empty e' t'
 
   resolveBoth = (,) <$> Dual.resolve t <*> Dual.resolve e
-    
-prelude' = undefined -- do
-  -- preludeFp <- getDataFileName "Prelude.fst"
-  -- let s0 = initialS {runOpts=defaultOpts{runFilePath=preludeFp}}
-  -- s1 <- parseProgram s0
-  -- -- | Prelude entries without body are builtins  
-  -- let venv = Map.keysSet (noConstructors (typeEnv s1) (varEnv s1))
-  -- let penv = Map.keysSet (parseEnv s1)
-  -- let bs = Set.difference venv penv
-  -- let s2 = emptyPEnv $ execState elaboration s1
-  -- let s3 = execState renameState s2
-  -- return $ s3 { builtins = bs }
-
-
 
 prelude = do
   s0 <- initialWithFile <$> getDataFileName "Prelude.fst"

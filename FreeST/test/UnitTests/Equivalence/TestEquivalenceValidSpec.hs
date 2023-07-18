@@ -8,11 +8,12 @@ import Control.Monad.State ( execState, evalState )
 import Elaboration.ResolveDuality
 import SpecUtils
 import Syntax.Kind as K
-import Util.State ( initial, errors )
+import Util.State ( initial, errors, defaultOpts )
 import Validation.Kinding ( synthetise )
 import Validation.Rename
 import qualified Elaboration.Phase as EP
 import qualified Validation.Phase as VP
+
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] |
@@ -28,7 +29,7 @@ resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial EP.extraElab)
 
 wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) VP.initialTyp
+wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) (VP.initialTyp defaultOpts)
 
 spec :: Spec
 spec = do

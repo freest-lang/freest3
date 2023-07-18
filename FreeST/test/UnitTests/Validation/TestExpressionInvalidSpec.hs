@@ -27,7 +27,7 @@ isExpr :: Exp -> Bool
 isExpr e = null (errors s)
  where
   (e',s0) = runState (Dual.resolve e) EP.initialElab
-  s = execState (synthetise Map.empty e') VP.initialTyp{errors=errors s0}
+  s = execState (synthetise Map.empty e') (VP.initialTyp defaultOpts){errors=errors s0}
 
 main :: IO ()
 main = hspec spec

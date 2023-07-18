@@ -89,7 +89,7 @@ instance Equivalence T.Type where
 isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType kEnv t = null (errors state) && K.isSession kind
  where
-  (kind, state) = runState (synthetise kEnv t) initialTyp
+  (kind, state) = runState (synthetise kEnv t) (initialTyp defaultOpts)
 
 {-
 -- An alternative is below. Lighter, but I don't have a proof that the
