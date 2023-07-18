@@ -43,6 +43,7 @@ library:
 #    - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.Base
+    - Syntax.AST
     - Syntax.Type
     - Syntax.Expression
     - Syntax.Kind
