@@ -130,7 +130,7 @@ parseOpt s (Just xs)
       st <- lift get
       runOpts <- lift Utils.getRunOpts
       case parseExpr "<interactive>" xs of
-        Left err -> liftS $ print err
+        Left err -> lift (setErrors err >> get) >>= \s0 -> liftIO (putStrLn $ getErrors runOpts s0)
         Right e       -> do
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
