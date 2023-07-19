@@ -7,27 +7,22 @@ module HandleOpts where
 import           Elaboration.Elaboration ( elaboration )
 import           FreeST
 import           Parse.Parser
+import           Parse.Phase
 import           Paths_FreeST (version)
+import           PatternMatch.PatternMatch
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.State hiding (void)
 import           Util.GetTOps
+import           Util.State hiding (void)
 import           Utils
 import qualified Validation.Kinding as K
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
 
-import Parse.Phase
-import Validation.Phase
-import Syntax.AST
-
-import PatternMatch.PatternMatch
-
-import           Control.Monad.Extra
 import           Control.Monad.State
 import           Data.Char (isUpper)
 import qualified Data.Map.Strict as Map
@@ -35,7 +30,6 @@ import           Data.Version ( showVersion )
 import           System.Console.Haskeline
 import           System.Directory
 import           System.FilePath
-
 
 -- | -------------------------------------------------------
 -- | Loads a file into the REPL
@@ -177,9 +171,8 @@ infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++
 multilineCmd :: ParseS -> String -> InputT REPLState ()
 multilineCmd s xs' = do
   input <- liftS $ runInputT defaultSettings (readLoop (drop 2 xs'))
---  f <- lift getFilePath
---  st <- lift get
-  let s1 = parseDefs s "<interactive>" input
+  let s0 = s{extra = (extra s){runOpts=(runOpts $ extra s){runFilePath="<interactive>"}, moduleName=Nothing}}
+  let s1 = parseDefs s0 "<interactive>" input
   lift $ check s1 "<interactive>" Nothing
   s2 <- lift get
   runOpts <- lift Utils.getRunOpts
