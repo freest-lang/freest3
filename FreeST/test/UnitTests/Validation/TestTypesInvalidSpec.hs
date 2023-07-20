@@ -3,16 +3,16 @@ module Validation.TestTypesInvalidSpec
   )
 where
 
-import           Control.Monad.State                ( execState )
-import qualified Data.Map.Strict            as Map  ( empty )
+import           Control.Monad.State ( execState )
+import qualified Data.Map.Strict as Map ( empty )
 import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
-import           Util.FreestState                   ( initialState, errors )
-import           Validation.Kinding                 ( synthetise )
-import           Validation.Rename                  ( renameType )
 import qualified Syntax.Type as T
-
-import Text.Read
+import           Util.State ( initialS, errors )
+import           Validation.Kinding ( synthetise )
+import           Validation.Rename ( renameType )
+import  Elaboration.Phase
+import           Text.Read
 
 spec :: Spec
 spec = describe "Invalid types tests" $ do
@@ -30,7 +30,7 @@ isWellFormed :: String -> Bool
 isWellFormed str =  either (const False) synthetiseK (parseType "TestTypesInvalidSpec" str)
  where
   synthetiseK t = null $ errors $ execState
-    (synthetise Map.empty . renameType =<< Dual.resolve t) initialState
+    (synthetise Map.empty . renameType =<< Dual.resolve t) initialElab
 
 main :: IO ()
 main = hspec spec

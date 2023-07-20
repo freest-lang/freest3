@@ -25,25 +25,25 @@ module Parse.Unparser
   , showModuleWithDots
   ) where
 
+import           Syntax.AST
 import           Syntax.Base
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
-import qualified Syntax.Type as T
 import           Syntax.MkName ( mkTrue, mkFalse )
+import qualified Syntax.Type as T
 
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
-import qualified Data.Set as Set
 
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = showPos sp
-    | otherwise = showPos sp ++ "-" ++ showPos fp ++ ""
+    | otherwise = showPos sp ++ "-" ++ showPos fp
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
@@ -373,15 +373,13 @@ showOp x = spaced $ tail (init $ show x)
 spaced :: String -> String
 spaced s = ' ' : s ++ " "
 
--- VarEnv
+-- Signatures
 
-instance {-# OVERLAPPING #-} Show VarEnv where
-  show venv = "[" ++ intercalate "\n\t\t   ," (venvToList venv) ++ "]"
+instance {-# OVERLAPPING #-} Show Signatures where
+  show sigs = "[" ++ intercalate "\n\t\t   ," (sigsToList sigs) ++ "]"
 
-venvToList :: VarEnv -> [String]
-venvToList =
-  Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
-
+sigsToList :: Signatures -> [String]
+sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
 
 joinList :: E.Exp -> [E.Exp]
 joinList (E.Var _ x) | show x == "[]"   = []

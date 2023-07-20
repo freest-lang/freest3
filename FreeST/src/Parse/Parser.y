@@ -6,17 +6,20 @@ where
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Syntax.MkName
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
+import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.FreestState
-
+import           Parse.Phase
+import           Util.State
+import           Syntax.AST
+  
 import           Control.Monad.State
 import           Data.Either
 import           Data.Functor
+import           Data.Function
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set as Set
@@ -28,11 +31,11 @@ import           Paths_FreeST ( getDataFileName )
 %partial modname Module
 %name terms TopLevel
 %name expr Exp
-%name types Type
+%name ty Type
 %name kinds Kind
 %tokentype { Token }
 %error { parseError }
-%monad { FreestStateT } { (>>=) } { return }
+%monad { ParseState } { (>>=) } { return }
 
 %token
   nl       {TokenNL _}
@@ -175,7 +178,7 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3) }
   -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
@@ -183,13 +186,13 @@ Decl :: { () }
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
   | Pattern Op Pattern GuardsFun {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $4}
   -- Type abbreviation
-  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
+  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTypes $2 $3 }
   -- Datatype declaration
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
-      mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
-      uncurry addToTEnv $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
+      mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
+      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }
@@ -433,7 +436,7 @@ LabelList :: { Map.Map Variable (T.Type -> T.Type) }
   | ArbitraryProgVar ',' LabelList {% checkDupField $1 $3 >>
                                     return (Map.insert $1 id $3) }
 
--- TYPE SEQUANCE
+-- TYPE SEQUENCE
 
 TypeSeq :: { [T.Type] }
   :              { [] }
@@ -501,27 +504,22 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
 -- Parse functions
 -- Used in the Read instances
   
-parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
+parse :: String -> FilePath -> ([Token] -> ParseState a) -> ParseState a
 parse input fname parseFun = either (lift . Left) parseFun (scanTokens input fname)
 
 parseKind :: FilePath -> String -> Either Errors K.Kind
 parseKind runFilePath str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
---    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
+  where state = initialWithFile runFilePath
 
 parseType :: FilePath -> String -> Either Errors T.Type
-parseType runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" types) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
---     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
+parseType runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" ty) state)
+   where state = initialWithFile runFilePath
 
 parseExpr :: FilePath -> String -> Either Errors E.Exp
 parseExpr runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" expr) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
+  where state = initialWithFile runFilePath
 
-stateToEither :: (a, FreestS) -> Either Errors a
+stateToEither :: (a, FreestS b) -> Either Errors a
 stateToEither (t,s)
   | hasErrors s = Left $ errors s
   | otherwise   = Right t
@@ -530,35 +528,34 @@ stateToEither (t,s)
 -- FreeST parsing functions 
 
 -- Parses a the module header and then the program
-parseProgram :: FreestS -> IO FreestS
+parseProgram :: FreestS Parse -> IO (FreestS Parse)
 parseProgram s = do
-  let filename = runFilePath $ runOpts s
+  let filename = runFilePath $ runOpts $ extra s
   input <- readFile filename
-  let mh = parseModHeader s filename input
-  return $ parseDefs (s {moduleName = moduleName mh}) filename input
+  let mh = getModule $ parseModHeader s filename input
+  return $ parseDefs (setModule s mh) filename input
 
-
-parseModHeader :: FreestS -> FilePath -> String -> FreestS
+parseModHeader :: FreestS Parse -> FilePath -> String -> FreestS Parse
 parseModHeader s filename input =
   either (\e -> s { errors = [e] }) id (execStateT (parse input filename modname) s)
 
-parseDefs :: FreestS -> FilePath -> String -> FreestS
+parseDefs :: FreestS Parse -> FilePath -> String -> FreestS Parse
 parseDefs s filename input =
   either (\e -> s { errors = [e] }) id (execStateT (parse input filename terms) s)
 
-
-parseAndImport :: FreestS -> IO FreestS
+parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
-  let filename = runFilePath $ runOpts initial 
-  s <- parseProgram (initial {moduleName = Nothing})
-  let baseName = takeBaseName (runFilePath $ runOpts s)
-  case moduleName s of
+  let filename = getFName initial  
+--  s <- parseProgram (initial {moduleName = Nothing})   
+  s <- parseProgram (setModule initial Nothing)
+  let baseName = takeBaseName (getFName s)
+  case getModule s of
     Just name
-      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (imports s)) s
+      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (getImps s)) s
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
-    Nothing   -> doImports filename Set.empty (Set.toList (imports s)) s
+    Nothing   -> doImports filename Set.empty (Set.toList (getImps s)) s
   where
-    doImports :: FilePath -> Imports -> [FilePath] -> FreestS -> IO FreestS
+    doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
     doImports _ _ [] s = return s
     doImports defModule imported (curImport:toImport) s
       | curImport `Set.member` imported = doImports defModule imported toImport s
@@ -575,14 +572,15 @@ parseAndImport initial = do
             else 
               pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
 
-    importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
+    importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
     importModule s fileToImport curImport defModule imported toImport = do
-      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})         
-      let modName = fromJust $ moduleName s'
+      s' <- parseProgram (setModule s Nothing & setFName fileToImport)
+      let modName = fromJust $ getModule s'
       if curImport /= modName then
         pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
       else
-        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
+
 
 -- TODO: test MissingModHeader
 
@@ -598,7 +596,7 @@ parseAndImport initial = do
 
           
 -- Error Handling
-parseError :: [Token] -> FreestStateT a
+parseError :: [Token] -> ParseState a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan
 parseError (x:_) = lift . Left $ ParseError (getSpan x) (show x)
 

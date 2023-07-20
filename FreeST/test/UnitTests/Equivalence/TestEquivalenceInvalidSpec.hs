@@ -3,15 +3,13 @@ module Equivalence.TestEquivalenceInvalidSpec
   )
 where
 
-import           Syntax.Kind                   as K
-import           Bisimulation.Bisimulation      ( bisimilar )
-import           Validation.Rename
-import           Validation.Kinding             ( synthetise )
-import           SpecUtils
-import           Util.FreestState               ( initialState
-                                                , errors
-                                                )
-import           Control.Monad.State            ( execState )
+import Bisimulation.Bisimulation ( bisimilar )
+import Control.Monad.State ( execState )
+import SpecUtils
+import Syntax.Kind as K
+import Util.State ( initialS, errors)
+import Validation.Kinding ( synthetise )
+import Validation.Rename
 
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [k, t, u]  |
@@ -24,7 +22,7 @@ matchInvalidSpec [k, t, u]  |
     kEnv     = readKenv k
 
 wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialState
+wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialS
 
 spec :: Spec
 spec = do
