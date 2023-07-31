@@ -128,7 +128,17 @@ findFixedPoint branch rules ps | branch == branch' = branch
 reflex :: NodeTransformation
 reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
--- No speedup coming from this rule
+{-
+symmetric :: NodeTransformation
+symmetric _ a = Set.singleton . Set.filter (not . symmetricToAncestors)
+ where
+  symmetricToAncestors :: (Word, Word) -> Bool
+  symmetricToAncestors p = or $ Set.map (symmetricPair p) a
+
+  symmetricPair :: (Word, Word) -> (Word, Word) -> Bool
+  symmetricPair (xs, ys) (xs', ys') = xs == ys' && ys == xs'
+-}
+-- What kind of rule is this? Does not look like congruence to me, but it works (vv)
 
 headCongruence :: NodeTransformation
 headCongruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)

@@ -43,6 +43,7 @@ library:
 #    - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.Base
+    - Syntax.AST
     - Syntax.Type
     - Syntax.Expression
     - Syntax.Kind
@@ -53,7 +54,7 @@ library:
     - Util.Error
     - Util.Warning
 #    - Util.PrettyError
-    - Util.FreestState
+    - Util.State
     - Util.CmdLine
     - Util.KeepSrc
 #    - Util.PreludeLoader
@@ -70,6 +71,11 @@ library:
     - Validation.TypeChecking
     - Interpreter.Builtin
     - Interpreter.Eval
+    - Parse.Phase
+    - PatternMatch.Phase
+    - Elaboration.Phase
+    - Validation.Phase
+    - PatternMatch.PatternMatch
 
 executables:
   freest:

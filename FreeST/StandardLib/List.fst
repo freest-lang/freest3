@@ -1,9 +1,9 @@
 module List where
 
 -- TODO: (++)
-append : [Int] -> [Int] -> [Int]
-append [] ys      = ys
-append (x::xs) ys = x :: append xs ys 
+(++) : [Int] -> [Int] -> [Int]
+[]      ++ ys = ys
+(x::xs) ++ ys = x :: (xs ++ ys) 
 
 head : [Int] -> Int
 head []       = error @Int "*** List.head: empty list"
@@ -88,7 +88,7 @@ all f (x::xs) = f x && all f xs
 
 concatMap : (Int -> [Int]) -> [Int] -> [Int]
 concatMap _ []      = []
-concatMap f (x::xs) = append (f x) (concatMap f xs)
+concatMap f (x::xs) = f x ++ concatMap f xs
 
 
 sum : [Int] -> Int

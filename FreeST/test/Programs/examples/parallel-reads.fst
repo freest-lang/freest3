@@ -100,16 +100,16 @@ main =
 
 enqueueClient : Int -> IntQueue -> () -> ()
 enqueueClient i queue _ =
-    enqueue @Int i queue; putStrLn ("enqueue > " ++ (show @Int i))
+    enqueue @Int i queue; putStrLn ("enqueue > " ^^ (show @Int i))
 
 dequeueClient : IntQueue -> () -> ()
 dequeueClient queue _ = 
     let i = dequeue @Int queue in
-    putStrLn ("dequeue > " ++ (show @Int i))
+    putStrLn ("dequeue > " ^^ (show @Int i))
 
 peekClient : IntQueue -> () -> ()
 peekClient queue _ = 
     let i = peek @Int queue in
-    putStrLn ("peek    > " ++ (show @Int i))
+    putStrLn ("peek    > " ^^ (show @Int i))
 
 

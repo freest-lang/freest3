@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Util.Message where
 
+import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
 import qualified Syntax.Type as T
 import           Parse.Unparser
 
@@ -34,7 +34,7 @@ instance Style K.Kind where
 instance Style Variable where
   style f sty = {-quote . -} f sty . show
 
-instance Style VarEnv where
+instance Style Signatures where
   style f sty = f sty . show
   
 instance Style FilePath where

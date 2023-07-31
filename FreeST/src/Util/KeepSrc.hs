@@ -1,15 +1,21 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances  #-}
+{-# LANGUAGE FlexibleInstances  #-}
 
 module Util.KeepSrc where
 
 import qualified Data.Map as Map
 import           Parse.Unparser ( Unparse, unparse )
+import           Syntax.AST ( Definitions, Types, Signatures, AST (AST, signatures) )
 import           Syntax.Base ( Span(source), Located(..), Variable(..), Bind(..) )
-import           Syntax.Type as T
 import           Syntax.Expression as E
+import           Syntax.Type as T
 import           Syntax.Kind as K
-import           Syntax.Program ( VarEnv, TypeEnv, Prog )
-import           Util.FreestState ( ParseEnvPat )
+
+import Util.State ( FreestS(FreestS), FreestS )
+import Parse.Phase as PP ( Extra(Extra), ParseS )
+
+import Elaboration.Phase as EP
+import Data.Bifunctor ( Bifunctor(bimap) )
+
 
 class KeepSrc a where
     keepSrc :: a -> a
@@ -23,7 +29,7 @@ instance KeepSrc E.Exp where
         E.App s (keepSrc e1) (keepSrc e2)
     keepSrc (E.Pair s e1 e2) = defaultKeepSrc $
         E.Pair s (keepSrc e1) (keepSrc e2)
-    keepSrc (E.BinLet s v1 v2 e1 e2) = defaultKeepSrc $ 
+    keepSrc (E.BinLet s v1 v2 e1 e2) = defaultKeepSrc $
         E.BinLet s (keepSrc v1) (keepSrc v2) (keepSrc e1) (keepSrc e2)
     keepSrc (E.Case s e fm) = defaultKeepSrc $
         E.Case s (keepSrc e) (keepSrc fm)
@@ -64,11 +70,8 @@ instance KeepSrc T.Type where
 instance KeepSrc Variable where
     keepSrc (Variable s v) = Variable s{source=v} v
 
-instance KeepSrc E.FieldMap where
-    keepSrc = Map.fromList . map (\(k, (vars, e)) -> (keepSrc k, (map keepSrc vars, keepSrc e))) . Map.toList
-
 instance KeepSrc E.FieldList where
-    keepSrc = map (\(vars, e) -> (map keepSrc vars, keepSrc e))
+    keepSrc = map $ bimap (map keepSrc) keepSrc
 
 instance KeepSrc Pattern where
     keepSrc (PatVar v) = PatVar $ keepSrc v
@@ -77,20 +80,14 @@ instance KeepSrc Pattern where
 instance KeepSrc K.Kind where
     keepSrc k = setSrc (show k) k
 
-instance KeepSrc VarEnv where
+instance KeepSrc Signatures where
     keepSrc = defaultKeepSrcMapKeys
 
-instance KeepSrc TypeEnv where
+instance KeepSrc Types where
     keepSrc = Map.fromList . map (\(v, (k, t)) -> (keepSrc v, (keepSrc k, keepSrc t))) . Map.toList
 
-instance KeepSrc Prog where
-    keepSrc = defaultKeepSrcMapKeys
-
-instance KeepSrc ParseEnvPat where
-    keepSrc = Map.fromList . map (\(k, vs) -> (keepSrc k, map (\(ps, e) -> (map keepSrc ps, keepSrc e)) vs)) . Map.toList
-
 defaultKeepSrc :: (Unparse a, Located a) => a -> a
-defaultKeepSrc x 
+defaultKeepSrc x
     | null $ source $ getSpan x = updateSrc x
     | otherwise                 = x
 
@@ -104,10 +101,37 @@ updateSrc x = setSrc (snd $ unparse x) x
 -- defaultKeepSrcMap m = Map.map 
 
 defaultKeepSrcMapKeys :: (Ord a, KeepSrc a, KeepSrc k) => Map.Map a k -> Map.Map a k
-defaultKeepSrcMapKeys = 
-    Map.fromList . map (\(k, v) -> (keepSrc k, keepSrc v)) . Map.toList
+defaultKeepSrcMapKeys =
+    Map.fromList . map (bimap keepSrc keepSrc) . Map.toList
 
 
 
 
+-- Definitions Parse
+instance KeepSrc (Map.Map Variable [([E.Pattern], E.Exp)]) where
+    keepSrc =
+        Map.fromList . map (bimap keepSrc $ map (bimap (map keepSrc) keepSrc)) . Map.toList
 
+instance KeepSrc PP.ParseS where
+    keepSrc (FreestS (AST types signatures definitions) index errors warnings (PP.Extra moduleName imports pEnvChoices runOpts)) =
+        FreestS
+            (AST (keepSrc types) (keepSrc signatures) (keepSrc definitions))
+            index
+            errors
+            warnings
+            (PP.Extra moduleName imports pEnvChoices runOpts)
+
+
+-- E.FieldMap, Definitions Elab
+instance KeepSrc (Map.Map Variable ([Variable], E.Exp)) where
+    keepSrc =
+        Map.fromList . map (\(k, (vars, e)) -> (keepSrc k, (map keepSrc vars, keepSrc e))) . Map.toList
+
+instance KeepSrc EP.ElabS where
+    keepSrc (FreestS (AST types signatures definitions) index errors warnings extra) =
+        FreestS
+            (AST (keepSrc types) (keepSrc signatures) (keepSrc definitions))
+            index
+            errors
+            warnings
+            extra

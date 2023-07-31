@@ -1,10 +1,11 @@
-{-# LANGUAGE NamedFieldPuns, TupleSections, LambdaCase #-}
+{-# LANGUAGE TupleSections, LambdaCase #-}
 module Elaboration.ResolveEquations(solveEquations) where
 
+import           Elaboration.Phase
 import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.FreestState
+import           Util.State
 import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
@@ -12,20 +13,21 @@ import           Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 
+
 type Visited = Set.Set Variable
 
--- | Solve equations (TypeEnv)
+-- | Solve equations (Types)
 
-solveEquations :: FreestState ()
+solveEquations :: ElabState ()
 solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
 
-solveAll :: FreestState ()
+solveAll :: ElabState ()
 solveAll =
-  getTEnv
+  getTypes
     >>= tMapWithKeyM (\x (k, v) -> (k, ) <$> solveEq Set.empty x v)
-    >>= setTEnv
+    >>= setTypes
 
-solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
+solveEq :: Visited -> Variable -> T.Type -> ElabState T.Type
 solveEq v f (T.Labelled p s tm) = T.Labelled p s <$> mapM (solveEq v f) tm
 solveEq v f (T.Arrow p m t1 t2) =
   T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
@@ -34,7 +36,7 @@ solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
 solveEq v f t@(T.Var p x)
   | x `Set.member` v = pure t
   | f == x = pure t
-  | otherwise = getFromTEnv x >>= \case
+  | otherwise = getFromTypes x >>= \case
     Just tx -> solveEq (f `Set.insert` v) x (snd tx)
     Nothing -> addError (TypeVarOutOfScope p x) $> omission p
 solveEq v f (T.Forall p (Bind p1 x k t)) =
@@ -47,14 +49,14 @@ solveEq _ _ p              = pure p
 
 -- | Build recursive types
 
-buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
+buildRecursiveTypes :: ElabState ()
+buildRecursiveTypes = getTypes >>= setTypes . Map.mapWithKey buildRec
   where buildRec x (k, t) = (k, setSrc (source $ getSpan t) $ T.Rec (getSpan x) (Bind (getSpan x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
-cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.map (\(k, t) -> (k, ) $ clean t) <$> getTEnv >>= setTEnv
+cleanUnusedRecs :: ElabState ()
+cleanUnusedRecs = getTypes >>= setTypes . Map.map (\(k, t) -> (k, ) $ clean t)
 
 clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))

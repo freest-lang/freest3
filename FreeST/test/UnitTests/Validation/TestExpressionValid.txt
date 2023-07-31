@@ -13,6 +13,12 @@ Int
 55555*23
 Int
 
+1.0 /. 2.0
+Float
+
+sin 1.0
+Float
+
 -- succ'
 (λx:Int → x+1) 22
 Int
@@ -82,13 +88,13 @@ Int
 (λ_:Char → λy:Int → y) 'a' 23
 Int
 
--- Rec skip
 
 (\x:(rec x: *S. Skip;End, Skip;End) -> λy:Int 1-> let (w,r) = x in close w; close r; y) (new @(Skip;End) ()) 23
 Int
 
 (\x:(Skip;End,Skip;End) -> λy:Int 1-> let (r,w) = x in close r ; close w ; y) (new @(Skip;End) ()) 23
 Int
+
 
 -- Substitution
 

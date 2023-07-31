@@ -9,6 +9,10 @@ Char
 Char
 
 []
+Float
+Float
+
+[]
 Int
 Int
 

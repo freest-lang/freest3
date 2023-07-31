@@ -28,14 +28,14 @@ succ' n = Λ a => λ s:(a->a) z:a -> s (n  @a s z)
 
 square n = Λ a => λ s:(a -> a) z:a -> n  @a (n  @a s) z
 
-plus, plus', times, exp : Nat -> Nat -> Nat
+plus, plus', times, expr : Nat -> Nat -> Nat
 plus m n = m  @Nat succ' n
 
 plus' m n = Λ a => λ s:(a->a) z:a -> m  @a s (n  @a s z)
 
 times m n = Λ a => λs:(a->a) -> n  @a (m  @a s)
 
-exp m n = Λ a => λ f:(a -> a) -> n  @(a -> a) (m  @a) f
+expr m n = Λ a => λ f:(a -> a) -> n  @(a -> a) (m  @a) f
 
 isZero : Nat -> Bool
 isZero n = n  @Bool (λ_:Bool -> False) True

@@ -17,26 +17,23 @@ module Equivalence.TypeToGrammar
   )
 where
 
-import           Syntax.Base
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Validation.Substitution       as Substitution
-                                                ( subsAll )
-import           Validation.Terminated          ( terminated )
-import           Elaboration.Elaborate          ( changePos )
-import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
-import           Util.Error                     ( internalError )
-import           Util.FreestState               ( tMapM
-                                                , tMapM_
-                                                )
 import           Parse.Unparser
+import           Elaboration.Replace ( changePos )
+import           Equivalence.Normalisation ( normalise )
+import           Syntax.Base
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
+import           Util.State ( tMapM, tMapM_)
+import qualified Validation.Substitution as Substitution ( subsAll )
+import           Validation.Terminated ( terminated )
+
 import           Control.Monad.State
 import           Data.Functor
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Prelude                       hiding ( Word ) -- redefined in module Bisimulation.Grammar
-import           Debug.Trace
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
+
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
@@ -95,6 +92,7 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{}             = Just t
+fatTerminal t@T.Float{}           = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u

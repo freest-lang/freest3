@@ -20,6 +20,7 @@ import           System.IO                      ( Handle )
 data Value =
     Unit
   | Integer Int
+  | Float Double
   | Character Char
   | Label String -- to be sent on channels
   | String String
@@ -41,6 +42,7 @@ type Channel = (ChannelEnd, ChannelEnd)
 instance Show Value where
   show Unit           = "()"
   show (Integer   i)  = show i
+  show (Float     f)  = show f
   show (Character c)  = show c
   show (String    s)  = s
   show (Label     s)  = s
@@ -81,5 +83,5 @@ showNativeList ([Cons _ ([y]:ys)]:_) = "," ++ show y ++ showNativeList ys
 
 instance Located Value where
   getSpan _ = defaultSpan
-  setSpan _ x = x -- TODO: not used at the moment
+  setSpan _ x = x
 

@@ -33,10 +33,10 @@ module Prelude where
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
 (/) : Int -> Int -> Int
+div : Int -> Int -> Int
 (^) : Int -> Int -> Int
 mod : Int -> Int -> Int
 rem : Int -> Int -> Int
-div : Int -> Int -> Int
 max : Int -> Int -> Int
 min : Int -> Int -> Int
 quot : Int -> Int -> Int
@@ -55,6 +55,45 @@ odd : Int -> Bool
 (>) : Int -> Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
+-- Float
+(+.) : Float -> Float -> Float
+(-.) : Float -> Float -> Float
+(*.) : Float -> Float -> Float
+(/.) : Float -> Float -> Float
+(>.) : Float -> Float -> Float
+(<.) : Float -> Float -> Float
+(>=.) : Float -> Float -> Float
+(<=.) : Float -> Float -> Float
+absF : Float -> Float
+negateF : Float -> Float
+maxF : Float -> Float -> Float
+minF : Float -> Float -> Float
+truncate : Float -> Int
+round : Float -> Int
+ceiling : Float -> Int
+floor : Float -> Int
+recip : Float -> Float
+pi : Float
+exp : Float -> Float
+log : Float -> Float
+sqrt : Float -> Float
+(**) : Float -> Float -> Float
+logBase : Float -> Float -> Float
+sin : Float -> Float
+cos : Float -> Float
+tan : Float -> Float
+asin: Float -> Float
+acos: Float -> Float
+atan: Float -> Float
+sinh: Float -> Float
+cosh: Float -> Float
+tanh: Float -> Float
+log1p: Float -> Float
+expm1: Float -> Float
+log1pexp: Float -> Float
+log1mexp: Float -> Float
+fromInteger: Int -> Float
+
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
@@ -62,7 +101,7 @@ odd : Int -> Bool
 ord : Char -> Int
 chr : Int -> Char
   -- String
-(++) : String -> String -> String
+(^^) : String -> String -> String
 show : forall a:*T . a -> String
 -- read : ∀ a . String -> a
 readBool : String -> Bool
@@ -158,6 +197,16 @@ flip f x y = f y x
 -- | Its binding precedence is higher than `$`.
 (|>) : forall a:*T b:*T. a -> (a -> b) -> b
 (|>) x f = f x
+
+-- | Sequential composition. Takes two expressions, evaluates the former and
+-- | discards the result, then evaluates the latter. For example:
+-- | ```
+-- | 3 ; 4
+-- | ```
+-- | evaluates to 4.
+-- | Its binding precedence is rather low.
+(;) : forall a:*T b:*T . a -> b -> b
+(;) x y = (\_:a -> y) x
 
 -- | Applies the function passed as the second argument to the third one and
 -- | uses the predicate in the first argument to evaluate the result, if it comes
@@ -282,7 +331,8 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
-consume : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
+-- consume : forall a:*T b:1S . Consumer a -> ?a;b 1-> b
+consume : forall a:*T b:1S . (a -> ()) -> ?a;b 1-> b
 consume f ch =
     let (x, ch) = receive ch in
     f x;
@@ -365,7 +415,7 @@ forkWith f =
 -- | runCounterServer : dualof SharedCounter -> Diverge
 -- | runCounterServer = runServer @Counter @Int counterService 0 
 -- | ```
-runServer : forall a:1S b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
+runServer : forall a:1A b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
     runServer @a @b handle (handle state (accept @a ch)) ch 
 
@@ -500,7 +550,7 @@ hGetContent ch =
   else 
     let (line, ch) = hGetLine ch in 
     let (contents, ch) = hGetContent ch in
-    (line ++ "\n" ++ contents, ch)
+    (line ^^ "\n" ^^ contents, ch)
 
 __hGenericGet_ : forall a:*T . (InStream -> (a, InStream)) -> InStreamProvider -> a
 __hGenericGet_ getF inp = 
@@ -575,7 +625,7 @@ __runPrinter _ printer =
     match printer with {
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrOut printer |> __runPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer |> __runPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter (),
         Close    printer -> close printer
     }
 
@@ -593,7 +643,7 @@ __runErrPrinter _ printer =
     match printer with {
         PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
         PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer |> __runErrPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
         Close    printer -> close printer
     }
 
@@ -640,7 +690,7 @@ __runReader _ reader =
 type FilePath = String
 
 -- Internal file handles
-data FileHandle = FileHandle () 
+data FileHandle = FileHandle ()
 
 -- Internal IOMode for opening files
 data IOMode = ReadMode | WriteMode | AppendMode

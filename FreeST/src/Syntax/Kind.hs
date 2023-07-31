@@ -21,17 +21,15 @@ module Syntax.Kind
   , ut
   , ls
   , us
-  , ua
   , la
+  , ua
   , isLin
   , isUn
   , isSession
   )
 where
 
-
 import           Syntax.Base hiding ( Multiplicity(..) )
-
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -44,14 +42,12 @@ data Multiplicity = Un | Lin deriving Eq
 -- Kind
 data Kind = Kind Span Multiplicity PreKind
 
+instance Eq Kind where
+  (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2
+
 instance Located Kind where
   getSpan (Kind p _ _) = p
-
   setSpan s (Kind _ m p) = Kind s m p 
-
--- instance Eq Kind whereP
---   (Kind _ b1 m1) == (Kind _ b2 m2) = True
-
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the
@@ -60,15 +56,13 @@ instance Default Kind where
   omission _ = ut defaultSpan
 
 -- Abbreviations for the six proper kinds
-lt, ut, ls, us{-, um, lm-} :: Span -> Kind
+lt, ut, ls, us, la, ua :: Span -> Kind
 lt p = Kind p Lin Top 
 ut p = Kind p Un Top 
 ls p = Kind p Lin Session 
 us p = Kind p Un Session
 la p = Kind p Lin Absorb
 ua p = Kind p Un Absorb
--- um p = Kind p Un Message
--- lm p = Kind p Lin Message
 
 isLin :: Kind -> Bool
 isLin (Kind _ m _) = m == Lin

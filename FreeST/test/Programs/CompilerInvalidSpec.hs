@@ -18,7 +18,8 @@ import           Test.HUnit                     ( assertFailure
                                                 , assertEqual
                                                 )
 import           Test.Hspec
-import           Util.FreestState
+-- import           Util.FreestState
+import           Util.State hiding (void)
 
 import           System.FilePath
 import           Data.List
@@ -44,7 +45,7 @@ testInvalid test filename = do
     >> return (Just errorExpected)
     )
     [ Handler (\(e :: ExitCode) -> return $ exitProgram e)
-    , Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")
+    , Handler (\(e :: SomeException) -> return $ Just $ "(Internal error) "++show e)
     ]
   assert b
  where
