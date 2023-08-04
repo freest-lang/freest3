@@ -1,14 +1,14 @@
 {- |
 Module      :  Bisimulation.AlphaEquivalence
-Description :  Type alpha equivalence
+Description :  Alpha equivalence for types
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
-Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
+Maintainer  :  vmvasconcelos@ciencias.ulisboa.pt
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-Type equality up to bound name renaming
+Type equality up to bound variable renaming
 -}
 
 module Bisimulation.AlphaEquivalence
