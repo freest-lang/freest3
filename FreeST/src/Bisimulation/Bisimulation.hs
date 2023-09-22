@@ -21,8 +21,9 @@ where
 import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
-import qualified Bisimulation.ThreeValuedLogic as TVL
-import           Bisimulation.AlphaEquivalenceTrinary
+import           Bisimulation.AlphaEquivalence
+-- import qualified Bisimulation.ThreeValuedLogic as TVL
+-- import           Bisimulation.AlphaEquivalenceTrinary
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
@@ -39,11 +40,14 @@ import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
-  case trinary t u of
-    TVL.Unknown -> bisimilarGrm (convertToGrammar [t, u])
-    b       -> TVL.toBool b
-  -- t == u || -- Alpha-equivalence, 11% speed up in :program tests
-  -- bisimilarGrm (convertToGrammar [t, u])
+  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  bisimilarGrm (convertToGrammar [t, u])
+  -- This alternative induces no speed up in :program tests:
+  -- original (above): 31.0917 seconds
+  -- 3-valued: 32.3150 seconds
+  -- case trinary t u of
+  --   TVL.Unknown -> bisimilarGrm (convertToGrammar [t, u])
+  --   b       -> TVL.toBool b
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
