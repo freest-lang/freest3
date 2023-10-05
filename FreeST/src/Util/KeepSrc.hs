@@ -68,7 +68,9 @@ instance KeepSrc T.Type where
     keepSrc x = defaultKeepSrc x
 
 instance KeepSrc Variable where
-    keepSrc (Variable s v) = Variable s{source=v} v
+    keepSrc var@(Variable s v) 
+        | null (source s) = Variable s{source=v} v
+        | otherwise       = var
 
 instance KeepSrc E.FieldList where
     keepSrc = map $ bimap (map keepSrc) keepSrc
