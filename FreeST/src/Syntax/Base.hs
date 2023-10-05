@@ -56,6 +56,11 @@ class Located t where
   setSrc src x = setSpan s{source = src} x
     where s = getSpan x
 
+  -- copies start and end positions from the first into the second, keeps all else
+  changePos :: Span -> t -> t
+  changePos s y = setSpan sy{startPos= startPos s, endPos= endPos s} y
+    where sy = getSpan y
+
 data Span = Span
   { startPos     :: Pos
   , endPos       :: Pos

@@ -46,7 +46,7 @@ data Type =
   -- Polymorphism and recursive types
   | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
   | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
-  | Var Span Variable
+  | Var Variable
   -- Type operators
   | Dualof Span Type
 --  | CoVar Span Variable
@@ -74,7 +74,7 @@ instance Located Type where
   getSpan (Message p _ _) = p
   getSpan (Forall p _   ) = p
   getSpan (Rec p _      ) = p
-  getSpan (Var p _      ) = p
+  getSpan (Var v      ) = getSpan v
   -- getSpan (Abs p _      ) = p
   -- getSpan (App p _ _    ) = p
   getSpan (Dualof p _   ) = p
@@ -92,7 +92,7 @@ instance Located Type where
   setSpan s (Message _ p t) = Message s p t 
   setSpan s (Forall _ b) = Forall s b
   setSpan s (Rec _ b) = Rec s b
-  setSpan s (Var _ v) = Var s v
+  setSpan s (Var v) = Var $ setSpan s v
   setSpan s (Dualof _ t) = Dualof s t
 
 -- Derived forms

@@ -149,7 +149,7 @@ leftSection op e s = do
 
 typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListsToUnArrows a = 
-  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
+  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var a) ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)

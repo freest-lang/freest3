@@ -6,7 +6,7 @@ module Elaboration.Duality
   )
 where
 
-import           Syntax.Base                   (Bind(..), Variable)
+import           Syntax.Base                   (Bind(..), Variable, getSpan)
 import qualified Data.Map                      as Map
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
@@ -26,11 +26,11 @@ instance Duality T.Type where
   dualof (T.Message p pol t) = T.Message p (dualof pol) t
   dualof (T.Labelled p (T.Choice v) m) =
     T.Labelled p (T.Choice $ dualof v) (Map.map dualof m)
-  dualof (T.Var p x)              = keepSrc $ T.Dualof p $ T.Var p x
-  dualof (T.Dualof _ (T.Var p x)) = T.Var p x
+  dualof (T.Var x)              = forceKeepSrc $ T.Dualof (getSpan x) $ T.Var x
+  dualof (T.Dualof _ (T.Var x)) = T.Var x
   dualof (T.Dualof _ t) = dualof t
   dualof u@(T.Rec p (Bind p' a k t)) =
-    let t' = subs (keepSrc $ T.Dualof p' (T.Var p' a)) a t in
+    let t' = subs (keepSrc $ T.Dualof p' (T.Var a)) a t in
       T.Rec p $ Bind p' a k (cosubs u a (dualof t'))
   -- Non session-types, Skip & End
   dualof t = t
@@ -58,7 +58,7 @@ instance Cosubs T.Type where
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
   cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
-  cosubs t x u@(T.Dualof _ (T.Var _ y))
+  cosubs t x u@(T.Dualof _ (T.Var y))
     | y == x = t
     | otherwise = u
   cosubs _ _ t            = t
@@ -84,13 +84,13 @@ instance Subs T.Type Variable T.Type where
   -- Polymorphism and recursion
   subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
   subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
-  subs t x u@(T.Var _ y)
+  subs t x u@(T.Var y)
     | y == x    = t
     | otherwise = u
-  subs (T.Var _ t) x u@(T.Dualof p (T.Var p' y))
-    | y == x    = T.Dualof p $ T.Var p' t
+  subs (T.Var t) x u@(T.Dualof p (T.Var y))
+    | y == x    = T.Dualof p $ T.Var t
     | otherwise = u
-  subs t x u@(T.Dualof p (T.Var p' y))
+  subs t x u@(T.Dualof p (T.Var y))
     | y == x    = dualof t
     | otherwise = u
   subs _ _ t            = t

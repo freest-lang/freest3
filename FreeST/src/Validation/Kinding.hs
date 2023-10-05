@@ -64,10 +64,10 @@ synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
   return $ keepSrc $ K.Kind p n K.Top
 -- Shared session types
-synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var _ b))))
+synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var b))))
   | a == b = checkAgainstSession' s kEnv u $> (keepSrc $ K.ua p)
 synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ T.Choice{} m)))
-  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ keepSrc $ K.ua p
+  | all (\case {(T.Var b) -> a == b ; _ -> False }) m = return $ keepSrc $ K.ua p
 -- Session types
 synthetise' _ _ (T.Skip   p) = return $ keepSrc $ K.us p
 synthetise' _ _ (T.End    p) = return $ keepSrc $ K.la p
@@ -96,11 +96,11 @@ synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ keepSrc $ K.Kind p m K.Top
-synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
+synthetise' _ kEnv (T.Var a) = case kEnv Map.!? a of
   Just k -> return k
-  Nothing -> addError (TypeVarNotInScope p a) $> omission p
+  Nothing -> addError (TypeVarNotInScope (getSpan a) a) $> omission (getSpan a)
 -- Type operators
-synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
+synthetise' _ kEnv t@(T.Dualof p (T.Var a)) =
   case kEnv Map.!? a of
     Just k -> unless (k <: K.ls p)
             (addError (CantMatchKinds p k (K.ls p) t)) $> (keepSrc $ K.ls p)
@@ -157,5 +157,5 @@ unr :: Set.Set Variable -> T.Type -> Bool
 unr s (T.Semi _ t u) = unr s t || unr s u
 unr s (T.Rec _ (Bind _ a _ t)) = unr (Set.insert a s) t
 unr s (T.Labelled _ (T.Choice _) m) = all (unr s) (Map.elems m)
-unr s (T.Var _ a) = Set.member a s
+unr s (T.Var a) = Set.member a s
 unr _ _ = False

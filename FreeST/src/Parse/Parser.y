@@ -369,7 +369,7 @@ Type :: { T.Type }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
-  | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
+  | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var $ mkList s }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | End                           {% T.End `fmap` mkSpan $1 }
@@ -383,22 +383,22 @@ Type :: { T.Type }
         p <- mkSpan $1
         tVar <- freshTVar "a" p
         return (T.Rec p $ Bind p tVar (K.us p) $
-          T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar)) }
+          T.Semi p (uncurry T.Message $2 $3) (T.Var tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
         p <- mkSpan $1
         tVar <- freshTVar "a" p
-        let tMap = Map.map ($ (T.Var p tVar)) $4
+        let tMap = Map.map ($ (T.Var tVar)) $4
         return (T.Rec p $ Bind p tVar (K.us p) $
             T.Labelled (fst $2) (T.Choice (snd $2)) tMap) }
 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
   | forall KindBind Forall        {% let (a,k) = $2 in flip T.Forall (Bind (getSpan a) a k $3) `fmap` mkSpanSpan $1 $3 }
-  | TypeVar                       {% flip T.Var $1 `fmap` mkSpan $1 }
+  | TypeVar                       { T.Var $1 }
   -- Type operators
   | dualof Type                   {% flip T.Dualof $2 `fmap` mkSpanSpan $1 $2 }
-  | TypeName                      {% flip T.Var $1 `fmap` mkSpan $1 }   -- TODO: remove this one lex
+  | TypeName                      { T.Var $1 }   -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }

@@ -61,8 +61,8 @@ instance KeepSrc T.Type where
         T.Forall s (Bind s' (keepSrc v) (keepSrc k) (keepSrc t))
     keepSrc (T.Rec s (Bind s' v k t)) = defaultKeepSrc $
         T.Rec s (Bind s' (keepSrc v) (keepSrc k) (keepSrc t))
-    keepSrc (T.Var s v) = defaultKeepSrc $
-        T.Var s (keepSrc v)
+    keepSrc (T.Var v) = defaultKeepSrc $
+        T.Var (keepSrc v)
     keepSrc (T.Dualof s t) = defaultKeepSrc $
         T.Dualof s (keepSrc t)
     keepSrc x = defaultKeepSrc x

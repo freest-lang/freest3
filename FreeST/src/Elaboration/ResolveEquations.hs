@@ -33,12 +33,12 @@ solveEq v f (T.Arrow p m t1 t2) =
   T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
 solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
 solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
-solveEq v f t@(T.Var p x)
+solveEq v f t@(T.Var x)
   | x `Set.member` v = pure t
   | f == x = pure t
   | otherwise = getFromTypes x >>= \case
     Just tx -> solveEq (f `Set.insert` v) x (snd tx)
-    Nothing -> addError (TypeVarOutOfScope p x) $> omission p
+    Nothing -> addError (TypeVarOutOfScope (getSpan x) x) $> omission (getSpan x)
 solveEq v f (T.Forall p (Bind p1 x k t)) =
   T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
 solveEq v f (T.Rec p (Bind p1 x k t)) =

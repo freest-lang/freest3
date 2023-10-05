@@ -98,9 +98,9 @@ solveDual v (T.Labelled p (T.Choice pol) m) =
 solveDual v t@(T.Rec p b) = do
   u <- solveDBind solveDual v b
   return $ cosubs t (var b) (T.Rec p u)
-solveDual _ (T.Var p a) = pure $ keepSrc $ T.Dualof p $ T.Var p a
+solveDual _ (T.Var a) = pure $ forceKeepSrc $ T.Dualof (getSpan a) $ T.Var a
 -- Dualof
-solveDual _ (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
+solveDual _ (T.Dualof _ (T.Var a)) = pure $ T.Var a
 solveDual v d@(T.Dualof p t) = solveType v (changePos p t)
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
@@ -118,22 +118,4 @@ solveDBind
   -> Bind a T.Type
   -> ElabState (Bind a T.Type)
 solveDBind solve v (Bind p a k t) =
-  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof p $ T.Var p a) a t)
-
--- |Change position of a given type with a given position
-changePos :: Span -> T.Type -> T.Type
-changePos p (T.Int      s            ) = setSrc (source s) $ T.Int p
-changePos p (T.Float    s            ) = setSrc (source s) $ T.Float p
-changePos p (T.Char     s            ) = setSrc (source s) $ T.Char p
-changePos p (T.String   s            ) = setSrc (source s) $ T.String p
-changePos p (T.Arrow    s pol t u    ) = setSrc (source s) $ T.Arrow p pol t u
-changePos p (T.Labelled s srt m      ) = setSrc (source s) $ T.Labelled p srt m
-changePos p (T.Skip     s            ) = setSrc (source s) $ T.Skip p
-changePos p (T.End      s            ) = setSrc (source s) $ T.End p
-changePos p (T.Semi     s t   u      ) = setSrc (source s) $ T.Semi p t u
-changePos p (T.Message  s pol b      ) = setSrc (source s) $ T.Message p pol b
-changePos p (T.Rec      s xs         ) = setSrc (source s) $ T.Rec p xs
-changePos p (T.Forall   s xs         ) = setSrc (source s) $ T.Forall p xs
-changePos p (T.Var      s x          ) = setSrc (source s) $ T.Var p x
-changePos p (T.Dualof   s (T.Var _ x)) = setSrc (source s) $ T.Dualof p $ T.Var p x
-changePos p (T.Dualof   s t          ) = setSrc (source s) $ T.Dualof p t
+  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof p $ T.Var a) a t)

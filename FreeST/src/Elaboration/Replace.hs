@@ -20,8 +20,8 @@ instance Replace T.Type where
   replace (  T.Semi   p t1  t2) = T.Semi p <$> replace t1 <*> replace t2
   replace (  T.Forall p kb    ) = T.Forall p <$> replace kb
   replace (  T.Rec    p kb    ) = T.Rec p <$> replace kb
-  replace n@(T.Var    p tname ) = getFromTypes tname >>= \case
-    Just t  -> pure (changePos p (snd t))
+  replace n@(T.Var      tname ) = getFromTypes tname >>= \case
+    Just t  -> pure (changePos (getSpan tname) (snd t))
     Nothing -> pure n
   replace (T.Dualof p t) = T.Dualof p <$> replace t
   replace t              = pure t
@@ -54,20 +54,3 @@ instance Replace E.Exp where
 
 instance Replace E.FieldMap where
   replace = mapM (\(ps, e) -> (ps, ) <$> replace e)
-
-
--- | Changing positions
--- Change position of a given type with a given position
-changePos :: Span -> T.Type -> T.Type
-changePos p (T.Int  s          ) = setSrc (source s) $ T.Int p
-changePos p (T.Char s          ) = setSrc (source s) $ T.Char p
-changePos p (T.Arrow s pol t u ) = setSrc (source s) $ T.Arrow p pol (changePos p t) (changePos p u)
--- Datatype
--- Skip
-changePos p (T.Semi     s t   u) = setSrc (source s) $ T.Semi p t u
-changePos p (T.Message  s pol b) = setSrc (source s) $ T.Message p pol b
-changePos p (T.Labelled s srt m) = setSrc (source s) $ T.Labelled p srt m
-changePos p (T.Rec      s xs   ) = setSrc (source s) $ T.Rec p xs
-changePos p (T.Forall   s xs   ) = setSrc (source s) $ T.Forall p xs
--- TypeVar
-changePos _ t                   = t

@@ -98,9 +98,9 @@ instance Rename T.Type where
   rename tbs pbs (T.Rec    p b)
     | isProperRec b = T.Rec p <$> rename tbs pbs b
     | otherwise     = rename tbs pbs (body b)
-  rename tbs _ (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
-  rename tbs _ (T.Dualof p (T.Var p' a)) =
-    return $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
+  rename tbs _ (T.Var      a     ) = return $ T.Var (findWithDefaultVar a tbs)
+  rename tbs _ (T.Dualof p (T.Var a)) =
+    return $ T.Dualof p $ T.Var (findWithDefaultVar a tbs)
 --rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
   rename _ _ t@T.Dualof{}          = internalError "Validation.Rename.rename" t
@@ -208,7 +208,7 @@ isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
   -- Functional or session 
 isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
-isFreeIn x (T.Var    _ y               ) = x == y
+isFreeIn x (T.Var      y             ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
 isFreeIn _ _                             = False

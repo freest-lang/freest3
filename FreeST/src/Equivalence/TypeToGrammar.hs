@@ -19,7 +19,6 @@ where
 
 import           Bisimulation.Grammar
 import           Parse.Unparser
-import           Elaboration.Replace ( changePos )
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Type as T
