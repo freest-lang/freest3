@@ -83,14 +83,10 @@ instance Show T.Polarity where
 -- see Syntax.Variables
 
 instance Unparse Variable where
-  unparse v = (maxRator, show v)
+  unparse v = (maxRator, intern v)
 
 instance Show Variable where
-  show = showVar
-
-showVar :: Variable -> String
-showVar = dropWhile (\c -> isDigit c || c == '#') . intern
--- showVar = intern -- for testing purposes
+  show = source . getSpan
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
