@@ -51,7 +51,7 @@ synthetise _ (E.Float p _ ) = return $ forceKeepSrc $ T.Float p
 synthetise _ (E.Char p _  ) = return $ forceKeepSrc $ T.Char p
 synthetise _ (E.Unit p    ) = return $ forceKeepSrc $ T.unit p
 synthetise _ (E.String p _) = return $ forceKeepSrc $ T.String p
-synthetise kEnv e@(E.Var p x) =
+synthetise kEnv e@(E.Var x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -83,25 +83,25 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   return $ forceKeepSrc $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
+synthetise kEnv (E.App p (E.App _ (E.Var x) (E.Var c)) e)
   | x == mkSelect p = do
     t <- synthetise kEnv e
     m <- Extract.inChoiceMap e t
     Extract.choiceBranch p m c t
   -- Collect e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
+synthetise kEnv (E.App p (E.Var x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
   return $ keepSrc $ T.Labelled p T.Variant
     (Map.map (forceKeepSrc . T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
+synthetise kEnv (E.App p (E.Var x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ forceKeepSrc $ T.tuple p [u1, u2]
   -- Send e1 e2
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
+synthetise kEnv (E.App p (E.App _ (E.Var x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
@@ -109,7 +109,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
+synthetise kEnv (E.App p fork@(E.Var x) e) | x == mkFork p = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (keepSrc $ E.App p (E.TypeApp p fork t) e)
 -- Application, general case
@@ -123,7 +123,7 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
   forceKeepSrc . T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
-synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
+synthetise kEnv (E.TypeApp p new@(E.Var x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t

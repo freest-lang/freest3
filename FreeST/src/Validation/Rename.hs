@@ -112,7 +112,7 @@ instance Rename T.Type where
 
 instance Rename E.Exp where
   -- Variable
-  rename _ pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
+  rename _ pbs (E.Var x) = return $ E.Var (findWithDefaultVar x pbs)
   -- Abstraction intro and elim
   rename tbs pbs (E.Abs p m b) = E.Abs p m <$> rename tbs pbs b
   rename tbs pbs (E.App p e1 e2) = E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2

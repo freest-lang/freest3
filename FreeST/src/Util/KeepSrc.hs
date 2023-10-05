@@ -21,8 +21,8 @@ class KeepSrc a where
     keepSrc :: a -> a
 
 instance KeepSrc E.Exp where
-    keepSrc (E.Var s v) = defaultKeepSrc $
-        E.Var s (keepSrc v)
+    keepSrc (E.Var v) = defaultKeepSrc $
+        E.Var (keepSrc v)
     keepSrc (E.Abs s m (Bind s' v t e)) = defaultKeepSrc $
         E.Abs s m (Bind s' (keepSrc v) (keepSrc t) (keepSrc e))
     keepSrc (E.App s e1 e2) = defaultKeepSrc $

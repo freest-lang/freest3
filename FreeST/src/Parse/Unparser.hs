@@ -260,44 +260,44 @@ instance Unparse Exp where
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
-  unparse (E.Var  _ x) = (maxRator, show x)
+  unparse (E.Var x) = (maxRator, show x)
   -- Abstraction intro and elim
   unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
     l = bracket (unparse e1) Left disjRator
     r = bracket (unparse e2) Right disjRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(&&)" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "(&&)" =
    (conjRator, l ++ " && " ++ r)
    where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isCmp x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isCmp x =
    (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
-  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+  unparse e@(E.App _ (E.App _ (E.Var x) _) _) | show x == "(::)" =
     (maxRator, "[" ++ intercalate ", " list ++ "]")
     where
       list = map (snd . unparse) (joinList e)
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAppend x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isAppend x =
    (appendRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left appendRator
     r = bracket (unparse e2) Right appendRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isMult x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isMult x =
    (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "^" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "^" =
    (powerRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left powerRator
@@ -384,8 +384,8 @@ sigsToList :: Signatures -> [String]
 sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
 
 joinList :: E.Exp -> [E.Exp]
-joinList (E.Var _ x) | show x == "[]"   = []
-joinList (E.App _ (E.App _ (E.Var _ x) e1) e2)
+joinList (E.Var x) | show x == "[]"   = []
+joinList (E.App _ (E.App _ (E.Var x) e1) e2)
   | show x == "(::)" = e1 : joinList e2
   | show x == "[]"   = []  
 joinList e = [e]

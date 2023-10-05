@@ -111,7 +111,7 @@ checkAndRun runOpts = do
     forkHandlers [] e = e
     forkHandlers ((fun, var) : xs) e =
       E.UnLet s (mkWild s)
-        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        (E.App s (E.Var (mkFork s)) (E.App s (E.Var (mkVar s fun)) (E.Var (mkVar s var)))) 
         $ forkHandlers xs e 
       where
         s = defaultSpan

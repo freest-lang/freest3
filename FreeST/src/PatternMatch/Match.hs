@@ -153,7 +153,7 @@ ruleCon :: [Variable] -> [Equation] -> PatternState Exp
 ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                                 -- group by constructor name
                   & mapM destruct                                                   -- transforms into a case
                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)   -- matches every case expression, with the case's missing variables
-                <&> Case s (Var s v) . Map.fromList                                 -- makes the case
+                <&> Case s (Var v) . Map.fromList                                   -- makes the case
   where s = getSpan v
   
 -- rule con aux 
@@ -167,7 +167,7 @@ ruleChan :: [Variable] -> [([Pattern],Exp)] -> PatternState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                -- group by constructor name
                    & mapM destruct                                                  -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)  -- matches every case expression, with the case's missing variables
-                 <&> Case s (App s (Var s (mkCollect s)) (Var s v)) . Map.fromList  -- makes the case collect
+                 <&> Case s (App s (Var (mkCollect s)) (Var v)) . Map.fromList      -- makes the case collect
   where s = getSpan v
 
 -- mix -------------------------------------------------------------
@@ -219,7 +219,7 @@ getKeys _ = []
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> PatternState Exp
-replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
+replaceExp v p (Var       v1)         = Var            (replaceVar v p v1) & return
 replaceExp v p (Abs     s m b)        = Abs     s m <$> replaceBind v p b
 replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp  v p e1 <*> replaceExp v p e2
 replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp  v p e1 <*> replaceExp v p e2

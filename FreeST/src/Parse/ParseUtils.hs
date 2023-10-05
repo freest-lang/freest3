@@ -124,13 +124,13 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
-binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
+binOp l op r = E.App s (E.App (getSpan l) (E.Var op) l) r
   where s  = Span (startPos sl) (endPos sr) "" (defModule sl)
         sl = getSpan l
         sr = getSpan r
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
-unOp op expr s = E.App s (E.Var (getSpan op) op) expr
+unOp op expr s = E.App s (E.Var op) expr
 
 leftSection :: Variable -> E.Exp -> Span -> ParseState E.Exp
 leftSection op e s = do
@@ -139,7 +139,7 @@ leftSection op e s = do
   let v = mkNewVar i (mkVar s "_x")
   let t = genFstType (sigs Map.! op)
   return $ E.Abs s Un (Bind s v t
-             (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
+             (E.App s (E.App s (E.Var op) (E.Var v)) e))
   where
     genFstType (T.Arrow _ _ t _) = t
     genFstType t = t

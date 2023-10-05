@@ -33,7 +33,7 @@ data Exp =
   | Char Span Char
   | String Span String
   -- Variable
-  | Var Span Variable
+  | Var Variable
   -- Abstraction intro and elim
   | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T 1-> e
   | App Span Exp Exp     -- e1 e2
@@ -66,7 +66,7 @@ instance Located Exp where
   getSpan (Float p _          ) = p
   getSpan (Char p _           ) = p
   getSpan (String p _         ) = p
-  getSpan (Var p _            ) = p
+  getSpan (Var x              ) = getSpan x
   getSpan (Abs p _ _          ) = p
   getSpan (App p _ _          ) = p
   getSpan (Pair p _ _         ) = p
@@ -83,7 +83,7 @@ instance Located Exp where
   setSpan s (Float _ f           ) = Float s f
   setSpan s (Char _ c            ) = Char s c
   setSpan s (String _ str        ) = String s str
-  setSpan s (Var _ v             ) = Var s v
+  setSpan s (Var   v             ) = Var (setSpan s v)
   setSpan s (Abs _ m b           ) = Abs s m b
   setSpan s (App _ e1 e2         ) = App s e1 e2
   setSpan s (Pair _ e1 e2        ) = Pair s e1 e2

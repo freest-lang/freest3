@@ -220,7 +220,7 @@ Exp :: { E.Exp }
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
   | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ condCase s $2 $4 $6}
   | match Exp with '{' MatchMap '}'{% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
-                                       pure $ E.Case s (E.App s' (E.Var s' (mkCollect s')) $2) $5 }
+                                       pure $ E.Case s (E.App s' (E.Var (mkCollect s')) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
@@ -247,7 +247,7 @@ Exp :: { E.Exp }
 App :: { E.Exp }
   : App Primary                    {% mkSpanSpan $1 $2 >>= \s -> return $ E.App s $1 $2 }
   | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
-                                       \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
+                                       \s1 -> pure $ E.App s (E.Var (mkSelect s)) (E.Var $2)
                                    }
   | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
   | Primary                        { $1 }
@@ -259,8 +259,8 @@ Primary :: { E.Exp }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
   | '[' Exp ExpList                { binOp $2 (mkCons (getSpan $2)) $3 }
-  | '['']'                         {% mkSpan $1 >>= \s -> pure $ E.Var s (mkNil s) }
-  | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpan $1 }
+  | '['']'                         {% mkSpan $1 >>= \s -> pure $ E.Var (mkNil s) }
+  | ArbitraryProgVar               { E.Var $1 }
   | lambda ProgVarWildTBind Abs    {% let (m,e) = $3 in mkSpanSpan $1 e >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
   | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= leftSection $2 $3 } -- left section
@@ -332,7 +332,7 @@ GuardsFun :: { Exp }
 
 
 ExpList :: { E.Exp }
-  : ']'             { E.Var (getSpan $1) (mkNil (getSpan $1)) }
+  : ']'             { E.Var (mkNil (getSpan $1)) }
   | ',' Exp ExpList { binOp $2 (mkCons (getSpan $2)) $3 }
 
 
