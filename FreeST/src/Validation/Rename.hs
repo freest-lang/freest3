@@ -59,7 +59,7 @@ renameFun f t = do
 
 -- Renaming the various syntactic categories
 
-type Bindings = Map.Map String String -- Why String and not Syntax.Base.Variable?
+type Bindings = Map.Map Variable Variable
 
 class Rename t where
   rename :: MonadState (FreestS a) m => Bindings -> Bindings -> t -> m t
@@ -162,11 +162,12 @@ renameVar x = do
   return $ mkNewVar n x
 
 insertVar :: Variable -> Variable -> Bindings -> Bindings
-insertVar x y = Map.insert (intern x) (intern y)
+insertVar x y = Map.insert x y
 
 findWithDefaultVar :: Variable -> Bindings -> Variable
 findWithDefaultVar x bs =
-  mkVar (getSpan x) (Map.findWithDefault (intern x) (intern x) bs)
+  -- mkVar (getSpan x) (Map.findWithDefault (intern x) (intern x) bs)
+  Map.findWithDefault x x bs
 
 -- Rename a type
 renameType :: T.Type -> T.Type
@@ -186,7 +187,7 @@ subs t x u = renameType $ Subs.subs t x u
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
-unfold = renameType . Subs.unfold
+unfold = renameType . Subs.unfold 
 
 -- Does a given bind form a proper rec?
 -- Does the Bind type variable occur free the type?
