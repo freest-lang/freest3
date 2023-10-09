@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -30,7 +31,7 @@ import           Syntax.AST
 import           Syntax.Base
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.MkName ( mkTrue, mkFalse )
+import           Syntax.MkName ( mkTrue, mkFalse, mkCollect )
 import qualified Syntax.Type as T
 
 import           Data.Char ( isDigit )
@@ -323,6 +324,10 @@ instance Unparse Exp where
     where s1 = bracket (unparse e) Left inRator
           s2 = bracket (unparse $ snd $ m Map.! mkTrue  p) NonAssoc inRator
           s3 = bracket (unparse $ snd $ m Map.! mkFalse p) Right    inRator
+  -- Case #collect
+  unparse (E.Case _ (E.App _ (E.Var collect) chan) m) | collect == mkCollect defaultSpan =
+    (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
+    where s = bracket (unparse chan) NonAssoc inRator
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
