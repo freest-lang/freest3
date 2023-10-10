@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-|
 Module      :  Validation.Kinding
 Description :  Check the type formation
@@ -27,7 +28,6 @@ import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.KeepSrc
 import           Util.State
 import           Validation.Contractive
 import           Validation.Subkind ( (<:), join, meet )
@@ -53,35 +53,35 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 -- Returns the kind of a given type
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ keepSrc $ K.ut p
-synthetise' _ _ (T.Float  p) = return $ keepSrc $ K.ut p 
-synthetise' _ _ (T.Char   p) = return $ keepSrc $ K.ut p
-synthetise' _ _ (T.String p) = return $ keepSrc $ K.ut p
+synthetise' _ _ (T.Int    p) = return $ K.ut p
+synthetise' _ _ (T.Float  p) = return $ K.ut p
+synthetise' _ _ (T.Char   p) = return $ K.ut p
+synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
-  synthetise' s kEnv t >> synthetise' s kEnv u $> (keepSrc $ K.Kind p (typeToKindMult m) K.Top)
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
-  return $ keepSrc $ K.Kind p n K.Top
+  return $ K.Kind p n K.Top
 -- Shared session types
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var b))))
-  | a == b = checkAgainstSession' s kEnv u $> (keepSrc $ K.ua p)
+  | a == b = checkAgainstSession' s kEnv u $> K.ua p
 synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ T.Choice{} m)))
-  | all (\case {(T.Var b) -> a == b ; _ -> False }) m = return $ keepSrc $ K.ua p
+  | all (\case {(T.Var b) -> a == b ; _ -> False }) m = return $ K.ua p
 -- Session types
-synthetise' _ _ (T.Skip   p) = return $ keepSrc $ K.us p
-synthetise' _ _ (T.End    p) = return $ keepSrc $ K.la p
+synthetise' _ _ (T.Skip   p) = return $ K.us p
+synthetise' _ _ (T.End    p) = return $ K.la p
 synthetise' s kEnv (T.Semi p t u) = do
   ~k1@(K.Kind _ mt vt) <- synthetise' s kEnv t
   ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t k1))
   unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u k2))
-  return $ keepSrc $ K.Kind p (join mt mu) (meet vt vu)
+  return $ K.Kind p (join mt mu) (meet vt vu)
 synthetise' s kEnv (T.Message p _ t) =
-  checkAgainst' s kEnv (K.lt p) t $> (keepSrc $ K.ls p)
+  checkAgainst' s kEnv (K.lt p) t $> K.ls p
 synthetise' s kEnv (T.Labelled _ T.Choice{} m) = do
   ks <- tMapM (checkAgainstSession' s kEnv) m
-  return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> keepSrc $ K.Kind p (join m1 m2) (meet v1 v2))
+  return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (join m1 m2) (meet v1 v2))
              (snd $ Map.elemAt 0 ks) ks
 --  Map.foldl (flip meet) (K.ua p) <$> tMapM (checkAgainstSession' s kEnv) m
 -- Session or functional
@@ -91,11 +91,11 @@ synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
   k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
   unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
   if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
-    then pure $ keepSrc $ K.Kind p m K.Absorb
+    then pure $ K.Kind p m K.Absorb
     else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ keepSrc $ K.Kind p m K.Top
+  return $ K.Kind p m K.Top
 synthetise' _ kEnv (T.Var a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope (getSpan a) a) $> omission (getSpan a)
@@ -103,7 +103,7 @@ synthetise' _ kEnv (T.Var a) = case kEnv Map.!? a of
 synthetise' _ kEnv t@(T.Dualof p (T.Var a)) =
   case kEnv Map.!? a of
     Just k -> unless (k <: K.ls p)
-            (addError (CantMatchKinds p k (K.ls p) t)) $> (keepSrc $ K.ls p)
+            (addError (CantMatchKinds p k (K.ls p) t)) $> (K.ls p)
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
