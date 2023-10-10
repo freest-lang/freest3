@@ -381,13 +381,13 @@ Type :: { T.Type }
   | '*' Polarity Type %prec MSG 
     {% do
         p <- mkSpan $1
-        tVar <- freshTVar "a" p
+        tVar <- freshVar "a" p
         return (T.Rec p $ Bind p tVar (K.us p) $
           T.Semi p (uncurry T.Message $2 $3) (T.Var tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
         p <- mkSpan $1
-        tVar <- freshTVar "a" p
+        tVar <- freshVar "a" p
         let tMap = Map.map ($ (T.Var tVar)) $4
         return (T.Rec p $ Bind p tVar (K.us p) $
             T.Labelled (fst $2) (T.Choice (snd $2)) tMap) }
