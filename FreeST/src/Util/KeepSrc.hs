@@ -49,8 +49,6 @@ instance KeepSrc E.Exp where
 instance KeepSrc T.Type where
     keepSrc (T.Arrow s m t1 t2) = defaultKeepSrc $
         T.Arrow s m (keepSrc t1) (keepSrc t2)
-    -- keepSrc (T.Labelled s T.Record tm) = defaultKeepSrc $
-    --     T.Labelled s T.Record (defaultKeepSrcMapKeys tm)
     keepSrc (T.Labelled s srt tm) = defaultKeepSrc $
         T.Labelled s srt (defaultKeepSrcMapKeys tm)
     keepSrc (T.Semi s t1 t2) = defaultKeepSrc $
@@ -86,7 +84,7 @@ instance KeepSrc Signatures where
     keepSrc = defaultKeepSrcMapKeys
 
 instance KeepSrc Types where
-    keepSrc = Map.fromList . map (\(v, (k, t)) -> (keepSrc v, (keepSrc k, keepSrc t))) . Map.toList
+    keepSrc = Map.foldrWithKey (\v (k, t) -> Map.insert (keepSrc v) (keepSrc k, keepSrc t)) Map.empty
 
 defaultKeepSrc :: (Unparse a, Located a) => a -> a
 defaultKeepSrc x
@@ -104,15 +102,15 @@ updateSrc x = setSrc (snd $ unparse x) x
 
 defaultKeepSrcMapKeys :: (Ord a, KeepSrc a, KeepSrc k) => Map.Map a k -> Map.Map a k
 defaultKeepSrcMapKeys =
-    Map.fromList . map (bimap keepSrc keepSrc) . Map.toList
+    Map.foldrWithKey (\k v -> Map.insert (keepSrc k) (keepSrc v)) Map.empty
 
 
 
 
--- Definitions Parse
+-- Definitions Parse (Defs)
 instance KeepSrc (Map.Map Variable [([E.Pattern], E.Exp)]) where
     keepSrc =
-        Map.fromList . map (bimap keepSrc $ map (bimap (map keepSrc) keepSrc)) . Map.toList
+        Map.foldrWithKey (\v xs -> Map.insert (keepSrc v) (map (bimap (map keepSrc) keepSrc) xs)) Map.empty
 
 instance KeepSrc PP.ParseS where
     keepSrc (FreestS (AST types signatures definitions) index errors warnings (PP.Extra moduleName imports pEnvChoices runOpts)) =
@@ -125,9 +123,9 @@ instance KeepSrc PP.ParseS where
 
 
 -- E.FieldMap, Definitions Elab
-instance KeepSrc (Map.Map Variable ([Variable], E.Exp)) where
+instance KeepSrc E.FieldMap where
     keepSrc =
-        Map.fromList . map (\(k, (vars, e)) -> (keepSrc k, (map keepSrc vars, keepSrc e))) . Map.toList
+        Map.foldrWithKey (\k (vars, e) -> Map.insert (keepSrc k) (map keepSrc vars, keepSrc e)) Map.empty
 
 instance KeepSrc EP.ElabS where
     keepSrc (FreestS (AST types signatures definitions) index errors warnings extra) =
