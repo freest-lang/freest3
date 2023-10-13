@@ -111,7 +111,8 @@ isWild (Variable _ x) = x == "_"
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is
 mkNewVar :: Int -> Variable -> Variable
-mkNewVar next v = Variable (getSpan v) (show next)
+-- mkNewVar next v = Variable (getSpan v) (show next)
+mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
 
 -- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
 data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}

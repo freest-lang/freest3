@@ -84,10 +84,11 @@ instance Show T.Polarity where
 -- see Syntax.Variables
 
 instance Unparse Variable where
-  unparse v = (maxRator, intern v)
+  unparse v = (maxRator, show v)
 
 instance Show Variable where
-  show = source . getSpan
+  show = dropWhile (\c -> isDigit c || c == '#') . intern
+  -- show = source . getSpan
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
@@ -184,8 +185,8 @@ class Unparse t where
 -- Type
 
 instance Show T.Type where
-  -- show = snd . unparse
-  show = source . getSpan
+  show = snd . unparse
+  -- show = source . getSpan
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
@@ -250,8 +251,8 @@ showChoiceLabels m = intercalate ", "
 -- Expression
 
 instance Show Exp where
-  -- show = snd . unparse
-  show = source . getSpan
+  show = snd . unparse
+  -- show = source . getSpan
 
 instance Unparse Exp where
   -- Basic values
