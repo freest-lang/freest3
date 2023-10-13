@@ -19,6 +19,7 @@ https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 
 module Parse.Unparser
   ( Unparse(..)
+  , Sourceable(..)
   , showFieldMap
   , showBindType
   , showBindExp
@@ -395,3 +396,16 @@ joinList (E.App _ (E.App _ (E.Var x) e1) e2)
   | show x == "(::)" = e1 : joinList e2
   | show x == "[]"   = []  
 joinList e = [e]
+
+
+class Sourceable a where
+    showSource :: a -> String
+
+instance Sourceable Variable where
+    showSource = source . getSpan
+
+instance Sourceable T.Type where
+    showSource = source . getSpan
+
+instance Sourceable E.Exp where
+    showSource = source . getSpan

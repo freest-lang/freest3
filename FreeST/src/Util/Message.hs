@@ -23,16 +23,16 @@ class Show a => Style a where
   style :: (Stylable -> String -> String) -> Stylable -> a -> String 
 
 instance Style T.Type where
-  style f sty = f sty . show 
+  style f sty = f sty . showSource 
   
 instance Style E.Exp where
-  style f sty = f sty . show 
+  style f sty = f sty . showSource
 
 instance Style K.Kind where
   style f sty = f sty . show
 
 instance Style Variable where
-  style f sty = {-quote . -} f sty . show
+  style f sty = {-quote . -} f sty . showSource
 
 instance Style Signatures where
   style f sty = f sty . show
