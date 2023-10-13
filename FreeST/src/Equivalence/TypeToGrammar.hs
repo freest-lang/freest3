@@ -96,7 +96,7 @@ fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Labelled p t m) | t == T.Variant || t == T.Record = 
-  Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
+  Just (T.Labelled p t) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t

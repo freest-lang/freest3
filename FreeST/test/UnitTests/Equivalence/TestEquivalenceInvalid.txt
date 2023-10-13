@@ -12,6 +12,14 @@ Int
 Int -> Int
 Int 1-> Int
 
+[]
+(Int, Char)
+(Int, String)
+
+[]
+(Char, Int)
+(String, Int)
+
 -- Regular Session Types
 
 []
