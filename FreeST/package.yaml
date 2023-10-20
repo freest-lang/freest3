@@ -81,25 +81,25 @@ executables:
       - happy
     ghc-options: -main-is FreeST -threaded -rtsopts -with-rtsopts=-N
 
-  inf:
-    main: Elaboration/TestInference.hs
-    source-dirs:         src
-    build-tools:
-      - alex
-      - happy
-    ghc-options: -main-is Elaboration.TestInference
+  # inf:
+  #   main: Elaboration/TestInference.hs
+  #   source-dirs:         src
+  #   build-tools:
+  #     - alex
+  #     - happy
+  #   ghc-options: -main-is Elaboration.TestInference
     
 
-tests:
+tests:    
     units:
       main: UnitSpec.hs
       source-dirs: 
         - test/UnitTests
       dependencies:
         - FreeST
-        - hspec >= 2.7.1
+        - hspec >= 2.9.4
         - hspec-expectations >= 0.8.2
-        - hspec-discover >= 2.7.1
+        - hspec-discover >= 2.9.4
         - split >= 0.2.3.3
 
     programs:
@@ -108,9 +108,10 @@ tests:
         - test/Programs
       dependencies:
         - FreeST 
-        - hspec >= 2.7.1       
+        - hspec >= 2.9.4       
         - HUnit >= 1.6.0.0
         - silently >= 1.2.5.1
+        - deepseq >= 1.4.4.0
       ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
 
     valid-types-quick:

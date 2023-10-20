@@ -16,6 +16,8 @@ module Validation.Subkind
 where
 
 import qualified Syntax.Kind                   as K
+import Parse.Unparser
+
 
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -23,9 +25,9 @@ import qualified Syntax.Kind                   as K
 --     /  \
 --    *T  1S
 --     \ /  \
---      *S  1E
+--      *S  1A
 --       \  /
---        *E
+--        *A
 
 -- The Subsort class. Instances include Multiplicity, PreKind and Kind
 
@@ -38,12 +40,13 @@ instance Subsort K.Multiplicity where
 
 instance Subsort K.PreKind where
   K.Top <: K.Session = False
---  K.Session <: K.Absorb = False
+  K.Session <: K.Absorb = False
   _     <: _         = True
 
 instance Subsort K.Kind where
   K.Kind _ b1 m1 <: K.Kind _ b2 m2 = b1 <: b2 && m1 <: m2
-
+  _  <: _ = False
+  
 -- The least upper bound of two kinds
 
 class Join t where
@@ -62,7 +65,8 @@ instance Join K.PreKind where
 
 instance Join K.Kind where
   join (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (join b1 b2)
-
+  join k1 k2 = error $ "Undefined: " ++ show k1 ++ " join " ++ show k2
+  
 class Meet t where
   meet :: t -> t -> t
 
@@ -79,4 +83,4 @@ instance Meet K.PreKind where
   meet _         _         = K.Top
 
 instance Meet K.Kind where
-  meet (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (meet b1 b2)
+  meet (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (meet m1 m2) (meet b1 b2)

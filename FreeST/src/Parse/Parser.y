@@ -1,5 +1,5 @@
 {
-{-# LANGUAGE TupleSections, NamedFieldPuns #-}
+{-# LANGUAGE TupleSections, NamedFieldPuns, BangPatterns #-}
 module Parse.Parser
 where
 
@@ -182,6 +182,12 @@ Decl :: { () }
       mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
       uncurry addToTEnv $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
     }
+
+
+KindedTVarA :: { (Variable, K.Kind) }    -- for type and data declarations
+  : TypeName ':' Kind { ($1, $3) }
+  | TypeName          { ($1, omission (getSpan $1)) }
+
 
 ProgVarList :: { [Variable] }
   : ProgVar                 { [$1] }
@@ -465,13 +471,14 @@ TypeName :: { Variable }
 
 KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
---  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
-  | TypeVar          { ($1, omission (getSpan $1)) }
+  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
+--  | TypeVar          { ($1, omission (getSpan $1)) }
 
 
 KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, omission (getSpan $1)) }
+  | TypeName          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
+--  | TypeName          { ($1, omission (getSpan $1)) }
 
 {
 
@@ -510,7 +517,7 @@ stateToEither (t,s)
 parseProgram :: FreestS -> IO FreestS
 parseProgram s = do
   let filename = runFilePath $ runOpts s
-  input <- readFile filename
+  !input <- readFile filename
   let mh = parseModHeader s filename input
   return $ parseDefs (s {moduleName = moduleName mh}) filename input
 

@@ -7,7 +7,7 @@ module FreeST
 where
 
 
-import           Elaboration.Elaboration ( elaboration )
+import           Elaboration.Elaboration ( elaboration, inferKinds )
 import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
 import           Interpreter.Value
@@ -49,9 +49,9 @@ checkAndRun runOpts = do
   let venv = Map.keysSet (noConstructors (typeEnv s1) (varEnv s1))
   let penv = Map.keysSet (parseEnv s1)
   let bs = Set.difference venv penv
-
+  
   -- | Parse
-  s2 <- parseAndImport s1{builtins=bs, runOpts}
+  s2 <- parseAndImport s1{builtins=bs, runOpts, prelude = Map.keysSet (varEnv s1)}
   when (hasErrors s2) (die $ getErrors s2)
 
   -- | Solve type declarations and dualof operators
@@ -59,7 +59,12 @@ checkAndRun runOpts = do
   when (hasErrors s3) (die $ getErrors s3)
 
   -- | Rename
-  let s4 = execState renameState s3
+  let s4 = execState (renameState >> inferKinds ) s3
+--  let s4 = execState renameState s3
+  when (hasErrors s4)  (die $ getErrors s4)
+  -- print (errors s4)
+  -- putStrLn "" >> putStrLn "" >> putStrLn ""
+  -- print (prog s4)
 
   -- | Type check
   let s5 = execState typeCheck s4

@@ -217,6 +217,10 @@ checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   checkEquivTypes e kEnv t' t
   checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
+-- checkAgainst kEnv e t = do
+--   t' <- synthetise kEnv e
+--   debugM $ show t ++ " VS. " ++ show t'
+--   checkEquivTypes e kEnv t t'
 
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =

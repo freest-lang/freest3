@@ -90,12 +90,12 @@ receive : forall a:1T b:1S . ?a;b -> (a, b)
 -- | Closes a channel.
 close : End -> ()
   -- Internal Files
-__openFile : FilePath -> IOMode -> FileHandle
-__putFileStr : FileHandle -> String -> ()
-__readFileChar : FileHandle -> Char
-__readFileLine : FileHandle -> String
-__isEOF : FileHandle -> Bool
-__closeFile : FileHandle -> ()
+-- __openFile : FilePath -> IOMode -> FileHandle
+-- __putFileStr : FileHandle -> String -> ()
+-- __readFileChar : FileHandle -> Char
+-- __readFileLine : FileHandle -> String
+-- __isEOF : FileHandle -> Bool
+-- __closeFile : FileHandle -> ()
 
 
 
@@ -111,7 +111,7 @@ __closeFile : FileHandle -> ()
 -- # Base
 
 -- | Bool 
-data Bool = True | False 
+data Bool:*T = True | False 
 
 -- | Boolean complement
 not : Bool -> Bool 
@@ -206,8 +206,8 @@ swap x = let (a, b) = x in (b, a)
 -- | Fixed-point Z combinator
 fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
 fix f =
-  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
-  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b:*T.b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b:*T.b -> (a -> a)) -> f (\z:a -> x x z))
 
 -- | Extracts the first element from a pair, discarding the second.
 fst : forall a:1T b:*T . (a, b) -> a
@@ -229,7 +229,7 @@ snd p = let (_,y) = p in y
 -- # Concurrency and channels
 
 -- | A mark for functions that do not terminate
-type Diverge = ()
+type Diverge:*T = ()
 
 -- A function that diverges
 -- diverge : Diverge
@@ -335,7 +335,7 @@ accept ch =
 -- |     -- send the string to be printed
 -- |     c |> send "Hello!" |> close
 -- | ```
-forkWith : forall a:1A b . (dualof a 1-> b) -> a
+forkWith : forall a:1A b:*T . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new @a () in
     fork (\_:() 1-> f y);
@@ -365,7 +365,7 @@ forkWith f =
 -- | runCounterServer : dualof SharedCounter -> Diverge
 -- | runCounterServer = runServer @Counter @Int counterService 0 
 -- | ```
-runServer : forall a:1S b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
+runServer : forall a:1A b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
     runServer @a @b handle (handle state (accept @a ch)) ch 
 
@@ -423,7 +423,7 @@ hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch)
 hPrint : forall a:*T . a -> OutStream -> OutStream
 hPrint x = hPutStrLn (show @a x)
 
-__hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
+__hGenericPut_ : forall a:*T . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
 __hGenericPut_ putF x outProv = 
     hCloseOut $ putF x $ receive_ @OutStream outProv 
 
@@ -466,7 +466,7 @@ type InStream : 1S = +{ GetChar     : ?Char  ; InStream
                       }
 
 -- | Unrestricted session type for the `OutStream` type.
-type InStreamProvider : *S = *?InStream
+type InStreamProvider : *A = *?InStream
 
 -- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
@@ -637,10 +637,10 @@ __runReader _ reader =
 -- # File types
 
 -- | File paths.
-type FilePath = String
+type FilePath:*T = String
 
 -- Internal file handles
-data FileHandle = FileHandle () 
+data FileHandle:*T = FileHandle () 
 
 -- Internal IOMode for opening files
-data IOMode = ReadMode | WriteMode | AppendMode
+data IOMode:*T = ReadMode | WriteMode | AppendMode

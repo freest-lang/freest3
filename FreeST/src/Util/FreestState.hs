@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-|
@@ -37,6 +38,9 @@ import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 import           Debug.Trace -- debug (used on debugM function)
 
+import Validation.Subkind -- TODO: remove debug? (Maybe not)
+
+
 -- | The typing state
 
 type Warnings = [WarningType]
@@ -51,6 +55,27 @@ type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
 type ParseEnvChoices = [Variable]
 
 type Builtins = Set.Set Variable
+
+type KindConstraint = (K.Kind, K.Kind)
+type PreKindConstraint = (K.PreKind, (K.Kind,K.Kind)) 
+type MultConstraint = (K.Multiplicity, [K.Kind]) 
+
+data Constraint = KindC KindConstraint
+                | KindP PreKindConstraint
+                | MultC MultConstraint
+                deriving Eq
+
+instance Show Constraint where
+  show (KindC (k1,k2)) = show k1 ++ " <: " ++ show k2
+  show (MultC (m,ks)) = show m ++ " = ⊔" ++ show ks
+  show (KindP (pk, (k1,k2))) = show pk ++ " = " ++ show k1 ++ " ⊓ " ++ show k2
+
+
+type KindConstraints = [KindConstraint]
+type MultConstraints = [MultConstraint]
+
+-- Either KindConstraint MultConstraint
+
 
 data FreestS = FreestS {
     runOpts    :: RunOpts
@@ -67,7 +92,14 @@ data FreestS = FreestS {
   , moduleName :: Maybe FilePath
   , imports    :: Imports
   , builtins    :: Builtins
-  } deriving Show -- FOR DEBUG purposes
+  , prelude     :: Set.Set Variable
+  , kConstraints :: KindConstraints
+  , mConstraints :: MultConstraints
+  , constraints :: [Constraint]
+  , kVariables :: Set.Set Variable
+  , pkVariables :: Set.Set Variable
+  , mVariables :: Set.Set Variable
+  } -- deriving Show -- FOR DEBUG purposes
 
 
 type FreestState = State FreestS
@@ -75,21 +107,114 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts    = defaultOpts
-                       , varEnv     = initialVEnv
-                       , prog       = Map.empty
-                       , typeEnv    = initialTEnv
-                       , typenames  = Map.empty
-                       , warnings   = []
-                       , errors     = []
-                       , nextIndex  = 0
-                       , parseEnv   = Map.empty
-                       , parseEnvPat     = Map.empty
-                       , parseEnvChoices = []
-                       , moduleName = Nothing
-                       , imports    = Set.empty
-                       , builtins   = Set.empty
-                       }
+initialState = FreestS
+  { runOpts    = defaultOpts
+  , varEnv     = initialVEnv
+  , prog       = Map.empty
+  , typeEnv    = initialTEnv
+  , typenames  = Map.empty
+  , warnings   = []
+  , errors     = []
+  , nextIndex  = 0
+  , parseEnv   = Map.empty
+  , parseEnvPat     = Map.empty
+  , parseEnvChoices = []
+  , moduleName = Nothing
+  , imports    = Set.empty
+  , builtins   = Set.empty
+  , prelude    = Set.empty
+  , kConstraints = []
+  , mConstraints = []
+  , constraints = []
+  , kVariables = Set.empty
+  , pkVariables = Set.empty
+  , mVariables = Set.empty
+  }
+
+-- | User defined
+
+userDefinedM :: Variable -> FreestState Bool
+userDefinedM = gets . (. prelude) . Set.notMember
+
+userDefined :: FreestS -> Variable -> Bool
+userDefined = flip Set.notMember . prelude
+
+-- | Inference
+
+addKConstraint :: KindConstraint -> FreestState ()
+addKConstraint c@(k1,k2)
+  | isProperKind k1 && isProperKind k2 && k1 <: k2 = return ()
+  | otherwise =    modify (\s -> s { constraints = KindC c : constraints s })
+  where
+    isProperKind K.KindVar{} = False
+    isProperKind (K.Kind _ K.MultVar{} _) = False
+    isProperKind (K.Kind _ _ K.PreKindVar{}) = False
+    isProperKind _ = True
+    
+--  modify (\s -> s { kConstraints = c : kConstraints s })
+
+getKConstraints :: FreestState KindConstraints
+getKConstraints = gets kConstraints
+
+addMConstraint :: MultConstraint -> FreestState ()
+addMConstraint c = modify (\s -> s { constraints = MultC c : constraints s })
+
+getMConstraints :: FreestState MultConstraints
+getMConstraints = gets mConstraints
+
+addPKConstraint :: PreKindConstraint -> FreestState ()
+addPKConstraint c = modify (\s -> s { constraints = KindP c : constraints s })
+
+getConstraints :: FreestState [Constraint]
+getConstraints = gets constraints
+
+setConstraints :: [Constraint] -> FreestState ()
+setConstraints constraints = modify (\s -> s { constraints }) 
+
+freshKindVar :: Span -> FreestState K.Kind
+freshKindVar s = do
+  i <- getNextIndex
+  return $ K.KindVar s $ mkVar defaultSpan ("χ" ++ show i )
+
+freshMultVar :: FreestState K.Multiplicity
+freshMultVar = do
+  i <- getNextIndex
+  let v = mkVar defaultSpan ("φ" ++ show i )
+  addMVariable v
+  return $ K.MultVar v
+  
+freshPreKindVar :: FreestState K.PreKind
+freshPreKindVar = do
+  i <- getNextIndex
+  let v = mkVar defaultSpan ("ν" ++ show i )
+  addPKVariable v
+  return $ K.PreKindVar v
+
+-- TODO: new pk
+getKVariables, getPKVariables, getMVariables :: FreestState (Set.Set Variable)
+getKVariables = gets kVariables
+getMVariables = gets mVariables
+getPKVariables = gets pkVariables
+
+addKVariable :: Variable -> FreestState ()
+addKVariable c = modify (\s -> s { kVariables = c `Set.insert` kVariables s })
+
+addMVariable :: Variable -> FreestState ()
+addMVariable c = modify (\s -> s { mVariables = c `Set.insert` mVariables s })
+
+addPKVariable :: Variable -> FreestState ()
+addPKVariable c = modify (\s -> s { pkVariables = c `Set.insert` pkVariables s })
+
+addKVariableFromK :: K.Kind -> FreestState ()
+addKVariableFromK (K.KindVar _ v) = addKVariable v
+addKVariableFromK _             = return ()
+
+
+setKVariables, setPKVariables, setMVariables :: Set.Set Variable -> FreestState ()
+setKVariables kVariables = modify (\s -> s { kVariables })
+setPKVariables pkVariables = modify (\s -> s { pkVariables })
+setMVariables mVariables = modify (\s -> s { mVariables })
+
 
 -- | Parse Env
 

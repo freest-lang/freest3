@@ -8,6 +8,7 @@ import           Util.FreestState
 import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
+import           Data.Bifunctor
 import           Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -48,14 +49,14 @@ solveEq _ _ p              = pure p
 -- | Build recursive types
 
 buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
+buildRecursiveTypes = getTEnv >>= setTEnv . Map.mapWithKey buildRec
   where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
 cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.map (\(k, t) -> (k, ) $ clean t) <$> getTEnv >>= setTEnv
-
+cleanUnusedRecs = getTEnv >>= setTEnv . Map.map (second clean)
+  
 clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))
   | y `isFreeIn` t = T.Rec p $ Bind p' y k (clean t)

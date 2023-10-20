@@ -100,6 +100,7 @@ instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
   show K.Absorb  = "A"
+  show (K.PreKindVar v) = show v
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m

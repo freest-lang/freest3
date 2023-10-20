@@ -8,7 +8,9 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.FreestState -- (tMapM_,tMapM, initialState, FreestS(..), RunOpts(..))
+import           Util.FreestState hiding
+  (kConstraints, mConstraints, mVariables, kVariables, addKVariable, getKConstraints, addMVariable)
+  
 import qualified Validation.Subkind as SK
 import           Validation.Substitution
 import qualified Validation.Extract as Extract
@@ -40,11 +42,11 @@ import Data.List
 
 
 
-type KindConstraint = (K.Kind, K.Kind)
-type MultConstraint = (K.Multiplicity, [K.Kind]) 
+-- type KindConstraint = (K.Kind, K.Kind)
+-- type MultConstraint = (K.Multiplicity, [K.Kind]) 
 
-type KindConstraints = [KindConstraint]
-type MultConstraints = [MultConstraint]
+-- type KindConstraints = [KindConstraint]
+-- type MultConstraints = [MultConstraint]
 
 
 data InferS = InferS { index ::  Int

@@ -36,7 +36,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- Pre-kind
-data PreKind = Session | Top | Absorb deriving (Ord, Eq)
+data PreKind = Session | Top | Absorb | PreKindVar Variable deriving (Ord, Eq)
 
 -- Multiplicity
 data Multiplicity = Un | Lin | MultVar Variable deriving (Ord, Eq)

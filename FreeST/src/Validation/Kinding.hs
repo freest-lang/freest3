@@ -1,3 +1,4 @@
+
 {-# LANGUAGE LambdaCase #-}
 {-|
 Module      :  Validation.Kinding
@@ -19,6 +20,9 @@ module Validation.Kinding
   , un
   , lin
   , checkAgainstAbsorb
+  , typeToKindMult
+  , unr
+  , checkContractive
   )
 where
 
@@ -55,24 +59,21 @@ synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 synthetise' _ _ (T.Int    p) = return $ K.ut p
 synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
-synthetise' s kEnv (T.Arrow p m t u) =
+synthetise' s kEnv (T.Arrow p m t u) = do
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
   return $ K.Kind p n K.Top
 -- Shared session types
-synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
-  | a == b = do
-    void $ checkAgainstSession' s kEnv u
-    return $ K.ua p
+synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var _ b))))
+  | a == b = checkAgainstSession' s kEnv u $> K.ua p
 synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ (T.Choice _) m)))
-  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
-    return $ K.ua p
+  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ K.ua p
 -- Session types
 synthetise' _ _ (T.Skip   p) = return $ K.us p
 synthetise' _ _ (T.End    p) = return $ K.la p
-synthetise' s kEnv (T.Semi p t u) = do
+synthetise' s kEnv (T.Semi p t u) = do  
   ~k1@(K.Kind _ mt vt) <- synthetise' s kEnv t
   ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t k1))
@@ -80,11 +81,12 @@ synthetise' s kEnv (T.Semi p t u) = do
   return $ K.Kind p (join mt mu) (meet vt vu)
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
-synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
-  Map.foldl (flip meet) (K.ua p) <$> tMapM (synthetise' s kEnv) m
+synthetise' s kEnv (T.Labelled _ (T.Choice _) m) = do
+  ks <- tMapM (synthetise' s kEnv) m
+  return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (join m1 m2) (meet v1 v2))
+    (snd $ Map.elemAt 0 ks) ks
 -- Session or functional
-synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
---   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
+synthetise' s kEnv u@(T.Rec _ (Bind _ a k t)) = do
   checkContractive s a t
   ~k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
   unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
@@ -122,8 +124,10 @@ checkAgainst' s kEnv expected t = do
 -- kind of the type. This is a refined version of checkAgainst for a better error messages
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
-  ~k@(K.Kind _ _ p) <- synthetise' s kEnv t
-  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
+--  ~k@(K.Kind _ _ p) <- synthetise' s kEnv t
+  synthetise' s kEnv t >>= \case
+    k@(K.Kind _ _ p) -> when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
+    k -> error $ show t ++ "\n" ++ show k
 
 checkAgainstAbsorb :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstAbsorb kEnv t = do
