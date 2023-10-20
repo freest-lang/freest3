@@ -1,6 +1,6 @@
 data Tree = Leaf | Node Tree Int Tree
-type WTree:1S = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree};End
-type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree};End
+type WTree = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree};End
+type RTree = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree};End
 
 sendTree : Tree -> WTree -> ()
 sendTree t c =

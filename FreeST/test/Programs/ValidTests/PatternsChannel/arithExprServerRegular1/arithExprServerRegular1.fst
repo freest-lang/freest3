@@ -9,7 +9,7 @@ type Stream = +{
 }
 -}
 
-type MathServer : 1S = +{Add: MathServer, Mult: MathServer, Const: !Int;MathServer, Done: ?Int}
+type MathServer = +{Add: MathServer, Mult: MathServer, Const: !Int;MathServer, Done: ?Int}
 
 -- A sample client: (5*4)+(2*3)
 client : MathServer;End -> Int

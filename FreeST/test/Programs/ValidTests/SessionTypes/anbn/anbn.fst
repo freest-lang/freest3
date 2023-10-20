@@ -15,9 +15,9 @@ on a simplified representation of deterministic pushdown automata.
 -}
 
 -- Production S0
-type S0 : 1S = +{A: S1}
+type S0 = +{A: S1}
 -- Production S1
-type S1 : 1S = +{A: S1; +{B: Skip}, B: Skip}
+type S1 = +{A: S1; +{B: Skip}, B: Skip}
 
 -- The client selects a given number of A's
 client : Int -> S0;End -> ()
@@ -27,7 +27,7 @@ client n c =
   |> close
 
 -- for each A selected a B is also selected
-client' : forall a : 1S . Int -> S1;a -> a
+client' : forall a . Int -> S1;a -> a
 client' n c =
   if n == 0
   then
@@ -46,10 +46,10 @@ server c =
   }
 
 -- For each A selected, a choice for B is also offered
-server' : forall a : 1S . dualof S1; a -> a
+server' : forall a . dualof S1; a -> a
 server' c =
   match c with {
-    A c ->     -- (rec x: 1S. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
+    A c ->     -- (rec x. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
       (let c = server' @(&{B: Skip};a) c in  -- &{B: Skip}; a
        match c with {
          B c -> c

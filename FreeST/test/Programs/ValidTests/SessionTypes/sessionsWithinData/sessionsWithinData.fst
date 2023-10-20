@@ -1,4 +1,4 @@
-data T : 1T = One End | Two ?Int;End
+data T = One End | Two ?Int;End
 
 read : T -> Int
 read t =

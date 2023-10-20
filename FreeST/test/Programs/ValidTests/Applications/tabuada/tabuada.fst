@@ -28,14 +28,14 @@ multiplosEntre i x n = if x == n
 
 -- Tipo do canal (os parentesis fazem diferenca)
 
-type TabuadaServer : 1S = &{ TabuadaSimples: ?Int ;             TabuadaServer
-                           , TabuadaAte    : ?Int ; ?Int;       TabuadaServer
-                           , MultiplosEntre: ?Int ; ?Int; ?Int; TabuadaServer
-                           , Solucao       : !Bool; !Int;       TabuadaServer
-                           , Fim           : End
-                           }
+type TabuadaServer = &{ TabuadaSimples: ?Int ;             TabuadaServer
+                      , TabuadaAte    : ?Int ; ?Int;       TabuadaServer
+                      , MultiplosEntre: ?Int ; ?Int; ?Int; TabuadaServer
+                      , Solucao       : !Bool; !Int;       TabuadaServer
+                      , Fim           : End
+                      }
 
-type TabuadaClient : 1S = dualof TabuadaServer
+type TabuadaClient = dualof TabuadaServer
 
 initTabuadaServer : TabuadaServer 1-> ()
 initTabuadaServer c = tabuadaServer c Empty

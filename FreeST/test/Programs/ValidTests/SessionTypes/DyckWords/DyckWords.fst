@@ -17,11 +17,11 @@ Example suggested by the authors Frank Pfenning, Ankush Das, Henry DeYoung, and 
 
 -}
 
-type D : 1S = +{ Lt : T;D, Dollar : Skip }
-type T : 1S = +{ Lt : T;T, Gt : Skip }
+type D = +{ Lt : T;D, Dollar : Skip }
+type T = +{ Lt : T;T, Gt : Skip }
 
 -- Read from a channel; print what is read
-readD : forall a: 1S . dualof D;a -> a
+readD : forall a . dualof D;a -> a
 readD c =
   match c with {
     Lt c ->
@@ -31,7 +31,7 @@ readD c =
       print @Char '$';
       c
   }
-readT : forall a: 1S . dualof T;a -> a
+readT : forall a . dualof T;a -> a
 readT c =
   match c with {
     Lt c ->
@@ -43,7 +43,7 @@ readT c =
   }
 
 -- Read from a channel and immediately write on another channel
-forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b 1-> (a, b)
+forwardD : forall a . forall b . dualof D;a -> D;b 1-> (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
@@ -55,7 +55,7 @@ forwardD in' out =
          (in', out)
   }
 
-forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b 1-> (a, b)
+forwardT : forall a . forall b . dualof T;a -> T;b 1-> (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
@@ -69,7 +69,7 @@ forwardT in' out =
 
 -- Read from a channel; read from a second channel; while writing on a
 -- third channel
-concatD : forall a: 1S . forall b: 1S . forall c: 1S . dualof D;a -> dualof D;b 1-> D;c 1-> (a, (b, c))
+concatD : forall a . forall b . forall c . dualof D;a -> dualof D;b 1-> D;c 1-> (a, (b, c))
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
@@ -80,9 +80,9 @@ concatD in1 in2 out =
     Dollar in1 ->
       let (in2, out) = forwardD @b @c in2 out in
          (in1, (in2, out))
-  } -- forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -> (a, b)
+  } -- forwardD : forall a . forall b . dualof D;a -> D;b -> (a, b)
 
-concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b 1-> T;c 1-> (a, (b, c))
+concatT : forall a . forall b . forall c . dualof T;a -> b 1-> T;c 1-> (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->

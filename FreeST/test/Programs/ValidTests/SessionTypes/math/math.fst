@@ -1,4 +1,4 @@
-type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};End
+type MathServer = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};End
 
 mathServer : MathServer-> ()
 mathServer c =

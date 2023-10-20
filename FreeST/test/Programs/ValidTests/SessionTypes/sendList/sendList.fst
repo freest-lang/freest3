@@ -1,6 +1,6 @@
 data List = Cons Int List | Nil
 
-type ListC : 1S = &{NilC: End, ConsC: ?Int ; ListC}
+type ListC = &{NilC: End, ConsC: ?Int ; ListC}
 
 read : ListC -> List
 read (ConsC c) =

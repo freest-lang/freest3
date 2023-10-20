@@ -7,12 +7,12 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeChannel : 1S = +{
+type TreeChannel = +{
   LeafC: Skip,
   NodeC: !Int ; TreeChannel ; TreeChannel
  }
 
-write : forall a: 1S . Tree -> TreeChannel; a -> a
+write : forall a . Tree -> TreeChannel; a -> a
 write t c =
   case t of {
     Leaf ->
@@ -24,7 +24,7 @@ write t c =
       |> write @a r
   }
 
-read : forall a: 1S . dualof TreeChannel; a -> (Tree, a)
+read : forall a . dualof TreeChannel; a -> (Tree, a)
 read c =
   match c with {
     LeafC c ->

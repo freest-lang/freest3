@@ -18,12 +18,12 @@ multiplosEntre i x n = if x == n
 
 -- ==================== Servidor ====================
 
-type TabuadaC : 1S = +{ TabuadaSimples: !Int; TabuadaC
-                      , TabuadaAte: !Int; !Int; TabuadaC
-                      , MultiplosEntre: !Int; !Int; !Int; TabuadaC
-                      , Solucao: ?Bool; ?Int; TabuadaC
-                      , Fim: End
-                      }
+type TabuadaC = +{ TabuadaSimples: !Int; TabuadaC
+                 , TabuadaAte: !Int; !Int; TabuadaC
+                 , MultiplosEntre: !Int; !Int; !Int; TabuadaC
+                 , Solucao: ?Bool; ?Int; TabuadaC
+                 , Fim: End
+                 }
 
 -- Este canal tem 3 servicos: TabuadaSimples, TabuadaAte e MultiplosEntre
 -- Os resultados sao sempre armazenados e perpetuados com chamadas recursivas

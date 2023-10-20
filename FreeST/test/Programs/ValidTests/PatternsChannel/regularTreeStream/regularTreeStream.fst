@@ -41,7 +41,7 @@ getTwo (Cons left (Cons right zs)) = (zs, (left, right))
 
 -- Streams
 
-type Stream : 1S = +{
+type Stream = +{
     NodeC: !Int; Stream,
     LeafC: Stream,
     EndOfStream: Skip
@@ -59,10 +59,10 @@ streamTree Error        c = select LeafC c
 
 -- Reading trees from channels
 
-receiveTree : forall a:1S . dualof Stream;a -> (Tree, a)
+receiveTree : forall a . dualof Stream;a -> (Tree, a)
 receiveTree c = recTree @a Nil c
 
-recTree : forall a:1S . List -> dualof Stream;a -> (Tree, a)
+recTree : forall a . List -> dualof Stream;a -> (Tree, a)
 recTree xs (LeafC c)       = recTree @a (Cons Leaf xs) c
 recTree xs (EndOfStream c) = (getFromSingleton xs, c)
 recTree xs (NodeC c)       = let (xs, p) = getTwo xs in
@@ -80,11 +80,11 @@ writeTooMuch : Stream -> Skip
 writeTooMuch c =
   select EndOfStream $ select LeafC $ select LeafC c
 
-writeRootTreeOnly : forall a:1S . Stream;a -> a
+writeRootTreeOnly : forall a . Stream;a -> a
 writeRootTreeOnly c =
   select EndOfStream $ send 5 $ select NodeC c
 
-writeLeftTreeOnly : forall a:1S . Stream;a -> a
+writeLeftTreeOnly : forall a . Stream;a -> a
 writeLeftTreeOnly c =
   select EndOfStream $ send 5 $ select NodeC $ select LeafC c
 

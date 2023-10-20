@@ -1,5 +1,5 @@
-type MathServer  : *S = *?MathService
-type MathService : 1S = +{ Plus   : !Int; !Int; ?Int; MathService
+type MathServer  = *?MathService
+type MathService = +{ Plus   : !Int; !Int; ?Int; MathService
                          , Greater: !Int; !Int; ?Bool; MathService
                          , Neg    : !Int; ?Int; MathService
                          , Close  : End
@@ -42,7 +42,7 @@ client1 ch =
                |> receive
                in
     select Close c |> close;
-    printIntLn m
+    print @Int m
 
 client2 : MathServer -> ()
 client2 ch =
@@ -53,7 +53,7 @@ client2 ch =
                |> receive
                in
     select Close c |> close; 
-    printBoolLn b
+    print @Bool b
 
 main : ()
 main =

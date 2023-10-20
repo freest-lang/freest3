@@ -34,8 +34,8 @@ data Connection = CNil | Connection Channels Connection
 data Layers     = LNil | Layers Connection Layers
 
 ---- Channels ----
-type Send    : 1S = !Int
-type Receive : 1S = dualof Send
+type Send    = !Int
+type Receive = dualof Send
 
 ---- Network ----
 

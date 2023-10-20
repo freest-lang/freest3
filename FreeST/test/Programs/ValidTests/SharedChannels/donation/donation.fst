@@ -8,16 +8,16 @@ Note that FreeST does not have refinement types
 -- 1. Type abbreviations that make the code below more understandable
 type CreditCard = String
 
--- type Promotion : *S = *?(String, CreditCard, Int)
-type Promotion  : *S = *?Promotion'
-type Promotion' : 1S = !String; !CreditCard; !Int; End 
+-- type Promotion = *?(String, CreditCard, Int)
+type Promotion  = *?Promotion'
+type Promotion'  = !String; !CreditCard; !Int; End 
 
-type Decision : 1S = &{ Accepted: ?Promotion; End
+type Decision = &{ Accepted: ?Promotion; End
                       , Denied  : ?String   ; End
                       }
 
-type DonationS : *S = *!Donation
-type Donation : 1S = +{ SetTitle: !String; Donation
+type DonationS  = *!Donation
+type Donation = +{ SetTitle: !String; Donation
                       , SetDate : !Int   ; Donation
                       , Commit  : Decision
                       }

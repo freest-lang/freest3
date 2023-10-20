@@ -1,4 +1,4 @@
-type T : 1S = +{More: !Int;T, Stop: End}
+type T = +{More: !Int;T, Stop: End}
 
 main : Int
 main =

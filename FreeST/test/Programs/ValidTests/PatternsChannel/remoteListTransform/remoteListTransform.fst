@@ -1,7 +1,7 @@
 data IntList = Nil | List Int IntList
-type IntListC : 1S = +{NilC: Skip, ListC: !Int;IntListC;?Int}
+type IntListC = +{NilC: Skip, ListC: !Int;IntListC;?Int}
 
-transform : forall a : 1S . IntList -> IntListC;a -> (IntList, a)
+transform : forall a . IntList -> IntListC;a -> (IntList, a)
 transform Nil           c = (Nil, select NilC c)
 transform (List i rest) c = 
     let c = select ListC c in
@@ -11,7 +11,7 @@ transform (List i rest) c =
     (List y rest, c)
 
 
-listSum : forall a : 1S . dualof IntListC;a -> (Int, a)
+listSum : forall a . dualof IntListC;a -> (Int, a)
 listSum (NilC  c) = (0, c)
 listSum (ListC c) = 
     let (x, c) = receive c in

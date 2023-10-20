@@ -1,8 +1,8 @@
 data List = Cons Int List | Nil
 
-type ListOut : 1S = +{NilC: Skip, ConsC: !Int;ListOut}
+type ListOut = +{NilC: Skip, ConsC: !Int;ListOut}
 
-rcvList : forall a : 1S . dualof ListOut;a -> (List, a)
+rcvList : forall a . dualof ListOut;a -> (List, a)
 rcvList c =
   match c with {
     ConsC c  ->
@@ -12,7 +12,7 @@ rcvList c =
     NilC c  -> (Nil, c)
   }
 
-sendList : forall a : 1S . ListOut;a -> List 1-> a
+sendList : forall a . ListOut;a -> List 1-> a
 sendList c l =
   case l of {
     Cons x xs ->

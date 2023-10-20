@@ -11,7 +11,7 @@ data Tree = Leaf | Node Tree Int Tree
 aTree : Tree
 aTree = Node (Node Leaf 5 Leaf) 7 (Node (Node Leaf 11 Leaf) 9 (Node Leaf 15 Leaf))
 
-type TreeC : 1S = &{
+type TreeC = &{
   LeafC: End,
   NodeC: ?TreeC ; ?Int ; ?TreeC ; End
  }

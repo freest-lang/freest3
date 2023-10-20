@@ -1,4 +1,4 @@
-f : ∀a:*T. ∀b:*T. a -> (a -> b) -> b
+f : ∀a . ∀b . a -> (a -> b) -> b
 f = (|>)
 
 main : Int

@@ -19,16 +19,16 @@ notC = λ b: BoolC -> Λ a => λ t:a -> λ f:a -> b  @a f t
 
 -- Abbreviated versions of the above
 
-type BoolC' b = b -> b -> b
+-- type BoolC' b = b -> b -> b
 
-trueC', falseC': BoolC
+-- trueC', falseC': BoolC
 
-trueC' t _ = t
+-- trueC' t _ = t
 
-falseC' _ f = f
+-- falseC' _ f = f
 
-notC' : BoolC -> BoolC
-notC' b = Λ a => λ t:a f:a -> b  @a f t
+-- notC' : BoolC -> BoolC
+-- notC' b = Λ a => λ t:a f:a -> b  @a f t
 
 -- Destructor
 

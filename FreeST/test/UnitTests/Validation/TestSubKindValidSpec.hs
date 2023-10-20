@@ -1,4 +1,4 @@
-modula Validation.TestSubKindValidSpec ( spec ) where
+module Validation.TestSubKindValidSpec ( spec ) where
 
 import           Test.Hspec
 import Syntax.Base

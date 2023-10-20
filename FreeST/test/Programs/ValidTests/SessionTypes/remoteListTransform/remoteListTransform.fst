@@ -1,8 +1,8 @@
 data IntList = Nil | Cons Int IntList
-type IntListC : 1S = +{NilC: Skip, ConsC: !Int;IntListC;?Int}
-type IntListS : 1S = &{NilC: Skip, ConsC: ?Int;IntListS;!Int}
+type IntListC = +{NilC: Skip, ConsC: !Int;IntListC;?Int}
+type IntListS = &{NilC: Skip, ConsC: ?Int;IntListS;!Int}
 
-transform : forall a : 1S . IntList -> IntListC;a -> (IntList, a)
+transform : forall a . IntList -> IntListC;a -> (IntList, a)
 transform list c =
     case list of {
         Nil ->
@@ -16,7 +16,7 @@ transform list c =
     }
 
 
-listSum : forall a : 1S . IntListS;a -> (Int,a)
+listSum : forall a . IntListS;a -> (Int,a)
 listSum c =
     match c with {
         NilC c ->

@@ -41,7 +41,7 @@ json = ConsObject "name" (StringVal "James") $
        EmptyObject
 
 -- Channels for sending JSON objects
-type ValueChannel : 1S = +{
+type ValueChannel = +{
     StringValC : !String,
     IntValC    : !Int,
     ObjectValC : ObjectChannel,
@@ -49,17 +49,17 @@ type ValueChannel : 1S = +{
     BoolValC   : !Bool,
     NullValC   : Skip
   }
-type ObjectChannel : 1S = +{
+type ObjectChannel = +{
     ConsObjectC : !String; ValueChannel; ObjectChannel,
     EmptyC      : Skip
   }
-type ArrayChannel : 1S = +{
+type ArrayChannel = +{
     ConsObjectC : ValueChannel; ArrayChannel,
     EmptyC      : Skip
   }
 
 -- Writing a JSON value on a channel
-writeValue : forall a : 1S . Value -> ValueChannel;a -> a
+writeValue : forall a . Value -> ValueChannel;a -> a
 writeValue (StringVal s) c = select StringValC c |> send s
 writeValue (IntVal    i) c = select IntValC    c |> send i
 writeValue (ObjectVal j) c = select ObjectValC c |> writeObject @a j
@@ -67,7 +67,7 @@ writeValue (ArrayVal  l) c = select ArrayValC  c |> writeArray @a l
 writeValue (BoolVal   b) c = select BoolValC   c |> send b
 writeValue NullVal       c = select NullValC   c
 
-writeObject : forall a:1S . Object -> ObjectChannel;a -> a
+writeObject : forall a . Object -> ObjectChannel;a -> a
 writeObject EmptyObject             c = select EmptyC c
 writeObject (ConsObject key val j1) c =
       select ConsObjectC c |>
@@ -75,7 +75,7 @@ writeObject (ConsObject key val j1) c =
       writeValue @(ObjectChannel;a) val |>
       writeObject @a j1
 
-writeArray : forall a:1S . Array -> ArrayChannel;a -> a
+writeArray : forall a . Array -> ArrayChannel;a -> a
 writeArray EmptyArray c       = select EmptyC c
 writeArray (ConsArray j l1) c =
       select ConsObjectC c |>
@@ -83,7 +83,7 @@ writeArray (ConsArray j l1) c =
       writeArray @a l1
 
 -- Reading a JSON value from a channel
-readValue : forall a : 1S . dualof ValueChannel;a -> (Value, a)
+readValue : forall a . dualof ValueChannel;a -> (Value, a)
 readValue (StringValC c) = let (s, c) = receive c in (StringVal s, c)
 readValue (IntValC    c) = let (i, c) = receive c in (IntVal i, c)
 readValue (ObjectValC c) = let (j, c) = readObject @a c in (ObjectVal j, c)
@@ -91,7 +91,7 @@ readValue (ArrayValC  c) = let (l, c) = readArray  @a c in (ArrayVal l, c)
 readValue (BoolValC   c) = let (b, c) = receive c in (BoolVal b, c)
 readValue (NullValC   c) = (NullVal, c)
 
-readObject : forall a:1S . dualof ObjectChannel;a -> (Object, a)
+readObject : forall a . dualof ObjectChannel;a -> (Object, a)
 readObject (EmptyC c)      = (EmptyObject, c)
 readObject (ConsObjectC c) =
       let (key, c)   = receive c in
@@ -99,7 +99,7 @@ readObject (ConsObjectC c) =
       let (next, c)  = readObject @a c in
       (ConsObject key value next, c)
 
-readArray : forall a:1S . dualof ArrayChannel;a -> (Array, a)
+readArray : forall a . dualof ArrayChannel;a -> (Array, a)
 readArray (EmptyC c)      = (EmptyArray, c)
 readArray (ConsObjectC c) =
       let (j, c) = readValue @(dualof ArrayChannel;a) c in

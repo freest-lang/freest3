@@ -1,4 +1,4 @@
-mkPair : forall a : 1T . forall b : 1T . a -> b 1-> (a, b)
+mkPair : forall a . forall b . a -> b 1-> (a, b)
 mkPair x y = (x, y)
 
 main : (Int, Bool)

@@ -1,4 +1,4 @@
-type Sorter : 1S = +{Done: End, More: !Int ; ?Int; Sorter}
+type Sorter = +{Done: End, More: !Int ; ?Int; Sorter}
 
 -- first accepts the number of phases, the value in the node, the
 -- channel to the right and the channel where to announce the result
