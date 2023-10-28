@@ -319,7 +319,7 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- type Consumer a = a 1-> ()
 
 -- | Receives a value from a linear channel and applies a function to it.
--- | Returns the continuation channel
+-- | Discards the result and returns the continuation channel.
 -- | 
 -- | ```
 -- | main : ()
@@ -327,13 +327,13 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- |     -- create channel endpoints
 -- |     let (c, s) = new @(?String; End) () in
 -- |     -- fork a thread that prints the received value (and closes the channel)
--- |     fork (\_:() 1-> c |> consume @String @End putStrLn |> close);
+-- |     fork (\_:() 1-> c |> readApply @String @End putStrLn |> close);
 -- |     -- send a string through the channel (and close it)
 -- |     s |> send "Hello!" |> close
 -- | ```
--- consume : forall a:*T b:1S . Consumer a -> ?a;b 1-> b
-consume : forall a:*T b:1S . (a -> ()) -> ?a;b 1-> b
-consume f ch =
+-- readApply : forall a:*T b:1S . Consumer a -> ?a;b 1-> b
+readApply : forall a:*T b:1S . (a -> ()) -> ?a;b 1-> b
+readApply f ch =
     let (x, ch) = receive ch in
     f x;
     ch
@@ -374,7 +374,7 @@ accept ch =
     send x ch;
     y
 
--- | Creates a new child process and a linear channel through which it can
+-- | Creates a new child process and a channel through which it can
 -- | communicate with its parent process. Returns the channel endpoint.
 -- | 
 -- | ```
@@ -623,9 +623,9 @@ __runStdout = runServer @OutStream @() __runPrinter ()
 __runPrinter : () -> dualof OutStream 1-> ()
 __runPrinter _ printer =
     match printer with {
-        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
-        PutStr   printer -> consume @String @dualof OutStream __putStrOut printer |> __runPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter (),
+        PutChar  printer -> readApply @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
+        PutStr   printer -> readApply @String @dualof OutStream __putStrOut printer |> __runPrinter (),
+        PutStrLn printer -> readApply @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter (),
         Close    printer -> close printer
     }
 
@@ -641,9 +641,9 @@ __runStderr = runServer @OutStream @() __runErrPrinter ()
 __runErrPrinter : () -> dualof OutStream 1-> ()
 __runErrPrinter _ printer =
     match printer with {
-        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
-        PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
+        PutChar  printer -> readApply @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
+        PutStr   printer -> readApply @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
+        PutStrLn printer -> readApply @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
         Close    printer -> close printer
     }
 
