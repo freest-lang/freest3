@@ -53,7 +53,7 @@ instance Show Value where
   show Closure{}      = "<fun>"
   show TypeAbs{}      = "<fun>"
   show PrimitiveFun{} = "<fun>"
-  show Chan{}         = "Skip" -- TODO: change this
+  show Chan{}         = "<chan>"
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
   show (Handle h)     = show h 
