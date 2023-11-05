@@ -1,8 +1,10 @@
 {- |
 Module      :  Sorting
 Description :  Server that receives a series of integer values and returns them in ascending or descending order.
-Copyright   :  (c) Diogo Barros
 
+The server builds a list of integer values in memory before sorting them. Uses quicksort adapted from learnyouahaskell.com.
+
+Copyright   :  (c) Diogo Barros
 -}
 
 type OrderingChannel : 1S = +{
@@ -12,7 +14,7 @@ type OrderingChannel : 1S = +{
 
 -- Send a series of integer values to the server; receive and print
 -- the values in ascending or descending order
-client : OrderingChannel;EndC -> ()
+client : OrderingChannel;EndW -> ()
 client c =
   let c = select Descending {- Ascending -} $
   send 9 $ select Value $
@@ -27,7 +29,7 @@ client c =
   let (x, c) = receive c in print @Int x;
   let (x, c) = receive c in print @Int x;
   let (x, c) = receive c in print @Int x;
-  close c
+  wait c
 
 data IntList = Nil | Cons Int IntList
 
@@ -53,12 +55,13 @@ sortingServer xs c =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new @(OrderingChannel;EndC) () in
-  fork @() (\_:()1-> sortingServer @EndW Nil r |> snd @IntList @EndW |> wait);
+  let (w, r) = new @(OrderingChannel;EndW) () in
+  fork @() (\_:()1-> sortingServer @EndC Nil r |> snd @IntList @EndC |> close);
   client w
 
--- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting
--- function is a parameter.
+-- Some list operations below
+
+-- The integer sorting function is a parameter.
 quicksort : (Int -> Int -> Bool) -> IntList -> IntList
 quicksort cmp xs =
   case xs of {
