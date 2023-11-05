@@ -1075,6 +1075,11 @@ dualof (!Int ; ?Char)
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
 
+-- Hangs w/o fixed point in Bisimilation
+[("a","1S")]
+(rec x:1S . +{LeafC: Skip, NodeC: !Int ; x ; x ; ?Int}) ; (rec x:1S . +{LeafC: Skip, NodeC: !Int ; x ; x ; ?Int}) ; ?Int ; a
+(rec y:1S . +{LeafC: Skip, NodeC: !Int ; y ; y ; ?Int}) ; (rec y:1S . +{LeafC: Skip, NodeC: !Int ; y ; y ; ?Int}) ; ?Int ; a
+
 -- Terminated Recursive Types
 
 -- Ill-formed - TODO: should be well-formed

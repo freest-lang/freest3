@@ -19,15 +19,15 @@ import           Data.Functor
 import qualified Data.Map as Map
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
+
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
 
 evalAndPrint :: Variable -> FreestS -> E.Exp -> IO ()
-evalAndPrint name s e = 
-  addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx -> do
-
+evalAndPrint name s e = do
+  ctx <- addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx
   res <- eval name (typeEnv s) ctx (prog s) e
   case res of
     IOValue io -> io >>= print
@@ -39,7 +39,7 @@ evalAndPrint name s e =
     addPrimitiveChannels (varName : varNames) ctx = do
       (clientChan, serverChan) <- new
       addPrimitiveChannels varNames 
-        $ Map.insert (mkVar defaultSpan         varName ) (Chan clientChan) 
+        $ Map.insert (mkVar defaultSpan         varName  ) (Chan clientChan) 
         $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
 
 

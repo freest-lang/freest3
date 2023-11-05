@@ -15,11 +15,11 @@ import           Data.Bifunctor (Bifunctor(bimap))
 -- Communication primitives
 ------------------------------------------------------------
 
-new :: Channel
+new :: IO Channel
 new = do
   c1 <- C.newChan
   c2 <- C.newChan
-  return (Chan (c1, c2), Chan (c2, c1))
+  return ((c1, c2), (c2, c1))
 
 receive :: ChannelEnd -> IO (Value, ChannelEnd)
 receive c = do

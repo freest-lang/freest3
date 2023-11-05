@@ -37,17 +37,17 @@ tail xs =
 getFromSingleton : List -> Tree
 getFromSingleton xs =
   if null xs
-  then putStr (show @Char 'P'); Error -- "Error: Premature EndOfStream"
+  then print @String "Error: Premature EndOfStream"; Error
   else if not $ null $ tail xs
-  then putStr (show @Char 'X'); Error -- "Error: Extraneous elements in the stream after reading a full tree"
+  then print @String "Error: Extraneous elements in the stream after reading a full tree"; Error
   else head xs
 
 getTwo : List -> (List, (Tree, Tree))
 getTwo xs  =
   case xs of {
-    Nil -> putStr (show @Char 'R'); (Nil, (Error, Error)), -- "Error: Empty stack on right subtree"
+    Nil -> print @String "Error: Empty stack on right subtree"; (Nil, (Error, Error)),
     Cons left ys -> case ys of {
-      Nil -> putStr (show @Char 'L'); (Nil, (Error, left)), -- "Error: Empty stack on left subtree",
+      Nil -> print @String "Error: Empty stack on left subtree"; (Nil, (Error, left)),
       Cons right zs -> (zs, (left, right))
     }
   }
@@ -114,9 +114,9 @@ writeLeftTreeOnly c =
 main : Tree
 main =
   let (w, r) = new @(Stream;EndC) () in
---  (fork[Skip] $ sendTree aTree w);
---  (fork[Skip] $ writeNothing w);       -- 'P'
---  (fork[Skip] $ writeTooMuch w);     -- 'X'
-  fork @() (\_:()1-> writeRootTreeOnly w);  -- 'R'
---  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
+  -- fork @()  (\_:() 1-> sendTree aTree w);   -- No error
+  fork @() (\_:() 1-> writeNothing w);      -- Error: Premature EndOfStream
+  -- fork @() (\_:() 1-> writeTooMuch w);      -- Error: Extraneous elements in the stream after reading a full tree
+  -- fork @() (\_:() 1-> writeRootTreeOnly w); -- "Error: Empty stack on right subtree"
+  -- fork @() (\_:() 1-> writeLeftTreeOnly w); -- "Error: Empty stack on left subtree",
   receiveTree r
