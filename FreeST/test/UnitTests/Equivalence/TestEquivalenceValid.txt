@@ -1028,6 +1028,14 @@ rec x:1S. !x
 !(forall a . a) ; Skip
 !(forall b . b)
 
+[]
+!(∀a . a -> a) -> Skip
+!(∀b . b -> b) -> Skip ; Skip
+
+-- Two alpha-equivalent types
+[]
+!(forall a . a)
+!(forall b . b)
 
 -- Dualof
 
@@ -1066,10 +1074,6 @@ dualof (!Int ; ?Char)
 []
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-
-[]
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndW
 
 -- Terminated Recursive Types
 
