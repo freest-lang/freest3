@@ -295,10 +295,10 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- |   s |> send "Hello!" |> close
 -- | ```
 readApply : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a ; b 1-> b
-readApply f ch =
-  let (x, ch) = receive ch in
+readApply f c =
+  let (x, c) = receive c in
   f x;
-  ch
+  c
 
 -- | Receives a value from a channel that continues to `Wait`, closes the 
 -- | continuation and returns the value.
