@@ -77,16 +77,16 @@ listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 -- ==================== Client ====================
 
 -- Simple client using Asc option
-ascClient : OrderingChannel;EndC -> IntList
+ascClient : OrderingChannel;Close -> IntList
 ascClient c =
-  let (c, rList) = order @EndC c aList True in
+  let (c, rList) = order @Close c aList True in
   close c;
   rList
 
 -- Simple client using Desc option
-descClient : OrderingChannel;EndC -> IntList
+descClient : OrderingChannel;Close -> IntList
 descClient c =
-  let (c, rList) = order @EndC c aList False in
+  let (c, rList) = order @Close c aList False in
   close c;
   rList
 
@@ -118,7 +118,7 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new @(OrderingChannel;EndC) () in
-  fork (\_:() 1-> initOrderedServer @EndW r |> wait) ;
+  let (w, r) = new @(OrderingChannel;Close) () in
+  fork (\_:() 1-> initOrderedServer @Wait r |> wait) ;
   descClient w
   --ascClient w

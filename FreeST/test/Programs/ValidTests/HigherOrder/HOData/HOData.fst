@@ -15,6 +15,6 @@ aTree =
 
 main : Tree
 main =
-  let (w, r) = new @(!Tree;EndC) () in
+  let (w, r) = new @(!Tree;Close) () in
   fork (\_:()1-> send aTree w |> close);
   receiveAndWait @Tree r 

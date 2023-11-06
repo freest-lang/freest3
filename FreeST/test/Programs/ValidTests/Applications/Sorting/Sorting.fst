@@ -14,7 +14,7 @@ type OrderingChannel : 1S = +{
 
 -- Send a series of integer values to the server; receive and print
 -- the values in ascending or descending order
-client : OrderingChannel;EndW -> ()
+client : OrderingChannel;Wait -> ()
 client c =
   let c = select Descending {- Ascending -} $
   send 9 $ select Value $
@@ -55,8 +55,8 @@ sortingServer xs c =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new @(OrderingChannel;EndW) () in
-  fork @() (\_:()1-> sortingServer @EndC Nil r |> snd @IntList @EndC |> close);
+  let (w, r) = new @(OrderingChannel;Wait) () in
+  fork @() (\_:()1-> sortingServer @Close Nil r |> snd @IntList @Close |> close);
   client w
 
 -- Some list operations below

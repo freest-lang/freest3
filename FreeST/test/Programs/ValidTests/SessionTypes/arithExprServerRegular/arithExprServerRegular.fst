@@ -12,7 +12,7 @@ type Stream = +{
 type StreamClient: 1S = +{ Add  : StreamClient
                          , Mult : StreamClient
                          , Const: !Int; StreamClient
-                         , EOS  : ?Int; EndW 
+                         , EOS  : ?Int; Wait 
                          }
 type StreamServer: 1S = dualof StreamClient
 

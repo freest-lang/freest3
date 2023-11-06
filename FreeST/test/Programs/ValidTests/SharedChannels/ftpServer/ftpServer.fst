@@ -26,7 +26,7 @@ type FTP = *?FTPSession
 type FTPSession : 1S = +
   { Get: ?File ; FTPSession
   , Put: !File ; FTPSession
-  , Bye: EndC
+  , Bye: Close
   }
 -- |An FTP thread channel as seen from the side of the FTP thread
 -- |Connects the FTP demon to its threads

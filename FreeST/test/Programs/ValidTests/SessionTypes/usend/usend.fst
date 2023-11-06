@@ -17,10 +17,10 @@ unsend = Λa:*T => λx:a *-> Λb:1S => λ_:() *-> send @a x @b
 
 main : Int
 main =
-  let (s1, r1) = new @(!Int;EndC) () in
-  let (s2, r2) = new @(!Int;EndC) () in
+  let (s1, r1) = new @(!Int;Close) () in
+  let (s2, r2) = new @(!Int;Close) () in
     
-  let sendFive = unsend @Int 5 @EndC in
+  let sendFive = unsend @Int 5 @Close in
   fork (\_:() 1-> sendFive () s1 |> close);
   fork (\_:() 1-> sendFive () s2 |> close);
   {-

@@ -6,13 +6,13 @@ does not deadlock with buffers of size 2.
 
 -}
 
-writer : !Char;!Char;EndC -> !Bool;!Bool;EndC 1-> ()
+writer : !Char;!Char;Close -> !Bool;!Bool;Close 1-> ()
 writer w1 w2 =
   let w1 = send 'c' w1 |> send 'd' in
   let w2 = send True w2 |> send False in 
   close w1; close w2 
 
-reader : ?Char;?Char;EndW -> ?Bool;?Bool;EndW 1-> Bool
+reader : ?Char;?Char;Wait -> ?Bool;?Bool;Wait 1-> Bool
 reader r1 r2 =
   let (x, r2) = receive r2 in
   let (x, r2) = receive r2 in
@@ -23,7 +23,7 @@ reader r1 r2 =
 
 main : Bool
 main =
-  let (w1, r1) = new @(!Char;!Char;EndC) () in
-  let (w2, r2) = new @(!Bool;!Bool;EndC) () in
+  let (w1, r1) = new @(!Char;!Char;Close) () in
+  let (w2, r2) = new @(!Bool;!Bool;Close) () in
   fork @() (\_:()1-> writer w1 w2);
   reader r1 r2

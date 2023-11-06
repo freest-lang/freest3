@@ -1,4 +1,4 @@
-data T : 1T = One EndW | Two ?Int;EndW
+data T : 1T = One Wait | Two ?Int;Wait
 
 read : T -> Int
 read t =
@@ -9,6 +9,6 @@ read t =
 
 main : Int
 main =
-  let (w, r) = new @(!Int;EndC) () in
+  let (w, r) = new @(!Int;Close) () in
   fork @() (\_:()1-> send 10 w |> close);
   read $ Two r

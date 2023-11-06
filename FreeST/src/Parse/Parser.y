@@ -49,8 +49,8 @@ import           Paths_FreeST ( getDataFileName )
   Lambda   {TokenUpperLambda _}
   '@'      {TokenAt _}
   Skip     {TokenSkip _}
-  EndC     {TokenEndC _}
-  EndW     {TokenEndW _}
+  Close     {TokenClose _}
+  Wait     {TokenWait _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
@@ -352,8 +352,8 @@ Type :: { T.Type }
   | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
-  | EndC                          {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
-  | EndW                          {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
+  | Close                         {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
+  | Wait                          {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
   | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)

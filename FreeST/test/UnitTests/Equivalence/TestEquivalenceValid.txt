@@ -74,114 +74,114 @@ Skip;Skip
 Skip
 Skip
 
--- EndC 
+-- Close 
 
 []
-EndC
-EndC
+Close
+Close
 
 []
-EndC
-EndC;!Int
+Close
+Close;!Int
 
 []
-EndC;!Int
-EndC;?Int
+Close;!Int
+Close;?Int
 
 []
-EndC;!Int
-EndC;?Int
+Close;!Int
+Close;?Int
 
 []
-!Char;EndC;!Int
-!Char;EndC;?Int
+!Char;Close;!Int
+!Char;Close;?Int
 
 []
-(!Int;EndC;!Int);?Int
-!Int;EndC;!Int
+(!Int;Close;!Int);?Int
+!Int;Close;!Int
 
 []
-(rec a:1S . +{A: !Int;a, B: Skip;EndC;Skip});!Int
-rec a:1S . +{A: !Int;a, B: EndC;a}
+(rec a:1S . +{A: !Int;a, B: Skip;Close;Skip});!Int
+rec a:1S . +{A: !Int;a, B: Close;a}
 
 []
-rec a:1S . rec b:1S . +{A: !Int;b, B:EndC;a}
-rec a:1S . rec b:1S . +{A: !Int;b, B:EndC;b}
+rec a:1S . rec b:1S . +{A: !Int;b, B:Close;a}
+rec a:1S . rec b:1S . +{A: !Int;b, B:Close;b}
 
 []
-rec a:1S  . &{N:!Int;!Int;a, L:EndC};?Int
-rec a:1S  . &{N:!Int;!Int;a, L:Skip};EndC
+rec a:1S  . &{N:!Int;!Int;a, L:Close};?Int
+rec a:1S  . &{N:!Int;!Int;a, L:Skip};Close
 
 []
-rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;EndC;Skip});!Int);?(a;!(EndC);EndC;?Int)
-rec b:1S . !(rec a:1S . +{A: !Int;a, B: EndC;a});Skip;?(b;Skip;!(EndC);EndC;b;!b)
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;Close;Skip});!Int);?(a;!(Close);Close;?Int)
+rec b:1S . !(rec a:1S . +{A: !Int;a, B: Close;a});Skip;?(b;Skip;!(Close);Close;b;!b)
 
 []
-!(!Int;EndC)
-!(!Int;Skip;EndC;?Int)
+!(!Int;Close)
+!(!Int;Skip;Close;?Int)
 
 []
-∀ α: 1S . EndC;α;!Int
-∀ β: 1S . (EndC;β);Skip
+∀ α: 1S . Close;α;!Int
+∀ β: 1S . (Close;β);Skip
 
 []
-∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;EndC;α});!Int);?(a;!(EndC);EndC)
-∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;EndC;!a});Skip;?(b;Skip;!(EndC);EndC;β;!β)
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;Close;α});!Int);?(a;!(Close);Close)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;Close;!a});Skip;?(b;Skip;!(Close);Close;β;!β)
 
 
--- EndW 
-
-[]
-EndW
-EndW
+-- Wait 
 
 []
-EndW
-EndW;!Int
+Wait
+Wait
 
 []
-EndW;!Int
-EndW;?Int
+Wait
+Wait;!Int
 
 []
-EndW;!Int
-EndW;?Int
+Wait;!Int
+Wait;?Int
 
 []
-!Char;EndW;!Int
-!Char;EndW;?Int
+Wait;!Int
+Wait;?Int
 
 []
-(!Int;EndW;!Int);?Int
-!Int;EndW;!Int
+!Char;Wait;!Int
+!Char;Wait;?Int
 
 []
-(rec a:1S . +{A: !Int;a, B: Skip;EndW;Skip});!Int
-rec a:1S . +{A: !Int;a, B: EndW;a}
+(!Int;Wait;!Int);?Int
+!Int;Wait;!Int
 
 []
-rec a:1S . rec b:1S . +{A: !Int;b, B:EndW;a}
-rec a:1S . rec b:1S . +{A: !Int;b, B:EndW;b}
+(rec a:1S . +{A: !Int;a, B: Skip;Wait;Skip});!Int
+rec a:1S . +{A: !Int;a, B: Wait;a}
 
 []
-rec a:1S  . &{N:!Int;!Int;a, L:EndW};?Int
-rec a:1S  . &{N:!Int;!Int;a, L:Skip};EndW
+rec a:1S . rec b:1S . +{A: !Int;b, B:Wait;a}
+rec a:1S . rec b:1S . +{A: !Int;b, B:Wait;b}
 
 []
-rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;EndW;Skip});!Int);?(a;!(EndW);EndW;?Int)
-rec b:1S . !(rec a:1S . +{A: !Int;a, B: EndW;a});Skip;?(b;Skip;!(EndW);EndW;b;!b)
+rec a:1S  . &{N:!Int;!Int;a, L:Wait};?Int
+rec a:1S  . &{N:!Int;!Int;a, L:Skip};Wait
 
 []
-!(!Int;EndW)
-!(!Int;Skip;EndW;?Int)
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;Wait;Skip});!Int);?(a;!(Wait);Wait;?Int)
+rec b:1S . !(rec a:1S . +{A: !Int;a, B: Wait;a});Skip;?(b;Skip;!(Wait);Wait;b;!b)
 
 []
-∀ α: 1S . EndW;α;!Int
-∀ β: 1S . (EndW;β);Skip
+!(!Int;Wait)
+!(!Int;Skip;Wait;?Int)
 
 []
-∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;EndW;α});!Int);?(a;!(EndW);EndW)
-∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;EndW;!a});Skip;?(b;Skip;!(EndW);EndW;β;!β)
+∀ α: 1S . Wait;α;!Int
+∀ β: 1S . (Wait;β);Skip
+
+[]
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;Wait;α});!Int);?(a;!(Wait);Wait)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;Wait;!a});Skip;?(b;Skip;!(Wait);Wait;β;!β)
 
 
 -- Functional and session, mixed
@@ -1072,13 +1072,8 @@ dualof (!Int ; ?Char)
 (rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
 []
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-
--- Hangs w/o fixed point in Bisimilation
-[("a","1S")]
-(rec x:1S . +{LeafC: Skip, NodeC: !Int ; x ; x ; ?Int}) ; (rec x:1S . +{LeafC: Skip, NodeC: !Int ; x ; x ; ?Int}) ; ?Int ; a
-(rec y:1S . +{LeafC: Skip, NodeC: !Int ; y ; y ; ?Int}) ; (rec y:1S . +{LeafC: Skip, NodeC: !Int ; y ; y ; ?Int}) ; ?Int ; a
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
 
 -- Terminated Recursive Types
 

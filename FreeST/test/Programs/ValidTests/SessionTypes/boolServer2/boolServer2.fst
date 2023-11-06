@@ -2,7 +2,7 @@ type BoolServer : 1S = &{ And: Skip; ?Bool; ?Bool; !Bool; Skip
                         , Or : Skip; ?Bool; ?Bool; !Bool; Skip
                         , Not: Skip; ?Bool; !Bool; Skip
                         }
-                        ; EndW
+                        ; Wait
 type BoolClient : 1S = dualof BoolServer
 
 boolServer :  BoolServer -> ()

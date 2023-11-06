@@ -121,20 +121,20 @@ rec a:1S  . (&{N:a;a;!Int, L:Skip};!Int)
 -- End 
 
 []
-!Int;EndC;!Char
-!Char;EndC;!Int
+!Int;Close;!Char
+!Char;Close;!Int
 
 []
-EndC
+Close
 Skip
 
 []
-!(EndC)
+!(Close)
 !(Skip)
 
 []
-!(!Int;EndC)
-!(?Int;EndC)
+!(!Int;Close)
+!(?Int;Close)
 
 -- Session types
 
@@ -242,9 +242,9 @@ Skip
 ((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});?Int)
 (rec x:1S.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})
 []
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndW
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Wait
 
 []
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndC
-(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; EndW
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
+(rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Wait

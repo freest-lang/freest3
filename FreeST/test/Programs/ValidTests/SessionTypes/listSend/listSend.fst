@@ -28,8 +28,8 @@ aList, main : List
 aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 
 main =
-  let (w, r) = new @(SendList;EndC) () in
-  fork @() (\_:()1-> flatten @EndC aList w |> close);
-  let (l, c) = reconstruct @EndW r in 
+  let (w, r) = new @(SendList;Close) () in
+  fork @() (\_:()1-> flatten @Close aList w |> close);
+  let (l, c) = reconstruct @Wait r in 
   wait c;
   l

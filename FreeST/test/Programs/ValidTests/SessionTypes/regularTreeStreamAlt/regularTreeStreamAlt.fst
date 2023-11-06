@@ -62,7 +62,7 @@ stackSize ts =
 type TreeC : 1S = +{
   ValueC: !Int; TreeC,
   LeafC:  TreeC,
-  FinishC:EndC }
+  FinishC:Close }
 
 
 -- Sends a tree through a TreeC

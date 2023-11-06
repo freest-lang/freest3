@@ -11,9 +11,9 @@ More info on json at https://www.json.org
 
 main : Object
 main =
-  let (w, r) = new @(ObjectChannel;EndC) () in
-  fork (\_:() 1-> writeObject @EndC json w |> close);
-  let (obj, r) = readObject @EndW r in
+  let (w, r) = new @(ObjectChannel;Close) () in
+  fork (\_:() 1-> writeObject @Close json w |> close);
+  let (obj, r) = readObject @Wait r in
   wait r;
   obj
 

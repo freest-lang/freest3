@@ -17,7 +17,7 @@ type MathServer : 1S = +
   }
 
 -- A sample client: (5*4)+(2*3)
-client : MathServer;EndC -> Int
+client : MathServer;Close -> Int
 client c =
   -- stream the arithmetic operation
   select Const c |> send 5 |>
@@ -38,7 +38,7 @@ client c =
 
 data IntList = Nil | Cons Int IntList
 
-evaluate : dualof MathServer;EndW -> IntList 1-> EndW
+evaluate : dualof MathServer;Wait -> IntList 1-> Wait
 evaluate (Const s) l = let (n, s) = receive s in evaluate s (Cons n l)
 evaluate (Add   s) (Cons x (Cons y l)) = evaluate s (Cons (x + y) l)
 evaluate (Mult  s) (Cons x (Cons y l)) = evaluate s (Cons (x * y) l)
@@ -48,6 +48,6 @@ evaluate (Done  s) (Cons x Nil) = send x s
 -- expect 26 on the console.
 main : Int
 main =
-  let (c, s) = new @(MathServer;EndC) () in
+  let (c, s) = new @(MathServer;Close) () in
   fork (\_:() 1-> evaluate s Nil |> wait);
   client c

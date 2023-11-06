@@ -3,8 +3,8 @@ mkPair x y = (x, y)
 
 main : (Int, Bool)
 main =
-  let (r, w) = new @(Skip;EndW) () in
-  let (i, s) = mkPair @Int @(Skip;EndW) 4 r in
+  let (r, w) = new @(Skip;Wait) () in
+  let (i, s) = mkPair @Int @(Skip;Wait) 4 r in
   fork (\_:() 1-> close w);
   fork (\_:() 1-> wait s);
   mkPair @Int @Bool i True

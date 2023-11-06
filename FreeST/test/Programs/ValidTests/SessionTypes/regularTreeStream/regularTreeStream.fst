@@ -57,7 +57,7 @@ getTwo xs  =
 type Stream : 1S = +{
     NodeC: !Int; Stream,
     LeafC: Stream,
-    EndOfStreamC: EndC
+    EndOfStreamC: Close
   }
 
 -- Writing trees on channels
@@ -113,7 +113,7 @@ writeLeftTreeOnly c =
 
 main : Tree
 main =
-  let (w, r) = new @(Stream;EndC) () in
+  let (w, r) = new @(Stream;Close) () in
   -- fork @()  (\_:() 1-> sendTree aTree w);   -- No error
   fork @() (\_:() 1-> writeNothing w);      -- Error: Premature EndOfStream
   -- fork @() (\_:() 1-> writeTooMuch w);      -- Error: Extraneous elements in the stream after reading a full tree

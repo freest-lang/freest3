@@ -53,7 +53,7 @@ Int -> Int -> Int
 
 -- Send recv same thread
 
-let (w,r) = new @(!Int;EndC) () in let _ = send 5 w |> close in let (v,r) = receive r in wait r; v
+let (w,r) = new @(!Int;Close) () in let _ = send 5 w |> close in let (v,r) = receive r in wait r; v
 Int
 
 -- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
@@ -83,10 +83,10 @@ Int
 Int
 
 
-(\x:(rec x: *S. Skip;EndC, Skip;EndW) -> λy:Int 1-> let (w,r) = x in close w; wait r; y) (new @(Skip;EndC) ()) 23
+(\x:(rec x: *S. Skip;Close, Skip;Wait) -> λy:Int 1-> let (w,r) = x in close w; wait r; y) (new @(Skip;Close) ()) 23
 Int
 
-(\x:(Skip;EndC,Skip;EndW) -> λy:Int 1-> let (r,w) = x in close r ; wait w ; y) (new @(Skip;EndC) ()) 23
+(\x:(Skip;Close,Skip;Wait) -> λy:Int 1-> let (r,w) = x in close r ; wait w ; y) (new @(Skip;Close) ()) 23
 Int
 
 

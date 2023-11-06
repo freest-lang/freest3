@@ -117,7 +117,7 @@ match m1 m2 =
 findFixedPoint
   :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
 findFixedPoint branch rules ps | branch == branch' = branch
-                               | otherwise = branch' -- findFixedPoint branch' rules ps --
+                               | otherwise = branch' --  findFixedPoint branch' rules ps --
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch

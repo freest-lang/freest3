@@ -270,11 +270,11 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  Done:       EndC }               -- Close the channel
+  Done:       Close }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
-type ResultChannel : 1S = ?Int;EndW    -- Compute result and return it
+type ResultChannel : 1S = ?Int;Wait    -- Compute result and return it
 
 
 -- Structure that represents a list of IslandChannels

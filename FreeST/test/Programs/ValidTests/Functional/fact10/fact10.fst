@@ -21,8 +21,8 @@ rcvInt acc c =
 
 main : Int
 main =
-  let (w, r) = new @(Choice;EndC) () in
-  let _ = fork @() (\_:()1-> sendInt @EndC 10 w |> close) in
-  let (i, r) = rcvInt @EndW 1 r in
+  let (w, r) = new @(Choice;Close) () in
+  let _ = fork @() (\_:()1-> sendInt @Close 10 w |> close) in
+  let (i, r) = rcvInt @Wait 1 r in
   wait r; 
   i

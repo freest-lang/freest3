@@ -92,12 +92,12 @@ writeLeftTreeOnly c =
 
 main : Tree
 main =
-  let (w, r) = new @(Stream;EndC) () in
+  let (w, r) = new @(Stream;Close) () in
 --  (fork@Skip $ sendTree aTree w);
 --  (fork@Skip $ writeNothing w);       -- 'P'
 --  (fork@Skip $ writeTooMuch w);     -- 'X'
-  fork (\_:() 1-> writeRootTreeOnly @EndC w |> close);  -- 'R'
+  fork (\_:() 1-> writeRootTreeOnly @Close w |> close);  -- 'R'
 --  (fork@Skip $ writeLeftTreeOnly w);  -- 'L'
-  let (list, r) = receiveTree @EndW r in
+  let (list, r) = receiveTree @Wait r in
   wait r;
   list

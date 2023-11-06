@@ -31,8 +31,8 @@ hello, main : List
 hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
 main = 
-  let (c, s) = new @(OutCharStream;EndC) () in
-  let x = fork @() (\_:()1-> client @EndC hello c |> close) in
-  let (res, c) = server @EndW s in
+  let (c, s) = new @(OutCharStream;Close) () in
+  let x = fork @() (\_:()1-> client @Close hello c |> close) in
+  let (res, c) = server @Wait s in
   wait c;
   res

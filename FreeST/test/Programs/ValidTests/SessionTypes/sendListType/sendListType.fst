@@ -26,9 +26,9 @@ sendList c l =
 main, aList : List
 
 main =
-  let (x, y) = new @(ListOut;EndC) () in
-  let _      = fork @() (\_:()1-> sendList @EndC x aList |> close) in
-  let (list, y) = rcvList @EndW y in
+  let (x, y) = new @(ListOut;Close) () in
+  let _      = fork @() (\_:()1-> sendList @Close x aList |> close) in
+  let (list, y) = rcvList @Wait y in
   wait y;
   list
 

@@ -24,8 +24,8 @@ aList = List 5 (List 4 (List 3 (List 2 (List 1 Nil))))
     
 main : IntList
 main =
-    let (w, r) = new @(IntListC;EndC) () in
-    fork (\_:() 1-> listSum @EndW r |> snd @Int @EndW |> wait) ;
-    let (l, w) = transform @EndC aList w in
+    let (w, r) = new @(IntListC;Close) () in
+    fork (\_:() 1-> listSum @Wait r |> snd @Int @Wait |> wait) ;
+    let (l, w) = transform @Close aList w in
     close w;
     l

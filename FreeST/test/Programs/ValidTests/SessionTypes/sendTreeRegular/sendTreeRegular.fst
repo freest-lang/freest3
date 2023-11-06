@@ -12,8 +12,8 @@ aTree : Tree
 aTree = Node (Node Leaf 5 Leaf) 7 (Node (Node Leaf 11 Leaf) 9 (Node Leaf 15 Leaf))
 
 type TreeC : 1S = &{
-  LeafC: EndW,
-  NodeC: ?TreeC ; ?Int ; ?TreeC ; EndW
+  LeafC: Wait,
+  NodeC: ?TreeC ; ?Int ; ?TreeC ; Wait
  }
 
 read : TreeC -> Tree

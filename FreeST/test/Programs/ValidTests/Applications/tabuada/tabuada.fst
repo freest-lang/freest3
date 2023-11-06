@@ -32,7 +32,7 @@ type TabuadaServer : 1S = &{ TabuadaSimples: ?Int ;             TabuadaServer
                            , TabuadaAte    : ?Int ; ?Int;       TabuadaServer
                            , MultiplosEntre: ?Int ; ?Int; ?Int; TabuadaServer
                            , Solucao       : !Bool; !Int;       TabuadaServer
-                           , Fim           : EndW
+                           , Fim           : Wait
                            }
 
 type TabuadaClient : 1S = dualof TabuadaServer

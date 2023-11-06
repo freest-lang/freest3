@@ -22,7 +22,7 @@ type TabuadaC : 1S = +{ TabuadaSimples: !Int; TabuadaC
                       , TabuadaAte: !Int; !Int; TabuadaC
                       , MultiplosEntre: !Int; !Int; !Int; TabuadaC
                       , Solucao: ?Bool; ?Int; TabuadaC
-                      , Fim: EndC
+                      , Fim: Close
                       }
 
 -- Este canal tem 3 servicos: TabuadaSimples, TabuadaAte e MultiplosEntre

@@ -1,7 +1,7 @@
 type BoolServer : 1S = &{ And : ?Bool; ?Bool; !Bool; BoolServer
                         , Or  : ?Bool; ?Bool; !Bool; BoolServer
                         , Not : ?Bool; !Bool; BoolServer
-                        , Done: EndW
+                        , Done: Wait
                         }
 type BoolClient : 1S = dualof BoolServer
 

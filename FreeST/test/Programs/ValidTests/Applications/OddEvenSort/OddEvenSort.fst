@@ -1,10 +1,10 @@
-type Sorter : 1S = +{Done: EndC, More: !Int ; ?Int; Sorter}
+type Sorter : 1S = +{Done: Close, More: !Int ; ?Int; Sorter}
 
 -- first accepts the number of phases, the value in the node, the
 -- channel to the right and the channel where to announce the result
 -- once done. First is an odd process, hence it controls when sorting
 -- is completed.
-first : Int -> Int -> Sorter -> !Int;EndC 1-> ()
+first : Int -> Int -> Sorter -> !Int;Close 1-> ()
 first n x right collect' =
   if n == 0
   then select Done right |> close ; 
@@ -16,7 +16,7 @@ first n x right collect' =
 -- the channel to the left, the channel to the right and the channel
 -- where to announce the result once complete. evenProcess receives
 -- from the left the announcement that sorting is completed (Done).
-evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;EndC 1-> ()
+evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;Close 1-> ()
 evenProcess n x left right collect' =
   match left with {
     Done left -> wait left; select Done right |> close ; send x collect' |> close,
@@ -28,7 +28,7 @@ evenProcess n x left right collect' =
 -- channel to the left, the channel to the right and the channel where
 -- to announce the result once done. oddProcess is an odd process,
 -- hence it controls when sorting is complete.
-oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;EndC 1-> ()
+oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;Close 1-> ()
 oddProcess n x left right collect' =
   if n == 0
   then select Done right |> close ; consume' left ; send x collect' |> close
@@ -38,7 +38,7 @@ oddProcess n x left right collect' =
 -- last accepts the value in the node, the channel to the left and the
 -- channel where to announce the result once done. last receives from
 -- the left the announcement that sorting is completed (Done).
-last : Int -> dualof Sorter -> !Int;EndC 1-> ()
+last : Int -> dualof Sorter -> !Int;Close 1-> ()
 last x left collect' =
   match left with {
     Done left -> wait left; send x collect' |> close,
@@ -81,13 +81,13 @@ main =
   let (l5, r5) = new @Sorter () in
   let (l6, r6) = new @Sorter () in
   -- collect' channels
-  let (cw1, cr1) = new @(!Int;EndC) () in
-  let (cw2, cr2) = new @(!Int;EndC) () in
-  let (cw3, cr3) = new @(!Int;EndC) () in
-  let (cw4, cr4) = new @(!Int;EndC) () in
-  let (cw5, cr5) = new @(!Int;EndC) () in
-  let (cw6, cr6) = new @(!Int;EndC) () in
-  let (cw7, cr7) = new @(!Int;EndC) () in
+  let (cw1, cr1) = new @(!Int;Close) () in
+  let (cw2, cr2) = new @(!Int;Close) () in
+  let (cw3, cr3) = new @(!Int;Close) () in
+  let (cw4, cr4) = new @(!Int;Close) () in
+  let (cw5, cr5) = new @(!Int;Close) () in
+  let (cw6, cr6) = new @(!Int;Close) () in
+  let (cw7, cr7) = new @(!Int;Close) () in
   -- the various sorting nodes
   fork (\_:() 1-> first       (p / 2)     99    l1 cw1);
   fork (\_:() 1-> evenProcess (p / 2)     88 r1 l2 cw2);

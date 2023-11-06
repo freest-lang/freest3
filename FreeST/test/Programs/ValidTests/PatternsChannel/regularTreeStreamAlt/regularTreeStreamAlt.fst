@@ -2,14 +2,14 @@
 -- This main acts as the server that receives the Tree sent by a client
 main : Tree
 main =
-  let (w, r) = new @(TreeC;EndC) () in
-  fork (\_:() 1-> treeClient @EndC w |> close);
+  let (w, r) = new @(TreeC;Close) () in
+  fork (\_:() 1-> treeClient @Close w |> close);
   --fork@() $ badClientPrematureEnd w;
   --fork@() $ badClientSendExtraValue w;
   --fork@() $ badClientSendExtraLeaf w;
   --fork@() $ badClientForgotRight w;
   --fork@() $ badClientSendOnlyValue w;
-  let (tree, r) = receiveTree @EndW r in
+  let (tree, r) = receiveTree @Wait r in
   wait r;
   tree
 

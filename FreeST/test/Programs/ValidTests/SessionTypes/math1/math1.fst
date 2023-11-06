@@ -1,4 +1,4 @@
-type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};EndW
+type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};Wait
 type MathClient : 1S = dualof MathServer
 
 mathServer : MathServer -> ()

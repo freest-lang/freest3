@@ -20,8 +20,8 @@ type S0 : 1S = +{A: S1}
 type S1 : 1S = +{A: S1; +{B: Skip}, B: Skip}
 
 -- The client selects a given number of A's
-client : Int -> S0;EndC -> ()
-client n c = c |> select A |> client' @EndC (n - 1) |> close
+client : Int -> S0;Close -> ()
+client n c = c |> select A |> client' @Close (n - 1) |> close
 
 -- for each A selected a B is also selected
 client' : forall a : 1S . Int -> S1;a -> a
@@ -35,10 +35,10 @@ client' n c =
     select B c                                  -- a
 
 -- The server offers the choice composed by A
-server : dualof S0;EndW -> ()
+server : dualof S0;Wait -> ()
 server c =
   match c with {
-    A c -> c |> server' @EndW |> wait
+    A c -> c |> server' @Wait |> wait
   }
 
 -- For each A selected, a choice for B is also offered
@@ -56,6 +56,6 @@ server' c =
 
 main : ()
 main =
-  let (w, r) = new @(S0;EndC) () in
+  let (w, r) = new @(S0;Close) () in
   fork @() (\_:()1-> client 25 w);
   server r

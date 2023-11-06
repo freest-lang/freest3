@@ -38,9 +38,9 @@ aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
-main = let (w, r) = new @(IListW;EndC) () in
-       fork (\_:() 1-> iListW @EndC aList w |> close);
-       let (i, r) = iLength' @EndW r in
+main = let (w, r) = new @(IListW;Close) () in
+       fork (\_:() 1-> iListW @Close aList w |> close);
+       let (i, r) = iLength' @Wait r in
        wait r;
        i
 

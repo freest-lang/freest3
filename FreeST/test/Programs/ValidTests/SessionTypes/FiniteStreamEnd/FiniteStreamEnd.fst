@@ -6,10 +6,10 @@ ints n c =
     then select Done c
     else select More c |> send n |> ints @c (n - 1)
 
-type Fold : 1S = FiniteStream;!Int;EndW
+type Fold : 1S = FiniteStream;!Int;Wait
 
 foldClient : Int -> dualof Fold -> Int
-foldClient n w = ints @(?Int;EndC) n w |> receiveAndClose @Int
+foldClient n w = ints @(?Int;Close) n w |> receiveAndClose @Int
 
 foldServer : Int -> Fold -> ()
 foldServer sum c =

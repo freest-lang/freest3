@@ -1,15 +1,15 @@
 main : Tree
 main =
-  let (client, server) = new @(TreeChannel; EndC) () in
+  let (client, server) = new @(TreeChannel; Close) () in
   fork (\_:() 1-> clientSendTree client);
-  let (tree, server) = receiveTree @EndW server in
+  let (tree, server) = receiveTree @Wait server in
   wait server;
   tree
 
 
-clientSendTree : TreeChannel;EndC -> ()
+clientSendTree : TreeChannel;Close -> ()
 clientSendTree c =
-  sendTree @EndC aTree c |> close
+  sendTree @Close aTree c |> close
 
 -- This function represents the following Tree:
 --                     0

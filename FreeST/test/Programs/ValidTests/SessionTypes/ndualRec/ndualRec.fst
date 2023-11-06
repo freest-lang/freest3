@@ -1,4 +1,4 @@
-type Choice : 1S = +{More: !Int;DD, Enough: EndC}
+type Choice : 1S = +{More: !Int;DD, Enough: Close}
 type DD : 1S = dualof (dualof Choice)
 
 sendInt : Int -> DD -> ()

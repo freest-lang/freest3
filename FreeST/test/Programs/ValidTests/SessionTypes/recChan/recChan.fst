@@ -1,4 +1,4 @@
-type Chan : 1S = +{Done: EndC, More: !Int;Chan}
+type Chan : 1S = +{Done: Close, More: !Int;Chan}
 
 fives : Int -> Chan -> ()
 fives n c =

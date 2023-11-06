@@ -19,10 +19,10 @@ Structure:
 
 -}
 
-type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: EndC}
+type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Close}
 type FiniteInStream:1S = dualof FiniteOutStream
 
-writeValues : !Int;!Int;FiniteOutStream;EndC 1-> ()
+writeValues : !Int;!Int;FiniteOutStream;Close 1-> ()
 writeValues c = c |> send 1 |> send 2 |> writeAll 3
 
 writeAll : Int -> FiniteOutStream -> ()
@@ -65,6 +65,6 @@ average3 x y z = (x + y + z) / 3
 
 main : ()
 main =
-  let r1 = forkWith @(?Int;?Int;FiniteInStream;EndW) @() writeValues in
-  let r2 = forkWith @(FiniteInStream;EndW) @() (readValues r1) in
+  let r1 = forkWith @(?Int;?Int;FiniteInStream;Wait) @() writeValues in
+  let r2 = forkWith @(FiniteInStream;Wait) @() (readValues r1) in
   collectValues r2
