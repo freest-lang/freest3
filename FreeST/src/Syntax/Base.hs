@@ -24,7 +24,6 @@ module Syntax.Base
   , Span(..)
   , defaultSpan
   , Located(..)
-  , negSpan
   , isWild
 ) where
 
@@ -43,9 +42,6 @@ type Pos = (Int, Int)
 defaultPos :: Pos
 defaultPos = (0, 0)
 
-negPos :: Pos -> Pos
-negPos (i, j) = (negate i, negate j)
-
 -- Span
 
 class Located t where
@@ -59,9 +55,6 @@ data Span = Span
 
 defaultSpan :: Span
 defaultSpan = Span defaultPos defaultPos ""
-
-negSpan :: Span -> Span
-negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
 
 -- Multiplicity for types and expressions
 
