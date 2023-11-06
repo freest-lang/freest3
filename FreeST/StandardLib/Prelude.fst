@@ -256,16 +256,16 @@ sink _ = ()
 -- | ```
 -- | main : ()
 -- | main = 
--- |     -- print "Hello!" 5 times sequentially
--- |     repeat @() 5 (\_:() -> putStrLn "Hello!")
+-- |   -- print "Hello!" 5 times sequentially
+-- |   repeat @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
 repeat : forall a:*T . Int -> (() -> a) -> ()
 repeat n thunk =
-    if n <= 0
-    then ()
-    else 
-        thunk ();
-        repeat @a (n - 1) thunk
+  if n <= 0
+  then ()
+  else 
+    thunk ();
+    repeat @a (n - 1) thunk
 
 -- | Forks n identical threads. Works the same as a `repeat` call but in parallel
 -- | instead of sequentially.
@@ -273,8 +273,8 @@ repeat n thunk =
 -- | ```
 -- | main : ()
 -- | main = 
--- |     -- print "Hello!" 5 times in parallel
--- |     parallel @() 5 (\_:() -> putStrLn "Hello!")
+-- |   -- print "Hello!" 5 times in parallel
+-- |   parallel @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
 parallel : forall a:*T . Int -> (() -> a) -> ()
 parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
@@ -287,18 +287,18 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- | ```
 -- | main : ()
 -- | main =
--- |     -- create channel endpoints
--- |     let (c, s) = new @(?String ; Wait) () in
--- |     -- fork a thread that prints the received value (and closes the channel)
--- |     fork (\_:() 1-> c |> consume @String @End putStrLn |> wait);
--- |     -- send a string through the channel (and close it)
--- |     s |> send "Hello!" |> close
+-- |   -- create channel endpoints
+-- |   let (c, s) = new @(?String ; Wait) () in
+-- |   -- fork a thread that prints the received value (and closes the channel)
+-- |   fork (\_:() 1-> c |> readApply @String @End putStrLn |> wait);
+-- |   -- send a string through the channel (and close it)
+-- |   s |> send "Hello!" |> close
 -- | ```
-consume : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a ; b 1-> b
-consume f ch =
-    let (x, ch) = receive ch in
-    f x;
-    ch
+readApply : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a ; b 1-> b
+readApply f ch =
+  let (x, ch) = receive ch in
+  f x;
+  ch
 
 -- | Receives a value from a channel that continues to `Wait`, closes the 
 -- | continuation and returns the value.
@@ -306,26 +306,26 @@ consume f ch =
 -- | ```
 -- | main : ()
 -- | main =
--- |     -- create channel endpoints
--- |     let (c, s) = new @(?String ; Wait) () in
--- |     -- fork a thread that prints the received value (and closes the channel)
--- |     fork (\_:() 1-> c |> receiveAndWait @String |> putStrLn);
--- |     -- send a string through the channel (and close it)
--- |     s |> send "Hello!" |> close
+-- |   -- create channel endpoints
+-- |   let (c, s) = new @(?String ; Wait) () in
+-- |   -- fork a thread that prints the received value (and closes the channel)
+-- |   fork (\_:() 1-> c |> receiveAndWait @String |> putStrLn);
+-- |   -- send a string through the channel (and close it)
+-- |   s |> send "Hello!" |> close
 -- | ```
 receiveAndWait : forall a:1T . ?a ; Wait -> a 
 receiveAndWait c =
-    let (x, c) = receive c in 
-    wait c;
-    x
+  let (x, c) = receive c in 
+  wait c;
+  x
 
 -- | As in receiveAndWait only that the type is Wait and the function closes the
 -- | channel rather the waiting for the channel to be closed.
 receiveAndClose : forall a:1T . ?a ; Close -> a 
 receiveAndClose c =
-    let (x, c) = receive c in 
-    close c;
-    x
+  let (x, c) = receive c in 
+  close c;
+  x
 
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
 receive_ : forall a:1T . *?a -> a
@@ -340,9 +340,9 @@ send_ x ch = ch |> send x |> sink @*!a
 -- | end.
 accept : forall a:1A . *!a -> dualof a
 accept ch =
-    let (x, y) = new @a () in
-    send x ch;
-    y
+  let (x, y) = new @a () in
+  send x ch;
+  y
 
 -- | Creates a new child process and a linear channel through which it can
 -- | communicate with its parent process. Returns the channel endpoint.
@@ -350,22 +350,22 @@ accept ch =
 -- | ```
 -- | main : ()
 -- | main =
--- |     -- fork a thread that receives a string and prints
--- |     let c = forkWith @(!String ; Wait) @() (\s:(?String ; End) 1-> s |> receiveAndWait @String |> putStrLn) in
--- |     -- send the string to be printed
--- |     c |> send "Hello!" |> wait
+-- |   -- fork a thread that receives a string and prints
+-- |   let c = forkWith @(!String ; Wait) @() (\s:(?String ; End) 1-> s |> receiveAndWait @String |> putStrLn) in
+-- |   -- send the string to be printed
+-- |   c |> send "Hello!" |> wait
 -- | ```
 forkWith : forall a:1A b . (dualof a 1-> b) -> a
 forkWith f =
-    let (x, y) = new @a () in
-    fork (\_:() 1-> f y);
-    x
+  let (x, y) = new @a () in
+  fork (\_:() 1-> f y);
+  x
 
 -- | Runs an infinite shared server thread given a function to serve a client (a
 -- | handle), the initial state, and the server's shared channel endpoint. It can
 -- | be seen as an infinite sequential application of the handle function over a
 -- | newly accepted session, while continuously updating the state.
--- |     
+-- |   
 -- | Note: this only works with session types that use session initiation.
 -- | 
 -- | ```
@@ -387,7 +387,7 @@ forkWith f =
 -- | ```
 runServer : forall a:1A b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
-    runServer @a @b handle (handle state (accept @a ch)) ch 
+  runServer @a @b handle (handle state (accept @a ch)) ch 
 
 
 
@@ -445,7 +445,7 @@ hPrint x = hPutStrLn (show @a x)
 
 __hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
 __hGenericPut_ putF x outProv = 
-    hCloseOut $ putF x $ receive_ @OutStream outProv 
+  hCloseOut $ putF x $ receive_ @OutStream outProv 
 
 -- | Unrestricted version of `hPutChar`. Behaves the same, except it first
 -- | receives an `OutStream` channel endpoint (via session initiation), executes
@@ -572,7 +572,7 @@ putChar = flip @Char @OutStreamProvider @() hPutChar_ stdout
 -- | Prints a string to `stdout`. Behaves the same as `hPutStr_ s stdout`, where `s` is
 -- | the string to be printed.
 putStr : String -> ()
-putStr   = flip @String @OutStreamProvider @() hPutStr_ stdout
+putStr = flip @String @OutStreamProvider @() hPutStr_ stdout
 
 -- | Prints a string to `stdout`, followed by the newline character `\n`. Behaves
 -- | as `hPutStrLn_ s stdout`, where `s` is the string to be printed.
@@ -591,11 +591,11 @@ __runStdout = runServer @OutStream @() __runPrinter ()
 
 __runPrinter : () -> dualof OutStream 1-> ()
 __runPrinter _ (PutChar printer) =
-  consume @Char @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter ()
+  readApply @Char @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter ()
 __runPrinter _ (PutStr printer) =
-  consume @String @dualof OutStream __putStrOut printer |> __runPrinter ()
+  readApply @String @dualof OutStream __putStrOut printer |> __runPrinter ()
 __runPrinter _ (PutStrLn printer) =
-  consume @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter ()
+  readApply @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter ()
 __runPrinter _ (SClose printer) =
   wait printer
 
@@ -605,16 +605,16 @@ __runPrinter _ (SClose printer) =
 stderr : OutStreamProvider
 
 -- Internal stderr functions
-__runStderr  : dualof OutStreamProvider -> ()
+__runStderr : dualof OutStreamProvider -> ()
 __runStderr = runServer @OutStream @() __runErrPrinter ()
 
 __runErrPrinter : () -> dualof OutStream 1-> ()
 __runErrPrinter _ (PutChar  printer) =
-  consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter ()
+  readApply @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter ()
 __runErrPrinter _ (PutStr printer) =
-  consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
+  readApply @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
 __runErrPrinter _ (PutStrLn printer) =
-  consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
+  readApply @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
 __runErrPrinter _ (SClose printer) =
   wait printer
 
