@@ -15,7 +15,6 @@ module Syntax.Base
   , Pos
   , Multiplicity(..)
   , defaultPos
-  , negPos
   , Bind(..)
   , Variable(..)
   , intern
