@@ -329,19 +329,19 @@ receiveAndClose c =
 
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
 receive_ : forall a:1T . *?a -> a
-receive_ ch = ch |> receive |> fst @a @*?a
+receive_ c = c |> receive |> fst @a @*?a
 
 -- | Sends a value on a star channel. Unrestricted version of `send`.
 send_ : forall a:1T . a -> *!a 1-> ()
-send_ x ch = ch |> send x |> sink @*!a
+send_ x c = c |> send x |> sink @*!a
 
 -- | Session initiation. Accepts a request for a linear session on a shared
 -- | channel. The requester uses a conventional `receive` to obtain the channel
 -- | end.
 accept : forall a:1A . *!a -> dualof a
-accept ch =
+accept c =
   let (x, y) = new @a () in
-  send x ch;
+  send x c;
   y
 
 -- | Creates a new child process and a linear channel through which it can
@@ -377,17 +377,17 @@ forkWith f =
 -- | 
 -- | -- | Handler for a counter
 -- | counterService : Int -> dualof Counter 1-> Int
--- | counterService i (Inc ch) = close ch ; i + 1 
--- | counterService i (Dec ch) = close ch ; i - 1
--- | counterService i (Get ch) = ch |> send i |> close ; i
+-- | counterService i (Inc c) = close c ; i + 1 
+-- | counterService i (Dec c) = close c ; i - 1
+-- | counterService i (Get c) = c |> send i |> close ; i
 -- | 
 -- | -- | Counter server
 -- | runCounterServer : dualof SharedCounter -> Diverge
 -- | runCounterServer = runServer @Counter @Int counterService 0 
 -- | ```
 runServer : forall a:1A b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
-runServer handle state ch =
-  runServer @a @b handle (handle state (accept @a ch)) ch 
+runServer handle state c =
+  runServer @a @b handle (handle state (accept @a c)) c 
 
 
 
@@ -417,7 +417,7 @@ type OutStreamProvider : *S = *?OutStream
 
 -- | Closes an `OutStream` channel endpoint. Behaves as a `close`.
 hCloseOut : OutStream -> ()
-hCloseOut ch = ch |> select SClose |> close
+hCloseOut c = c |> select SClose |> close
 
 __hGenericPut : forall a:*T . (OutStream -> !a ; OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
@@ -430,12 +430,12 @@ hPutChar = __hGenericPut @Char (\ch:OutStream -> select PutChar ch)
 -- | Sends a String through an `OutStream` channel endpoint. Behaves as 
 -- | `|> select PutString |> send`.
 hPutStr : String -> OutStream -> OutStream
-hPutStr   = __hGenericPut @String (\ch:OutStream -> select PutStr   ch)
+hPutStr   = __hGenericPut @String (\c:OutStream -> select PutStr c)
 
 -- | Sends a string through an `OutStream` channel endpoint, to be output with
 -- | the newline character. Behaves as `|> select PutStringLn |> send`.
 hPutStrLn : String -> OutStream -> OutStream
-hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch)
+hPutStrLn = __hGenericPut @String (\c:OutStream -> select PutStrLn c)
 
 -- | Sends the string representation of a value through an `OutStream` channel
 -- | endpoint, to be outputed with the newline character. Behaves as `hPutStrLn
@@ -489,42 +489,42 @@ type InStreamProvider : *S = *?InStream
 
 -- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
-hCloseIn ch = ch |> select SWait |> wait
+hCloseIn c = c |> select SWait |> wait
 
 __hGenericGet : forall a:*T . (InStream -> ?a ; InStream) -> InStream -> (a, InStream)
-__hGenericGet sel ch = receive $ sel ch
+__hGenericGet sel c = receive $ sel c
 
 -- | Reads a character from an `InStream` channel endpoint. Behaves as 
 -- | `|> select GetChar |> receive`.
 hGetChar : InStream -> (Char, InStream)
-hGetChar = __hGenericGet @Char (\ch:InStream -> select GetChar ch)
+hGetChar = __hGenericGet @Char (\c:InStream -> select GetChar c)
 
 -- | Reads a line (as a string) from an `InStream` channel endpoint. Behaves as 
 -- | `|> select GetLine |> receive`.
 hGetLine : InStream -> (String, InStream)
-hGetLine = __hGenericGet @String (\ch:InStream -> select GetLine ch)
+hGetLine = __hGenericGet @String (\c:InStream -> select GetLine c)
 
 -- | Checks if an `InStream` reached the EOF token that marks where no more input can be read. 
 -- | Does the same as `|> select IsEOF |> receive`.
 hIsEOF : InStream -> (Bool, InStream)
-hIsEOF = __hGenericGet @Bool (\ch:InStream -> select IsEOF ch)
+hIsEOF = __hGenericGet @Bool (\c:InStream -> select IsEOF c)
 
 -- | Reads the entire content from an `InStream` (i.e. until EOF is reached). Returns the content
 -- | as a single string and the continuation channel.
 hGetContent : InStream -> (String, InStream)
-hGetContent ch = 
-  let (isEOF, ch) = hIsEOF ch in
+hGetContent c = 
+  let (isEOF, c) = hIsEOF c in
   if isEOF
-  then ("", ch)
+  then ("", c)
   else 
-    let (line, ch) = hGetLine ch in 
-    let (contents, ch) = hGetContent ch in
-    (line ^^ "\n" ^^ contents, ch)
+    let (line, c) = hGetLine c in 
+    let (contents, c) = hGetContent c in
+    (line ^^ "\n" ^^ contents, c)
 
 __hGenericGet_ : forall a:*T . (InStream -> (a, InStream)) -> InStreamProvider -> a
 __hGenericGet_ getF inp = 
-  let (x, ch) = getF $ receive_ @InStream inp in
-  let _ = hCloseIn ch in x
+  let (x, c) = getF $ receive_ @InStream inp in
+  let _ = hCloseIn c in x
 
 -- | Unrestricted version of `hGetChar`. Behaves the same, except it first receives an `InStream` 
 -- | channel endpoint (via session initiation), executes an `hGetChar` and then closes the 
