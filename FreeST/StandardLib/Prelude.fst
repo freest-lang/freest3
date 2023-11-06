@@ -609,13 +609,14 @@ __runStderr  : dualof OutStreamProvider -> ()
 __runStderr = runServer @OutStream @() __runErrPrinter ()
 
 __runErrPrinter : () -> dualof OutStream 1-> ()
-__runErrPrinter _ printer =
-    match printer with {
-        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
-        PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter (),
-        SClose   printer -> wait printer
-    }
+__runErrPrinter _ (PutChar  printer) =
+  consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter ()
+__runErrPrinter _ (PutStr printer) =
+  consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
+__runErrPrinter _ (PutStrLn printer) =
+  consume @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
+__runErrPrinter _ (SClose printer) =
+  wait printer
 
 -- Stdin
 
@@ -635,14 +636,14 @@ __runStdin : dualof InStreamProvider -> ()
 __runStdin = runServer @InStream @() __runReader ()
 
 __runReader : () -> dualof InStream 1-> ()
-__runReader _ reader = 
-    match reader with {
-        GetChar reader -> __runReader () $ send (__getChar ()) reader,
-        GetLine reader -> __runReader () $ send (__getLine ()) reader,
-        IsEOF   reader -> __runReader () $ send False reader, -- stdin is always open
-        SWait   reader -> close reader
-    }
-
+__runReader _ (GetChar reader) =
+  __runReader () $ send (__getChar ()) reader
+__runReader _ (GetLine reader) =
+  __runReader () $ send (__getLine ()) reader
+__runReader _ (IsEOF reader) =
+  __runReader () $ send False reader -- stdin is always open
+__runReader _ (SWait reader) =
+  close reader
 
 
 --  $$$$$$\  
