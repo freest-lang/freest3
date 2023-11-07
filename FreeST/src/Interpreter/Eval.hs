@@ -28,8 +28,8 @@ evalAndPrint :: Variable -> FreestS -> E.Exp -> IO ()
 evalAndPrint name s e = do
   ctx <- addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx
   res <- eval name (typeEnv s) ctx (prog s) e
-  hFlush stderr
   hFlush stdout
+  hFlush stderr
   case res of
     IOValue io -> io >>= print
     _          -> print res
@@ -43,37 +43,40 @@ evalAndPrint name s e = do
         $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
 
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
-eval _ _ _   _ (E.Unit _                      )    = return Unit
-eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
-eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
-eval _ _ _   _ (E.String _ s                  )    = return $ String s
-eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
-eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e))          = return $ Closure fun x e ctx
-eval fun tEnv ctx eenv (E.Var    _ x            )    = evalVar fun tEnv ctx eenv x
-eval fun tEnv ctx eenv (E.TypeApp _ e _         )    = eval fun tEnv ctx eenv e >>= \case
-  (TypeAbs v ctx) -> eval fun tEnv ctx eenv v
-  v -> return v
+eval _ _ _   _ (E.Unit _                  ) = return Unit
+eval _ _ _   _ (E.Int    _ i              ) = return $ Integer i
+eval _ _ _   _ (E.Char   _ c              ) = return $ Character c
+eval _ _ _   _ (E.String _ s              ) = return $ String s
+eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e)) = return $ TypeAbs e ctx
+eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e)) = return $ Closure fun x e ctx
+eval fun tEnv ctx eenv (E.Var    _ x      ) = evalVar fun tEnv ctx eenv x
+eval fun tEnv ctx eenv (E.TypeApp _ e _   ) =
+  eval fun tEnv ctx eenv e >>= \case
+    (TypeAbs v ctx) -> eval fun tEnv ctx eenv v
+    v -> return v
 eval fun tEnv ctx eenv (E.App p (E.Var _ x) e)
   | x == mkSelect p =
       return $ PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send (Label $ show e) c)
   | x == mkCollect p = eval fun tEnv ctx eenv e
-eval fun tEnv ctx eenv (E.App _ e1 e2) = eval fun tEnv ctx eenv e1 >>= \case
-  (Closure fun x e ctx') -> do
-    !v <- eval fun tEnv ctx eenv e2
-    eval fun tEnv (Map.insert x v ctx') eenv e
-  Fork -> forkIO (void $ eval fun tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> Unit
-  (PrimitiveFun f) -> do
-    !v <- eval fun tEnv ctx eenv e2
-    case f v of
-      (IOValue res) -> do
-        !r <- res
-        pure r
-      r -> pure r
-  (Cons x xs) -> do
-    !v <- eval fun tEnv ctx eenv e2
-    pure $ Cons x (xs ++ [[v]])
-  c -> pure c
-eval fun tEnv ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval fun tEnv ctx eenv e1 <*> eval fun tEnv ctx eenv e2
+eval fun tEnv ctx eenv (E.App _ e1 e2) =
+  eval fun tEnv ctx eenv e1 >>= \case
+    (Closure fun x e ctx') -> do
+      !v <- eval fun tEnv ctx eenv e2
+      eval fun tEnv (Map.insert x v ctx') eenv e
+    Fork -> forkIO (void $ eval fun tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> Unit
+    (PrimitiveFun f) -> do
+      !v <- eval fun tEnv ctx eenv e2
+      case f v of
+        (IOValue res) -> do
+          !r <- res
+          pure r
+        r -> pure r
+    (Cons x xs) -> do
+      !v <- eval fun tEnv ctx eenv e2
+      pure $ Cons x (xs ++ [[v]])
+    c -> pure c
+eval fun tEnv ctx eenv (E.Pair _ e1 e2) =
+  Pair <$> eval fun tEnv ctx eenv e1 <*> eval fun tEnv ctx eenv e2
 eval fun tEnv ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v1 (Map.insert y v2 ctx)) eenv e2
@@ -101,14 +104,14 @@ evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 evalVar :: Variable -> TypeEnv -> Ctx -> Prog -> Variable -> IO Value
 evalVar _ tEnv ctx eenv x
-  | isDatatypeContructor x tEnv  = return $ Cons x []
-  | Map.member x eenv            = eval x tEnv ctx eenv (eenv Map.! x)
-  | Map.member x ctx             = return $ ctx Map.! x
-  | x == mkFork defaultSpan      = return Fork
-  | x == mkError                 =
+  | isDatatypeContructor x tEnv = return $ Cons x []
+  | Map.member x eenv           = eval x tEnv ctx eenv (eenv Map.! x)
+  | Map.member x ctx            = return $ ctx Map.! x
+  | x == mkFork defaultSpan     = return Fork
+  | x == mkError                =
      return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
-  | x == mkUndefined             =
+  | x == mkUndefined            =
      return $ exception (UndefinedFunction (getSpan x))
-  | otherwise                      = internalError "Interpreter.Eval.evalVar" x
+  | otherwise                   = internalError "Interpreter.Eval.evalVar" x
   where
     exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err
