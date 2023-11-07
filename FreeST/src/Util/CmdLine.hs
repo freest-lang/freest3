@@ -35,7 +35,7 @@ runOptsParser = RunOpts
   <*> flag True False    -- This is the reverse of switch
      ( long "no-colors"
     <> long "no-colours"
-    <> help "Remove styles from the errors messages")
+    <> help "Remove styles from error messages")
   <*> switch
      ( long "quiet"
     <> short 'q'
