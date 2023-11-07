@@ -10,71 +10,47 @@ data Tree = Leaf | Node Int Tree Tree | Error
 aTree : Tree
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
 
--- Integer lists and operations on Lists
+-- Tree lists and operations on Lists
 
 data List = Nil | Cons Tree List
 
 null : List -> Bool
-null xs = case xs of {
-    Nil -> True,
-    Cons _ _ -> False
-  }
+null Nil = True
+null (Cons _ _) = False
 
 head : List -> Tree
-head xs =
-  case xs of {
-    Nil -> Leaf,
-    Cons x _ -> x
-  }
+head (Cons x _) = x
 
 tail : List -> List
-tail xs =
-  case xs of {
-    Nil -> Nil,
-    Cons _ xs -> xs
-  }
+tail (Cons _ xs) = xs
 
 getFromSingleton : List -> Tree
-getFromSingleton xs =
-  if null xs
-  then print @String "Error: Premature EndOfStream"; Error
-  else if not $ null $ tail xs
-  then print @String "Error: Extraneous elements in the stream after reading a full tree"; Error
-  else head xs
+getFromSingleton (Cons x Nil) = x
+getFromSingleton Nil = print @String "Error: Premature EndOfStream" ; Error
+getFromSingleton _ = print @String "Error: Extraneous elements in the stream after reading a full tree" ; Error
 
 getTwo : List -> (List, (Tree, Tree))
-getTwo xs  =
-  case xs of {
-    Nil -> print @String "Error: Empty stack on right subtree"; (Nil, (Error, Error)),
-    Cons left ys -> case ys of {
-      Nil -> print @String "Error: Empty stack on left subtree"; (Nil, (Error, left)),
-      Cons right zs -> (zs, (left, right))
-    }
-  }
+getTwo (Cons left (Cons right xs)) = (xs, (left, right))
+getTwo Nil = print @String "Error: Empty stack on right subtree" ; (Nil, (Error, Error))
+getTwo (Cons left Nil) = print @String "Error: Empty stack on left subtree" ; (Nil, (Error, left))
 
 -- Streams
 
 type Stream : 1S = +{
-    NodeC: !Int; Stream,
-    LeafC: Stream,
-    EndOfStreamC: Close
+    NodeC: !Int ; Stream
+  , LeafC: Stream
+  , EndOfStreamC: Close
   }
 
 -- Writing trees on channels
 
 sendTree : Tree -> Stream -> ()
-sendTree t c = streamTree t c |> select EndOfStreamC |> close
+sendTree t c = c |> streamTree t |> select EndOfStreamC |> close
 
 streamTree : Tree -> Stream -> Stream
-streamTree t c =
-  case t of {
-    Leaf ->
-      select LeafC c,
-    Node x l r ->
-      send x $ select NodeC $ streamTree r $ streamTree l c,
-    Error ->
-      select LeafC c
-  }
+streamTree Leaf c = select LeafC c
+streamTree (Node x l r) c = send x $ select NodeC $ streamTree r $ streamTree l c
+streamTree Error c = select LeafC c
 
 -- Reading trees from channels
 
@@ -82,41 +58,40 @@ receiveTree : dualof Stream -> Tree
 receiveTree = recTree Nil
 
 recTree : List -> dualof Stream -> Tree
-recTree xs c =
-  match c with {
-    NodeC c ->
-      let (xs, p) = getTwo xs in
-      let (left, right) = p in
-      let (root, c) = receive c in
-      recTree (Cons (Node root left right) xs) c,
-    LeafC c ->
-      recTree (Cons Leaf xs) c,
-    EndOfStreamC c -> wait c; getFromSingleton xs
-  }
+recTree xs (NodeC c) =
+  let (xs, p) = getTwo xs in
+  let (left, right) = p in
+  let (root, c) = receive c in
+  recTree (Cons (Node root left right) xs) c
+recTree xs (LeafC c) =
+  recTree (Cons Leaf xs) c
+recTree xs (EndOfStreamC c) =
+  wait c ; getFromSingleton xs
 
 -- Babdly behaving writers
 
 writeNothing, writeTooMuch, writeRootTreeOnly, writeLeftTreeOnly : Stream -> ()
 writeNothing c =
-  select EndOfStreamC c |> close
+  c |> select EndOfStreamC |> close
 
 writeTooMuch c =
-  select LeafC c |> select LeafC |> select EndOfStreamC |> close
+ c |>  select LeafC |> select LeafC |> select EndOfStreamC |> close
 
 writeRootTreeOnly c =
-  select NodeC c |> send 5 |> select EndOfStreamC |> close
+  c |> select NodeC |> send 5 |> select EndOfStreamC |> close
 
 writeLeftTreeOnly c =
-  select LeafC c |> select NodeC |> send 5 |> select EndOfStreamC |> close
+  c|> select LeafC |> select NodeC |> send 5 |> select EndOfStreamC |> close
 
 -- Go!
 
 main : Tree
 main =
-  let (w, r) = new @(Stream;Close) () in
+  let (w, r) = new @(Stream ; Close) () in
   -- fork @()  (\_:() 1-> sendTree aTree w);   -- No error
-  fork @() (\_:() 1-> writeNothing w);      -- Error: Premature EndOfStream
+  fork @() (\_:() 1-> writeNothing w) ;      -- Error: Premature EndOfStream
   -- fork @() (\_:() 1-> writeTooMuch w);      -- Error: Extraneous elements in the stream after reading a full tree
   -- fork @() (\_:() 1-> writeRootTreeOnly w); -- "Error: Empty stack on right subtree"
   -- fork @() (\_:() 1-> writeLeftTreeOnly w); -- "Error: Empty stack on left subtree",
   receiveTree r
+  -- let t = receiveTree r in repeat @() 10000 (\_:() -> ()) ; t

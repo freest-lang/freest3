@@ -4,7 +4,6 @@ module Interpreter.Eval
   )
 where
 
-
 import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
@@ -13,12 +12,12 @@ import           Syntax.Program
 import           Syntax.MkName
 import           Util.Error
 import           Util.FreestState
-
 import           Control.Concurrent ( forkIO )
 import           Data.Functor
 import qualified Data.Map as Map
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
+import           System.IO ( hFlush, stdout, stderr )
 -- import Debug.Trace (trace)
 
 ------------------------------------------------------------
@@ -29,10 +28,11 @@ evalAndPrint :: Variable -> FreestS -> E.Exp -> IO ()
 evalAndPrint name s e = do
   ctx <- addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx
   res <- eval name (typeEnv s) ctx (prog s) e
+  hFlush stderr
+  hFlush stdout
   case res of
     IOValue io -> io >>= print
     _          -> print res
-  
   where
     addPrimitiveChannels :: [String] -> Ctx -> IO Ctx
     addPrimitiveChannels [] ctx = return ctx
@@ -41,7 +41,6 @@ evalAndPrint name s e = do
       addPrimitiveChannels varNames 
         $ Map.insert (mkVar defaultSpan         varName  ) (Chan clientChan) 
         $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
-
 
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
 eval _ _ _   _ (E.Unit _                      )    = return Unit
