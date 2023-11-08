@@ -33,13 +33,10 @@ import           Syntax.Base hiding ( Multiplicity(..) )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- Pre-kind
 data PreKind = Session | Top | Absorb deriving (Ord, Eq)
 
--- Multiplicity
 data Multiplicity = Un | Lin deriving Eq
 
--- Kind
 data Kind = Kind Span Multiplicity PreKind
 
 instance Eq Kind where
@@ -49,12 +46,12 @@ instance Located Kind where
   getSpan (Kind p _ _) = p
 
 -- The kind of conventional (non linear, non session) functional programming
--- languages' types (Alternative: the kind that sits at the top of the
--- hierarchy)
+-- languages' types. Alternative: the kind that sits at the top of the
+-- hierarchy
 instance Default Kind where
   omission _ = ut defaultSpan
 
--- Abbreviations for the six proper kinds
+-- Abbreviations for the six available kinds
 lt, ut, ls, us, la, ua :: Span -> Kind
 lt p = Kind p Lin Top 
 ut p = Kind p Un Top 
