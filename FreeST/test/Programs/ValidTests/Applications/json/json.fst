@@ -11,10 +11,10 @@ More info on json at https://www.json.org
 
 main : Object
 main =
-  let (w, r) = new @(ObjectChannel;End) () in
-  fork (\_:() 1-> writeObject @End json w |> close);
-  let (obj, r) = readObject @End r in
-  close r;
+  let (w, r) = new @(ObjectChannel;Close) () in
+  fork (\_:() 1-> writeObject @Close json w |> close);
+  let (obj, r) = readObject @Wait r in
+  wait r;
   obj
 
 -- A dataype for JSON

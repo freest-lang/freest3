@@ -25,6 +25,7 @@ module Syntax.MkName
   , mkSend
   , mkReceive
   , mkClose
+  , mkWait
   , mkFork
   , mkError
   , mkUndefined
@@ -65,13 +66,14 @@ mkNil  = mk "[]"
 mkTupleLabels :: [Span -> Variable]
 mkTupleLabels = map (mk . show) [0..]
 
-mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
+mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkWait, mkFork :: Span -> Variable
 mkNew = mk "new"
 mkSelect = mk "select"
 mkCollect = mk "#collect"
 mkSend = mk "send"
 mkReceive = mk "receive"
 mkClose = mk "close"
+mkWait = mk "wait"
 mkFork = mk "fork"
 
 mkError, mkUndefined :: Variable

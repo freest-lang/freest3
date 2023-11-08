@@ -107,7 +107,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
-  -- Fork e
+  -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)

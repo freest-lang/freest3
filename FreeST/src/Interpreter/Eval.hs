@@ -4,7 +4,6 @@ module Interpreter.Eval
   )
 where
 
-
 import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
@@ -21,40 +20,42 @@ import           Data.Functor
 import qualified Data.Map as Map
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
+import           System.IO ( hFlush, stdout, stderr )
+-- import Debug.Trace (trace)
 
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
 
 evalAndPrint :: Variable -> TypingS -> E.Exp -> IO ()
-evalAndPrint name s e = 
-  addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx -> do
-
+evalAndPrint name s e = do
+  ctx <- addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx
   res <- eval name (getTypesS s) ctx (getDefsS s) e
+  hFlush stdout
+  hFlush stderr
   case res of
     IOValue io -> io >>= print
     _          -> print res
-  
   where
     addPrimitiveChannels :: [String] -> Ctx -> IO Ctx
     addPrimitiveChannels [] ctx = return ctx
     addPrimitiveChannels (varName : varNames) ctx = do
       (clientChan, serverChan) <- new
       addPrimitiveChannels varNames 
-        $ Map.insert (mkVar defaultSpan         varName ) (Chan clientChan) 
+        $ Map.insert (mkVar defaultSpan         varName  ) (Chan clientChan) 
         $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
 
 
 eval :: Variable -> Types -> Ctx -> Defs -> E.Exp -> IO Value
-eval _ _ _   _ (E.Unit _                      )    = return Unit
-eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
-eval _ _ _   _ (E.Float  _ f                  )    = return $ Float f        
-eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
-eval _ _ _   _ (E.String _ s                  )    = return $ String s
-eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
-eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e))        = return $ Closure fun x e ctx
-eval fun tys ctx eenv (E.Var    _ x            ) = evalVar fun tys ctx eenv x
-eval fun tys ctx eenv (E.TypeApp _ e _         ) = eval fun tys ctx eenv e >>= \case
+eval _ _ _   _ (E.Unit _                  ) = return Unit
+eval _ _ _   _ (E.Int    _ i              ) = return $ Integer i
+eval _ _ _   _ (E.Float  _ f              ) = return $ Float f        
+eval _ _ _   _ (E.Char   _ c              ) = return $ Character c
+eval _ _ _   _ (E.String _ s              ) = return $ String s
+eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e)) = return $ TypeAbs e ctx
+eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e)) = return $ Closure fun x e ctx
+eval fun tys ctx eenv (E.Var    _ x       ) = evalVar fun tys ctx eenv x
+eval fun tys ctx eenv (E.TypeApp _ e _    ) = eval fun tys ctx eenv e >>= \case
   (TypeAbs v ctx) -> eval fun tys ctx eenv v
   v -> return v
 eval fun tys ctx eenv (E.App p (E.Var _ x) e)
@@ -104,15 +105,15 @@ evalCase name s tys ctx eenv m (Cons x xs) =
 evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 evalVar :: Variable -> Types -> Ctx -> Defs -> Variable -> IO Value
-evalVar _ tys ctx eenv x
-  | isDatatypeContructor x tys  = return $ Cons x []
-  | Map.member x eenv            = eval x tys ctx eenv (eenv Map.! x)
-  | Map.member x ctx             = return $ ctx Map.! x
-  | x == mkFork defaultSpan      = return Fork
-  | x == mkError                 =
+evalVar _ tEnv ctx eenv x
+  | isDatatypeContructor x tEnv = return $ Cons x []
+  | Map.member x eenv           = eval x tEnv ctx eenv (eenv Map.! x)
+  | Map.member x ctx            = return $ ctx Map.! x
+  | x == mkFork defaultSpan     = return Fork
+  | x == mkError                =
      return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
-  | x == mkUndefined             =
+  | x == mkUndefined            =
      return $ exception (UndefinedFunction (getSpan x))
-  | otherwise                      = internalError "Interpreter.Eval.evalVar" x
+  | otherwise                   = internalError "Interpreter.Eval.evalVar" x
   where
     exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err

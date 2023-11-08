@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# Language FlexibleInstances #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -140,7 +140,9 @@ skipPair :: Gen (T.Type, T.Type)
 skipPair = return (T.Skip pos, T.Skip pos)
 
 endPair :: Gen (T.Type, T.Type)
-endPair = return (T.End pos, T.End pos)
+endPair = do
+  p <- arbitrary
+  return (T.End pos p, T.End pos p)
 
 intPair :: Gen (T.Type, T.Type)
 intPair = return (T.Int pos, T.Int pos)
@@ -230,7 +232,8 @@ tSkip cVars n = do
 endT :: PairGen
 endT cVars n = do
   (t, u) <- bisimPair K.Session cVars (n `div` 2)
-  return (T.Semi pos (T.End pos) t, T.End pos)
+  p <- arbitrary
+  return (T.Semi pos (T.End pos p) t, T.End pos p)
 
 distrib :: PairGen
 distrib cVars n = do

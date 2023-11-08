@@ -48,7 +48,7 @@ clientSequential = geneticAlg argSeed argPopSize argIterPop
 
 clientParallel = 
   let (i, c) = receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl in
-  close c;
+  wait c;
   i
 
 
@@ -270,11 +270,11 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  Done:       End }               -- Close the channel
+  Done:       Close }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
-type ResultChannel : 1S = ?Int;End    -- Compute result and return it
+type ResultChannel : 1S = ?Int;Wait    -- Compute result and return it
 
 
 -- Structure that represents a list of IslandChannels
@@ -356,7 +356,7 @@ runIsland master seed nIterI pop =
       runIsland master seed nIterI pop,
     Done master ->
       -- Stop (get some help  -Michael Jordan)
-      close master
+      wait master
   }
 
 
