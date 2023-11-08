@@ -22,6 +22,8 @@ import           Syntax.Base                    (Variable) -- Nonterminal symbol
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.AlphaEquivalence
+-- import qualified Bisimulation.ThreeValuedLogic as TVL
+-- import           Bisimulation.AlphaEquivalenceTrinary
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map

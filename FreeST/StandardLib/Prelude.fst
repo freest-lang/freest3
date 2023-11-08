@@ -33,10 +33,10 @@ module Prelude where
 (-) : Int -> Int -> Int
 (*) : Int -> Int -> Int
 (/) : Int -> Int -> Int
+div : Int -> Int -> Int
 (^) : Int -> Int -> Int
 mod : Int -> Int -> Int
 rem : Int -> Int -> Int
-div : Int -> Int -> Int
 max : Int -> Int -> Int
 min : Int -> Int -> Int
 quot : Int -> Int -> Int
@@ -55,6 +55,45 @@ odd : Int -> Bool
 (>) : Int -> Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
+-- Float
+(+.) : Float -> Float -> Float
+(-.) : Float -> Float -> Float
+(*.) : Float -> Float -> Float
+(/.) : Float -> Float -> Float
+(>.) : Float -> Float -> Float
+(<.) : Float -> Float -> Float
+(>=.) : Float -> Float -> Float
+(<=.) : Float -> Float -> Float
+absF : Float -> Float
+negateF : Float -> Float
+maxF : Float -> Float -> Float
+minF : Float -> Float -> Float
+truncate : Float -> Int
+round : Float -> Int
+ceiling : Float -> Int
+floor : Float -> Int
+recip : Float -> Float
+pi : Float
+exp : Float -> Float
+log : Float -> Float
+sqrt : Float -> Float
+(**) : Float -> Float -> Float
+logBase : Float -> Float -> Float
+sin : Float -> Float
+cos : Float -> Float
+tan : Float -> Float
+asin: Float -> Float
+acos: Float -> Float
+atan: Float -> Float
+sinh: Float -> Float
+cosh: Float -> Float
+tanh: Float -> Float
+log1p: Float -> Float
+expm1: Float -> Float
+log1pexp: Float -> Float
+log1mexp: Float -> Float
+fromInteger: Int -> Float
+
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
@@ -166,6 +205,7 @@ flip f x y = f y x
 -- | discards the result, then evaluates the latter. For example:
 -- | ```
 -- | 3 ; 4
+-- | ```
 -- | evaluates to 4.
 -- | Its binding precedence is rather low.
 (;) : forall a:*T b:*T . a -> b -> b
@@ -282,7 +322,7 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- type Consumer a = a 1-> ()
 
 -- | Receives a value from a linear channel and applies a function to it.
--- | Returns the continuation channel
+-- | Discards the result and returns the continuation channel.
 -- | 
 -- | ```
 -- | main : ()
@@ -344,7 +384,7 @@ accept c =
   send x c;
   y
 
--- | Creates a new child process and a linear channel through which it can
+-- | Creates a new child process and a channel through which it can
 -- | communicate with its parent process. Returns the channel endpoint.
 -- | 
 -- | ```
@@ -661,7 +701,7 @@ __runReader _ (SWait reader) =
 type FilePath = String
 
 -- Internal file handles
-data FileHandle = FileHandle () 
+data FileHandle = FileHandle ()
 
 -- Internal IOMode for opening files
 data IOMode = ReadMode | WriteMode | AppendMode

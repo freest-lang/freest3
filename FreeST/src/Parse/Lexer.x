@@ -30,12 +30,18 @@ $digit = [$ascdigit] -- $unidigit]
 $ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 $symbol = [$ascsymbol] -- $unisymbol]
 
+
 $alphaNumeric = [$letter$digit\_\']
 
 $eol=[\n]
 
 @char = \'(\\n|[\\.]|.) \'
 @blockComment = "{-" (\-[^\}]|[^\-]|\n)* "-}"
+
+@numspc = _*         -- numeric spacer 
+
+@decimal  = $digit(@numspc$digit)*
+@exponent = [eE][\-\+]?@decimal
 
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
@@ -78,14 +84,22 @@ tokens :-
   "|"                           { \p s -> TokenPipe (internalPos p) }
 -- Operators
   "+"			        { \p s -> TokenPlus (internalPos p) }
+  "+."            { \p s -> TokenPlusF (internalPos p)}
   "-"                           { \p s -> TokenMinus (internalPos p) }
+  "-."      {\p s -> TokenMinusDot (internalPos p)}
   "*"				{ \p s -> TokenTimes (internalPos p) }
+  "*."      { \p s -> TokenTimesDot (internalPos p)}
   "^"				{ \p s -> TokenRaise (internalPos p) }
+  "**"      { \p s -> TokenRaiseTimes (internalPos p)}
   "_"				{ \p s -> TokenWild (internalPos p) }
   ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
   "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
+  ">."                { \p s -> TokenCmp (internalPos p) "(>.)"}
+  "<."                { \p s -> TokenCmp (internalPos p) "(<.)"}
   ">="  		        { \p s -> TokenCmp (internalPos p) "(>=)" }
   "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
+  ">=."                { \p s -> TokenCmp (internalPos p) "(>=.)"}
+  "<=."                { \p s -> TokenCmp (internalPos p) "(<=.)"}
   "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
@@ -93,6 +107,7 @@ tokens :-
   "++"      { \p s -> TokenAppend (internalPos p)}
   "^^"      { \p s -> TokenAppendString (internalPos p)}
   "/"  		                { \p s -> TokenDiv (internalPos p) }
+  "/."                    { \p s -> TokenDivDot (internalPos p)}
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
   "*S"                          { \p s -> TokenUnS (internalPos p) }
@@ -103,6 +118,7 @@ tokens :-
   "*A"                          { \p s -> TokenUnA (internalPos p) } -- TODO: remove later
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
+  Float       { \p s -> TokenFloatT (internalPos p)}
   Char				{ \p s -> TokenCharT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
@@ -128,7 +144,8 @@ tokens :-
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
-  (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
+  (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
+  ([\-\+]?@numspc@decimal"."@decimal@exponent?|@numspc@decimal@exponent) { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -140,6 +157,7 @@ tokens :-
 data Token =
     TokenNL Span
   | TokenIntT Span
+  | TokenFloatT Span
   | TokenCharT Span
   | TokenStringT Span
   | TokenUnit Span
@@ -167,6 +185,7 @@ data Token =
   | TokenAmpersand Span
   | TokenPipeOp Span
   | TokenPlus Span
+  | TokenPlusF Span
   | TokenRec Span
   | TokenDot Span
   | TokenLowerId Span String
@@ -179,6 +198,7 @@ data Token =
   | TokenLinA Span
   | TokenUnA Span
   | TokenInt Span Int
+  | TokenFloat Span Double
   | TokenChar Span Char
   | TokenString Span String
   | TokenLet Span
@@ -204,8 +224,11 @@ data Token =
   | TokenDualof Span
   | TokenFArrow Span
   | TokenMinus Span
+  | TokenMinusDot Span
   | TokenTimes Span
+  | TokenTimesDot Span
   | TokenRaise Span
+  | TokenRaiseTimes Span
   | TokenWild Span
   | TokenLT Span
   | TokenGT Span
@@ -215,6 +238,7 @@ data Token =
   | TokenAppend Span
   | TokenAppendString Span
   | TokenDiv Span
+  | TokenDivDot Span
   | TokenDollar Span
   | TokenModule Span
   | TokenWhere Span
@@ -223,6 +247,7 @@ data Token =
 instance Show Token where
   show (TokenNL _) = "\\n"
   show (TokenIntT _) = "Int"
+  show (TokenFloatT _) = "Float"
   show (TokenCharT _) = "Char"
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
@@ -250,6 +275,7 @@ instance Show Token where
   show (TokenAmpersand _) = "&"
   show (TokenPipeOp _) = "|>"
   show (TokenPlus _) = "+"
+  show (TokenPlusF _) = "+."
   show (TokenRec _) = "rec"
   show (TokenDot _) = "."
   show (TokenLowerId _ s) = "" ++ s
@@ -262,6 +288,7 @@ instance Show Token where
   -- show (TokenUnM _) = "*M"
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
+  show (TokenFloat _ i) = show i 
   show (TokenChar _ c) = show c
   show (TokenString _ s) = s
   show (TokenLet _) = "let"
@@ -287,8 +314,11 @@ instance Show Token where
   show (TokenDualof _) = "dualof"
   show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
+  show (TokenMinusDot _) = "-."
   show (TokenTimes _) = "*"
+  show (TokenTimesDot _) = "*."
   show (TokenRaise _) = "^"
+  show (TokenRaiseTimes _) = "**"
   show (TokenWild _) = "_"
   show (TokenLT _) = "<"
   show (TokenGT _) = ">"
@@ -298,6 +328,7 @@ instance Show Token where
   show (TokenAppend _) = "++"
   show (TokenAppendString _) = "^^"
   show (TokenDiv _) = "/"
+  show (TokenDivDot _) = "/."
   show (TokenDollar _) = "$"
   show (TokenModule _) = "module"
   show (TokenWhere _)  = "where"
@@ -345,6 +376,7 @@ internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
 instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
+  getSpan (TokenFloatT p) = p
   getSpan (TokenCharT p) = p
   getSpan (TokenUnit p) = p
   getSpan (TokenStringT p) = p
@@ -372,6 +404,7 @@ instance Located Token where
   getSpan (TokenAmpersand p) = p
   getSpan (TokenPipeOp p) = p
   getSpan (TokenPlus p) = p
+  getSpan (TokenPlusF p) = p
   getSpan (TokenRec p) = p
   getSpan (TokenDot p) = p
   getSpan (TokenLowerId p _) = p
@@ -384,6 +417,7 @@ instance Located Token where
   -- getSpan (TokenLinM p) = p
   -- getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
+  getSpan (TokenFloat p _) = p
   getSpan (TokenChar p _) = p
   getSpan (TokenString p _) = p
   getSpan (TokenLet p) = p
@@ -401,8 +435,11 @@ instance Located Token where
   getSpan (TokenCase p) = p
   getSpan (TokenForall p) = p
   getSpan (TokenMinus p) = p
+  getSpan (TokenMinusDot p) = p
   getSpan (TokenTimes p) = p
+  getSpan (TokenTimesDot p) = p
   getSpan (TokenRaise p) = p
+  getSpan (TokenRaiseTimes p) = p
   getSpan (TokenLT p) = p
   getSpan (TokenGT p) = p
   getSpan (TokenWild p) = p
@@ -420,6 +457,7 @@ instance Located Token where
   getSpan (TokenAppend p) = p
   getSpan (TokenAppendString p) = p
   getSpan (TokenDiv p) = p
+  getSpan (TokenDivDot p) = p
   getSpan (TokenDollar p) = p
   getSpan (TokenModule p) = p
   getSpan (TokenWhere p) = p

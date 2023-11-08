@@ -10,8 +10,9 @@ import           Syntax.Base
 import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
 import           Validation.Kinding
+import           Validation.Phase
 import           Bisimulation.Bisimulation        ( bisimilar )
-import           Util.FreestState
+import           Util.State
 import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
@@ -40,7 +41,7 @@ kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultS
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ execState (synthetise kindEnv t) (initialState)
+  null $ errors $ execState (synthetise kindEnv t) (initialTyp defaultOpts)
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property

@@ -4,6 +4,9 @@ Int
 Int
 *T
 
+Float
+*T
+
 Char
 *T
 
@@ -14,6 +17,9 @@ Skip
 *S
 
 !Int
+1S
+
+!Float
 1S
 
 !Char

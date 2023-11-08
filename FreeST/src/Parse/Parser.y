@@ -6,17 +6,20 @@ where
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Syntax.MkName
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
+import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.FreestState
-
+import           Parse.Phase
+import           Util.State
+import           Syntax.AST
+  
 import           Control.Monad.State
 import           Data.Either
 import           Data.Functor
+import           Data.Function
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set as Set
@@ -28,11 +31,11 @@ import           Paths_FreeST ( getDataFileName )
 %partial modname Module
 %name terms TopLevel
 %name expr Exp
-%name types Type
+%name ty Type
 %name kinds Kind
 %tokentype { Token }
 %error { parseError }
-%monad { FreestStateT } { (>>=) } { return }
+%monad { ParseState } { (>>=) } { return }
 
 %token
   nl       {TokenNL _}
@@ -40,6 +43,7 @@ import           Paths_FreeST ( getDataFileName )
   module   {TokenModule _}  
   import   {TokenImport _}  
   Int      {TokenIntT _}
+  Float    {TokenFloatT _}
   Char     {TokenCharT _}
   String   {TokenStringT _}
   '()'     {TokenUnit _}
@@ -67,12 +71,17 @@ import           Paths_FreeST ( getDataFileName )
   '&&'     {TokenConjunction _}
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
+  '/.'     {TokenDivDot _}
   '&'      {TokenAmpersand _}
   '|>'     {TokenPipeOp _}
   '+'      {TokenPlus _}
+  '+.'     {TokenPlusF _}
   '-'      {TokenMinus _}
+  '-.'     {TokenMinusDot _}
   '*'      {TokenTimes _}
+  '*.'     {TokenTimesDot _}
   '^'      {TokenRaise _}
+  '**'     {TokenRaiseTimes _}
   '++'     {TokenAppend _}
   '^^'     {TokenAppendString _}
   '_'      {TokenWild _}
@@ -89,6 +98,7 @@ import           Paths_FreeST ( getDataFileName )
   UA       {TokenUnA _}
   LA       {TokenLinA _}
   INT      {TokenInt _ _ }
+  FLOAT    {TokenFloat _ _}
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
   let      {TokenLet _}
@@ -123,9 +133,9 @@ import           Paths_FreeST ( getDataFileName )
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
 %right '::' '++' '^^' -- lists & strings
-%left '+' '-'    -- aditive
-%left '*' '/'    -- multiplicative
-%right '^'       -- power
+%left '+' '-' '+.' '-.' -- aditive
+%left '*' '/' '*.' '/.'   -- multiplicative
+%right '^' '**'       -- power
 %left NEG not    -- unary
 %right MSG       -- !T and ?T
 %right dualof
@@ -169,7 +179,7 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3) }
   -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
@@ -177,13 +187,13 @@ Decl :: { () }
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
   | Pattern Op Pattern GuardsFun {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $4}
   -- Type abbreviation
-  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
+  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTypes $2 $3 }
   -- Datatype declaration
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
-      mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
-      uncurry addToTEnv $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
+      mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
+      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }
@@ -215,19 +225,24 @@ Exp :: { E.Exp }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $3 $1 }
-  | Exp '||' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
-  | Exp '&&' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
-  | Exp CMP Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
-  | Exp '+' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
-  | Exp '-' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
-  | Exp '*' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
-  | Exp '/' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
-  | Exp '^' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
-  | Exp '++' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkPlusPlus s) $3 }
+  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
+  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
+  | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
+  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
+  | Exp '+.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+.)") $3}
+  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
+  | Exp '-.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-.)") $3}
+  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
+  | Exp '*.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*.)") $3}
+  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
+  | Exp '/.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/.)") $3}
+  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
+  | Exp '**' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(**)") $3}
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
   | Exp '^^' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCaretCaret s) $3 }
-  | Exp '::' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
-  | '-' App %prec NEG              {% mkSpanSpan $1 $2 >>= \s -> pure $ unOp (mkNeg s) $2 s }
+  | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
+  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkNeg s) $2 s }
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -240,6 +255,7 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
+  | FLOAT                          {% let (TokenFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -328,7 +344,11 @@ Op :: { Variable }
    | '+'  {% mkPlus       `fmap` mkSpan $1 }
    | '*'  {% mkTimes      `fmap` mkSpan $1 }
    | '/'  {% mkDiv        `fmap` mkSpan $1 }
+   | '+.'  {% flip mkVar "(+.)" `fmap` mkSpan $1}
+   | '*.'  {% flip mkVar "(*.)" `fmap` mkSpan $1}
+   | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}   
    | '^'  {% mkPower      `fmap` mkSpan $1 }
+   | '**'  {% flip mkVar "(**)" `fmap` mkSpan $1}   
    | '++' {% mkPlusPlus   `fmap` mkSpan $1 }
    | '^^' {% mkCaretCaret `fmap` mkSpan $1 }
    | '|>' {% mkPipeGT     `fmap` mkSpan $1 }
@@ -344,6 +364,7 @@ Op :: { Variable }
 Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
+  | Float                         {% T.Float `fmap` mkSpan $1}
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
@@ -418,7 +439,7 @@ LabelList :: { Map.Map Variable (T.Type -> T.Type) }
   | ArbitraryProgVar ',' LabelList {% checkDupField $1 $3 >>
                                     return (Map.insert $1 id $3) }
 
--- TYPE SEQUANCE
+-- TYPE SEQUENCE
 
 TypeSeq :: { [T.Type] }
   :              { [] }
@@ -448,6 +469,7 @@ ProgVar :: { Variable }
   : LOWER_ID    {% flip mkVar (getText $1) `fmap` mkSpan $1 }
   | '(' Op ')'  {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s $ intern $2 }
   | '(' '-' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkMinus s }
+  | '(' '-.' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s "(-.)" }
 
 Constructor :: { Variable }
   : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
@@ -485,27 +507,22 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
 -- Parse functions
 -- Used in the Read instances
   
-parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
+parse :: String -> FilePath -> ([Token] -> ParseState a) -> ParseState a
 parse input fname parseFun = either (lift . Left) parseFun (scanTokens input fname)
 
 parseKind :: FilePath -> String -> Either Errors K.Kind
 parseKind runFilePath str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
---    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
+  where state = initialWithFile runFilePath
 
 parseType :: FilePath -> String -> Either Errors T.Type
-parseType runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" types) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
---     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
+parseType runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" ty) state)
+   where state = initialWithFile runFilePath
 
 parseExpr :: FilePath -> String -> Either Errors E.Exp
 parseExpr runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" expr) state)
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath}}
+  where state = initialWithFile runFilePath
 
-stateToEither :: (a, FreestS) -> Either Errors a
+stateToEither :: (a, FreestS b) -> Either Errors a
 stateToEither (t,s)
   | hasErrors s = Left $ errors s
   | otherwise   = Right t
@@ -514,35 +531,34 @@ stateToEither (t,s)
 -- FreeST parsing functions 
 
 -- Parses a the module header and then the program
-parseProgram :: FreestS -> IO FreestS
+parseProgram :: FreestS Parse -> IO (FreestS Parse)
 parseProgram s = do
-  let filename = runFilePath $ runOpts s
+  let filename = runFilePath $ runOpts $ extra s
   input <- readFile filename
-  let mh = parseModHeader s filename input
-  return $ parseDefs (s {moduleName = moduleName mh}) filename input
+  let mh = getModule $ parseModHeader s filename input
+  return $ parseDefs (setModule s mh) filename input
 
-
-parseModHeader :: FreestS -> FilePath -> String -> FreestS
+parseModHeader :: FreestS Parse -> FilePath -> String -> FreestS Parse
 parseModHeader s filename input =
   either (\e -> s { errors = [e] }) id (execStateT (parse input filename modname) s)
 
-parseDefs :: FreestS -> FilePath -> String -> FreestS
+parseDefs :: FreestS Parse -> FilePath -> String -> FreestS Parse
 parseDefs s filename input =
   either (\e -> s { errors = [e] }) id (execStateT (parse input filename terms) s)
 
-
-parseAndImport :: FreestS -> IO FreestS
+parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
-  let filename = runFilePath $ runOpts initial 
-  s <- parseProgram (initial {moduleName = Nothing})
-  let baseName = takeBaseName (runFilePath $ runOpts s)
-  case moduleName s of
+  let filename = getFName initial  
+--  s <- parseProgram (initial {moduleName = Nothing})   
+  s <- parseProgram (setModule initial Nothing)
+  let baseName = takeBaseName (getFName s)
+  case getModule s of
     Just name
-      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (imports s)) s
+      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (getImps s)) s
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
-    Nothing   -> doImports filename Set.empty (Set.toList (imports s)) s
+    Nothing   -> doImports filename Set.empty (Set.toList (getImps s)) s
   where
-    doImports :: FilePath -> Imports -> [FilePath] -> FreestS -> IO FreestS
+    doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
     doImports _ _ [] s = return s
     doImports defModule imported (curImport:toImport) s
       | curImport `Set.member` imported = doImports defModule imported toImport s
@@ -559,14 +575,15 @@ parseAndImport initial = do
             else 
               pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
 
-    importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
+    importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
     importModule s fileToImport curImport defModule imported toImport = do
-      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})         
-      let modName = fromJust $ moduleName s'
+      s' <- parseProgram (setModule s Nothing & setFName fileToImport)
+      let modName = fromJust $ getModule s'
       if curImport /= modName then
         pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
       else
-        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
+
 
 -- TODO: test MissingModHeader
 
@@ -582,7 +599,7 @@ parseAndImport initial = do
 
           
 -- Error Handling
-parseError :: [Token] -> FreestStateT a
+parseError :: [Token] -> ParseState a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan
 parseError (x:_) = lift . Left $ ParseError (getSpan x) (show x)
 

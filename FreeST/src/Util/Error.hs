@@ -8,7 +8,8 @@ import           Parse.Unparser
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
+import           Syntax.AST
+import           Syntax.Program (TypeOpsEnv) -- TODO: remove on merge to keep-source
 import qualified Syntax.Type as T
 import           Util.GetTOps
 import           Util.Message
@@ -16,8 +17,6 @@ import           Util.Message
 import           Data.Either.Extra (fromEither, isLeft)
 import qualified Data.Map as Map
 import           System.FilePath
-
-import           Debug.Trace
 
 -- | Internal errors
 
@@ -93,8 +92,8 @@ data ErrorType =
   | VarOrConsNotInScope Span Variable
   | LinProgVar Span Variable T.Type K.Kind
   | NonEquivTypes Span T.Type T.Type E.Exp
-  | NonEquivEnvsInBranch Span VarEnv VarEnv E.Exp
-  | NonEquivEnvsInUnFun Span VarEnv VarEnv E.Exp
+  | NonEquivEnvsInBranch Span Signatures Signatures E.Exp
+  | NonEquivEnvsInUnFun Span Signatures Signatures E.Exp
   | DataConsNotInScope Span Variable
   | WrongNumOfCons Span Variable Int [Variable] E.Exp
   | ExtractError Span String E.Exp T.Type
@@ -273,7 +272,7 @@ instance Message ErrorType where
   msg (NonEquivTypes _ t u e) sty ts _ =
     "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
     style red sty ts u ++"\n                for expression " ++ style red sty ts e
-  msg (NonEquivEnvsInUnFun _ vEnv1 vEnv2 e) sty ts _
+  msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts _
     | Map.null diff =
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++
       "\n\tvariable " ++ style red sty ts var1 ++ " is of type " ++ style red sty ts type1 ++
@@ -284,21 +283,21 @@ instance Message ErrorType where
       "\n\tvariable " ++ style red sty ts var2 ++ " is of type " ++ style red sty ts type2 ++
       "\n\t  and the function is " ++ style red sty ts e ++
       "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
-      where diff = vEnv2 Map.\\ vEnv1
-            var1 = head $ Map.keys $ vEnv1 Map.\\ vEnv2
-            type1 = vEnv1 Map.! var1
+      where diff = sigs2 Map.\\ sigs1
+            var1 = head $ Map.keys $ sigs1 Map.\\ sigs2
+            type1 = sigs1 Map.! var1
             var2 = head $ Map.keys diff
-            type2 = vEnv2 Map.! var2
+            type2 = sigs2 Map.! var2
     -- "Couldn't match the final context against the initial context for an unrestricted function" ++
-    -- "\n\t The initial context is " ++ style red sty ts (vEnv1 {-Map.\\ vEnv2-}) ++
-    -- "\n\t   the final context is " ++ style red sty ts (vEnv2 {-Map.\\ vEnv1-}) ++
+    -- "\n\t The initial context is " ++ style red sty ts (sigs1 {-Map.\\ sigs2-}) ++
+    -- "\n\t   the final context is " ++ style red sty ts (sigs2 {-Map.\\ sigs1-}) ++
     -- "\n\t    and the function is " ++ style red sty ts e ++
     -- "\n\t (unrestricted functions cannot update the context)" ++
     -- "\n\t (if you must update the context, consider using a linear function)"
-  msg (NonEquivEnvsInBranch _ vEnv1 vEnv2 e) sty ts _ =
+  msg (NonEquivEnvsInBranch _ sigs1 sigs2 e) sty ts _ =
     "Couldn't match the final contexts in two distinct branches in a case or conditional expression " ++
-    "\n\t       One context is " ++ style red sty ts vEnv1 {-(vEnv1 Map.\\ vEnv2-} ++
-    "\n\t         the other is " ++ style red sty ts vEnv2 {-(vEnv2 Map.\\ vEnv1-} ++
+    "\n\t       One context is " ++ style red sty ts sigs1 {-(sigs1 Map.\\ sigs2-} ++
+    "\n\t         the other is " ++ style red sty ts sigs2 {-(sigs2 Map.\\ sigs1-} ++
     "\n\tand the expression is " ++ style red sty ts e ++
     "\n\t(was a variable consumed in one branch and not in the other?)" ++
     "\n\t(is there a variable with different types in the two contexts?)"

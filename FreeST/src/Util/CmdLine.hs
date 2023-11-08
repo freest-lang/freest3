@@ -1,7 +1,7 @@
 module Util.CmdLine where
 
 import           Util.Error
-import           Util.FreestState
+import           Util.State
 import           Syntax.Base
 
 import           Control.Bool ( whenM )
@@ -35,7 +35,7 @@ runOptsParser = RunOpts
   <*> flag True False    -- This is the reverse of switch
      ( long "no-colors"
     <> long "no-colours"
-    <> help "Remove styles from the errors messages")
+    <> help "Remove styles from error messages")
   <*> switch
      ( long "quiet"
     <> short 'q'
@@ -54,7 +54,7 @@ versionParser s =
 handleFlags :: RunOpts -> IO RunOpts
 handleFlags fg@(RunOpts f _ _ sty _) = do
   whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
-  when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
+  unless ("fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
     fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)

@@ -1,5 +1,5 @@
 import Data.Char (isAlphaNum, isSpace)
-import Data.List (isPrefixOf, elemIndex, intercalate, sort)
+import Data.List (isPrefixOf, isInfixOf, elemIndex, intercalate, sort)
 import Data.Maybe (fromJust, isJust)
 import Debug.Trace (trace)
 import System.Environment
@@ -39,11 +39,11 @@ instance Show Doc where
             docsStr = (foldl (++) "" $ map show docs)
 
 showDoc :: String -> String -> String -> String
-showDoc name sig doc = 
+showDoc name sig doc = --trace ("!!!!!!" ++ doc ++ "!!!!!!\n\n") $ 
     "## **" ++ name ++ "**\n" ++
     "**Type**: `" ++ sig ++ "`\n" ++
-    "\n" ++
-    doc ++ "\n"
+    -- "\n" ++
+    doc ++ "\n\n"
 
 showDoc_ :: String -> String -> String -> String
 showDoc_ name def doc = 
@@ -52,8 +52,8 @@ showDoc_ name def doc =
     "```\n" ++
     def ++ "\n" ++
     "```\n" ++
-    "\n" ++
-    doc ++ "\n"
+    -- "\n" ++
+    doc ++ "\n\n"
 
 
 
@@ -65,6 +65,9 @@ scanForDoc sections secName docAcc descAcc []
     | secName == "EMPTY" = docAcc
     | otherwise          = sections ++ [Section secName docAcc]
 scanForDoc sections secName docAcc descAcc (x:xs)
+    -- ignore block comments until it closes
+    | isOpenBlockComment x =
+        scanForDoc sections secName docAcc descAcc (drop 1 $ dropWhile (not . isCloseBlockComment) (x:xs))
     -- sections
     | isSection x =
         scanForDoc (sections ++ [Section secName (sort docAcc)]) (stripSecHeader x) [] "" xs
@@ -73,6 +76,9 @@ scanForDoc sections secName docAcc descAcc (x:xs)
         -- let (doc, xs') = captureDoc (stripDocHeader x) xs in
         -- scanForDoc sections (docAcc ++ [doc]) secName xs'
         scanForDoc sections secName docAcc (descAcc ++ "\n" ++ stripDocHeader x) xs 
+    -- ignore line comments
+    | isLineComment x =
+        scanForDoc sections secName docAcc descAcc xs
     -- data
     | isData x  = 
         let (name, def, xs') = captureDef x xs in
@@ -84,7 +90,10 @@ scanForDoc sections secName docAcc descAcc (x:xs)
     -- function
     | isFunction x = 
         let (name, sig) = captureSig x in
-        scanForDoc sections secName (docAcc ++ [Fun name sig descAcc]) "" xs
+        -- ignore functions starting with "__", in the future, show only those exported by the module
+        if "__" `isPrefixOf` name 
+        then scanForDoc sections secName docAcc "" xs
+        else scanForDoc sections secName (docAcc ++ [Fun name sig descAcc]) "" xs
     -- ignore all others
     | otherwise = 
         scanForDoc sections secName docAcc descAcc xs
@@ -108,18 +117,21 @@ captureSig x = (strip $ take divIndex x, strip $ drop (divIndex+1) x)
     where 
         divIndex = fromJust $ elemIndex ':' x
 
+-- (name, definition, remaining lines)
 captureDef :: String -> [String] -> (String, String, [String])
+captureDef defAcc [] = captureDef' defAcc []
 captureDef defAcc (x:xs)
-    | x == ""   = 
-        let kindIndex = elemIndex ':' defAcc
-            defIndex  = fromJust $ elemIndex '=' defAcc in
-        if isJust kindIndex && fromJust kindIndex < defIndex
-        then
-            (strip $ stripDataTypeHeader $ take (fromJust kindIndex) defAcc, defAcc, xs)
-        else
-            (strip $ stripDataTypeHeader $ take defIndex defAcc, defAcc, xs)
+    | x == ""   = captureDef' defAcc xs
     | otherwise = captureDef (defAcc ++ "\n" ++ x) xs
 
+captureDef' :: String -> [String] -> (String, String, [String])
+captureDef' defAcc xs =
+    if isJust kindIndex && fromJust kindIndex < defIndex
+    then (strip $ stripDataTypeHeader $ take (fromJust kindIndex) defAcc, defAcc, xs)
+    else (strip $ stripDataTypeHeader $ take defIndex defAcc, defAcc, xs)
+    where
+        kindIndex = elemIndex ':' defAcc
+        defIndex  = fromJust $ elemIndex '=' defAcc
 
 
 isDoc :: String -> Bool
@@ -135,12 +147,21 @@ isType = isPrefixOf "type"
 isFunction :: String -> Bool
 isFunction s = 
     case elemIndex ':' s of
-        Just i  -> all (\c -> isAlphaNum c || isSpace c || c == ',') $ take i s
+        Just i  -> all (\c -> isAlphaNum c || isSpace c || isSpecial c) $ take i s
         Nothing -> False
+    where
+        -- HACK
+        isSpecial = not . (== '\\')
 
 isSection :: String -> Bool
 isSection = isPrefixOf "-- # "
 
+isOpenBlockComment, isCloseBlockComment :: String -> Bool
+isOpenBlockComment  = isInfixOf "{-"
+isCloseBlockComment = isInfixOf "-}"
+
+isLineComment :: String -> Bool
+isLineComment = isPrefixOf "--"
 
 
 stripDocHeader :: String -> String
