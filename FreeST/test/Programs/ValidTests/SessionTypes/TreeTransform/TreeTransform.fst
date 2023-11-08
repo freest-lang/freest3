@@ -64,8 +64,8 @@ aTree, main : Tree
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
 
 main =
-  let (w, r) = new @(TreeC;End) () in
-  fork @() (\_:()1-> close $ snd @Int @End $ treeSum @End r);
-  let (t, w) = transform  @End aTree w in
-  close w;
+  let (w, r) = new @(TreeC;Wait) () in
+  fork @() (\_:()1-> close $ snd @Int @Close $ treeSum @Close r);
+  let (t, w) = transform @Wait aTree w in
+  wait w;
   t

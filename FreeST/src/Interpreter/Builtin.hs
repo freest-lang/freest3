@@ -5,12 +5,10 @@ import           Interpreter.Value
 import           Syntax.Base
 
 import qualified Control.Concurrent.Chan as C
-import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
-import           System.IO.Unsafe
 import           Data.Bifunctor (Bifunctor(bimap))
 import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
 import GHC.Float
@@ -19,26 +17,29 @@ import GHC.Float
 -- Communication primitives
 ------------------------------------------------------------
 
+new :: IO Channel
+new = do
+  c1 <- C.newChan
+  c2 <- C.newChan
+  return ((c1, c2), (c2, c1))
+
+receive :: ChannelEnd -> IO (Value, ChannelEnd)
+receive c = do
+  v <- C.readChan (fst c)
+  return (v, c)
+
 send :: Value -> ChannelEnd -> IO ChannelEnd
 send v c = do
   C.writeChan (snd c) v
   return c
 
-new :: IO Channel
-new = do
-  ch1 <- C.newChan
-  ch2 <- C.newChan
-  return ((ch1, ch2), (ch2, ch1))
+wait :: Value -> Value 
+wait (Chan c) =
+  IOValue $ C.readChan (fst c)
 
-receive :: ChannelEnd -> IO (Value, ChannelEnd)
-receive ch = do
-  v <- C.readChan (fst ch)
-  return (v, ch)
-
-close :: ChannelEnd -> IO Value 
-close ch = do 
-  C.writeChan (snd ch) Unit 
-  C.readChan (fst ch)
+close :: Value -> IO Value 
+close (Chan c) = do 
+  C.writeChan (snd c) Unit 
   return Unit
 
 ------------------------------------------------------------  
@@ -47,12 +48,12 @@ close ch = do
 
 initialCtx :: Ctx
 initialCtx = Map.fromList
-  -- Integers
   [ -- Communication primitives
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
-  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
-  , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
+  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
+  , (var "wait", PrimitiveFun wait)
+  , (var "close", PrimitiveFun (\c -> IOValue $ close c))
   -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))

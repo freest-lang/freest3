@@ -40,14 +40,9 @@ import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
-  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  t == u || -- Alpha-equivalence, 30% speed up in :program tests
   bisimilarGrm (convertToGrammar [t, u])
-  -- This alternative induces no speed up in :program tests:
-  -- original (above): 31.0917 seconds
-  -- 3-valued: 32.3150 seconds
-  -- case trinary t u of
-  --   TVL.Unknown -> bisimilarGrm (convertToGrammar [t, u])
-  --   b       -> TVL.toBool b
+  -- (trace (show (t, u)) $ bisimilarGrm (convertToGrammar [t, u]))
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
@@ -124,7 +119,7 @@ match m1 m2 =
 findFixedPoint
   :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
 findFixedPoint branch rules ps | branch == branch' = branch
-                               | otherwise = findFixedPoint branch' rules ps
+                               | otherwise = branch' --  findFixedPoint branch' rules ps --
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch

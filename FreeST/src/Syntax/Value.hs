@@ -5,7 +5,7 @@ where
 
 import           Syntax.Base
 import qualified Syntax.Expression             as E
-import Syntax.MkName (mkSelect, mkSend, mkReceive, mkClose)
+import Syntax.MkName (mkSelect, mkSend, mkReceive, mkClose, mkWait)
 
 isVal :: E.Exp -> Bool
 -- | x 
@@ -35,6 +35,7 @@ isVal (E.TypeApp _ (E.App _ (E.TypeApp _ (E.Var p x) _) v) _) | x == mkSend p = 
 isVal (E.TypeApp _ (E.Var p x) _) | x == mkReceive p = True
 -- | receive [T] [U]
 isVal (E.TypeApp _ (E.TypeApp _ (E.Var p x) _) _) | x == mkReceive p = True
-isVal (E.App _ (E.Var p x) _) | x == mkClose p = True
+-- | What for?
+isVal (E.App _ (E.Var p x) _) | x == mkClose p && x == mkWait p = True
 -- | otherwise
 isVal _ = False

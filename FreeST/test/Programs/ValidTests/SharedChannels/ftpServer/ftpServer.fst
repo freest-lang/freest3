@@ -26,7 +26,7 @@ type FTP = *?FTPSession
 type FTPSession : 1S = +
   { Get: ?File ; FTPSession
   , Put: !File ; FTPSession
-  , Bye: End
+  , Bye: Close
   }
 -- |An FTP thread channel as seen from the side of the FTP thread
 -- |Connects the FTP demon to its threads
@@ -70,7 +70,7 @@ actions state s b =
         print @Int  file;
         writeTo file state;
         actions state s b
-    , Bye s -> close s; ftpThread state b
+    , Bye s -> wait s; ftpThread state b
     }
 
 -- Sample clients
