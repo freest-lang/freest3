@@ -140,7 +140,15 @@ Skip
 !(!Int;Close)
 !(?Int;Close)
 
--- Session types
+-- dualof
+
+-- Currently the test below issues an error:
+--  units: 1:1-1:27: Internal error at Validation.Rename.rename: dualof (rec b:1S . ?Int ; b)
+-- In order to fix this, Equivalence.TestEquivalenceInvalidSpec must call Elaboration.ResolveDuality before (instead?) of Validation.Rename
+
+[]
+rec a:1S . !Int ; a
+dualof (rec b:1S . ?Int ; b)
 
 -- Higher Order
 
