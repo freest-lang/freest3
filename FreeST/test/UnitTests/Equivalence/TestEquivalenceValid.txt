@@ -1075,9 +1075,14 @@ dualof (!Int ; ?Char)
 ((Skip;(rec z: 1S.(rec y: 1S.(rec x: 1S.(+{A: z, B: Skip, C: dualof ?Int};(&{A:Skip, C: z};x))))));Skip)
 (rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
+-- dual and recursion on messages
 []
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
+
+[]
+dualof (rec a:1S . !a                       ; Close)
+        rec b:1S . ?(rec a:1S . !a ; Close) ; Wait
 
 -- Terminated Recursive Types
 

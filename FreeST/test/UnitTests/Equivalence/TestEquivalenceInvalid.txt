@@ -142,13 +142,10 @@ Skip
 
 -- dualof
 
--- Currently the test below issues an error:
---  units: 1:1-1:27: Internal error at Validation.Rename.rename: dualof (rec b:1S . ?Int ; b)
--- In order to fix this, Equivalence.TestEquivalenceInvalidSpec must call Elaboration.ResolveDuality before (instead?) of Validation.Rename
-
+-- dual and recursion on messages
 []
-rec a:1S . !Int ; a
-dualof (rec b:1S . ?Int ; b)
+dualof (rec a:1S . !a ; Close)
+        rec b:1S . ?b ; Wait
 
 -- Higher Order
 

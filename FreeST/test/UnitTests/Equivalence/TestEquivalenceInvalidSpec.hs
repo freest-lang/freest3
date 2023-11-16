@@ -4,12 +4,14 @@ module Equivalence.TestEquivalenceInvalidSpec
 where
 
 import Bisimulation.Bisimulation ( bisimilar )
-import Control.Monad.State ( execState )
+import Control.Monad.State ( execState, evalState )
 import SpecUtils
 import Syntax.Kind as K
-import Util.State ( initialS, errors)
+import Util.State ( initial, errors, initialS )
 import Validation.Kinding ( synthetise )
-import Validation.Rename
+import Validation.Rename ( renameTypes )
+import Elaboration.ResolveDuality ( resolve )
+import Elaboration.Phase ( extraElab )
 
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [k, t, u]  |
@@ -18,8 +20,11 @@ matchInvalidSpec [k, t, u]  |
     (k ++ "  |-  " ++ t ++ " ~ " ++ u)
     (bisimilar t' u' `shouldBe` False)
   where
-    [t', u'] = renameTypes [read t, read u]
     kEnv     = readKenv k
+    [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
+
+resolveDuals :: Type -> Type
+resolveDuals t = evalState (resolve t) (initial extraElab)
 
 wellFormed :: K.KindEnv -> Type -> Bool
 wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialS
