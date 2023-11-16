@@ -57,7 +57,7 @@ type ParseEnvChoices = [Variable]
 type Builtins = Set.Set Variable
 
 type KindConstraint = (K.Kind, K.Kind)
-type PreKindConstraint = (K.PreKind, (K.Kind,K.Kind)) 
+type PreKindConstraint = (K.PreKind, [K.Kind]) 
 type MultConstraint = (K.Multiplicity, [K.Kind]) 
 
 data Constraint = KindC KindConstraint
@@ -68,7 +68,7 @@ data Constraint = KindC KindConstraint
 instance Show Constraint where
   show (KindC (k1,k2)) = show k1 ++ " <: " ++ show k2
   show (MultC (m,ks)) = show m ++ " = ⊔" ++ show ks
-  show (KindP (pk, (k1,k2))) = show pk ++ " = " ++ show k1 ++ " ⊓ " ++ show k2
+  show (KindP (pk, ks)) = show pk ++ " = " ++ " ⊓" ++ show ks
 
 
 type KindConstraints = [KindConstraint]

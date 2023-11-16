@@ -134,11 +134,12 @@ inferOne ((sk, sm, spk), cs) m@(MultC (mv,ks)) =
       | isMVar m  = SK.join (sm Map.! fromMToVar m) currLeast
       | otherwise = SK.join m currLeast
 
-inferOne ((sk, sm, spk), cs) c@(KindP (K.PreKindVar pkv,(k1,k2))) = do
-  let curr = spk Map.! pkv
-  let glb = prekind (getFromVar k1) `SK.meet` prekind (getFromVar k2) `SK.meet` curr
+inferOne ((sk, sm, spk), cs) c@(KindP (K.PreKindVar pkv,ks)) = do
+--  let curr = spk Map.! pkv
+  let glb = foldl (\curr k -> prekind (getFromVar k) `SK.meet` curr) (spk Map.! pkv) ks
+  -- let glb = prekind (getFromVar k1) `SK.meet` prekind (getFromVar k2) `SK.meet` curr
 
-  let cs' = if properKind k1 && properKind k2 then delete c cs else cs
+  let cs' = if all properKind ks then delete c cs else cs
 
   return ((sk,sm, Map.insert pkv glb spk), cs')
   where

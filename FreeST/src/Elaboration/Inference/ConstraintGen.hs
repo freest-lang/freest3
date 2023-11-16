@@ -114,11 +114,24 @@ cg' _ kEnv (T.Var _ x) = case kEnv Map.!? x of
 cg' _ _ (T.Skip s) = return  $ K.us s
 cg' _ _ (T.End s) = return $ K.la s
 cg' pvs kEnv (T.Message s _ t) = cg' pvs kEnv t $> K.ls s
-cg' pvs kEnv (T.Labelled s (T.Choice _) m) = -- do
-  -- ks <- tMapM (cg' pvs kEnv) m
-  -- return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (SK.join m1 m2) (SK.meet v1 v2))
-  --   (snd $ Map.elemAt 0 ks) ks  
-  tMapM (cg' pvs kEnv) m $> K.ls s
+-- cg' pvs kEnv (T.Labelled s (T.Choice _) m) = -- do
+--   -- ks <- tMapM (cg' pvs kEnv) m
+--   -- return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (SK.join m1 m2) (SK.meet v1 v2))
+--   --   (snd $ Map.elemAt 0 ks) ks  
+--   tMapM (cg' pvs kEnv) m $> K.ls s
+
+cg' pvs kEnv (T.Labelled s (T.Choice _) m) = do
+  ks <- foldM (\acc t -> cg' pvs kEnv t >>= \k -> return $ k : acc) [] m
+  
+  pk <- freshPreKindVar
+  addPKConstraint (pk, ks)
+  mapM_ (\k -> addKConstraint (k, K.ls s)) ks
+--  addKConstraint (pk, ks)
+  -- addMConstraint (fmv, foldl (\acc k -> if isKVar k then acc else k:acc ) [] ks)
+  pure $ K.Kind s K.Lin pk
+  
+--  tMapM (cg' pvs kEnv) m $> K.ls s
+
 cg' pvs kEnv (T.Semi s t u) = do
   k1 <- cg' pvs kEnv t
   k2 <- cg' pvs kEnv u
@@ -127,7 +140,7 @@ cg' pvs kEnv (T.Semi s t u) = do
   addKConstraint (k1, K.ls s)
   addKConstraint (k2, K.ls s)
   addMConstraint (m, [k1,k2])
-  addPKConstraint (pk, (k1,k2))
+  addPKConstraint (pk, [k1,k2])
   return $ K.Kind s m pk
 
   -- k1 <- cg' pvs kEnv t
@@ -164,7 +177,6 @@ cg' pvs kEnv (T.Arrow s m t u) = do
   cg' pvs kEnv t
   cg' pvs kEnv u
   return $ K.Kind s (typeToKindMult m) K.Top
-
   
 cg' pvs kEnv l@(T.Labelled s _ m) = do
   ks <- foldM (\acc t -> cg' pvs kEnv t >>= \k -> return $ k : acc) [] m
@@ -296,7 +308,7 @@ infGen kEnv e@(E.Abs s m b) = do
   addToVEnv (var b) (binder b)
   (t, u) <- infGen kEnv (body b)
   weaken e (var b) k u
-  wh3
+  when (isClosure (body b)) (
     case t of
       (T.Arrow _ m' _ _) -> addKConstraint (k, K.Kind s (typeToKindMult m') K.Top)
       f@(T.Forall _ (Bind _ _ _ (T.Arrow _ m' _ _)))     ->
