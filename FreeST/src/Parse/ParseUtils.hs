@@ -29,47 +29,47 @@ import qualified Data.Map.Strict as Map
 
 -- Modules
 
-mkSpan :: Located a => a -> ParseState Span
+mkSpan :: Located a => a -> ParseState (Span b)
 mkSpan a = do
-  let (Span p1 p2 _) = getSpan a
+  let (Span p1 p2 s _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 Nothing f) (Span p1 p2 Nothing) <$> getModuleName
 
-mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState Span
+mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState (Span b)
 mkSpanSpan a b = do
-  let (Span p1 _ _) = getSpan a
-  let (Span _ p2 _) = getSpan b
+  let (Span p1 _ s _) = getSpan a
+  let (Span _ p2 _ _) = getSpan b
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 Nothing f) (Span p1 p2 Nothing) <$> getModuleName
 
-mkSpanFromSpan :: Located a => Span -> a -> ParseState Span
-mkSpanFromSpan (Span p1 _ _) a = do
-  let (Span _ p2 _) = getSpan a
+mkSpanFromSpan :: Located a => Span a -> a -> ParseState (Span b)
+mkSpanFromSpan (Span p1 _ _ _) a = do
+  let (Span _ p2 s _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 Nothing f) (Span p1 p2 Nothing) <$> getModuleName
 
-liftModToSpan :: Span -> ParseState Span
-liftModToSpan (Span p1 p2 _) = do
+liftModToSpan :: Span a -> ParseState (Span b)
+liftModToSpan (Span p1 p2 s _) = do
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 Nothing f) (Span p1 p2 Nothing) <$> getModuleName
 
 -- Parse errors
 
 checkDupField :: Variable -> Map.Map Variable v -> ParseState ()
 checkDupField x m =
-  when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
+  when (x `Map.member` m) $ addError $ MultipleFieldDecl (clear (getSpan x)) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
 
 checkDupCase :: Variable -> E.FieldMap -> ParseState ()
 checkDupCase x m =
-  when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
+  when (x `Map.member` m) $ addError $ RedundantPMatch (clear (getSpan x)) x
 
 checkDupBind :: Variable -> [Variable] -> ParseState ()
 checkDupBind x xs
   | isWild x = return ()
   | otherwise = case find (== x) xs of
-    Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
+    Just y  -> addError $ DuplicateVar (clear (getSpan y)) "program" x (getSpan x)
     Nothing -> return ()
 
 -- checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestStateT ()
@@ -80,10 +80,10 @@ checkDupBind x xs
 
 checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> ParseState ()
 checkDupCons (x, _) xts
-  | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
+  | any compare xts = addError $ DuplicateFieldInDatatype (clear (getSpan x)) x pos
   | otherwise =
       getFromSignatures x >>= \case
-       Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
+       Just _  -> addError $ MultipleDeclarations (clear (getSpan x)) x pos
        Nothing -> return ()
   where
     compare (y, _) = y == x
@@ -93,7 +93,7 @@ checkDupProgVarDecl :: Variable -> ParseState ()
 checkDupProgVarDecl x = do
   sigs <- getSignatures
   case sigs Map.!? x of
-    Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos sigs)
+    Just _  -> addError $ MultipleDeclarations (clear (getSpan x)) x (pos sigs)
     Nothing -> return ()
  where
     pos sigs = getSpan $ fst $ Map.elemAt (Map.findIndex x sigs) sigs
@@ -102,7 +102,7 @@ checkDupTypeDecl :: Variable -> ParseState ()
 checkDupTypeDecl a = do
   tys <- getTypes
   case tys Map.!? a of
-    Just _   -> addError $ MultipleTypeDecl (getSpan a) a (pos tys)-- (getSpan s)
+    Just _   -> addError $ MultipleTypeDecl (clear (getSpan a)) a (pos tys)-- (getSpan s)
     Nothing  -> return ()
  where
     pos tys = getSpan $ fst $ Map.elemAt (Map.findIndex a tys) tys
@@ -117,27 +117,27 @@ checkDupVarPats' ((E.PatCons _ cs):xs) vs = checkDupVarPats' cs vs >>= checkDupV
 checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
    case find clause vs of
     Nothing -> checkDupVarPats' xs (v:vs)
-    Just v2 -> addError (DuplicateVar (getSpan v) "program" v2 (getSpan v2))
+    Just v2 -> addError (DuplicateVar (clear (getSpan v)) "program" v2 (getSpan v2))
             >> checkDupVarPats' xs (v:vs)
   where clause v2 = not (isWild v) && v == v2
 
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
-binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
+binOp l op r = E.App s (E.App (getSpan l) (E.Var (clear (getSpan op)) op) l) r
+  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) Nothing (defModule $ getSpan l)
 
-unOp :: Variable -> E.Exp -> Span -> E.Exp
-unOp op expr s = E.App s (E.Var (getSpan op) op) expr
+unOp :: Variable -> E.Exp -> Span E.Exp -> E.Exp
+unOp op expr s = E.App s (E.Var (clear (getSpan op)) op) expr
 
-leftSection :: Variable -> E.Exp -> Span -> ParseState E.Exp
+leftSection :: Variable -> E.Exp -> Span E.Exp -> ParseState E.Exp
 leftSection op e s = do
   sigs <- getSignatures
   i <- getNextIndex
-  let v = mkNewVar i (mkVar s "_x")
+  let v = mkNewVar i (mkVar (clear s) "_x")
   let t = genFstType (sigs Map.! op)
-  return $ E.Abs s Un (Bind s v t
-             (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
+  return $ E.Abs s Un (Bind (clear s) v t
+             (E.App (clear s) (E.App (clear s) (E.Var (clear (getSpan op)) op) (E.Var (clear (getSpan op)) v)) e))
   where
     genFstType (T.Arrow _ _ t _) = t
     genFstType t = t
@@ -147,11 +147,11 @@ leftSection op e s = do
 
 typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListsToUnArrows a = 
-  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
+  map \(c, ts) -> (c, foldr (T.Arrow (clear (getSpan c)) Un) (T.Var (clear (getSpan a)) a) ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)
 
-condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
-condCase s i t e = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))
+condCase :: Span a -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
+condCase s i t e = E.Case (clear s) i $ Map.fromList [(mkTrue  s, ([],t))
                                              ,(mkFalse s, ([],e))]

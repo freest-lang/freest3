@@ -86,7 +86,7 @@ eval fun tys ctx eenv (E.UnLet _ x e1 e2) = do
   eval fun tys (Map.insert x v ctx) eenv e2
 eval fun tys ctx eenv (E.Case s e m) = eval fun tys ctx eenv e >>=  evalCase fun s tys ctx eenv m 
 
-evalCase :: Variable -> Span -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
+evalCase :: Variable -> Span a -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
 evalCase name _ tys ctx eenv m (Chan c) = do
   (Label !v, !c) <- receive c
   let (patterns : _, e) = m Map.! mkVar defaultSpan v
@@ -96,7 +96,7 @@ evalCase name s tys ctx eenv m (Cons x xs) =
   case m Map.!? x of
     Nothing ->
       let msg = "Non-exhaustive patterns in function " ++ show name in
-      die $ showErrors True "" Map.empty (RuntimeError s msg)
+      die $ showErrors True "" Map.empty (RuntimeError (clear s) msg)
     Just (patterns, e) -> 
       let lst            = zip patterns xs in
       let ctx1 = foldl (\acc (c, y : _) -> Map.insert c y acc) ctx lst in 
@@ -110,9 +110,9 @@ evalVar _ tys ctx eenv x
   | Map.member x ctx             = return $ ctx Map.! x
   | x == mkFork defaultSpan      = return Fork
   | x == mkError                 =
-     return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
+     return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (clear $ getSpan x) e))
   | x == mkUndefined             =
-     return $ exception (UndefinedFunction (getSpan x))
+     return $ exception (UndefinedFunction (clear $ getSpan x))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
   where
     exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err

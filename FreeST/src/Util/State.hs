@@ -156,7 +156,7 @@ addWarning :: WarningType -> FreestState a ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 
 -- | Fresh var
-freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
+freshTVar :: S.MonadState (FreestS a) m => String -> Span Variable -> m Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 
@@ -214,13 +214,13 @@ tMapWithKeyM_ f m = S.void $ tMapWithKeyM f m
 
 -- | TYPENAMES
 
-addTypeName :: S.MonadState (FreestS a) m => Span -> T.Type -> m ()
+addTypeName :: S.MonadState (FreestS a) m => Span T.Type -> T.Type -> m ()
 addTypeName p t = S.modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: S.MonadState (FreestS a) m => m TypeOpsEnv
 getTypeNames = S.gets typenames
 
-findTypeName :: S.MonadState (FreestS a) m => Span -> T.Type -> m T.Type
+findTypeName :: S.MonadState (FreestS a) m => Span T.Type -> T.Type -> m T.Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 
 addDualof :: S.MonadState (FreestS a) m => T.Type -> m ()

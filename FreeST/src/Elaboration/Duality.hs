@@ -6,7 +6,7 @@ module Elaboration.Duality
   )
 where
 
-import           Syntax.Base                   (Bind(..), Variable)
+import           Syntax.Base                   (Bind(..), Variable, clear)
 import qualified Data.Map                      as Map
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
@@ -30,7 +30,7 @@ instance Duality T.Type where
   dualof (T.Dualof _ (T.Var p x)) = T.Var p x
   dualof (T.Dualof _ t) = dualof t
   dualof u@(T.Rec p (Bind p' a k t)) =
-    let t' = subs (T.Dualof p' (T.Var p' a)) a t in
+    let t' = subs (T.Dualof (clear p') (T.Var (clear p') a)) a t in
       T.Rec p $ Bind p' a k (cosubs u a (dualof t'))
   -- Non session-types, Skip & End
   dualof t = t

@@ -40,7 +40,7 @@ data PreKind = Session | Top | Absorb deriving (Ord, Eq)
 data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
-data Kind = Kind Span Multiplicity PreKind
+data Kind = Kind (Span Kind) Multiplicity PreKind
 
 instance Eq Kind where
   (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2
@@ -55,7 +55,7 @@ instance Default Kind where
   omission _ = ut defaultSpan
 
 -- Abbreviations for the six proper kinds
-lt, ut, ls, us, la, ua :: Span -> Kind
+lt, ut, ls, us, la, ua :: Span Kind -> Kind
 lt p = Kind p Lin Top 
 ut p = Kind p Un Top 
 ls p = Kind p Lin Session 
@@ -79,4 +79,5 @@ type KindEnv = Map.Map Variable Kind
 type PolyVars = Set.Set Variable
 
 instance (Default a) => Default (Bind Kind a) where
-  omission p = Bind p (omission p) (omission p) (omission p)
+  omission p = Bind p' (omission p') (omission p') (omission p')
+    where p' = clear p

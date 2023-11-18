@@ -40,14 +40,14 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 
-instance Show Span where
-  show (Span sp fp _)
+instance Show (Span a) where
+  show (Span sp fp _ _)
     | sp == fp  = showPos sp
     | otherwise = showPos sp ++ "-" ++ showPos fp
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
-showModuleName :: Span -> String
+showModuleName :: Span a -> String
 showModuleName s = showModuleWithDots (defModule s)
 
 showModuleWithDots :: String -> String

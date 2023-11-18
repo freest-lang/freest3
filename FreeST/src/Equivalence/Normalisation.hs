@@ -31,7 +31,7 @@ normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)
 normalise t@T.Dualof{} = internalError "Equivalence.Normalisation.normalise" t
 normalise t = t
 
-append :: Span -> T.Type -> T.Type -> T.Type
+append :: Span T.Type -> T.Type -> T.Type -> T.Type
 append _ t               (T.Skip _) = t
 append p (T.End _)       _          = T.End p
 append p (T.Semi p1 t u) v          = T.Semi p1 t (append p u v)

@@ -86,7 +86,7 @@ checkAndRun runOpts = do
 
   where
     noSig :: Signatures -> Variable -> Errors -> Errors
-    noSig sigs f acc = SignatureLacksBinding (getSpan f) f (sigs Map.! f) : acc
+    noSig sigs f acc = SignatureLacksBinding (clear (getSpan f)) f (sigs Map.! f) : acc
       
     preludeHasErrors :: FilePath -> ParseS -> ParseS -> ParseS
     preludeHasErrors f s0 s1

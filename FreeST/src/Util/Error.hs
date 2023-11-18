@@ -51,58 +51,58 @@ data ErrorType =
   | WrongFileExtension FilePath
   -- Lexer.x
   -- Token, circular import (move to other module)
-  | LexicalError Span String
+  | LexicalError (Span ErrorType) String
   -- Parser.y
-  | PrematureEndOfFile Span
-  | ParseError Span String -- String should be Token (circular import)
-  | NameModuleMismatch Span FilePath FilePath
-  | ImportNotFound Span FilePath FilePath
-  | MissingModHeader Span FilePath
+  | PrematureEndOfFile (Span ErrorType)
+  | ParseError (Span ErrorType) String -- String should be Token (circular import)
+  | NameModuleMismatch (Span ErrorType) FilePath FilePath
+  | ImportNotFound (Span ErrorType) FilePath FilePath
+  | MissingModHeader (Span ErrorType) FilePath
   -- ParseUtils
-  | MultipleFieldDecl Span Span Variable
-  | RedundantPMatch Span Variable
-  | DuplicateVar Span String Variable Span  -- string is the variable description: type or program
-  | DuplicateFieldInDatatype Span Variable Span
-  | MissingChoices Span [Variable] Span
-  | MultipleDeclarations Span Variable Span
-  | MultipleTypeDecl Span Variable Span
-  | MultipleFunBindings Span Variable Span
+  | MultipleFieldDecl (Span ErrorType) (Span Variable) Variable
+  | RedundantPMatch (Span ErrorType) Variable
+  | DuplicateVar (Span ErrorType) String Variable (Span Variable)  -- string is the variable description: type or program
+  | DuplicateFieldInDatatype (Span ErrorType) Variable (Span Variable)
+  | MissingChoices (Span ErrorType) [Variable] (Span Variable)
+  | MultipleDeclarations (Span ErrorType) Variable (Span Variable)
+  | MultipleTypeDecl (Span ErrorType) Variable (Span Variable)
+  | MultipleFunBindings (Span ErrorType) Variable (Span Variable)
   -- Elab
-  | ConflictChoiceCons Span Variable Span
-  | DifNumberOfArguments Span Variable 
-  | InvalidVariablePatternChan Span Variable
-  | TypeVarOutOfScope Span Variable
-  | FuctionLacksSignature Span Variable
-  | WrongNumberOfArguments Span Variable Int Int T.Type
+  | ConflictChoiceCons (Span ErrorType) Variable (Span Variable)
+  | DifNumberOfArguments (Span ErrorType) Variable 
+  | InvalidVariablePatternChan (Span ErrorType) Variable
+  | TypeVarOutOfScope (Span ErrorType) Variable
+  | FuctionLacksSignature (Span ErrorType) Variable
+  | WrongNumberOfArguments (Span ErrorType) Variable Int Int T.Type
   -- Duality
---  | DualOfNonRecVar Span  T.Type
-  | DualOfNonSession Span T.Type
+--  | DualOfNonRecVar Span T.Type
+  | DualOfNonSession (Span ErrorType) T.Type
   -- TypeCheck
-  | SignatureLacksBinding Span Variable T.Type
-  | MainNotDefined Span Variable
-  | UnrestrictedMainFun Span Variable T.Type K.Kind
-  | LinearFunctionNotConsumed Span [(Variable, T.Type)]
+  | SignatureLacksBinding (Span ErrorType) Variable T.Type
+  | MainNotDefined (Span ErrorType) Variable
+  | UnrestrictedMainFun (Span ErrorType) Variable T.Type K.Kind
+  | LinearFunctionNotConsumed (Span ErrorType) [(Variable, T.Type)]
   -- Kinding
-  | TypeVarNotInScope Span Variable -- Duplicated: TypeVarOutOfScope
-  | TypeNotContractive Span T.Type Variable
-  | CantMatchKinds Span K.Kind K.Kind T.Type
-  | ExpectingSession Span T.Type K.Kind
+  | TypeVarNotInScope (Span ErrorType) Variable -- Duplicated: TypeVarOutOfScope
+  | TypeNotContractive (Span ErrorType) T.Type Variable
+  | CantMatchKinds (Span ErrorType) K.Kind K.Kind T.Type
+  | ExpectingSession (Span ErrorType) T.Type K.Kind
   -- Typing
-  | TypeAbsBodyNotValue Span E.Exp E.Exp
-  | VarOrConsNotInScope Span Variable
-  | LinProgVar Span Variable T.Type K.Kind
-  | NonEquivTypes Span T.Type T.Type E.Exp
-  | NonEquivEnvsInBranch Span Signatures Signatures E.Exp
-  | NonEquivEnvsInUnFun Span Signatures Signatures E.Exp
-  | DataConsNotInScope Span Variable
-  | WrongNumOfCons Span Variable Int [Variable] E.Exp
-  | ExtractError Span String E.Exp T.Type
-  | BranchNotInScope Span Variable T.Type
-  | UnendedSession Span T.Type K.Kind
+  | TypeAbsBodyNotValue (Span ErrorType) E.Exp E.Exp
+  | VarOrConsNotInScope (Span ErrorType) Variable
+  | LinProgVar (Span ErrorType) Variable T.Type K.Kind
+  | NonEquivTypes (Span ErrorType) T.Type T.Type E.Exp
+  | NonEquivEnvsInBranch (Span ErrorType) Signatures Signatures E.Exp
+  | NonEquivEnvsInUnFun (Span ErrorType) Signatures Signatures E.Exp
+  | DataConsNotInScope (Span ErrorType) Variable
+  | WrongNumOfCons (Span ErrorType) Variable Int [Variable] E.Exp
+  | ExtractError (Span ErrorType) String E.Exp T.Type
+  | BranchNotInScope (Span ErrorType) Variable T.Type
+  | UnendedSession (Span ErrorType) T.Type K.Kind
   -- Runtime errors
-  | ErrorFunction Span String
-  | UndefinedFunction Span
-  | RuntimeError Span String
+  | ErrorFunction (Span ErrorType) String
+  | UndefinedFunction (Span ErrorType)
+  | RuntimeError (Span ErrorType) String
   deriving Show
 
 instance Located ErrorType where

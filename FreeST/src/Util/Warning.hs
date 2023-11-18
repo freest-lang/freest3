@@ -27,7 +27,7 @@ showWarnings f tops wrn =
 
 data WarningType =
     NoPrelude FilePath
-  | NonExhaustiveCase Span E.FieldMap T.TypeMap
+  | NonExhaustiveCase (Span WarningType) E.FieldMap T.TypeMap
   deriving Show
 
 instance Located WarningType where

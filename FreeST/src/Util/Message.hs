@@ -17,7 +17,7 @@ type Stylable = Bool
 -- | Message class, composed by a title and an body
 
 class Message a where
-  title :: a -> Stylable -> Span -> FilePath -> String
+  title :: a -> Stylable -> Span a -> FilePath -> String
   msg   :: a -> Stylable -> TypeOpsEnv -> Either String String -> String
   
 
@@ -46,13 +46,13 @@ instance Style FilePath where
 quote :: String -> String
 quote str = '\'' : str ++ "'" 
 
-showModule :: String -> Span -> String
+showModule :: String -> Span a -> String
 showModule "Prelude" _ = "Prelude"
 showModule s         p' = s ++ ":" ++ show p'
 
 -- | Styles ...
 
-msgHeader :: String -> Stylable -> Span -> String -> String
+msgHeader :: String -> Stylable -> Span a -> String -> String
 msgHeader msgType sty p f 
   | startPos p == startPos defaultSpan && endPos p == endPos defaultSpan
                      = bold sty $ start ++ end

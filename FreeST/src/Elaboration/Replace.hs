@@ -58,7 +58,7 @@ instance Replace E.FieldMap where
 
 -- | Changing positions
 -- Change position of a given type with a given position
-changePos :: Span -> T.Type -> T.Type
+changePos :: Span T.Type -> T.Type -> T.Type
 changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)

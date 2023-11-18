@@ -9,6 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module defines the basic structures (classes and datatypes) such as Positions and
 Multiplicity, that will be used the remaining Compiler.
 -}
+{-# LANGUAGE InstanceSigs #-}
 
 module Syntax.Base
   ( Default(..)
@@ -24,12 +25,13 @@ module Syntax.Base
   , defaultSpan
   , Located(..)
   , isWild
+  , clear
 ) where
 
 -- Default for the various syntactic categories
 
 class Default t where
-  omission :: Span -> t
+  omission :: Span a -> t
 
 -- Position
 
@@ -44,23 +46,32 @@ defaultPos = (0, 0)
 -- Span
 
 class Located t where
-  getSpan :: t -> Span
+  getSpan :: t -> Span t
 
-data Span = Span
+data Span a = Span
   { startPos     :: Pos
   , endPos       :: Pos
+  , source       :: Maybe a
   , defModule    :: FilePath
-  } deriving (Eq, Ord)
+  }
 
-defaultSpan :: Span
-defaultSpan = Span defaultPos defaultPos ""
+instance Eq (Span a) where
+  (Span startPos endPos _ defModule) == (Span startPos' endPos' _ defModule') =
+    startPos == startPos' && endPos == endPos' && defModule == defModule'
+
+instance Ord (Span a) where
+ compare (Span startPos endPos _ defModule) (Span startPos' endPos' _ defModule') = 
+  compare (startPos, endPos, defModule) (startPos', endPos', defModule')
+
+defaultSpan :: Span a
+defaultSpan = Span defaultPos defaultPos Nothing ""
 
 -- Multiplicity for types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
 -- Type and program variable
-data Variable = Variable Span String
+data Variable = Variable (Span Variable) String
 
 instance Eq Variable where
   (Variable _ x) == (Variable _ y) = x == y
@@ -75,15 +86,15 @@ instance Located Variable where
   getSpan (Variable p _) = p
 
 instance Default Variable where
-  omission p = mkVar p "omission"
+  omission p = mkVar (clear p) "omission"
 
 -- The string, internal representation of a variable
 intern :: Variable -> String
 intern (Variable _ x) = x
 
 -- Making a variable from a string, type or program
-mkVar :: Span -> String -> Variable
-mkVar = Variable
+mkVar :: Span a -> String -> Variable
+mkVar s = Variable (clear s)
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"
@@ -94,4 +105,15 @@ mkNewVar :: Int -> Variable -> Variable
 mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
 
 -- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
-data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}
+data Bind a b = Bind {bSpan :: Span (Bind a b), var :: Variable, binder :: a, body :: b}
+
+
+
+-- TEMPORARY ONLY ; REMOVE AFTER MERGE
+-- used as a hack when the span does not match
+--   this should be handled locally with care but to
+--   streamline development this function is used
+-- after everything is compiling, all references to this 
+--   function should be removed (so as this function)
+clear :: Span a -> Span b
+clear s = s{source=Nothing}

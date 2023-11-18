@@ -66,7 +66,7 @@ removeSig x ast = ast{signatures = Map.delete x (signatures ast)}
 
 -- | Lists
 
-ds :: Span
+ds :: Span a
 ds = defaultSpan
 
 initialTypes :: Types
@@ -86,13 +86,13 @@ listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.V
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun
  where -- Convert a list of types and a final type constructor to a type
-  typeToFun []       = T.Var (getSpan a) a
+  typeToFun []       = T.Var (clear (getSpan a)) a
   typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
 
 
 typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
 typeListToRcdType []             = Map.empty
 typeListToRcdType ((c, us) : ts) =
-  Map.insert c (T.Labelled (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  Map.insert c (T.Labelled (clear (getSpan c)) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
   where typesToMap _ [] = Map.empty
-        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
+        typesToMap n (t : ts) = Map.insert (mkVar (clear (getSpan t)) $ show n) t (typesToMap (n+1) ts)

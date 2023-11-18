@@ -60,8 +60,8 @@ tokens :-
   where                         { \p s -> TokenWhere (internalPos p) }
   import                        { \p s -> TokenImport (internalPos p) }
   ("->"|→|"*->"|"*→")           { \p s -> TokenUnArrow (internalPos p) }
-  ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p) }
-  ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
+  ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p) } 
+  ("\"|λ)                       { \p s -> TokenLambda (internalPos p) } -- this comment is a hack for pretier syntax highlighting "
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "@"                           { \p s -> TokenAt (internalPos p)}
@@ -154,93 +154,93 @@ tokens :-
 {
 
 data Token =
-    TokenNL Span
-  | TokenIntT Span
-  | TokenFloatT Span
-  | TokenCharT Span
-  | TokenStringT Span
-  | TokenUnit Span
-  | TokenUnArrow Span
-  | TokenLinArrow Span
-  | TokenLambda Span
-  | TokenUpperLambda Span
-  | TokenAt Span
-  | TokenLParen Span
-  | TokenRParen Span
-  | TokenLBracket Span
-  | TokenRBracket Span
-  | TokenComma Span
-  | TokenSkip Span
-  | TokenEnd Span
-  | TokenColon Span
-  | TokenDoubleColon Span
-  | TokenUpperId Span String
-  | TokenSemi Span
-  | TokenMOut Span
-  | TokenMIn Span
-  | TokenLBrace Span
-  | TokenRBrace Span
-  | TokenAmpersand Span
-  | TokenPipeOp Span
-  | TokenPlus Span
-  | TokenPlusF Span
-  | TokenRec Span
-  | TokenDot Span
-  | TokenLowerId Span String
-  | TokenUnS Span
-  | TokenLinS Span
-  | TokenUnT Span
-  | TokenLinT Span
-  -- | TokenUnM Span
-  -- | TokenLinM Span
-  | TokenLinA Span
-  | TokenUnA Span
-  | TokenInt Span Int
-  | TokenFloat Span Double
-  | TokenChar Span Char
-  | TokenString Span String
-  | TokenLet Span
-  | TokenIn Span
-  | TokenEq Span
-  | TokenData Span
-  | TokenType Span
-  | TokenPipe Span
-  | TokenOtherwise Span
-  | TokenIf Span
-  | TokenThen Span
-  | TokenElse Span
---  | TokenNew Span
---  | TokenSend Span
---  | TokenReceive Span
-  | TokenSelect Span
-  | TokenMatch Span
-  | TokenWith Span
---  | TokenFork Span
-  | TokenCase Span
-  | TokenOf Span
-  | TokenForall Span
-  | TokenDualof Span
-  | TokenFArrow Span
-  | TokenMinus Span
-  | TokenMinusDot Span
-  | TokenTimes Span
-  | TokenTimesDot Span
-  | TokenRaise Span
-  | TokenRaiseTimes Span
-  | TokenWild Span
-  | TokenLT Span
-  | TokenGT Span
-  | TokenCmp Span String
-  | TokenConjunction Span
-  | TokenDisjunction Span
-  | TokenAppend Span
-  | TokenAppendString Span
-  | TokenDiv Span
-  | TokenDivDot Span
-  | TokenDollar Span
-  | TokenModule Span
-  | TokenWhere Span
-  | TokenImport Span
+    TokenNL (Span Token)
+  | TokenIntT (Span Token)
+  | TokenFloatT (Span Token)
+  | TokenCharT (Span Token)
+  | TokenStringT (Span Token)
+  | TokenUnit (Span Token)
+  | TokenUnArrow (Span Token)
+  | TokenLinArrow (Span Token)
+  | TokenLambda (Span Token)
+  | TokenUpperLambda (Span Token)
+  | TokenAt (Span Token)
+  | TokenLParen (Span Token)
+  | TokenRParen (Span Token)
+  | TokenLBracket (Span Token)
+  | TokenRBracket (Span Token)
+  | TokenComma (Span Token)
+  | TokenSkip (Span Token)
+  | TokenEnd (Span Token)
+  | TokenColon (Span Token)
+  | TokenDoubleColon (Span Token)
+  | TokenUpperId (Span Token) String
+  | TokenSemi (Span Token)
+  | TokenMOut (Span Token)
+  | TokenMIn (Span Token)
+  | TokenLBrace (Span Token)
+  | TokenRBrace (Span Token)
+  | TokenAmpersand (Span Token)
+  | TokenPipeOp (Span Token)
+  | TokenPlus (Span Token)
+  | TokenPlusF (Span Token)
+  | TokenRec (Span Token)
+  | TokenDot (Span Token)
+  | TokenLowerId (Span Token) String
+  | TokenUnS (Span Token)
+  | TokenLinS (Span Token)
+  | TokenUnT (Span Token)
+  | TokenLinT (Span Token)
+  -- | TokenUnM (Span Token)
+  -- | TokenLinM (Span Token)
+  | TokenLinA (Span Token)
+  | TokenUnA (Span Token)
+  | TokenInt (Span Token) Int
+  | TokenFloat (Span Token) Double
+  | TokenChar (Span Token) Char
+  | TokenString (Span Token) String
+  | TokenLet (Span Token)
+  | TokenIn (Span Token)
+  | TokenEq (Span Token)
+  | TokenData (Span Token)
+  | TokenType (Span Token)
+  | TokenPipe (Span Token)
+  | TokenOtherwise (Span Token)
+  | TokenIf (Span Token)
+  | TokenThen (Span Token)
+  | TokenElse (Span Token)
+--  | TokenNew (Span Token)
+--  | TokenSend (Span Token)
+--  | TokenReceive (Span Token)
+  | TokenSelect (Span Token)
+  | TokenMatch (Span Token)
+  | TokenWith (Span Token)
+--  | TokenFork (Span Token)
+  | TokenCase (Span Token)
+  | TokenOf (Span Token)
+  | TokenForall (Span Token)
+  | TokenDualof (Span Token)
+  | TokenFArrow (Span Token)
+  | TokenMinus (Span Token)
+  | TokenMinusDot (Span Token)
+  | TokenTimes (Span Token)
+  | TokenTimesDot (Span Token)
+  | TokenRaise (Span Token)
+  | TokenRaiseTimes (Span Token)
+  | TokenWild (Span Token)
+  | TokenLT (Span Token)
+  | TokenGT (Span Token)
+  | TokenCmp (Span Token) String
+  | TokenConjunction (Span Token)
+  | TokenDisjunction (Span Token)
+  | TokenAppend (Span Token)
+  | TokenAppendString (Span Token)
+  | TokenDiv (Span Token)
+  | TokenDivDot (Span Token)
+  | TokenDollar (Span Token)
+  | TokenModule (Span Token)
+  | TokenWhere (Span Token)
+  | TokenImport (Span Token)
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -343,7 +343,7 @@ scanTokens input filename =
         AlexEOF -> Right []
         AlexError _ ->
           let p = internalPos pos in
-          Left $ LexicalError (Span (startPos p) (endPos p) filename) (show $ head input)
+          Left $ LexicalError (Span (startPos p) (endPos p) Nothing filename) (show $ head input)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
@@ -366,8 +366,8 @@ trim = reverse . trim' . reverse . trim'
 
 -- POSITIONS
 
-internalPos :: AlexPosn -> Span
-internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
+internalPos :: AlexPosn -> Span a
+internalPos (AlexPn _ l c) = let p = (l, c) in Span p p Nothing ""
 
 -- TODO: proper spans?, proper filename
 instance Located Token where

@@ -32,23 +32,23 @@ data View = External | Internal deriving Eq
 
 data Type =
   -- Functional Types
-    Int Span
-  | Float Span
-  | Char Span
-  | String Span
-  | Arrow Span Multiplicity Type Type
-  | Labelled Span Sort TypeMap
+    Int (Span Type)
+  | Float (Span Type)
+  | Char (Span Type)
+  | String (Span Type)
+  | Arrow (Span Type) Multiplicity Type Type
+  | Labelled (Span Type) Sort TypeMap
   -- Session Types
-  | Skip Span
-  | End Span
-  | Semi Span Type Type
-  | Message Span Polarity Type
+  | Skip (Span Type)
+  | End (Span Type)
+  | Semi (Span Type) Type Type
+  | Message (Span Type) Polarity Type
   -- Polymorphism and recursive types
-  | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
-  | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
-  | Var Span Variable
+  | Forall (Span Type) (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Rec (Span Type) (Bind K.Kind Type)      -- μ a:k . T, Recursive type
+  | Var (Span Type) Variable
   -- Type operators
-  | Dualof Span Type
+  | Dualof (Span Type) Type
 --  | CoVar Span Variable
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
@@ -59,7 +59,7 @@ type TypeMap = Map.Map Variable Type
 data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
-  omission = Int
+  omission s = Int (clear s)
 
 instance Located Type where
   getSpan (Int  p       ) = p
@@ -81,10 +81,10 @@ instance Located Type where
 --  getSpan (CoVar p _   ) = p
 
 -- Derived forms
-unit :: Span -> Type 
-unit s = Labelled s Record Map.empty 
+unit :: Span a -> Type 
+unit s = Labelled (clear s) Record Map.empty 
 
-tuple :: Span -> [Type] -> Type
+tuple :: Span Type -> [Type] -> Type
 tuple s ts = Labelled s Record (tupleTypeMap ts)
   where tupleTypeMap :: [Type] -> TypeMap
         tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 

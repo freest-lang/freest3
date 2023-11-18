@@ -15,7 +15,7 @@ import qualified Syntax.Type as T
 -- Mapping between positions & type operators (Typename & Dualof)
 -- Used to give better error messages
 -- TODO: remove upon merge to keep-source
-type TypeOpsEnv = Map.Map Span T.Type
+type TypeOpsEnv = Map.Map (Span T.Type) T.Type
 
 -- A given type environment without constructors
 noConstructors :: Types -> Signatures -> Signatures

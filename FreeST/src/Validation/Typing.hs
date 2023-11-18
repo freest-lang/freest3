@@ -12,6 +12,7 @@ A bidirectional type system.
 -}
 
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Validation.Typing
   ( synthetise
@@ -45,11 +46,11 @@ import qualified Data.Map.Strict as Map
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ T.Int p
-synthetise _ (E.Float p _ ) = return $ T.Float p
-synthetise _ (E.Char p _  ) = return $ T.Char p
+synthetise _ (E.Int  p _  ) = return $ T.Int $ clear p
+synthetise _ (E.Float p _ ) = return $ T.Float $ clear p
+synthetise _ (E.Char p _  ) = return $ T.Char $ clear p
 synthetise _ (E.Unit p    ) = return $ T.unit p
-synthetise _ (E.String p _) = return $ T.String p
+synthetise _ (E.String p _) = return $ T.String $ clear p
 synthetise kEnv e@(E.Var p x) =
   getFromSignatures x >>= \case
     Just s -> do
@@ -59,7 +60,7 @@ synthetise kEnv e@(E.Var p x) =
     Nothing -> do
       let p = getSpan x
           s = omission p
-      addError (VarOrConsNotInScope p x)
+      addError (VarOrConsNotInScope (clear p) x)
       addToSignatures x s
       return s
 -- Unary let
@@ -79,7 +80,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
-  return $ T.Arrow p mult t1 t2
+  return $ T.Arrow (clear p) mult t1 t2
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -90,15 +91,15 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Labelled p T.Variant
-    (Map.map (T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
+  return $ T.Labelled (clear p) T.Variant
+    (Map.map (T.Labelled (clear p) T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return $ T.tuple p [u1, u2]
+  return $ T.tuple (clear p) [u1, u2]
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
@@ -119,8 +120,8 @@ synthetise kEnv (E.App _ e1 e2) = do
   return u2
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
-  unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
-  T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
+  unless (isVal e') (addError (TypeAbsBodyNotValue (clear (getSpan e')) e e')) >>
+  T.Forall (clear p) . Bind (clear p) a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
@@ -137,7 +138,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Labelled p T.Record $ 
+  return $ T.Labelled (clear p) T.Record $ 
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -182,7 +183,7 @@ difference kEnv x = do
   getFromSignatures x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
-      when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
+      when (K.isLin k) $ addError (LinProgVar (clear (getSpan x)) x t k)
     Nothing -> return ()
   removeFromSignatures x
 
@@ -219,20 +220,20 @@ checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()
 checkEquivTypes exp kEnv expected actual =
   -- unless (equivalent kEnv actual expected) $
   unless (bisimilar actual expected) $
-    addError (NonEquivTypes (getSpan exp) expected actual exp)
+    addError (NonEquivTypes (clear (getSpan exp)) expected actual exp)
 
-checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
+checkEquivEnvs :: Span a -> (Span ErrorType -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
 checkEquivEnvs p error exp kEnv sigs1 sigs2 =
   -- unless (equivalent kEnv sigs1 sigs2) $
   unless (Map.keysSet sigs1 == Map.keysSet sigs2) $
-    addError (error p (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)
+    addError (error (clear p) (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)
 
 -- Build abstractions for each case element
 
-buildMap :: Span -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
+buildMap :: Span a -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
 buildMap p fm tm = do
-  when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
+  when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase (clear p) fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
   where tmS = Map.size tm
         fmS = Map.size fm
@@ -242,16 +243,16 @@ buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
     if n /= length xs
-      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
+      then addError (WrongNumOfCons (clear (getSpan e)) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
   Just t -> internalError "variant not a record type" t
   Nothing -> -- Data constructor not in scope
-    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
+    addError (DataConsNotInScope (clear (getSpan x)) x) $> (xs, e)
  where
   buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (t:ts) =
-    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
+    E.Abs (getSpan e) Lin $ Bind (clear (getSpan e)) x t $ buildAbstraction' (xs, e) ts
 
 
   numberOfArgs :: T.Type -> Int

@@ -33,10 +33,10 @@ module Syntax.MkName
  
 import Syntax.Base
 
-mk :: String -> Span -> Variable
-mk = flip mkVar
+mk :: String -> Span a -> Variable
+mk s sp = mkVar (clear sp) s
 
-mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkCaretCaret, mkPipeGT, mkSemi :: Span -> Variable
+mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkCaretCaret, mkPipeGT, mkSemi :: Span a -> Variable
  
 mkWild = mk "_"
 mkOr = mk "(||)"
@@ -53,19 +53,19 @@ mkCaretCaret = mk "(^^)"
 mkPipeGT = mk "(|>)"
 mkSemi = mk "(;)"
 
-mkTrue, mkFalse :: Span -> Variable 
+mkTrue, mkFalse :: Span a -> Variable 
 mkTrue  = mk "True"
 mkFalse = mk "False"
 
-mkList, mkCons, mkNil :: Span -> Variable
+mkList, mkCons, mkNil :: Span a -> Variable
 mkList = mk "[Int]"
 mkCons = mk "(::)"
 mkNil  = mk "[]"
 
-mkTupleLabels :: [Span -> Variable]
+mkTupleLabels :: [Span a -> Variable]
 mkTupleLabels = map (mk . show) [0..]
 
-mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
+mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span a -> Variable
 mkNew = mk "new"
 mkSelect = mk "select"
 mkCollect = mk "#collect"

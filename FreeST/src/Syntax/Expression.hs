@@ -27,32 +27,32 @@ import qualified Data.Map.Strict               as Map
 
 data Exp =
   -- Basic values
-    Unit Span
-  | Int Span Int
-  | Float Span Double
-  | Char Span Char
-  | String Span String
+    Unit (Span Exp)
+  | Int (Span Exp) Int
+  | Float (Span Exp) Double
+  | Char (Span Exp) Char
+  | String (Span Exp) String
   -- Variable
-  | Var Span Variable
+  | Var (Span Exp) Variable
   -- Abstraction intro and elim
-  | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T 1-> e
-  | App Span Exp Exp     -- e1 e2
+  | Abs (Span Exp) Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T 1-> e
+  | App (Span Exp) Exp Exp     -- e1 e2
   -- Pair intro and elim
-  | Pair Span Exp Exp
-  | BinLet Span Variable Variable Exp Exp
+  | Pair (Span Exp) Exp Exp
+  | BinLet (Span Exp) Variable Variable Exp Exp
   -- Datatype elim
-  | Case    Span Exp FieldMap
-  | CasePat Span Exp FieldList                       -- for pattern elimination
+  | Case    (Span Exp) Exp FieldMap
+  | CasePat (Span Exp) Exp FieldList                       -- for pattern elimination
   -- Type Abstraction intro and elim
-  | TypeAbs Span (Bind K.Kind Exp)   -- Λ a:k => e
-  | TypeApp Span Exp T.Type     -- e[T]
+  | TypeAbs (Span Exp) (Bind K.Kind Exp)   -- Λ a:k => e
+  | TypeApp (Span Exp) Exp T.Type     -- e[T]
   -- Boolean elim
-  | Cond Span Exp Exp Exp
+  | Cond (Span Exp) Exp Exp Exp
   -- Let
-  | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
+  | UnLet (Span Exp) Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
 
 instance Default (Bind T.Type Exp) where
-  omission p = Bind p (omission p) (T.unit p) (Unit p)
+  omission p = Bind (clear p) (omission (clear p)) (T.unit (clear p)) (Unit (clear p))
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
 type FieldList = [([Pattern], Exp)]

@@ -38,7 +38,7 @@ solveEq v f t@(T.Var p x)
   | f == x = pure t
   | otherwise = getFromTypes x >>= \case
     Just tx -> solveEq (f `Set.insert` v) x (snd tx)
-    Nothing -> addError (TypeVarOutOfScope p x) $> omission p
+    Nothing -> addError (TypeVarOutOfScope (clear p) x) $> omission p
 solveEq v f (T.Forall p (Bind p1 x k t)) =
   T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
 solveEq v f (T.Rec p (Bind p1 x k t)) =
@@ -51,7 +51,7 @@ solveEq _ _ p              = pure p
 
 buildRecursiveTypes :: ElabState ()
 buildRecursiveTypes = getTypes >>= setTypes . Map.mapWithKey buildRec
-  where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
+  where buildRec x (k, t) = (k, T.Rec (clear (getSpan x)) (Bind (clear (getSpan x)) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
