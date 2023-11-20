@@ -460,6 +460,9 @@ instance Located Token where
   getSpan (TokenImport p) = p
 --  pos t = error $ show t
 
+  -- unused, here to avoid compiling with a warning
+  setSpan _ t = t
+
 
 getText :: Token -> String
 getText (TokenUpperId _ x) = x

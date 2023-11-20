@@ -152,6 +152,8 @@ instance Located ErrorType where
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
 
+  -- unused, here to avoid compiling with a warning
+  setSpan _ e = e
 
 instance Message ErrorType where
   title _ sty = msgHeader (red sty "error:") sty

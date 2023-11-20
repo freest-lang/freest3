@@ -80,6 +80,22 @@ instance Located Type where
   getSpan (Dualof p _   ) = p
 --  getSpan (CoVar p _   ) = p
 
+  setSpan s (Int _) = Int s
+  setSpan s (Float _) = Float s
+  setSpan s (Char _) = Char s
+  setSpan s (String _) = String s
+  setSpan s (Arrow _ m t1 t2) = Arrow s m t1 t2
+  setSpan s (Labelled _ st tm) = Labelled s st tm
+  setSpan s (Skip _) = Skip s
+  setSpan s (End _) = End s
+  setSpan s (Semi _ t1 t2) = Semi s t1 t2
+  setSpan s (Message _ p t) = Message s p t 
+  setSpan s (Forall _ b) = Forall s b
+  setSpan s (Rec _ b) = Rec s b
+  setSpan s (Var _ v) = Var s v
+  setSpan s (Dualof _ t) = Dualof s t
+
+
 -- Derived forms
 unit :: Span a -> Type 
 unit s = Labelled (clear s) Record Map.empty 

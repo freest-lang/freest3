@@ -47,6 +47,7 @@ instance Eq Kind where
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
+  setSpan s (Kind _ m p) = Kind s m p 
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the

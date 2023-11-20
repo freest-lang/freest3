@@ -47,6 +47,7 @@ defaultPos = (0, 0)
 
 class Located t where
   getSpan :: t -> Span t
+  setSpan :: Span t -> t -> t
 
 data Span a = Span
   { startPos     :: Pos
@@ -84,6 +85,7 @@ instance Ord Variable where
   
 instance Located Variable where
   getSpan (Variable p _) = p
+  setSpan s (Variable _ v) = Variable s v
 
 instance Default Variable where
   omission p = mkVar (clear p) "omission"
