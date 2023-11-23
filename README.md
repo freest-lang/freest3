@@ -191,7 +191,7 @@ or
 
 ### Program specs (valid or invalid programs)
 ```bash
-    $ stack test :programs --ta "-m SPEC_NAME"
+    $ stack test :programs --ta 1"-m SPEC_NAME"
 ```
 
 with one of the following `SPEC_NAME`s:
