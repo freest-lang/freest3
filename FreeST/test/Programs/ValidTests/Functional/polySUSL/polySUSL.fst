@@ -3,6 +3,6 @@ id' x = x
 
 main : Int
 main =
-  let (w, r) = id' @(!Int;End, ?Int;End) (new @(!Int;End) ()) in
+  let (w, r) = id' @(!Int;Close, ?Int;Wait) (new @(!Int;Close) ()) in
   let x = fork @() (\_:()1-> send 5 w |> close) in
-  receiveAndClose @Int r 
+  receiveAndWait @Int r 

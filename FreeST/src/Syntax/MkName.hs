@@ -8,6 +8,11 @@ module Syntax.MkName
   , mkDiv
   , mkPower
   , mkNeg
+  , mkDollar
+  , mkPlusPlus
+  , mkCaretCaret
+  , mkPipeGT
+  , mkSemi
   , mkTrue
   , mkFalse
   , mkList
@@ -20,6 +25,7 @@ module Syntax.MkName
   , mkSend
   , mkReceive
   , mkClose
+  , mkWait
   , mkFork
   , mkError
   , mkUndefined
@@ -31,7 +37,7 @@ import Syntax.Base
 mk :: String -> Span -> Variable
 mk = flip mkVar
 
-mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg :: Span -> Variable
+mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkCaretCaret, mkPipeGT, mkSemi :: Span -> Variable
  
 mkWild = mk "_"
 mkOr = mk "(||)"
@@ -42,6 +48,11 @@ mkTimes = mk "(*)"
 mkDiv = mk "(/)"
 mkPower = mk "(^)"
 mkNeg = mk "negate"
+mkDollar = mk "($)"
+mkPlusPlus = mk "(++)"
+mkCaretCaret = mk "(^^)"
+mkPipeGT = mk "(|>)"
+mkSemi = mk "(;)"
 
 mkTrue, mkFalse :: Span -> Variable 
 mkTrue  = mk "True"
@@ -55,13 +66,14 @@ mkNil  = mk "[]"
 mkTupleLabels :: [Span -> Variable]
 mkTupleLabels = map (mk . show) [0..]
 
-mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
+mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkWait, mkFork :: Span -> Variable
 mkNew = mk "new"
 mkSelect = mk "select"
 mkCollect = mk "#collect"
 mkSend = mk "send"
 mkReceive = mk "receive"
 mkClose = mk "close"
+mkWait = mk "wait"
 mkFork = mk "fork"
 
 mkError, mkUndefined :: Variable

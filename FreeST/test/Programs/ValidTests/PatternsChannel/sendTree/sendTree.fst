@@ -30,8 +30,8 @@ receiveTree (NodeC c) =
 main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let (writer, reader) = new @(TreeChannel;End) () in
-  fork (\_:() 1-> sendTree @End inTree writer |> close) ;
-  let (outTree, r) = receiveTree @End reader in
-  close r;
+  let (writer, reader) = new @(TreeChannel;Close) () in
+  fork (\_:() 1-> sendTree @Close inTree writer |> close) ;
+  let (outTree, r) = receiveTree @Wait reader in
+  wait r;
   outTree

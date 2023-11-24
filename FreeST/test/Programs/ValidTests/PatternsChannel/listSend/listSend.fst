@@ -17,8 +17,8 @@ aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 
 main : List
 main =
-  let (w, r) = new @(rec x: 1S. +{NilC: Skip, ConsC: !Int;x};End) () in
-  fork (\_:() 1-> flatten @End aList w |> close);
-  let (l, r) = reconstruct @End r in
-  close r;
+  let (w, r) = new @(rec x: 1S. +{NilC: Skip, ConsC: !Int;x};Close) () in
+  fork (\_:() 1-> flatten @Close aList w |> close);
+  let (l, r) = reconstruct @Wait r in
+  wait r;
   l

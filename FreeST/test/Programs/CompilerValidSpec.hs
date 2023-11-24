@@ -14,10 +14,8 @@ import FreeST ( checkAndRun )
 import GHC.IO.Handle
 import SpecUtils
 import System.Directory
-import System.Directory
 import System.Exit
 import System.FilePath -- ((</>))
-import System.IO
 import           System.IO                      ( stdout
                                                 , stderr
                                                 )
@@ -25,7 +23,8 @@ import System.IO.Silently -- ( hCapture )
 import System.Timeout
 import Test.HUnit ( assertFailure )
 import Test.Hspec
-import Util.FreestState
+-- import Util.FreestState
+import           Util.State hiding (void)
 
 data TestResult = Timeout | Passed | Failed
 
@@ -37,11 +36,11 @@ spec = specTest' "Valid Tests" baseTestDir validTest
 -- spec = specTest "Valid Tests" baseTestDir testValid
 
 validTest :: FilePath -> (FilePath, String) -> Expectation
-validTest dir (testFile, exp) = do
-  (out, res) <- testOne testFile
+validTest dir (testFile, exp) = 
   if "<pending>" `isPrefixOf` exp
     then pendingMessage exp
-    else
+    else do
+     (out, res) <- testOne testFile
      case res of
       Timeout -> doExpectationsMatch "<timeout>" exp
       Failed  -> void $ assertFailure out

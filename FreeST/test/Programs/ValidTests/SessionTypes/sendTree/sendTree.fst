@@ -10,7 +10,7 @@ data Tree = Leaf | Node Tree Int Tree
 aTree : Tree
 aTree = Node (Node Leaf 5 Leaf) 7 (Node (Node Leaf 11 Leaf) 9 (Node Leaf 15 Leaf))
 
-type TreeChannel : 1S = TreeC ; End
+type TreeChannel : 1S = TreeC ; Wait
 
 type TreeC : 1S = &{
   LeafC: Skip,
@@ -19,8 +19,8 @@ type TreeC : 1S = &{
 
 readTree : TreeChannel -> Tree
 readTree r = 
-  let (tree, r) = read @End r in 
-  close r;
+  let (tree, r) = read @Wait r in 
+  wait r;
   tree
 -- where
 read : forall a:1S . TreeC ; a -> (Tree, a)
@@ -33,7 +33,7 @@ read (NodeC c) =
 
 writeTree : Tree -> dualof TreeChannel -> ()
 writeTree tree writer =
-  write @End tree writer |> close
+  write @Close tree writer |> close
 -- where
 write : forall a:1S . Tree -> dualof TreeC ; a -> a
 write Leaf c = select LeafC c

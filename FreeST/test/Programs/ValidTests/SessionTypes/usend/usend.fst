@@ -17,19 +17,17 @@ unsend = Λa:*T => λx:a *-> Λb:1S => λ_:() *-> send @a x @b
 
 main : Int
 main =
-  let (s1, r1) = new @(!Int;End) () in
-  let (s2, r2) = new @(!Int;End) () in
+  let (s1, r1) = new @(!Int;Close) () in
+  let (s2, r2) = new @(!Int;Close) () in
     
-  let sendFive = unsend @Int 5 @End in
+  let sendFive = unsend @Int 5 @Close in
   fork (\_:() 1-> sendFive () s1 |> close);
   fork (\_:() 1-> sendFive () s2 |> close);
-  {-
-  Now let's try with send, rather than unsend:
-  let sendFive = send @Int 5 @End in
-  fork (\_:() 1-> sendFive s1 |> close);
-  fork (\_:() 1-> sendFive s2 |> close);
-    Variable or data constructor not in scope: 'sendFive'
-  -}
-  receiveAndClose @Int r1;
-  receiveAndClose @Int r2
-  
+
+-- Now let's try with send, rather than unsend:
+  -- let sendFive = send @Int 5 @Close in
+  -- fork (\_:() 1-> sendFive s1 |> close);
+  -- fork (\_:() 1-> sendFive s2 |> close);
+-- Variable or data constructor not in scope: 'sendFive'
+
+  receiveAndWait @Int r1 + receiveAndWait @Int r2

@@ -1,4 +1,4 @@
-type Choice : 1S = +{More: !Int;DD, Enough: End}
+type Choice : 1S = +{More: !Int;DD, Enough: Close}
 type DD : 1S = dualof (dualof Choice)
 
 sendInt : Int -> DD -> ()
@@ -15,7 +15,7 @@ sendInt i c =
 rcvInt : Int -> dualof DD -> Int
 rcvInt acc c =
   match c with {
-    Enough c -> close c; acc,
+    Enough c -> wait c; acc,
     More c ->
       let (i, c) = receive c in
       rcvInt (acc+i) c

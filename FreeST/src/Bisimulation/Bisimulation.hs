@@ -25,6 +25,8 @@ import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.AlphaEquivalence
+-- import qualified Bisimulation.ThreeValuedLogic as TVL
+-- import           Bisimulation.AlphaEquivalenceTrinary
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
@@ -53,8 +55,9 @@ import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
-  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  t == u || -- Alpha-equivalence, 30% speed up in :program tests
   bisimilarGrm (convertToGrammar [t, u])
+  -- (trace (show (t, u)) $ bisimilarGrm (convertToGrammar [t, u]))
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
@@ -240,7 +243,7 @@ expandPairXYZW p ps (xs, ys) =
 findFixedPoint
   :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
 findFixedPoint branch rules ps | branch == branch' = branch
-                               | otherwise = findFixedPoint branch' rules ps
+                               | otherwise = branch' --  findFixedPoint branch' rules ps --
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
@@ -252,7 +255,17 @@ findFixedPoint branch rules ps | branch == branch' = branch
 reflex :: NodeTransformation
 reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
--- No speedup coming from this rule
+{-
+symmetric :: NodeTransformation
+symmetric _ a = Set.singleton . Set.filter (not . symmetricToAncestors)
+ where
+  symmetricToAncestors :: (Word, Word) -> Bool
+  symmetricToAncestors p = or $ Set.map (symmetricPair p) a
+
+  symmetricPair :: (Word, Word) -> (Word, Word) -> Bool
+  symmetricPair (xs, ys) (xs', ys') = xs == ys' && ys == xs'
+-}
+-- What kind of rule is this? Does not look like congruence to me, but it works (vv)
 
 headCongruence :: NodeTransformation
 headCongruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)

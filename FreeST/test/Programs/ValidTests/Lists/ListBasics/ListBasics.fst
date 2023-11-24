@@ -4,7 +4,7 @@ main : Bool
 main = 
     let list = [1, 2, 3, 4] in
     -- creation
-    equal (append [] (append [1] (append [2] [3, 4]))) list &&
+    equal ([] ++ [1] ++ [2] ++ [3, 4]) list &&
     equal (singleton 1) [1] &&
     -- -- list sections
     head list == 1 && 

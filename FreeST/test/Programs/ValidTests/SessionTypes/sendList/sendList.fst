@@ -1,12 +1,12 @@
 data List = Cons Int List | Nil
 
-type ListC : 1S = &{NilC: End, ConsC: ?Int ; ListC}
+type ListC : 1S = &{NilC: Wait, ConsC: ?Int ; ListC}
 
 read : ListC -> List
 read (ConsC c) =
   let (x, c) = receive c in
   Cons x (read c)
-read (NilC c) = close c ; Nil
+read (NilC c) = wait c ; Nil
 
 write : List -> dualof ListC -> ()
 write (Cons x xs) c =

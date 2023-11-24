@@ -26,8 +26,9 @@ import           Syntax.Base                   ( defaultPos
                                                , mkVar
                                                , defaultSpan
                                                )
-import           Util.FreestState              ( Errors )
+import           Util.State              ( Errors )
 import           Util.Error
+import Data.Bifunctor
 -- import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
@@ -44,8 +45,8 @@ readFromFile filename = do
 
 readKenv :: String -> KindEnv
 readKenv s =
-  Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultSpan x, read k)) (read s)
-
+--  Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultSpan x, read k)) (read s)
+  Map.fromList $ map (bimap (mkVar defaultSpan) read) (read s)
 
 
 -- Test expectations
