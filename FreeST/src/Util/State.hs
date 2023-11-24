@@ -152,7 +152,7 @@ getWarnings runOpts s = (intercalate "\n" . map f . take 10 . reverse . warnings
 hasWarnings :: FreestS a -> Bool
 hasWarnings = not . null . warnings
 
-addWarning :: WarningType -> FreestState a ()
+addWarning :: S.MonadState (FreestS a) m =>  WarningType -> m ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 
 -- | Fresh var

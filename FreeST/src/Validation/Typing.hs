@@ -20,7 +20,7 @@ module Validation.Typing
 where
 
 
-import Control.Monad.State ( when, unless, evalState, MonadState (get))
+import Control.Monad.State
 import Data.Functor
 import qualified Data.Map.Strict as Map
 import Util.Error
@@ -109,7 +109,9 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   return u2
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  s <- get 
+  u <- liftIO $ evalStateT (synthetise kEnv e) s
+  (_, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
