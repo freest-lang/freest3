@@ -16,48 +16,43 @@ reflexive, congruence, and BPA rules.
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
-  , subtypeOf
+  , Node(..)
+  , PairExpander
+  , expand 
+  , reflex 
+  , headCongruence
+  , bpa1 
+  , bpa2 
   )
 where
 
-import           Syntax.Base                    (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variables
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
-import           Equivalence.TypeToGrammar      ( convertToGrammar )
+
 import           Bisimulation.AlphaEquivalence
 -- import qualified Bisimulation.ThreeValuedLogic as TVL
 -- import           Bisimulation.AlphaEquivalenceTrinary
-import           Bisimulation.Grammar
-import           Bisimulation.Norm
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import qualified Data.Sequence                 as Queue
-import           Data.Bifunctor
-import           Data.List                      ( isPrefixOf
-                                                , union, stripPrefix
-                                                )
-import           Data.Tuple                     (swap)
--- Word is (re)defined in module Equivalence.Grammar
-import           Prelude                 hiding ( Word )
-import           Debug.Trace
+import Bisimulation.Grammar
+import Bisimulation.Norm
+import Equivalence.TypeToGrammar ( convertToGrammar )
 import qualified Validation.Subkind as SK
+import Syntax.Base (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variables
+import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
 
--- debug
-import Parse.Read
-import Validation.Rename
-import           Control.Monad.State              ( execState )
-import           Util.FreestState                 ( initialState
-                                                  , errors
-                                                  )
-import           Validation.Kinding
-
+import Data.Bifunctor
 import Data.Bitraversable (bisequence)
+import Data.List ( isPrefixOf, union, stripPrefix )
+import qualified Data.Map.Strict as Map
+import qualified Data.Sequence as Queue
+import qualified Data.Set as Set
+import Data.Tuple (swap)
+import Debug.Trace
+import Prelude hiding ( Word ) -- Word is redefined in module Equivalence.Grammar
+
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
   t == u || -- Alpha-equivalence, 30% speed up in :program tests
   bisimilarGrm (convertToGrammar [t, u])
-  -- (trace (show (t, u)) $ bisimilarGrm (convertToGrammar [t, u]))
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
@@ -67,20 +62,8 @@ bisimilarGrm (Grammar [xs, ys] ps) = expand expandPairBisim queue rules ps
         | otherwise    = [reflex, headCongruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
-subtypeOf :: T.Type -> T.Type -> Bool
-subtypeOf t u = 
-  t == u || 
-  subG (convertToGrammar [t, u])
-
--- | Assumes a grammar without unreachable symbols
-subG :: Grammar -> Bool
-subG g@(Grammar [xs, ys] ps) = --trace (show g) 
-                                        expand expandPairSub queue rules ps
- where
-  rules | allNormed ps = [reflex, headCongruence, bpa2] -- no filtering
-        | otherwise    = [reflex, headCongruence, bpa1, bpa2] -- no filtering
-  queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
-
+-- | For plain expansion (bisimilarity), see `expandPairBisim`. 
+--   For XYZW-expansion (subtyping), see `Subtyping.expandPairSub`.
 type PairExpander = Productions -> (Word, Word) -> Maybe Node
 
 type Node = Set.Set (Word, Word)
@@ -97,11 +80,11 @@ type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
 expand :: PairExpander -> BranchQueue -> [NodeTransformation] -> Productions -> Bool
 expand _ Queue.Empty _ _ = False
-expand pe ((n, a) Queue.:<| q) rules ps
+expand expandPair ((n, a) Queue.:<| q) rules ps
   | Set.null n = True
-  | otherwise = case expandNode pe ps n of
-    Nothing -> expand pe q rules ps
-    Just n' -> expand pe (simplify q branch rules ps) rules ps
+  | otherwise = case expandNode expandPair ps n of
+    Nothing -> expand expandPair q rules ps
+    Just n' -> expand expandPair (simplify q branch rules ps) rules ps
       where
         n'' = pruneNode ps n'
         branch = Set.singleton (n'', Set.union a n)
@@ -136,108 +119,15 @@ expandNode pe ps = Set.foldr
   (Just Set.empty)
 
 expandPairBisim :: PairExpander
-expandPairBisim ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
-                            | otherwise                        = Nothing
+expandPairBisim ps (xs, ys) 
+  | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+  | otherwise                        = Nothing
  where 
   m1 = transitions xs ps
   m2 = transitions ys ps
   match :: Transitions -> Transitions -> Node
   match m1 m2 =
     Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
--- Alternative, XYZW-based implementation
--- expandPairBisim = expandPairXYZW bisimPartition
-
-expandPairSub :: PairExpander
-expandPairSub = expandPairXYZW subtypingPartition
-
--- | A partition of the set of labels according to their variance in width and depth
-data Partition a =
-  Partition {aX, aY, aZ, aW :: a}
-
--- | A partition of the set of labels specialized for subtyping context-free session types
-subtypingPartition :: Partition (Label -> Bool)
-subtypingPartition =
-  Partition
-  { aX= \case (Almanac _ T.Internal _) -> False  
-              (Arrow Domain                  ) -> False
-              (Message T.Out Data            ) -> False
-              _                                -> True
-  , aY= \case (Almanac _ T.External _) -> False 
-              (Arrow Domain                  ) -> False
-              LinArrow                          -> False
-              (Message T.Out Data            ) -> False 
-              _                                -> True
-  , aZ= \case (Message T.Out Data            ) -> True
-              (Arrow Domain                  ) -> True
-              _                                -> False
-  , aW= \case (Message T.Out Data            ) -> True
-              (Arrow Domain                  ) -> True
-              _                                -> False
-  }
-
--- | A partition of the set of labels specialized for bisimulation 
---   (all labels bivariant in width and covariant in depth)
-bisimPartition :: Partition (Label -> Bool)
-bisimPartition =
-  Partition
-  { aX= const True
-  , aY= const True
-  , aZ= const False
-  , aW= const False
-  }
-
--- Pair expansion for XYZW-simulation
-expandPairXYZW :: Partition (Label -> Bool) -> PairExpander
-expandPairXYZW p ps (xs, ys) =
-  --trace ("\nnode: "++show (xs,ys)++"\ntransitions:\n  "++show(transitions xs ps)++"\n  "++show(transitions ys ps))
-  let n' = Set.unions <$> sequence
-            -- Covariant on width and depth
-            [ if --trace ("aX: \n  "++show (aX m1)++"\n  "++show (aX m2)) 
-                 Map.keysSet (aX m1) `Set.isSubsetOf` Map.keysSet (aX m2)
-                then --trace ("Success: "++show (Map.keysSet (aX m1))++" ⊆ "++show (Map.keysSet (aX m2))) 
-                     Just (match (aX m1) (aX m2))
-                else --trace ("Failure: "++show (Map.keysSet (aX m1))++" /⊆ "++show (Map.keysSet (aX m2)))
-                     Nothing
-            -- Contravariant on width, covariant on depth
-            , if --trace ("aY: \n  "++show (aY m1)++"\n  "++show (aY m2)) 
-                 Map.keysSet (aY m2) `Set.isSubsetOf` Map.keysSet (aY m1)
-                then --trace ("Success: "++show (Map.keysSet (aY m2))++" ⊆ "++show (Map.keysSet (aY m1))) 
-                     Just (match (aY m1) (aY m2))
-                else --trace ("Failure: "++show (Map.keysSet (aY m2))++" /⊆ "++show (Map.keysSet (aY m1)))
-                     Nothing
-            -- Covariant on width, contravariant on depth
-            , if --trace ("aZ: \n  "++show (aZ m1)++"\n  "++show (aZ m2))
-                 Map.keysSet (aZ m1) `Set.isSubsetOf` Map.keysSet (aZ m2)
-                then --trace ("Success: "++show (Map.keysSet (aZ m1))++" ⊆ "++show (Map.keysSet (aZ m2))) 
-                     Just (Set.map swap $ match (aZ m1) (aZ m2))
-                else --trace ("Failure: "++show (Map.keysSet (aZ m1))++" /⊆ "++show (Map.keysSet (aZ m2)))   
-                     Nothing
-            -- Contravariant on width and depth
-            , if --trace ("aW: \n  "++show (aW m1)++"\n  "++show (aW m2)) 
-                 Map.keysSet (aW m2) `Set.isSubsetOf` Map.keysSet (aW m1)
-                then --trace ("Success: "++show (Map.keysSet (aW m2))++" ⊆ "++show (Map.keysSet (aW m1)))   
-                     Just (Set.map swap $ match (aW m1) (aW m2))
-                else --trace ("Failure: "++show (Map.keysSet (aW m2))++" /⊆ "++show (Map.keysSet (aW m1)))  
-                     Nothing
-            ] in 
-  --trace ("expanded node: "++show n') 
-  n' 
-  where
-    m1 = partition p $ transitions xs ps
-    m2 = partition p $ transitions ys ps
-
-    -- | Partition the transitions according to the signature of the simulation
-    partition :: Partition (Label -> Bool) -> Transitions -> Partition Transitions
-    partition p ts =
-      let tX = Map.filterWithKey (\k _ -> aX p k) ts
-          tY = Map.filterWithKey (\k _ -> aY p k) ts
-          tZ = Map.filterWithKey (\k _ -> aZ p k) ts
-          tW = Map.filterWithKey (\k _ -> aW p k) ts in 
-      Partition tX tY tZ tW
-
-    -- | Match transitions with the same label
-    match :: Transitions -> Transitions -> Node
-    match m1 m2 = Set.fromList $ Map.elems $ Map.intersectionWith (,) m1 m2
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint

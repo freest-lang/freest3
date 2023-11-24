@@ -19,9 +19,9 @@ type AscClient   : 1S = +{Vals: !Int;AscClient;?Int , Asc : Skip}
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : OrderingServer;End -> ()
+initOrderedServer : OrderingServer;Wait -> ()
 initOrderedServer c =
-  orderedServer@End c Nil |> snd @IntList @End |> close 
+  orderedServer@Wait c Nil |> snd @IntList @Wait |> wait 
 
 -- Server function
 --   This server sends the list reversed
@@ -78,16 +78,16 @@ listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 -- ==================== Client ====================
 
 -- Simple client using Asc option
-ascClient : AscClient;End -> IntList
+ascClient : AscClient;Close -> IntList
 ascClient c =
-  let (c, rList) = orderAsc@End c aList in
+  let (c, rList) = orderAsc@Close c aList in
   close c; rList
 
 
 -- Simple client using Desc option
-descClient : DescClient;End -> IntList
+descClient : DescClient;Close -> IntList
 descClient c =
-  let (c, rList) = orderDesc@End c aList in
+  let (c, rList) = orderDesc@Close c aList in
   close c; rList
 
 
@@ -122,10 +122,10 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new @(AscClient;End) () in
+  let (w, r) = new @(AscClient;Close) () in
   fork (\_:() 1-> initOrderedServer r) ;
   ascClient w;
 
-  let (w, r) = new @(DescClient;End) () in
+  let (w, r) = new @(DescClient;Close) () in
   fork (\_:() 1-> initOrderedServer r) ;
   descClient w

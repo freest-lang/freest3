@@ -3,7 +3,7 @@
 module Subtyping.TestSubValidSpec (spec) where
 
 import           Validation.Rename
-import           Bisimulation.Bisimulation
+import           Bisimulation.Subtyping
 import           SpecUtils
 
 matchValidSpec :: [String] -> Spec

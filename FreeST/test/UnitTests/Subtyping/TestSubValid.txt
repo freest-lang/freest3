@@ -18,22 +18,36 @@ String
 Skip 
 Skip
 
-End
-End
+Close
+Close
 
--- End 
+-- Wait 
 
-End;Skip
-Skip;End 
+Wait;Skip
+Skip;Wait 
 
-End;!Char
-End;?Bool 
+Wait;!Char
+Wait;?Bool 
 
-+{A: End;!Int, B: ?Bool};!Int
++{A: Wait;!Int, B: ?Bool};!Int
++{              B: ?Bool};!Int
+
++{A: Wait, B: Wait};!Int
++{         B: Wait};?Bool
+
+-- Close 
+
+Close;Skip
+Skip;Close 
+
+Close;!Char
+Close;?Bool 
+
++{A: Close;!Int, B: ?Bool};!Int
 +{             B: ?Bool};!Int
 
-+{A: End, B: End};!Int
-+{        B: End};?Bool
++{A: Close, B: Close};!Int
++{        B: Close};?Bool
 
 -- Branch (covariant on width (label set) and depth (matched type))
 
@@ -46,11 +60,11 @@ End;?Bool
 &{A: !Int                  };!Int;!Char
 &{A: !Int, B: !Int, C: Skip};!Int;!Char
 
-&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
-&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
+&{Plus : ?Int;?Int;!Int;Close, Eq: ?Int;?Int;!Bool;Wait}
+&{Plus : ?Int;?Int;!Int;Close, Eq: ?Int;?Int;!Bool;Wait}
 
-&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End                    }
-&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End, Neg: ?Int;!Int;End}
+&{Plus : ?Int;?Int;!Int;Wait, Eq: ?Int;?Int;!Bool;Close                    }
+&{Plus : ?Int;?Int;!Int;Wait, Eq: ?Int;?Int;!Bool;Close, Neg: ?Int;!Int;Wait}
 
 &{A: &{AA: !Int           }}
 &{A: &{AA: !Int, AB: ?Bool}}
@@ -70,11 +84,11 @@ End;?Bool
 +{A: ?Int, B: ?Int}
 +{A: ?Int         }
 
-+{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
-+{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
++{Plus : !Int;!Int;?Int;Close, Eq: !Int;!Int;?Bool;Close, Neg: !Int;?Int;Close}
++{Plus : !Int;!Int;?Int;Close, Eq: !Int;!Int;?Bool;Close, Neg: !Int;?Int;Close}
 
-+{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
-+{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End                    }
++{Plus : !Int;!Int;?Int;Close, Eq: !Int;!Int;?Bool;Wait, Neg: !Int;?Int;Close}
++{Plus : !Int;!Int;?Int;Close, Eq: !Int;!Int;?Bool;Wait                    }
 
 -- Sequential composition (covariant on before and after) 
 
@@ -87,8 +101,8 @@ Skip;Skip
 Skip;Skip 
 Skip;Skip;Skip
 
-&{A: ?Int                   }; +{D: !Int;End}
-&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End}
+&{A: ?Int                   }; +{D: !Int;Close}
+&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;Close}
 
 &{A: ?Int}; +{D: !Int;Skip, E: Skip;!Bool}
 &{A: ?Int}; +{D: !Int;Skip               }
@@ -98,12 +112,12 @@ Skip;Skip;Skip
 &{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;?Bool               }
 
 -- (without filtering rule)
-&{A: ?Int}; +{D: !Int;End, E: Skip;!Bool}
-&{A: ?Int}; +{D: !Int;End               }
+&{A: ?Int}; +{D: !Int;Close, E: Skip;!Bool}
+&{A: ?Int}; +{D: !Int;Close               }
 
 -- (without filtering rule)
-&{A: ?Int                   }; +{D: !Int;End, E: Skip;!Bool}
-&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End               }
+&{A: ?Int                   }; +{D: !Int;Wait, E: Skip;!Bool}
+&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;Wait               }
 
 -- Output (contravariant) 
 
@@ -307,20 +321,20 @@ rec a:*T . !(a) -> Int
 !(!(!(rec a:*T . !(a) -> Int) -> Int) -> Int) -> Int 
 
 -- are free variables ok in these tests? should we check type formation?
-rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
-!(+{B: End ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: End ; Skip, C: b ; Skip} ; +{C: h ; End ; Skip})) ; End ; Skip})
+rec h:1S . !((+{B: Close, C: b} ; Skip) ; +{C: h} ; Close ; Skip)
+!(+{B: Close ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: Close ; Skip, C: b ; Skip} ; +{C: h ; Close ; Skip})) ; Close ; Skip})
 
 -- Ref 
-*?(+{Assign: !Int, Deref: ?Int};End)
-*?(+{Assign: !Int, Deref: ?Int};End)
+*?(+{Assign: !Int, Deref: ?Int};Close)
+*?(+{Assign: !Int, Deref: ?Int};Close)
 
 -- Ref can be downgraded to Sink 
-*?(+{Assign: !Int, Deref: ?Int};End)
-*?(+{Assign: !Int};End)
+*?(+{Assign: !Int, Deref: ?Int};Close)
+*?(+{Assign: !Int};Close)
 
 -- Ref can be downgraded to Source
-*?(+{Assign: !Int, Deref: ?Int};End)
-*?(+{Deref: ?Int};End)
+*?(+{Assign: !Int, Deref: ?Int};Close)
+*?(+{Deref: ?Int};Close)
 
 -- Universal Types 
 
@@ -340,8 +354,8 @@ Int -> ∀ α: 1S . α 1-> α
 Bool -> ∀ α: 1S . α -> α ; (α ; α)
 Bool -> ∀ α: 1S . α -> (α ; α) ; α
 
-∀ α: 1S . End;α;!Int
-∀ β: 1S . (End;β);Skip
+∀ α: 1S . Wait;α;!Int
+∀ β: 1S . (Wait;β);Skip
 
-∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;End;α});!Int)
-∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;End;!a})
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;Close;α});!Int)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;Close;!a})

@@ -1,6 +1,6 @@
 module Subtyping.TestSubInvalidSpec (spec) where
 
-import           Bisimulation.Bisimulation
+import           Bisimulation.Subtyping 
 import           Validation.Rename
 import           SpecUtils
 

@@ -19,28 +19,28 @@ module Validation.Typing
   )
 where
 
-import           Bisimulation.Bisimulation ( bisimilar, subtypeOf )
-import           Parse.Unparser () -- debug
-import           Syntax.AST
-import           Syntax.Base
+
+import Control.Monad.State ( when, unless, evalState, MonadState (get))
+import Data.Functor
+import qualified Data.Map.Strict as Map
+import Util.Error
+import Util.State hiding (void)
+import Util.Warning
+
+import Bisimulation.Bisimulation ( bisimilar )
+import Bisimulation.Subtyping ( subtypeOf )
+import Parse.Unparser () -- debug
+import Syntax.Base
+import Syntax.AST
+import Syntax.MkName
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
-import           Syntax.MkName
 import qualified Syntax.Type as T
-import           Syntax.Value
-import           Util.Error
-import           Util.State hiding (void)
-import           Util.Warning
+import qualified Syntax.Kind as K
+import Syntax.Value
+import Validation.Phase
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
-import           Validation.Phase
 import qualified Validation.Rename as Rename ( subs )
-
-import           Control.Monad.State ( when
-                                     , unless, evalState, MonadState (get)
-                                     )
-import           Data.Functor
-import qualified Data.Map.Strict as Map
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
@@ -217,7 +217,7 @@ checkEquivTypes exp kEnv expected actual =
   unless (bisimilar actual expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
-checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> FreestState ()
+checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> TypingState ()
 checkSubtypeOf exp expected actual = do 
   unless (actual `subtypeOf` expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)

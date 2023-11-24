@@ -17,9 +17,9 @@ applyAll (Nil _    ) n = n
 applyAll (Cons f fs) n = applyAll fs (f n) 
 
 main : Int
-main = let (s,r) = new @(SendList;End) () in
+main = let (o,i) = new @(SendList;Close) () in
        let fs = Cons succ $ Cons pred (Nil()) in     -- here we provide a list of linear functions
-       fork (\_:() 1-> sendList @End fs s |> close); -- where a list of unrestricted ones is required
-       let (fs,c) = recvList @End r in 
-       close c;
+       fork (\_:() 1-> sendList @Close fs o |> close); -- where a list of unrestricted ones is required
+       let (fs,i) = recvList @Wait i in 
+       wait i;
        applyAll fs 0

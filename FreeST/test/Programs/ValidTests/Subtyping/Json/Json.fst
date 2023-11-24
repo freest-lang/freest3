@@ -84,7 +84,7 @@ sendNumberArray (n::ns) c = c |> select SendJACons
 -- | capable of serializing JSON arrays of numbers. Subtyping gives the type system the
 -- | flexibility to allow this:  JsonSender;a <: NumberArraySender;a.
 main : Json 
-main = let (s,r) = new @(JsonSender;End) () in 
-       fork (\_:() 1-> serializeIntList @End [1,2,3,4] s |> close);
-       let (j, c) = deserializeJson @End r in 
-       close c; j 
+main = let (o,i) = new @(JsonSender;Close) () in 
+       fork (\_:() 1-> serializeIntList @Close [1,2,3,4] o |> close);
+       let (j, i) = deserializeJson @Wait i in 
+       wait i; j 

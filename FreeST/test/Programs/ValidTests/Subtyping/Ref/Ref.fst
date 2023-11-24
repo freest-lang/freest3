@@ -1,14 +1,14 @@
 type T = Int
 
 type Ref : *S = *?(RefService)
-type RefService : 1S = +{Assign: !T, Deref: ?T};End
+type RefService : 1S = +{Assign: !T, Deref: ?T};Close
 
 -- A Ref can be downgraded to either a Source or a Sink
-type SourceService : 1S = +{Deref : ?T};End
+type SourceService : 1S = +{Deref : ?T};Close
 type Source : *S = *?(SourceService)
 
-type SinkService : 1S = +{Assign : !T};End
-type Sink : *S = *?(+{Assign: !T};End)
+type SinkService : 1S = +{Assign : !T};Close
+type Sink : *S = *?(+{Assign: !T};Close)
 
 -- Constructor
 ref : T -> Ref 
@@ -17,8 +17,8 @@ ref n = forkWith @Ref @Diverge (runServer @RefService @T refHandle n)
 -- Manages state and communication
 refHandle : T -> dualof RefService 1-> T 
 refHandle v r  = match r with {
-                  Assign c -> let (v,c) = receive c in close c; v,
-                  Deref  c -> c |> send v |> close; v
+                  Assign c -> let (v,c) = receive c in wait c; v,
+                  Deref  c -> c |> send v |> wait; v
                 }
 
 -- | Stores a value (:=)

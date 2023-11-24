@@ -38,6 +38,7 @@ library:
     - Paths_FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
+    - Bisimulation.Subtyping
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration   
 #    - Equivalence.Equivalence

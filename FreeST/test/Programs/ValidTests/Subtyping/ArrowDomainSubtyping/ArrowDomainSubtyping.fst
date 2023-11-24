@@ -1,11 +1,11 @@
-f : (+{A: Skip, B: Skip};End -> ()) -> +{A: Skip, B: Skip};End -> ()
+f : (+{A: Skip, B: Skip};Close -> ()) -> +{A: Skip, B: Skip};Close -> ()
 f g c = g c 
 
 
 main : ()
-main = let (c,b) = new @(+{A: Skip, B: Skip};End) () in
-       fork (\_:() 1-> f (\c:(+{A: Skip};End) -> c |> select A |> close) c);
+main = let (c,b) = new @(+{A: Skip, B: Skip};Close) () in
+       fork (\_:() 1-> f (\c:(+{A: Skip};Close) -> c |> select A |> close) c);
        match b with {
-        A c -> close c, 
-        B c -> close c 
+        A c -> wait c, 
+        B c -> wait c 
        }

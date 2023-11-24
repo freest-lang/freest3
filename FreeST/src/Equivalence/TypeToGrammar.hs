@@ -59,24 +59,23 @@ toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList $
-    [(Arrow Domain, xs), (Arrow Range, ys)]
-    ++ [(LinArrow, []) | p == Lin]
+    [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | p == Lin]
 toGrammar' (T.Labelled _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Checkmark K.Top T.External) [bottom] $ Map.mapKeys (Almanac K.Top T.External) ms
+  getLHS $ Map.insert (Labelled T.Variant) [bottom] $ Map.mapKeys (Label T.Variant) ms
 toGrammar' (T.Labelled _  T.Record m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Checkmark K.Top T.Internal) [bottom] $ Map.mapKeys (Almanac K.Top T.Internal) ms
+  getLHS $ Map.insert (Labelled T.Record) [bottom] $ Map.mapKeys (Label T.Record) ms
 -- Session Types
 toGrammar' (T.Skip _)        = return []
-toGrammar' t@T.End{}         = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' (T.End _ p)       = getLHS $ Map.singleton (End p) [bottom]
 toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
-  getLHS $ Map.fromList [(Message p Data, xs ++ [bottom]), (Message p Continuation, [])]
-toGrammar' (T.Labelled _ (T.Choice v) m) = do
+  getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])]
+toGrammar' (T.Labelled _ c@(T.Choice v) m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Checkmark K.Session v) [bottom] $ Map.mapKeys (Almanac K.Session v) ms
+  getLHS $ Map.insert (Labelled c) [bottom] $ Map.mapKeys (Label c) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar t
@@ -92,18 +91,15 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 -- Returns a normalised type in case the type can become fat terminal
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
-fatTerminal t@T.Int{}             = Just t
-fatTerminal t@T.Float{}           = Just t
-fatTerminal t@T.Char{}            = Just t
-fatTerminal t@T.String{}          = Just t
--- -- Session Types
-fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
-                           | terminated u = changePos p <$> fatTerminal t
-fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
--- -- These two would preclude distributivity:
--- -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
--- -- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
--- -- Default
+fatTerminal t@T.Int{}         = Just t
+fatTerminal t@T.Float{}       = Just t
+fatTerminal t@T.Char{}        = Just t
+fatTerminal t@T.String{}      = Just t
+-- Session Types
+fatTerminal (T.Semi p t u) 
+  | terminated t              = changePos p <$> fatTerminal u
+  | terminated u              = changePos p <$> fatTerminal t
+fatTerminal (T.Message s p t) = Just (T.Message s p) <*> fatTerminal t
 fatTerminal _                     = Nothing
 
 {-
@@ -126,7 +122,6 @@ syntactic (T.Message _ _ t)     = syntactic t
 -- Default
 syntactic _                     = False
 -}
-
 
 type SubstitutionList = [(T.Type, Variable)]
 

@@ -35,25 +35,15 @@ import qualified Data.Set as Set
 
 data PreKind = Session | Top | Absorb deriving (Ord, Eq)
 
--- -- Multiplicity
--- data Multiplicity = Un | Lin deriving (Eq, Ord)
+data Multiplicity = Un | Lin deriving (Eq, Ord)
 
--- -- Kind
-
--- data Kind = Kind Span Multiplicity PreKind
-
--- instance Eq Kind where 
---   Kind _ m1 pk1 == Kind _ m2 pk2 = m1 == m2 && pk1 == pk2 
-
--- instance Ord Kind where 
---   Kind _ m1 pk1 <= Kind _ m2 pk2 = m1 <= m2 && pk1 <= pk2 
-
-data Multiplicity = Un | Lin deriving Eq
-
-data Kind = Kind Span Multiplicity PreKind
+data Kind = Kind Span Multiplicity PreKind 
 
 instance Eq Kind where
-  (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2
+  (Kind _ m1 pk1) == (Kind _ m2 pk2) = m1 == m2 && pk1 == pk2 
+
+instance Ord Kind where
+  (Kind _ m1 pk1) <= (Kind _ m2 pk2) = m1 <= m2 && pk1 <= pk2
 
 instance Located Kind where
   getSpan (Kind p _ _) = p

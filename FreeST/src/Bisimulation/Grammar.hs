@@ -26,6 +26,7 @@ map from labels to lists of type variables.
 -}
 
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Bisimulation.Grammar
   ( Label(..)
@@ -53,15 +54,37 @@ import qualified Syntax.Kind     as K           (PreKind(..), Kind(..), Multipli
 
 -- Terminal symbols are called labels
 data Label = FatTerm String
-           | Message T.Polarity     DataOrCont 
-           | Arrow   DomOrRng
-           | LinArrow 
-           | Checkmark K.PreKind T.View
-           | Almanac K.PreKind        T.View     Variable -- All this nesting may have an impact on performance...
-           | Pair    FstOrSnd
-           | Forall  K.Kind 
-           | Var     String
+           | ArrowD
+           | ArrowR
+           | Arrow1
+           | End T.Polarity
+           | Label T.Sort Variable
+           | Labelled T.Sort 
+           | MessageP T.Polarity
+           | MessageC T.Polarity  
+           | Pair1
+           | Pair2
+           | Forall K.Kind 
+           | Var String    
   deriving (Eq, Ord)
+
+{-
+data Type =
+  | Arrow Span Multiplicity Type Type
+  | Labelled Span Sort TypeMap
+  -- Session Types
+  | Skip Span
+  | End Span Polarity
+  | Semi Span Type Type
+  | Message Span Polarity Type
+  -- Polymorphism and recursive types
+  | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
+  | Var Span Variable
+  -- Type operators
+  | Dualof Span Type
+-}
+
 
 data DataOrCont = Data   | Continuation deriving (Eq, Ord)
 data DomOrRng   = Domain | Range        deriving (Eq, Ord)
@@ -108,32 +131,21 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 -- Showing a grammar
 instance Show Label where 
   show (FatTerm s) = s 
-  show (Message p dc) = show p ++ show dc  
-  show (Arrow dr) = "->"++ show dr  
-  show LinArrow = "1->"
-  show (Pair fs) = "," ++ show fs  
-  show (Forall k) = "∀" ++ show k++show (getSpan k)
+  show ArrowD = "->d"
+  show ArrowR = "->r"
+  show Arrow1 = "->1"
+  show (End p) = show (T.End defaultSpan p)
+  show (Label (T.Choice v) l) = show v ++ show l 
+  show (Label s l) = show (Labelled s) ++ show l 
+  show (Labelled T.Record) = "{}"
+  show (Labelled T.Variant) = "⟨⟩"
+  show (Labelled (T.Choice v)) = show v ++ "{}"
+  show (MessageP p) = show p ++ "p"   
+  show (MessageC p) = show p ++ "c"
+  show Pair1 = "π1" 
+  show Pair2 = "π2" 
+  show (Forall k) = "∀" ++ show k
   show (Var a) = a
-  show (Almanac K.Top     T.Internal l) = "{}" ++ show l 
-  show (Almanac K.Top     T.External l) = "<>" ++ show l 
-  show (Almanac K.Session T.Internal l) = "+"  ++ show l 
-  show (Almanac K.Session T.External l) = "&"  ++ show l
-  show (Checkmark K.Top     T.Internal) = "{}✓" 
-  show (Checkmark K.Top     T.External) = "<>✓" 
-  show (Checkmark K.Session T.Internal) = "+✓"  
-  show (Checkmark K.Session T.External) = "&✓" 
-  
-instance Show DomOrRng where 
-  show Domain = "d"
-  show Range  = "r"
-
-instance Show DataOrCont where 
-  show Data         = "d"
-  show Continuation = "c"
-
-instance Show FstOrSnd where 
-  show Fst = "fst"
-  show Snd = "snd"
 
 instance Show Grammar where
   show (Grammar xss p) =
