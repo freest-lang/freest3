@@ -91,7 +91,8 @@ data ErrorType =
   | TypeAbsBodyNotValue Span E.Exp E.Exp
   | VarOrConsNotInScope Span Variable
   | LinProgVar Span Variable T.Type K.Kind
-  | NonEquivTypes Span T.Type T.Type E.Exp
+  | TypeMismatch Span T.Type T.Type E.Exp
+  | SubtypingTimeout Span T.Type T.Type E.Exp 
   | NonEquivEnvsInBranch Span Signatures Signatures E.Exp
   | NonEquivEnvsInUnFun Span Signatures Signatures E.Exp
   | DataConsNotInScope Span Variable
@@ -140,7 +141,8 @@ instance Located ErrorType where
   getSpan (TypeAbsBodyNotValue p _ _       ) = p
   getSpan (VarOrConsNotInScope p _         ) = p
   getSpan (LinProgVar p _ _ _              ) = p
-  getSpan (NonEquivTypes p _ _ _           ) = p
+  getSpan (TypeMismatch p _ _ _            ) = p
+  getSpan (SubtypingTimeout p _ _ _        ) = p 
   getSpan (NonEquivEnvsInBranch p _ _ _    ) = p
   getSpan (NonEquivEnvsInUnFun p _ _ _     ) = p
   getSpan (DataConsNotInScope p _          ) = p
@@ -269,9 +271,18 @@ instance Message ErrorType where
   msg (LinProgVar _ x t k) sty ts _ =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (NonEquivTypes _ t u e) sty ts _ =
-    "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
-    style red sty ts u ++"\n                for expression " ++ style red sty ts e
+  msg (TypeMismatch _ t u e) sty ts _ =
+    "Couldn't match expected type " ++ style red sty ts t ++ "\n" ++ 
+    "            with actual type " ++ style red sty ts u ++ "\n" ++
+    "              for expression " ++ style red sty ts e
+  msg (SubtypingTimeout _ t u e) sty ts _ =
+    "Timeout when matching expected type " ++ style red sty ts t ++ "\n" ++
+    "                   with actual type " ++ style red sty ts u ++ "\n" ++
+    "                     for expression " ++ style red sty ts e ++ "\n" ++
+    "Subtyping for context-free session types is undecidable." ++ "\n" ++
+    "Please consider:" ++ "\n" ++ 
+    "- Disabling this feature with --no-sub flag" ++ "\n" ++
+    "- Setting a higher timeout with --sub-timeout flag"
   msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts _
     | Map.null diff =
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++

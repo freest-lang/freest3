@@ -40,7 +40,13 @@ runOptsParser = RunOpts
      ( long "quiet"
     <> short 'q'
     <> help "Suppress warnings" )
-  
+  <*> flag True False
+     ( long "no-sub"
+    <> long "no-sub"
+    <> help "Disable subtyping")
+  <*> option auto 
+     ( long "sub-timeout"
+    <> help "Set the timeout (milliseconds) for subtyping")
 
 
 versionParser :: String -> Parser (a -> a)
@@ -52,7 +58,7 @@ versionParser s =
 
 
 handleFlags :: RunOpts -> IO RunOpts
-handleFlags fg@(RunOpts f _ _ sty _) = do
+handleFlags fg@(RunOpts f _ _ sty _ _ _) = do
   whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
   unless ("fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg

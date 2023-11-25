@@ -159,24 +159,27 @@ addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
-
 -- | RUNOPTS, Move to other module ???
 
-data RunOpts = RunOpts { runFilePath  :: FilePath
---                     , preludeFile  :: Maybe FilePath
-                       , args         :: [String]
-                       , mainFunction :: Maybe Variable
-                       , isStylable   :: Bool
-                       , quietmode    :: Bool
+data RunOpts = RunOpts { runFilePath   :: FilePath
+--                     , preludeFile   :: Maybe FilePath
+                       , args          :: [String]
+                       , mainFunction  :: Maybe Variable
+                       , isStylable    :: Bool
+                       , quietmode     :: Bool
+                       , subtyping     :: Bool 
+                       , subTimeout_ms :: Int 
                        } deriving Show
 
 defaultOpts :: RunOpts
-defaultOpts = RunOpts { runFilePath  = ""
---                    , preludeFile  = Just "Prelude.fst"
+defaultOpts = RunOpts { runFilePath   = ""
+--                    , preludeFile   = Just "Prelude.fst"
                       , args = []
-                      , mainFunction = Nothing
-                      , isStylable   = True
-                      , quietmode    = False
+                      , mainFunction  = Nothing
+                      , isStylable    = True
+                      , quietmode     = False
+                      , subtyping     = True 
+                      , subTimeout_ms = 6*10^3 -- 1min
                       }
 
 

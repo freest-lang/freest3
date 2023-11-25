@@ -41,6 +41,7 @@ import Validation.Phase
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import qualified Validation.Rename as Rename ( subs )
+import System.Timeout (timeout)
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
@@ -109,7 +110,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   return u2
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  s <- get 
+  s <- get
   u <- liftIO $ evalStateT (synthetise kEnv e) s
   (_, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
@@ -139,7 +140,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Labelled p T.Record $ 
+  return $ T.Labelled p T.Record $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -211,18 +212,24 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e t = checkSubtypeOf e t =<< synthetise kEnv e
+checkAgainst kEnv e t = do 
+  sub <- subtyping <$> getRunOpts
+  (if sub then checkSubtypeOf else checkEquivTypes) e t =<< synthetise kEnv e
 
-checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()
-checkEquivTypes exp kEnv expected actual =
-  -- unless (equivalent kEnv actual expected) $
+checkEquivTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
+checkEquivTypes exp expected actual =
   unless (bisimilar actual expected) $
-    addError (NonEquivTypes (getSpan exp) expected actual exp)
+    addError (TypeMismatch (getSpan exp) expected actual exp)
 
 checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> TypingState ()
-checkSubtypeOf exp expected actual = do 
-  unless (actual `subtypeOf` expected) $
-    addError (NonEquivTypes (getSpan exp) expected actual exp)
+checkSubtypeOf exp expected actual = do
+  timeout_ms <- subTimeout_ms <$> getRunOpts
+  attempt    <- liftIO $ timeout (timeout_ms * 10^3) 
+                                 (return $ actual `subtypeOf` expected)
+  case attempt of 
+    Just isSub -> unless isSub
+                $ addError (TypeMismatch (getSpan exp) expected actual exp)
+    Nothing    -> addError (SubtypingTimeout (getSpan exp) expected actual exp)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
