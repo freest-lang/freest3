@@ -43,6 +43,7 @@ import           Prelude                 hiding ( Left
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = showPos sp
+    | fst sp == fst fp = showPos sp ++ "-" ++ show (snd fp)
     | otherwise = showPos sp ++ "-" ++ showPos fp
     where
       showPos (l,c) = show l ++ ":" ++ show c
