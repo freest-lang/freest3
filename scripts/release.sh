@@ -3,10 +3,14 @@
 # Create folder on tmp and copy files
 
 version=`cat ../FreeST/package.yaml | grep -e "version:" |  sed -E 's/version: *//g'`
+isDev=`cat ../FreeST/src/FreeST.hs | grep -e "isDev =" |  sed -E 's/isDev = *//g'`
 
-# 
+if [ "$isDev" == "True" ]; then
+    path=freest-$version-"dev"/
+else
+    path=freest-$version/
+fi
 
-path=freest-$version/
 freest_path=$path/FreeST
 repl_path=$path/REPL/
 examples_path=$path/examples/

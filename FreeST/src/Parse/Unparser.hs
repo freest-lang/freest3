@@ -25,25 +25,26 @@ module Parse.Unparser
   , showModuleWithDots
   ) where
 
+import           Syntax.AST
 import           Syntax.Base
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
-import qualified Syntax.Type as T
 import           Syntax.MkName ( mkTrue, mkFalse )
+import qualified Syntax.Type as T
 
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
-import qualified Data.Set as Set
 
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = showPos sp
-    | otherwise = showPos sp ++ "-" ++ showPos fp ++ ""
+    | fst sp == fst fp = showPos sp ++ "-" ++ show (snd fp)
+    | otherwise = showPos sp ++ "-" ++ showPos fp
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
@@ -98,6 +99,7 @@ showSortedVar x t = show x ++ ":" ++ show t
 instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
+  show K.Absorb  = "A"
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
@@ -129,9 +131,11 @@ data Precedence =
   | PNew     -- new T
   | PDisj    -- ||
   | PConj    -- &&
+  | PAppend  -- ++, ^^
   | PCmp     -- comparison (relational and equality)
-  | PAdd     -- +, -
-  | PMult    -- *, /
+  | PAdd     -- +, -, +., -.
+  | PMult    -- *, /, *., /.
+  | PPower   -- ^
   | PDot     -- μ a:k . T
   | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
   | PSemi    -- T ; U
@@ -147,15 +151,17 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
+minRator, inRator, newRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
   :: Rator
 inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
+appendRator = (PAppend, Left)
 addRator = (PAdd, Left)
 multRator = (PMult, Left)
+powerRator = (PPower, Right)
 dotRator = (PDot, Right)
 arrowRator = (PArrow, Right)
 semiRator = (PSemi, Right)
@@ -182,12 +188,14 @@ instance Show T.Type where
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
+  unparse (T.Float _      ) = (maxRator, "Float")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
-  unparse (T.End _        ) = (maxRator, "End")
+  unparse (T.End _ T.Out  ) = (maxRator, "Close")
+  unparse (T.End _ T.In   ) = (maxRator, "Wait")
   unparse (T.Var  _ a     ) = (maxRator, show a)
-  unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dual " ++ show a)
+  unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
@@ -248,6 +256,7 @@ instance Unparse Exp where
   -- Basic values
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
+  unparse (E.Float _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
@@ -269,6 +278,15 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
+  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+    (maxRator, "[" ++ intercalate ", " list ++ "]")
+    where
+      list = map (snd . unparse) (joinList e)
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAppend x =
+   (appendRator, l ++ showOp x ++ r)
+   where
+    l = bracket (unparse e1) Left appendRator
+    r = bracket (unparse e2) Right appendRator
   unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
@@ -279,10 +297,11 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
-    (maxRator, "[" ++ intercalate ", " list ++ "]")
-    where
-      list = map (snd . unparse) (joinList e)
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "^" =
+   (powerRator, l ++ showOp x ++ r)
+   where
+    l = bracket (unparse e1) Left powerRator
+    r = bracket (unparse e2) Right powerRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -339,13 +358,16 @@ isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops
 
 isCmp :: Variable -> Bool
-isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
+isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)", "(>.)", "(<.)", "(>=.)", "(<=.)"]
+
+isAppend :: Variable -> Bool 
+isAppend = isOp ["(++)", "(^^)"]
 
 isAdd :: Variable -> Bool
-isAdd = isOp ["(+)", "(-)"]
+isAdd = isOp ["(+)", "(-)", "(+.)", "(-.)"]
 
 isMult :: Variable -> Bool
-isMult = isOp ["(*)", "(/)"]
+isMult = isOp ["(*)", "(/)", "(*.)", "/."]
 
 showOp :: Variable -> String
 showOp x = spaced $ tail (init $ show x)
@@ -353,15 +375,13 @@ showOp x = spaced $ tail (init $ show x)
 spaced :: String -> String
 spaced s = ' ' : s ++ " "
 
--- VarEnv
+-- Signatures
 
-instance {-# OVERLAPPING #-} Show VarEnv where
-  show venv = "[" ++ intercalate "\n\t\t   ," (venvToList venv) ++ "]"
+instance {-# OVERLAPPING #-} Show Signatures where
+  show sigs = "[" ++ intercalate "\n\t\t   ," (sigsToList sigs) ++ "]"
 
-venvToList :: VarEnv -> [String]
-venvToList =
-  Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
-
+sigsToList :: Signatures -> [String]
+sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
 
 joinList :: E.Exp -> [E.Exp]
 joinList (E.Var _ x) | show x == "[]"   = []

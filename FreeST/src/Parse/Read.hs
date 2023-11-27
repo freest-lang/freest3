@@ -2,10 +2,12 @@
 module Parse.Read where
 
 import           Parse.Parser
+import           Parse.Phase
+import           Syntax.AST
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Type
-import           Util.FreestState
+import           Util.State
 
 instance Read Kind where
   readsPrec _ = eitherRead parseKind
@@ -17,7 +19,7 @@ instance Read Exp where
   readsPrec _ = eitherRead parseExpr
 
 eitherRead :: (FilePath -> String -> Either Errors a) -> String -> [(a, String)]
-eitherRead f s =
-  either (error . getErrors . state) ((:[]) . (,"")) (f "" s) 
+eitherRead parseFun input =
+  either (error . getErrors defaultOpts . state) ((:[]) . (,"")) (parseFun "" input) 
   where
-    state errors = initialState {errors}
+    state errors = initialS {errors}

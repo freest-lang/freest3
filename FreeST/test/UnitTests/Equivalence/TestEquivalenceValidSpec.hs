@@ -3,16 +3,17 @@ module Equivalence.TestEquivalenceValidSpec
   )
 where
 
-import           Syntax.Kind                   as K
-import           Bisimulation.Bisimulation      ( bisimilar )
-import           Validation.Rename
-import           Elaboration.ResolveDuality
-import           Validation.Kinding             ( synthetise )
-import           SpecUtils
-import           Util.FreestState               ( initialState
-                                                , errors
-                                                )
-import           Control.Monad.State            ( execState, evalState )
+import Bisimulation.Bisimulation ( bisimilar )
+import Control.Monad.State ( execState, evalState )
+import Elaboration.ResolveDuality
+import SpecUtils
+import Syntax.Kind as K
+import Util.State ( initial, errors, defaultOpts )
+import Validation.Kinding ( synthetise )
+import Validation.Rename
+import qualified Elaboration.Phase as EP
+import qualified Validation.Phase as VP
+
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] |
@@ -25,10 +26,10 @@ matchValidSpec [k, t, u] |
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
 
 resolveDuals :: Type -> Type
-resolveDuals t = evalState (resolve t) initialState
+resolveDuals t = evalState (resolve t) (initial EP.extraElab)
 
 wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialState
+wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) (VP.initialTyp defaultOpts)
 
 spec :: Spec
 spec = do

@@ -20,6 +20,7 @@ import           System.IO                      ( Handle )
 data Value =
     Unit
   | Integer Int
+  | Float Double
   | Character Char
   | Label String -- to be sent on channels
   | String String
@@ -41,6 +42,7 @@ type Channel = (ChannelEnd, ChannelEnd)
 instance Show Value where
   show Unit           = "()"
   show (Integer   i)  = show i
+  show (Float     f)  = show f
   show (Character c)  = show c
   show (String    s)  = s
   show (Label     s)  = s
@@ -51,7 +53,7 @@ instance Show Value where
   show Closure{}      = "<fun>"
   show TypeAbs{}      = "<fun>"
   show PrimitiveFun{} = "<fun>"
-  show Chan{}         = "Skip" -- TODO: change this
+  show Chan{}         = "<chan>"
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
   show (Handle h)     = show h 

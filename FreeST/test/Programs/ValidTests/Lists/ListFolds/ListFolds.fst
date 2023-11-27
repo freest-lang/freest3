@@ -36,4 +36,4 @@ main =
 enumFrom1 : Int -> [Int]
 enumFrom1 x 
     | x < 1     = []
-    | otherwise = append (enumFrom1 (x-1)) [x]
+    | otherwise = enumFrom1 (x-1) ++ [x]

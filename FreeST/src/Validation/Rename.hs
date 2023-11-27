@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  Validation.Rename
 Description :  <optional short text displayed on contents page>
@@ -26,35 +27,34 @@ module Validation.Rename
 where
 
 import           Syntax.Base
-import           Syntax.Program                 ( noConstructors )
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import qualified Validation.Substitution       as Subs
-                                                ( subs
-                                                , unfold
-                                                )
-import           Util.Error                     ( internalError )
-import           Util.FreestState
-import qualified Data.Map.Strict               as Map
-import           Control.Monad.State
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program ( noConstructors )
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
+import           Util.State
+import           Validation.Phase
+import qualified Validation.Substitution as Subs
 
-renameState :: FreestState ()
+import           Control.Monad.State hiding (void)
+import qualified Data.Map.Strict as Map
+
+renameState :: TypingState ()
 renameState = do
-  -- TypeVenv
-  tEnv <- getTEnv
+  -- Types
+  tys <- getTypes
   -- | Why do we need to rename the tenv ??
-  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
-  -- setTEnv tEnv'
-  -- VarEnv + ExpEnv, together
-  vEnv <- getVEnv
-  tMapWithKeyM_ renameFun (noConstructors tEnv vEnv)
+  -- tys' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tys
+  -- setTypes tys'
+  -- Signatures + Definitions, together
+  sigs <- getSignatures
+  tMapWithKeyM_ renameFun (noConstructors tys sigs)
 
-renameFun :: Variable -> T.Type -> FreestState ()
+renameFun :: Variable -> T.Type -> TypingState ()
 renameFun f t = do
-  rename Map.empty Map.empty t >>= addToVEnv f
-  getFromProg f >>= \case
-    Just e  -> rename Map.empty Map.empty e >>= addToProg f
+  rename Map.empty Map.empty t >>= addToSignatures f
+  getFromDefinitions f >>= \case
+    Just e  -> rename Map.empty Map.empty e >>= addToDefinitions f
     Nothing -> return ()
 
 -- Renaming the various syntactic categories
@@ -62,11 +62,9 @@ renameFun f t = do
 type Bindings = Map.Map String String -- Why String and not Syntax.Base.Variable?
 
 class Rename t where
-  rename :: Bindings -> Bindings -> t -> FreestState t
+  rename :: MonadState (FreestS a) m => Bindings -> Bindings -> t -> m t
 
 -- Binds
-
-
 instance Rename t => Rename (Bind K.Kind t) where
   rename tbs pbs (Bind p a k t) = do
     a' <- rename tbs pbs a
@@ -142,7 +140,7 @@ instance Rename E.Exp where
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ _ e = return e
 
-renameField :: Bindings -> Bindings -> ([Variable], E.Exp) -> FreestState ([Variable], E.Exp)
+renameField :: MonadState (FreestS a) m => Bindings -> Bindings -> ([Variable], E.Exp) -> m ([Variable], E.Exp)
 renameField tbs pbs (xs, e) = do
   xs' <- mapM (rename tbs pbs) xs
   e'  <- rename tbs (insertProgVars xs') e
@@ -158,7 +156,7 @@ instance Rename Variable where
 
 -- Managing variables
 
-renameVar :: Variable -> FreestState Variable
+renameVar :: MonadState (FreestS a) m => Variable -> m Variable
 renameVar x = do
   n <- getNextIndex
   return $ mkNewVar n x
@@ -177,7 +175,7 @@ renameType = head . renameTypes . (: [])
 -- Rename a list of types
 renameTypes :: [T.Type] -> [T.Type]
 renameTypes ts =
-  evalState (mapM (rename Map.empty Map.empty) ts) initialState
+  evalState (mapM (rename Map.empty Map.empty) ts) initialS
 
 -- Substitution and unfold, the renamed versions
 

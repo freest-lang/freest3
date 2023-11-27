@@ -51,7 +51,7 @@ donate p donor ccard amount =
 -- 3. The bank that charges credit cards
 bank : CreditCard -> Int -> ()
 bank ccard amount =
-    putStrLn $ "Charging " ++ show @Int amount ++ " euros on card " ++ ccard
+    putStrLn $ "Charging " ^^ show @Int amount ^^ " euros on card " ^^ ccard
 
 
 -- 4. The Online Donation Server

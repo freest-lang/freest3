@@ -26,10 +26,10 @@ sendList c l =
 main, aList : List
 
 main =
-  let (x, y) = new @(ListOut;End) () in
-  let _      = fork @() (\_:()1-> sendList @End x aList |> close) in
-  let (list, y) = rcvList @End y in
-  close y;
+  let (x, y) = new @(ListOut;Close) () in
+  let _      = fork @() (\_:()1-> sendList @Close x aList |> close) in
+  let (list, y) = rcvList @Wait y in
+  wait y;
   list
 
 aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))

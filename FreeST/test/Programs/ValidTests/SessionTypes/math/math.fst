@@ -1,15 +1,15 @@
-type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};End
+type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} ; Wait
 
 mathServer : MathServer-> ()
 mathServer c =
   match c with {
     Negate c ->
       let (n, c) = receive c in
-      c |> send (-n) |> close,
+      c |> send (-n) |> wait,
     Add c ->
       let (n1, c) = receive c in
       let (n2, c) = receive c in
-      c |> send (n1 + n2) |> close
+      c |> send (n1 + n2) |> wait
   }
 
 main : Int
