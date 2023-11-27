@@ -13,8 +13,8 @@ rcvInt c = receive c
 
 main : Int
 main =
-  let (w,r) = new @(DD;End) () in
-  fork @() (\_:()1-> sendInt @End w |> close);
-  let (i, r) = rcvInt @End r in
-  close r;
+  let (w,r) = new @(DD;Close) () in
+  fork @() (\_:()1-> sendInt @Close w |> close);
+  let (i, r) = rcvInt @Wait r in
+  wait r;
   i

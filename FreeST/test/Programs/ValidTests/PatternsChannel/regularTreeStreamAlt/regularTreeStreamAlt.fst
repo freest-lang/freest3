@@ -2,15 +2,15 @@
 -- This main acts as the server that receives the Tree sent by a client
 main : Tree
 main =
-  let (w, r) = new @(TreeC;End) () in
-  fork (\_:() 1-> treeClient @End w |> close);
+  let (w, r) = new @(TreeC;Close) () in
+  fork (\_:() 1-> treeClient @Close w |> close);
   --fork@() $ badClientPrematureEnd w;
   --fork@() $ badClientSendExtraValue w;
   --fork@() $ badClientSendExtraLeaf w;
   --fork@() $ badClientForgotRight w;
   --fork@() $ badClientSendOnlyValue w;
-  let (tree, r) = receiveTree @End r in
-  close r;
+  let (tree, r) = receiveTree @Wait r in
+  wait r;
   tree
 
 
@@ -54,7 +54,7 @@ stackSize (Value _ ts) = 1 + stackSize ts
 type TreeC : 1S = +{
   ValueC: !Int; TreeC,
   LeafC : TreeC,
-  EndC   : Skip }
+  DoneC   : Skip }
 
 
 -- Sends a tree through a TreeC
@@ -83,7 +83,7 @@ receiveTree_ ts (ValueC c) =
       receiveTree_ @a ts c
 receiveTree_ ts (LeafC c) =
       receiveTree_ @a (stackPush Leaf ts) c
-receiveTree_ ts (EndC  c) =
+receiveTree_ ts (DoneC  c) =
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       (snd@TreeStack@Tree $ stackPop ts, c)
@@ -98,7 +98,7 @@ errorWhen b s =
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : forall a:1S . TreeC;a -> a
 treeClient c =
-  select EndC $ sendTree @a aTree c
+  select DoneC $ sendTree @a aTree c
 
 
 -- ==== BAD CLIENTS ===
@@ -107,32 +107,32 @@ treeClient c =
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  let _ = select EndC c in
+  let _ = select DoneC c in
   ()
 
 -- This bad client send an extra Value -1
 badClientSendExtraValue : forall a:1S . TreeC;a -> a
 badClientSendExtraValue c =
-  select EndC $ send (-1) $ select ValueC $ sendTree @a aTree c
+  select DoneC $ send (-1) $ select ValueC $ sendTree @a aTree c
   -- Bad Code ===========================
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : forall a:1S . TreeC;a -> a
 badClientSendExtraLeaf c =
-  select EndC $ select LeafC $ sendTree @a aTree c
+  select DoneC $ select LeafC $ sendTree @a aTree c
   -- Bad  Code =============
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  let _ = select EndC $ badSendTree aTree c in
+  let _ = select DoneC $ badSendTree aTree c in
   -- Bad Code          ===========
   ()
 
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  let _  = select EndC $ send 1 $ select ValueC c in
+  let _  = select DoneC $ send 1 $ select ValueC c in
   -- Bad code          ========================
   ()
 

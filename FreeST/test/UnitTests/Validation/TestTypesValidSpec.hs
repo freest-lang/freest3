@@ -3,18 +3,17 @@ module Validation.TestTypesValidSpec
   )
 where
 
-import           Control.Monad.State            ( runState )
-import qualified Data.Map.Strict               as Map
+import           Control.Monad.State ( runState )
+import qualified Data.Map.Strict as Map
                                                 ( empty )
-import           Elaboration.ResolveDuality    as Dual
+import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
-import           Syntax.Kind                    ( Kind )
-import           Util.FreestState               ( initialState
-                                                , errors
-                                                )
-import           Validation.Kinding             ( synthetise )
-import           Validation.Rename              ( renameType )
-import           Validation.Subkind             ( (<:) )
+import           Syntax.Kind ( Kind )
+import           Util.State ( initialS, errors )
+import           Validation.Kinding ( synthetise )
+import           Validation.Rename ( renameType )
+import           Validation.Subkind ( (<:) )
+import  Elaboration.Phase
 
 spec :: Spec
 spec = describe "Valid type tests" $ do
@@ -27,7 +26,7 @@ matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` Left 
 hasKind :: Type -> Kind -> TestExpectation
 hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
  where
-  (k', s) = runState test initialState
+  (k', s) = runState test initialElab
   test    = synthetise Map.empty . renameType =<< Dual.resolve t
   
 main :: IO ()

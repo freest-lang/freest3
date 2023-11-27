@@ -1,5 +1,5 @@
 name:                FreeST
-version:             3.0.0
+version:             3.1.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
 author:              "Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos"
@@ -43,6 +43,7 @@ library:
 #    - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.Base
+    - Syntax.AST
     - Syntax.Type
     - Syntax.Expression
     - Syntax.Kind
@@ -53,7 +54,7 @@ library:
     - Util.Error
     - Util.Warning
 #    - Util.PrettyError
-    - Util.FreestState
+    - Util.State
     - Util.CmdLine
 #    - Util.PreludeLoader
     - Util.GetTOps
@@ -69,6 +70,11 @@ library:
     - Validation.TypeChecking
     - Interpreter.Builtin
     - Interpreter.Eval
+    - Parse.Phase
+    - PatternMatch.Phase
+    - Elaboration.Phase
+    - Validation.Phase
+    - PatternMatch.PatternMatch
 
 executables:
   freest:

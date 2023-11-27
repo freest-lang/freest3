@@ -1,4 +1,4 @@
-type Omega : 1S = !Omega;End
+type Omega : 1S = !Omega;Close
 
 produce : Omega -> Diverge
 produce p =
@@ -10,7 +10,7 @@ produce p =
 consume' : dualof Omega -> Diverge
 consume' c = 
     putStrLn "Consuming";
-    produce (receiveAndClose @Omega c)
+    produce (receiveAndWait @Omega c)
 
 main : Diverge
 main =

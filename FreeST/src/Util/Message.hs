@@ -1,10 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Util.Message where
 
+import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.Program
+import           Syntax.Program (TypeOpsEnv) -- TODO: remove on merge to keep-source
 import qualified Syntax.Type as T
 import           Util.GetTOps
 
@@ -35,7 +36,7 @@ instance Style K.Kind where
 instance Style Variable where
   style f sty _ = {-quote . -} f sty . show
 
-instance Style VarEnv where
+instance Style Signatures where
   style f sty _ = f sty . show
   
 instance Style FilePath where

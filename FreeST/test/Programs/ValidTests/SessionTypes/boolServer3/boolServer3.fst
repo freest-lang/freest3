@@ -2,7 +2,7 @@ type BoolServer : 1S = &{ And: Skip; ?Bool; ?Bool; !Bool; Skip
                         , Or : Skip; ?Bool; ?Bool; !Bool; Skip
                         , Not: Skip; ?Bool; !Bool; Skip
                         }
-                        ; End
+                        ; Wait
 type BoolClient : 1S = dualof BoolServer
 
 boolServer :  BoolServer -> ()
@@ -12,18 +12,18 @@ boolServer c =
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
       send (n1 && n2) c3 
-      |> close,
+      |> wait,
 
     Or c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
       send (n1 || n2) c3
-      |> close,
+      |> wait,
 
     Not c1 ->
       let (n1, c2) = receive c1 in
       send (not n1) c2
-      |> close
+      |> wait
   }
 
 main : Bool

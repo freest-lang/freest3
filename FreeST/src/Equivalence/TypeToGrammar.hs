@@ -17,25 +17,22 @@ module Equivalence.TypeToGrammar
   )
 where
 
-import           Syntax.Base
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Validation.Substitution       as Substitution
-                                                ( subsAll )
-import           Validation.Terminated          ( terminated )
-import           Elaboration.Elaborate          ( changePos )
-import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
-import           Util.Error                     ( internalError )
-import           Util.FreestState               ( tMapM
-                                                , tMapM_
-                                                )
+import           Elaboration.Replace ( changePos )
+import           Equivalence.Normalisation ( normalise )
+import           Syntax.Base
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
+import           Util.State ( tMapM, tMapM_)
+import qualified Validation.Substitution as Substitution ( subsAll )
+import           Validation.Terminated ( terminated )
+
 import           Control.Monad.State
 import           Data.Functor
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Prelude                       hiding ( Word ) -- redefined in module Bisimulation.Grammar
-import           Debug.Trace
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
+
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
@@ -66,9 +63,9 @@ toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't t
   let a = if t == T.Variant then "<>" else "{}" 
   getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
-toGrammar' (T.Skip _) = return []
-toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
-toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
+toGrammar' (T.Skip _)        = return []
+toGrammar' t@T.End{}         = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
@@ -94,6 +91,7 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{}             = Just t
+fatTerminal t@T.Float{}           = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u

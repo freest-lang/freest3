@@ -5,38 +5,41 @@ import           Interpreter.Value
 import           Syntax.Base
 
 import qualified Control.Concurrent.Chan as C
-import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
-import           System.IO.Unsafe
 import           Data.Bifunctor (Bifunctor(bimap))
+import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
+import GHC.Float
 
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
+
+new :: IO Channel
+new = do
+  c1 <- C.newChan
+  c2 <- C.newChan
+  return ((c1, c2), (c2, c1))
+
+receive :: ChannelEnd -> IO (Value, ChannelEnd)
+receive c = do
+  v <- C.readChan (fst c)
+  return (v, c)
 
 send :: Value -> ChannelEnd -> IO ChannelEnd
 send v c = do
   C.writeChan (snd c) v
   return c
 
-new :: IO Channel
-new = do
-  ch1 <- C.newChan
-  ch2 <- C.newChan
-  return ((ch1, ch2), (ch2, ch1))
+wait :: Value -> Value 
+wait (Chan c) =
+  IOValue $ C.readChan (fst c)
 
-receive :: ChannelEnd -> IO (Value, ChannelEnd)
-receive ch = do
-  v <- C.readChan (fst ch)
-  return (v, ch)
-
-close :: ChannelEnd -> IO Value 
-close ch = do 
-  C.writeChan (snd ch) Unit 
-  C.readChan (fst ch)
+close :: Value -> IO Value 
+close (Chan c) = do 
+  C.writeChan (snd c) Unit 
   return Unit
 
 ------------------------------------------------------------  
@@ -45,12 +48,12 @@ close ch = do
 
 initialCtx :: Ctx
 initialCtx = Map.fromList
-  -- Integers
   [ -- Communication primitives
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
-  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
-  , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
+  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
+  , (var "wait", PrimitiveFun wait)
+  , (var "close", PrimitiveFun (\c -> IOValue $ close c))
   -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
@@ -74,6 +77,44 @@ initialCtx = Map.fromList
   , (var "odd" , PrimitiveFun (\(Integer x) -> boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
+  -- Float
+  , (var "(+.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x + y)))
+  , (var "(-.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x - y)))
+  , (var "(*.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x * y)))
+  , (var "(/.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x / y)))
+  , (var "(>.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x > y)))
+  , (var "(<.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x < y)))
+  , (var "(<=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x <= y)))
+  , (var "(>=.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> boolean $ x >= y)))
+  , (var "absF", PrimitiveFun (\(Float x) -> Float $ abs x))
+  , (var "negateF", PrimitiveFun (\(Float x) -> Float $ negate x))
+  , (var "minF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `min` y)))
+  , (var "maxF", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x `max` y)))
+  , (var "truncate", PrimitiveFun (\(Float x) -> Integer $ truncate x))
+  , (var "round", PrimitiveFun (\(Float x) -> Integer $ round x))
+  , (var "ceiling", PrimitiveFun (\(Float x) -> Integer $ ceiling x))
+  , (var "floor", PrimitiveFun (\(Float x) -> Integer $ floor x))
+  , (var "recip" , PrimitiveFun (\(Float x) -> Float $ recip x))
+  , (var "pi", Float pi )
+  , (var "exp", PrimitiveFun (\(Float x) -> Float $ exp x))
+  , (var "log", PrimitiveFun (\(Float x) -> Float $ log x))
+  , (var "sqrt", PrimitiveFun (\(Float x) -> Float $ sqrt x))
+  , (var "(**)", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x ** y)))
+  , (var "logBase", PrimitiveFun(\(Float x) -> PrimitiveFun (\(Float y) -> Float $ logBase x y)))
+  , (var "sin", PrimitiveFun (\(Float x) -> Float $ sin x))
+  , (var "cos", PrimitiveFun (\(Float x) -> Float $ cos x))
+  , (var "tan", PrimitiveFun (\(Float x) -> Float $ tan x))
+  , (var "asin", PrimitiveFun (\(Float x) -> Float $ asin x))
+  , (var "acos", PrimitiveFun (\(Float x) -> Float $ acos x))
+  , (var "atan", PrimitiveFun (\(Float x) -> Float $ atan x))
+  , (var "sinh", PrimitiveFun (\(Float x) -> Float $ sinh x))
+  , (var "cosh", PrimitiveFun (\(Float x) -> Float $ cosh x))
+  , (var "tanh", PrimitiveFun (\(Float x) -> Float $ tanh x))
+  , (var "log1p", PrimitiveFun (\(Float x) -> Float $ log1p x))
+  , (var "expm1", PrimitiveFun (\(Float x) -> Float $ expm1 x))
+  , (var "log1pexp", PrimitiveFun (\(Float x) -> Float $ log1pexp x))
+  , (var "log1mexp", PrimitiveFun (\(Float x) -> Float $ log1mexp x))
+  , (var "fromInteger", PrimitiveFun (\(Integer x) -> Float $ Prelude.fromInteger (toInteger x)))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
@@ -87,7 +128,7 @@ initialCtx = Map.fromList
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Strings
-  , (var "(++)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
+  , (var "(^^)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
   -- Show
   , (var "show", PrimitiveFun (String . show))
   -- Read
