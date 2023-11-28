@@ -132,7 +132,7 @@ getNextIndex = do
 
 getErrors :: RunOpts -> FreestS a -> String
 getErrors runOpts s = (intercalate "\n" . map f . take 10 . reverse . errors) s
-  where f = showErrors (isStylable runOpts) (runFilePath runOpts) (typenames s)
+  where f = showError (isStylable runOpts) (runFilePath runOpts) (typenames s)
 
 hasErrors :: FreestS a -> Bool
 hasErrors = not . null . errors
