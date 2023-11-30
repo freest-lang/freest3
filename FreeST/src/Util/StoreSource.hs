@@ -9,32 +9,32 @@ import qualified Syntax.Kind       as K
 import qualified Syntax.Expression as E
 import qualified Data.Map.Strict   as Map
 
--- every instance of KeepAST keeps a copy of itself in its Span (if it has one)
+-- every instance of Storable keeps a copy of itself in its Span (if it has one)
 -- keepAST is called recursively 
-class KeepAST a where -- Storable
+class Storable a where -- Storable
     keepAST :: a -> a -- storeSource
 
 defaultKeepAST :: Located a => a -> a
 defaultKeepAST x = setSpan s{source=Just x} x
     where s = getSpan x
 
-instance KeepAST T.TypeMap where
+instance Storable T.TypeMap where
     keepAST tMap = Map.foldlWithKey' (\acc var t -> Map.insert (keepAST var) (keepAST t) acc) Map.empty tMap
 
-instance KeepAST E.FieldMap where
+instance Storable E.FieldMap where
     keepAST fMap = Map.foldlWithKey' (\acc var (vars, e) -> Map.insert (keepAST var) (map keepAST vars, keepAST e) acc) Map.empty fMap
 
-instance KeepAST E.FieldList where
+instance Storable E.FieldList where
     keepAST fl = map (\(pats, e) -> (map keepAST pats, keepAST e)) fl
 
-instance KeepAST E.Pattern where
+instance Storable E.Pattern where
     keepAST (E.PatVar v) = E.PatVar (keepAST v)
     keepAST (E.PatCons v pats) = E.PatCons (keepAST v) (map keepAST pats)
 
-instance KeepAST Variable where
+instance Storable Variable where
     keepAST v@Variable{} = defaultKeepAST v
 
-instance KeepAST E.Exp where
+instance Storable E.Exp where
     keepAST (E.Var s v) = defaultKeepAST $
         E.Var s (keepAST v)
     keepAST (E.Abs s m (Bind s' v t e)) = defaultKeepAST $
@@ -60,7 +60,7 @@ instance KeepAST E.Exp where
     keepAST x = defaultKeepAST x
 
 
-instance KeepAST T.Type where
+instance Storable T.Type where
     keepAST (T.Arrow s m t1 t2) = defaultKeepAST $
         T.Arrow s m (keepAST t1) (keepAST t2)
     keepAST (T.Labelled s srt tm) = defaultKeepAST $
@@ -79,5 +79,5 @@ instance KeepAST T.Type where
         T.Dualof s (keepAST t)
     keepAST x = defaultKeepAST x
 
-instance KeepAST K.Kind where
+instance Storable K.Kind where
     keepAST = defaultKeepAST

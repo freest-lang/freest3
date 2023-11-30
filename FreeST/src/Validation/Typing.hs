@@ -42,7 +42,7 @@ import           Control.Monad.State ( when
                                      )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import Util.StoreSource (KeepAST(keepAST))
+import Util.StoreSource (Storable(keepAST))
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
