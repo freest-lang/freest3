@@ -42,25 +42,12 @@ import           Control.Monad.State ( when
                                      )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import Util.StoreSource (Storable(keepAST))
+import Util.StoreSource (Storable(storeSource))
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ keepAST $ T.Int $ clearSource p
--- E.Int (Span moduleName start end (Just (E.Int _)))
---        Span moduleName start end (Just (E.Int _)) :: Span E.Exp
---        clearSource
---        Span moduleName start end Nothing :: Span T.Type
--- T.Int (Span moduleName start end Nothing)
--- keepAST
--- T.Int (Span moduleName start end (Just T.Int (Span moduleName start end Nothing)))
-
-
-
-
-
-
+synthetise _ (E.Int  p _  ) = return $ storeSource $ T.Int $ clearSource p
 synthetise _ (E.Float p _ ) = return $ T.Float $ clearSource p
 synthetise _ (E.Char p _  ) = return $ T.Char $ clearSource p
 synthetise _ (E.Unit p    ) = return $ T.unit p
