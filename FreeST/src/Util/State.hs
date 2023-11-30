@@ -147,7 +147,7 @@ setErrors errors = S.modify (\s -> s { errors })
 
 getWarnings :: RunOpts -> FreestS a -> String
 getWarnings runOpts s = (intercalate "\n" . map f . take 10 . reverse . warnings) s
-  where f = showWarnings (runFilePath runOpts) (typenames s)
+  where f = showWarnings (isStylable runOpts) (runFilePath runOpts) (typenames s)
 
 hasWarnings :: FreestS a -> Bool
 hasWarnings = not . null . warnings

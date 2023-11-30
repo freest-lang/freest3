@@ -13,12 +13,12 @@ import qualified Data.Map as Map
 import           System.FilePath
 
 
-showWarnings :: String -> TypeOpsEnv -> WarningType -> String
-showWarnings f tops wrn =
+showWarnings :: Stylable -> String -> TypeOpsEnv -> WarningType -> String
+showWarnings sty f tops wrn =
   let mod = trimModule f (defModule $ getSpan wrn) in
   let base = replaceBaseName f (fromEither mod) in
   let modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan wrn) in    
-    title wrn True (getSpan wrn) base ++ "\n  " ++ msg wrn True tops modEither
+    title wrn sty (getSpan wrn) base ++ "\n  " ++ msg wrn sty tops modEither
   where
     trimModule f mod
       | null mod                = Left $ takeBaseName f
