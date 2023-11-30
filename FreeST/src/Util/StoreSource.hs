@@ -8,6 +8,9 @@ import qualified Syntax.Type       as T
 import qualified Syntax.Kind       as K
 import qualified Syntax.Expression as E
 import qualified Data.Map.Strict   as Map
+import Util.State (FreestS (ast))
+import Parse.Phase (Parse)
+import Syntax.AST ( AST(..), Types )
 
 -- every instance of Storable keeps a copy of itself in its Span (if it has one)
 -- storeSource is called recursively 
@@ -18,14 +21,18 @@ defaultStoreSource :: Located a => a -> a
 defaultStoreSource x = setSpan s{source=Just x} x
     where s = getSpan x
 
+-- T.TypeMap == Signatures
 instance Storable T.TypeMap where
-    storeSource tMap = Map.foldlWithKey' (\acc var t -> Map.insert (storeSource var) (storeSource t) acc) Map.empty tMap
+    storeSource tMap = 
+        Map.foldlWithKey' (\acc var t -> Map.insert (storeSource var) (storeSource t) acc) Map.empty tMap
 
 instance Storable E.FieldMap where
-    storeSource fMap = Map.foldlWithKey' (\acc var (vars, e) -> Map.insert (storeSource var) (map storeSource vars, storeSource e) acc) Map.empty fMap
+    storeSource fMap = 
+        Map.foldlWithKey' (\acc var (vars, e) -> Map.insert (storeSource var) (map storeSource vars, storeSource e) acc) Map.empty fMap
 
 instance Storable E.FieldList where
-    storeSource fl = map (\(pats, e) -> (map storeSource pats, storeSource e)) fl
+    storeSource fl = 
+        map (\(pats, e) -> (map storeSource pats, storeSource e)) fl
 
 instance Storable E.Pattern where
     storeSource (E.PatVar v) = E.PatVar (storeSource v)
@@ -81,3 +88,21 @@ instance Storable T.Type where
 
 instance Storable K.Kind where
     storeSource = defaultStoreSource
+
+instance Storable (FreestS Parse) where
+    storeSource x = x{ast= storeSource (ast x)}
+
+instance Storable (AST Parse) where
+    storeSource ast = AST 
+        (storeSource $ types ast) 
+        (storeSource $ signatures ast) 
+        (storeSource $ definitions ast)
+
+instance Storable Types where
+    storeSource types = 
+        Map.foldlWithKey' (\acc var (k, t) -> Map.insert (storeSource var) (storeSource k, storeSource t) acc) Map.empty types
+
+-- Definitions Parse == Map Variable FieldList
+instance Storable (Map.Map Variable [([E.Pattern], E.Exp)]) where
+    storeSource defs = 
+        Map.foldlWithKey' (\acc var ps -> Map.insert (storeSource var) (storeSource ps) acc) Map.empty defs

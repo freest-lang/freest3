@@ -32,6 +32,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
+import Util.StoreSource (storeSource)
 
 isDev :: Bool
 isDev = True
@@ -53,8 +54,11 @@ checkAndRun runOpts = do
   s2 <- parseAndImport s1{extra = (extra s1){runOpts}}
   when (hasErrors s2) (die $ getErrors runOpts s2)
 
+  -- | Store source
+  let s2' = storeSource s2
+
   -- | PatternMatch
-  let patternS = patternMatch s2
+  let patternS = patternMatch s2'
   when (hasErrors patternS) (die $ getErrors runOpts patternS)
 
   -- | Elaboration
