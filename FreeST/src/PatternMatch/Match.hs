@@ -47,7 +47,7 @@ checkNumArgs = tMapWithKeyM_ checkNumArgs'
 checkNumArgs' :: Variable -> [([Pattern],Exp)] -> PatternState ()
 checkNumArgs' fn lines  
   | allSame $ map (length.fst) lines = return ()                  -- if every line has the same amount of arguments all is fine
-  | otherwise = addError $ DifNumberOfArguments (clear (getSpan fn)) fn   -- if not there's an error
+  | otherwise = addError $ DifNumberOfArguments (clearSource (getSpan fn)) fn   -- if not there's an error
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
@@ -73,7 +73,7 @@ checkChanVar' cons xs
       let inter    = Set.intersection cons consFVar             -- intersection between actual constructors and our constructors 
       when (Set.null inter) ( do                                 -- if null they are channels
         -- Channel pattern; error for each variable, since there is channel patterns
-        mapM_ (\v -> addError $ InvalidVariablePatternChan (clear (getSpan v)) v) varsF
+        mapM_ (\v -> addError $ InvalidVariablePatternChan (clearSource (getSpan v)) v) varsF
         -- nested patterns: group by name; get nested patterns and transpose them, each column each list ; apply check
         mapM_  (mapM (checkChanVar' cons) . transpose . map pPats) (groupSortBy pName consF)
        )
@@ -154,7 +154,7 @@ ruleCon :: [Variable] -> [Equation] -> PatternState Exp
 ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                                 -- group by constructor name
                   & mapM destruct                                                   -- transforms into a case
                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)   -- matches every case expression, with the case's missing variables
-                <&> Case (clear s) (Var (clear s) v) . Map.fromList                                 -- makes the case
+                <&> Case (clearSource s) (Var (clearSource s) v) . Map.fromList                                 -- makes the case
   where s = getSpan v
   
 -- rule con aux 
@@ -168,7 +168,7 @@ ruleChan :: [Variable] -> [([Pattern],Exp)] -> PatternState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                -- group by constructor name
                    & mapM destruct                                                  -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)  -- matches every case expression, with the case's missing variables
-                 <&> Case (clear s) (App (clear s) (Var (clear s) (mkCollect s)) (Var (clear s) v)) . Map.fromList  -- makes the case collect
+                 <&> Case (clearSource s) (App (clearSource s) (Var (clearSource s) (mkCollect s)) (Var (clearSource s) v)) . Map.fromList  -- makes the case collect
   where s = getSpan v
 
 -- mix -------------------------------------------------------------
@@ -232,7 +232,7 @@ replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
 replaceExp v p (CasePat s e flp)      = do
   checkChanVarCase flp                                            -- checks if there are variables with channel patterns
-  nVar <- R.renameVar $ Variable (clear (getSpan e)) "unLetHiddenVar"     -- creates an hidden variable
+  nVar <- R.renameVar $ Variable (clearSource (getSpan e)) "unLetHiddenVar"     -- creates an hidden variable
   UnLet s nVar <$> replaceExp v p e
                <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e

@@ -64,7 +64,7 @@ checkMainFunction = do
       k <- K.synthetise Map.empty t
       when (K.isLin k) $
         let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main sigs) sigs in
-        addError (UnrestrictedMainFun (clear sp) main t k)
+        addError (UnrestrictedMainFun (clearSource sp) main t k)
     else when (isMainFlagSet runOpts) $
       addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
 
@@ -72,5 +72,5 @@ checkLinearity :: TypingState ()
 checkLinearity = do
   sigs <- getSignatures
   m <- filterM (K.lin . snd) (Map.toList sigs)
-  unless (null m) $ addError (LinearFunctionNotConsumed (clear (getSpan (fst $ head m))) m) 
+  unless (null m) $ addError (LinearFunctionNotConsumed (clearSource (getSpan (fst $ head m))) m) 
 

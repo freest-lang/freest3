@@ -52,7 +52,7 @@ data Exp =
   | UnLet (Span Exp) Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
 
 instance Default (Bind T.Type Exp) where
-  omission p = Bind (clear p) (omission (clear p)) (T.unit (clear p)) (Unit (clear p))
+  omission p = Bind (clearSource p) (omission (clearSource p)) (T.unit (clearSource p)) (Unit (clearSource p))
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
 type FieldList = [([Pattern], Exp)]

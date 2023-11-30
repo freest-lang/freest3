@@ -34,7 +34,7 @@ module Syntax.MkName
 import Syntax.Base
 
 mk :: String -> Span a -> Variable
-mk s sp = mkVar (clear sp) s
+mk s sp = mkVar (clearSource sp) s
 
 mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg, mkDollar, mkPlusPlus, mkCaretCaret, mkPipeGT, mkSemi :: Span a -> Variable
  

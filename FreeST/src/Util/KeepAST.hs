@@ -11,8 +11,8 @@ import qualified Data.Map.Strict   as Map
 
 -- every instance of KeepAST keeps a copy of itself in its Span (if it has one)
 -- keepAST is called recursively 
-class KeepAST a where
-    keepAST :: a -> a
+class KeepAST a where -- Storable
+    keepAST :: a -> a -- storeSource
 
 defaultKeepAST :: Located a => a -> a
 defaultKeepAST x = setSpan s{source=Just x} x

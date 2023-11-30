@@ -88,7 +88,7 @@ fixConsTypes = do
 replaceSignatures :: Signatures -> ElabState ()
 replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
   where quantifyLowerFreeVars t = 
-          foldr (\v t -> T.Forall p (T.Bind (clear p) v (K.ut $ clear p) t))
+          foldr (\v t -> T.Forall p (T.Bind (clearSource p) v (K.ut $ clearSource p) t))
                 t
                 (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
@@ -106,18 +106,18 @@ buildDefs = Map.foldlWithKey (\def pv (ps,e) -> addToDefs def pv =<< buildFunBod
 buildFunBody :: Variable -> [Variable] -> E.Exp -> ElabState E.Exp
 buildFunBody f as e = getFromSignatures f >>= \case
     Just s  -> buildExp e as s
-    Nothing -> addError (FuctionLacksSignature (clear (getSpan f)) f) $> e
+    Nothing -> addError (FuctionLacksSignature (clearSource (getSpan f)) f) $> e
  where
   buildExp :: E.Exp -> [Variable] -> T.Type -> ElabState E.Exp
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (clear (getSpan b)) m . Bind (clear (getSpan b)) b t1 <$> buildExp e bs t2
+    E.Abs (clearSource (getSpan b)) m . Bind (clearSource (getSpan b)) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs (clear p) . Bind (clear p1) x k <$> buildExp e bs t
+    E.TypeAbs (clearSource p) . Bind (clearSource p1) x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromSignatures f
-    addError (WrongNumberOfArguments (clear (getSpan f)) f (length as - length xs) (length as) t) $> e
+    addError (WrongNumberOfArguments (clearSource (getSpan f)) f (length as - length xs) (length as) t) $> e
 
 

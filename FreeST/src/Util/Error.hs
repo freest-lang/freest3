@@ -102,7 +102,7 @@ data ErrorType =
   -- Runtime errors
   | ErrorFunction (Span ErrorType) String
   | UndefinedFunction (Span ErrorType)
-  | RuntimeError (Span ErrorType) String
+  | RuntimeError (Span ()) String
   deriving Show
 
 instance Located ErrorType where
@@ -150,7 +150,7 @@ instance Located ErrorType where
   getSpan (UnendedSession p _ _              ) = p
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
-  getSpan (RuntimeError p _                ) = p
+  getSpan (RuntimeError p _                ) = clearSource p
 
   -- unused, here to avoid compiling with a warning
   setSpan _ e = e

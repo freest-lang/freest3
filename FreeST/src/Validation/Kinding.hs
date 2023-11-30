@@ -53,32 +53,32 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 -- Returns the kind of a given type
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.ut $ clear p
-synthetise' _ _ (T.Float  p) = return $ K.ut $ clear p 
-synthetise' _ _ (T.Char   p) = return $ K.ut $ clear p
-synthetise' _ _ (T.String p) = return $ K.ut $ clear p
+synthetise' _ _ (T.Int    p) = return $ K.ut $ clearSource p
+synthetise' _ _ (T.Float  p) = return $ K.ut $ clearSource p 
+synthetise' _ _ (T.Char   p) = return $ K.ut $ clearSource p
+synthetise' _ _ (T.String p) = return $ K.ut $ clearSource p
 synthetise' s kEnv (T.Arrow p m t u) =
-  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind (clear p) (typeToKindMult m) K.Top
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind (clearSource p) (typeToKindMult m) K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
-  return $ K.Kind (clear p) n K.Top
+  return $ K.Kind (clearSource p) n K.Top
 -- Shared session types
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var _ b))))
-  | a == b = checkAgainstSession' s kEnv u $> K.ua (clear p)
+  | a == b = checkAgainstSession' s kEnv u $> K.ua (clearSource p)
 synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ T.Choice{} m)))
-  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ K.ua $ clear p
+  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ K.ua $ clearSource p
 -- Session types
-synthetise' _ _ (T.Skip   p) = return $ K.us $ clear p
-synthetise' _ _ (T.End    p) = return $ K.la $ clear p
+synthetise' _ _ (T.Skip   p) = return $ K.us $ clearSource p
+synthetise' _ _ (T.End    p) = return $ K.la $ clearSource p
 synthetise' s kEnv (T.Semi p t u) = do
   ~k1@(K.Kind _ mt vt) <- synthetise' s kEnv t
   ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
-  unless (vt <: K.Session) (addError (ExpectingSession (clear (getSpan t)) t k1))
-  unless (vu <: K.Session) (addError (ExpectingSession (clear (getSpan u)) u k2))
-  return $ K.Kind (clear p) (join mt mu) (meet vt vu)
+  unless (vt <: K.Session) (addError (ExpectingSession (clearSource (getSpan t)) t k1))
+  unless (vu <: K.Session) (addError (ExpectingSession (clearSource (getSpan u)) u k2))
+  return $ K.Kind (clearSource p) (join mt mu) (meet vt vu)
 synthetise' s kEnv (T.Message p _ t) =
-  checkAgainst' s kEnv (K.lt $ clear p) t $> K.ls (clear p)
+  checkAgainst' s kEnv (K.lt $ clearSource p) t $> K.ls (clearSource p)
 synthetise' s kEnv (T.Labelled _ T.Choice{} m) = do
   ks <- tMapM (checkAgainstSession' s kEnv) m
   return $ Map.foldr (\(K.Kind _ m1 v1) (K.Kind p m2 v2) -> K.Kind p (join m1 m2) (meet v1 v2))
@@ -89,28 +89,28 @@ synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
 --   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
   checkContractive s a t
   k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
-  unless (k' <: k) (addError $ CantMatchKinds (clear (getSpan t)) k k' t) -- $> k'
+  unless (k' <: k) (addError $ CantMatchKinds (clearSource (getSpan t)) k k' t) -- $> k'
   if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
     then pure $ K.Kind p m K.Absorb
     else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ K.Kind (clear p) m K.Top
+  return $ K.Kind (clearSource p) m K.Top
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
-  Nothing -> addError (TypeVarNotInScope (clear p) a) $> omission p
+  Nothing -> addError (TypeVarNotInScope (clearSource p) a) $> omission p
 -- Type operators
 synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
   case kEnv Map.!? a of
-    Just k -> unless (k <: K.ls (clear p))
-            (addError (CantMatchKinds (clear p) k (K.ls $ clear p) t)) $> K.ls (clear p)
-    Nothing -> addError (TypeVarNotInScope (clear p) a) $> omission p
+    Just k -> unless (k <: K.ls (clearSource p))
+            (addError (CantMatchKinds (clearSource p) k (K.ls $ clearSource p) t)) $> K.ls (clearSource p)
+    Nothing -> addError (TypeVarNotInScope (clearSource p) a) $> omission p
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: MonadState (FreestS a) m => K.PolyVars -> Variable -> T.Type -> m ()
 checkContractive s a t = let p = getSpan t in
-  unless (contractive s a t) $ addError (TypeNotContractive (clear p) t a)
+  unless (contractive s a t) $ addError (TypeNotContractive (clearSource p) t a)
 
 -- Check a type against a given kind
 
@@ -118,19 +118,19 @@ checkAgainst' :: MonadState (FreestS a) m => K.PolyVars -> K.KindEnv -> K.Kind -
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
   unless (actual <: expected)
-    (addError (CantMatchKinds (clear (getSpan t)) expected actual t)) $> expected
+    (addError (CantMatchKinds (clearSource (getSpan t)) expected actual t)) $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
 -- kind of the type. This is a refined version of checkAgainst for a better error messages
 checkAgainstSession' :: MonadState (FreestS a) m => K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
-  unless (p <: K.Session) (addError (ExpectingSession (clear (getSpan t)) t k)) $> k
+  unless (p <: K.Session) (addError (ExpectingSession (clearSource (getSpan t)) t k)) $> k
 
 checkAgainstAbsorb :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 checkAgainstAbsorb kEnv t = do
   ~k@(K.Kind _ _ p) <- synthetise kEnv t
-  when (p /= K.Absorb) (addError $ UnendedSession (clear (getSpan t)) t k) $> k
+  when (p /= K.Absorb) (addError $ UnendedSession (clearSource (getSpan t)) t k) $> k
 --  return k
 
 -- Determine whether a given type is unrestricted

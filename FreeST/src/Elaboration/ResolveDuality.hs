@@ -102,7 +102,7 @@ solveDual _ (T.Var p a) = pure $ T.Dualof p $ T.Var p a
 solveDual _ (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
 solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
 -- Non session-types
-solveDual _ t = addError (DualOfNonSession (clear (getSpan t)) t) $> t
+solveDual _ t = addError (DualOfNonSession (clearSource (getSpan t)) t) $> t
 
 solveBind
   :: (Visited -> T.Type -> ElabState T.Type)
@@ -117,7 +117,7 @@ solveDBind
   -> Bind a T.Type
   -> ElabState (Bind a T.Type)
 solveDBind solve v (Bind p a k t) =
-  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof (clear p) $ T.Var (clear p) a) a t)
+  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof (clearSource p) $ T.Var (clearSource p) a) a t)
 
 -- |Change position of a given type with a given position
 changePos :: Span T.Type -> T.Type -> T.Type

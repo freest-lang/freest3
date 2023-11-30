@@ -81,4 +81,4 @@ type PolyVars = Set.Set Variable
 
 instance (Default a) => Default (Bind Kind a) where
   omission p = Bind p' (omission p') (omission p') (omission p')
-    where p' = clear p
+    where p' = clearSource p

@@ -59,7 +59,7 @@ type TypeMap = Map.Map Variable Type
 data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
-  omission s = Int (clear s)
+  omission s = Int (clearSource s)
 
 instance Located Type where
   getSpan (Int  p       ) = p
@@ -98,7 +98,7 @@ instance Located Type where
 
 -- Derived forms
 unit :: Span a -> Type 
-unit s = Labelled (clear s) Record Map.empty 
+unit s = Labelled (clearSource s) Record Map.empty 
 
 tuple :: Span Type -> [Type] -> Type
 tuple s ts = Labelled s Record (tupleTypeMap ts)

@@ -25,7 +25,7 @@ module Syntax.Base
   , defaultSpan
   , Located(..)
   , isWild
-  , clear
+  , clearSource
 ) where
 
 -- Default for the various syntactic categories
@@ -52,7 +52,7 @@ class Located t where
 data Span a = Span
   { startPos     :: Pos
   , endPos       :: Pos
-  , source       :: Maybe a
+  , source       :: Maybe a -- Maybe (Either Exp Type)
   , defModule    :: FilePath
   }
 
@@ -88,7 +88,7 @@ instance Located Variable where
   setSpan s (Variable _ v) = Variable s v
 
 instance Default Variable where
-  omission p = mkVar (clear p) "omission"
+  omission p = mkVar (clearSource p) "omission"
 
 -- The string, internal representation of a variable
 intern :: Variable -> String
@@ -96,7 +96,7 @@ intern (Variable _ x) = x
 
 -- Making a variable from a string, type or program
 mkVar :: Span a -> String -> Variable
-mkVar s = Variable (clear s)
+mkVar s = Variable (clearSource s)
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"
@@ -117,5 +117,5 @@ data Bind a b = Bind {bSpan :: Span (Bind a b), var :: Variable, binder :: a, bo
 --   streamline development this function is used
 -- after everything is compiling, all references to this 
 --   function should be removed (so as this function)
-clear :: Span a -> Span b
-clear s = s{source=Nothing}
+clearSource :: Span a -> Span b
+clearSource s = s{source=Nothing}

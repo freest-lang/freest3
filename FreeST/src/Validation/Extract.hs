@@ -47,7 +47,7 @@ function e t =
   case normalise t of
     (T.Arrow _ _ u v) -> return (u, v)
     u               -> let p = getSpan e in
-      addError (ExtractError (clear p) "an arrow" e u) $> (omission p, omission p)
+      addError (ExtractError (clearSource p) "an arrow" e u) $> (omission p, omission p)
 
 pair :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 pair e t =
@@ -55,7 +55,7 @@ pair e t =
     (T.Labelled _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
       return (m Map.! l0, m Map.! l1)
     u              -> let p = getSpan u in
-      addError (ExtractError (clear p) "a pair" e u) $> (omission p, omission p)
+      addError (ExtractError (clearSource p) "a pair" e u) $> (omission p, omission p)
   where l0 = head mkTupleLabels defaultSpan
         l1 = (mkTupleLabels !! 1) defaultSpan 
 
@@ -64,7 +64,7 @@ forall e t =
   case normalise t of
     u@T.Forall{} -> return u
     u            -> let p = getSpan e in
-      addError (ExtractError (clear p) "a polymorphic" e u) $> T.Forall (clear p) (omission p)
+      addError (ExtractError (clearSource p) "a polymorphic" e u) $> T.Forall (clearSource p) (omission p)
 
 output :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 output = message T.Out "an output"
@@ -83,13 +83,13 @@ message pol msg e t =
  where
   messageErr :: T.Type -> TypingState (T.Type, T.Type)
   messageErr u =
-    addError (ExtractError (clear (getSpan e)) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
+    addError (ExtractError (clearSource (getSpan e)) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
 
 end :: E.Exp -> T.Type -> TypingState ()
 end e t =
   case normalise t of
     (T.End _) -> return ()
-    _ -> addError (ExtractError (clear (getSpan e)) "End" e t)
+    _ -> addError (ExtractError (clearSource (getSpan e)) "End" e t)
 
 outChoiceMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 outChoiceMap = choiceMap T.External "an external choice (&)"
@@ -110,17 +110,17 @@ choiceMap view msg e t =
  where
   choiceErr :: T.Type -> TypingState T.TypeMap
   choiceErr u =
-    addError (ExtractError (clear (getSpan e)) msg e u) $> Map.empty
+    addError (ExtractError (clearSource (getSpan e)) msg e u) $> Map.empty
 
 datatypeMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Labelled _ T.Variant m) -> return m
     u                ->
-      addError (ExtractError (clear (getSpan e)) "a datatype" e u) $> Map.empty
+      addError (ExtractError (clearSource (getSpan e)) "a datatype" e u) $> Map.empty
 
 choiceBranch :: Span a -> T.TypeMap -> Variable -> T.Type -> TypingState T.Type
 choiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
-  Nothing -> addError (BranchNotInScope (clear p) x t) $> omission p
+  Nothing -> addError (BranchNotInScope (clearSource p) x t) $> omission p
 
