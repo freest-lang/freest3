@@ -4,6 +4,7 @@ module Elaboration.ResolveEquations(solveEquations) where
 import           Elaboration.Phase
 import           Syntax.Base
 import qualified Syntax.Type as T
+import           Util.Default
 import           Util.Error
 import           Util.State
 import           Validation.Rename ( isFreeIn )

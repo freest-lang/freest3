@@ -32,6 +32,7 @@ import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
+import           Util.Default
 import           Util.Error
 import           Validation.Phase
 import           Util.State

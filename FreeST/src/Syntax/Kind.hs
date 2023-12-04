@@ -49,12 +49,6 @@ instance Located Kind where
   getSpan (Kind p _ _) = p
   setSpan s (Kind _ m p) = Kind s m p 
 
--- The kind of conventional (non linear, non session) functional programming
--- languages' types (Alternative: the kind that sits at the top of the
--- hierarchy)
-instance Default Kind where
-  omission _ = ut defaultSpan
-
 -- Abbreviations for the six proper kinds
 lt, ut, ls, us, la, ua :: Span Kind -> Kind
 lt p = Kind p Lin Top 
@@ -78,7 +72,3 @@ isSession (Kind _ _ b) = b == Session
 type KindEnv = Map.Map Variable Kind
 
 type PolyVars = Set.Set Variable
-
-instance (Default a) => Default (Bind Kind a) where
-  omission p = Bind p' (omission p') (omission p') (omission p')
-    where p' = clearSource p

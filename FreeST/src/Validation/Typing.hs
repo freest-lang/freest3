@@ -29,6 +29,7 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
+import           Util.Default
 import           Util.Error
 import           Util.State hiding (void)
 import           Util.Warning

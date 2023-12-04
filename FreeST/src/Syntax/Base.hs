@@ -12,8 +12,7 @@ Multiplicity, that will be used the remaining Compiler.
 {-# LANGUAGE InstanceSigs #-}
 
 module Syntax.Base
-  ( Default(..)
-  , Pos
+  ( Pos
   , Multiplicity(..)
   , defaultPos
   , Bind(..)
@@ -27,11 +26,6 @@ module Syntax.Base
   , isWild
   , clearSource
 ) where
-
--- Default for the various syntactic categories
-
-class Default t where
-  omission :: Span a -> t
 
 -- Position
 
@@ -86,9 +80,6 @@ instance Ord Variable where
 instance Located Variable where
   getSpan (Variable p _) = p
   setSpan s (Variable _ v) = Variable s v
-
-instance Default Variable where
-  omission p = mkVar (clearSource p) "omission"
 
 -- The string, internal representation of a variable
 intern :: Variable -> String

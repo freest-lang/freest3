@@ -27,6 +27,7 @@ where
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
+import           Util.Default
 import           Util.Error
 import           Util.State
 import           Validation.Contractive

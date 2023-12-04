@@ -11,6 +11,7 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
+import           Util.Default
 import           Util.Error
 import           Parse.Phase
 import           Util.State
