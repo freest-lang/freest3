@@ -16,8 +16,12 @@ class Default t where
 instance Default (Bind T.Type E.Exp) where
   omission p = Bind (clearSource p) (omission (clearSource p)) (T.unit (clearSource p)) (E.Unit (clearSource p))
 
+instance (Default a) => Default (Bind K.Kind a) where
+  omission p = Bind p' (omission p') (omission p') (omission p')
+    where p' = clearSource p
+
 instance Default Variable where
-  omission p = mkVar (clearSource p) "omission"
+  omission p = mkVar p "omission"
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the
@@ -25,9 +29,6 @@ instance Default Variable where
 instance Default K.Kind where
   omission _ = K.ut defaultSpan
 
-instance (Default a) => Default (Bind K.Kind a) where
-  omission p = Bind p' (omission p') (omission p') (omission p')
-    where p' = clearSource p
-
 instance Default T.Type where
-  omission s = T.Int (clearSource s)
+  omission s = T.Int s'{source = Just $ T.Int s'}
+    where s' = clearSource s

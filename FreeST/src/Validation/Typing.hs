@@ -45,15 +45,17 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import Util.StoreSource (Storable(storeSource))
 
-
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
+synthetise kEnv e = storeSource <$> synthetise' kEnv e
+
+synthetise' :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ storeSource $ T.Int $ clearSource p
-synthetise _ (E.Float p _ ) = return $ T.Float $ clearSource p
-synthetise _ (E.Char p _  ) = return $ T.Char $ clearSource p
-synthetise _ (E.Unit p    ) = return $ T.unit p
-synthetise _ (E.String p _) = return $ T.String $ clearSource p
-synthetise kEnv e@(E.Var p x) =
+synthetise' _ (E.Int  p _  ) = return $ T.Int $ clearSource p
+synthetise' _ (E.Float p _ ) = return $ T.Float $ clearSource p
+synthetise' _ (E.Char p _  ) = return $ T.Char $ clearSource p
+synthetise' _ (E.Unit p    ) = return $ T.unit p
+synthetise' _ (E.String p _) = return $ T.String $ clearSource p
+synthetise' kEnv e@(E.Var p x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -66,14 +68,14 @@ synthetise kEnv e@(E.Var p x) =
       addToSignatures x s
       return s
 -- Unary let
-synthetise kEnv (E.UnLet _ x e1 e2) = do
+synthetise' kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToSignatures x t1
   t2 <- synthetise kEnv e2
   difference kEnv x
   return t2
 -- Abstraction
-synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
+synthetise' kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
@@ -85,25 +87,25 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   return $ T.Arrow (clearSource p) mult t1 t2
 -- Application, the special cases first
   -- Select C e
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
+synthetise' kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkSelect p = do
     t <- synthetise kEnv e
     m <- Extract.inChoiceMap e t
     Extract.choiceBranch p m c t
   -- Collect e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
+synthetise' kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
   return $ T.Labelled (clearSource p) T.Variant
     (Map.map (T.Labelled (clearSource p) T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
+synthetise' kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ T.tuple (clearSource p) [u1, u2]
   -- Send e1 e2
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
+synthetise' kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
@@ -111,39 +113,39 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
+synthetise' kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
-synthetise kEnv (E.App _ e1 e2) = do
+synthetise' kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
   (u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
-synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
+synthetise' kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (clearSource (getSpan e')) e e')) >>
   T.Forall (clearSource p) . Bind (clearSource p) a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
-synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
+synthetise' kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
   return $ Rename.subs t y u'
 -- Type application
-synthetise kEnv (E.TypeApp _ e t) = do
+synthetise' kEnv (E.TypeApp _ e t) = do
   u                               <- synthetise kEnv e
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Pair introduction
-synthetise kEnv (E.Pair p e1 e2) = do
+synthetise' kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
   return $ T.Labelled (clearSource p) T.Record $ 
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
-synthetise kEnv (E.BinLet _ x y e1 e2) = do
+synthetise' kEnv (E.BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
@@ -153,7 +155,7 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   difference kEnv y
   return t2
 -- Datatype elimination
-synthetise kEnv (E.Case p e fm) = do
+synthetise' kEnv (E.Case p e fm) = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
   sigs <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)

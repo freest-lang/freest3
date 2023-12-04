@@ -12,6 +12,7 @@ import           Validation.Rename ( isFreeIn )
 import           Data.Functor
 import           Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Util.StoreSource (Storable(storeSource))
 
 
 
@@ -52,7 +53,7 @@ solveEq _ _ p              = pure p
 
 buildRecursiveTypes :: ElabState ()
 buildRecursiveTypes = getTypes >>= setTypes . Map.mapWithKey buildRec
-  where buildRec x (k, t) = (k, T.Rec (clearSource (getSpan x)) (Bind (clearSource (getSpan x)) x k t))
+  where buildRec x (k, t) = (k, storeSource $ T.Rec (clearSource (getSpan x)) (Bind (clearSource (getSpan x)) x k t))
 
 -- | Clean rec types where the variable does not occur free
 

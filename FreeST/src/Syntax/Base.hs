@@ -65,8 +65,8 @@ defaultSpan = Span defaultPos defaultPos Nothing ""
 showSource :: (Located a, Show a) => a -> String
 showSource x = f $ getSpan x
   where
-    f (Span _ _ (Just x) _) = show x
-    f (Span _ _ Nothing  _) = "<no-source>" ++ show x -- DEBUG ONLY; TODO: REMOVE STRING LITERAL
+    f (Span _ _ (Just y) _) = show y
+    f (Span _ _ Nothing  _) = show x -- fail-safe
 
 -- Multiplicity for types and expressions
 
@@ -94,7 +94,8 @@ intern (Variable _ x) = x
 
 -- Making a variable from a string, type or program
 mkVar :: Span a -> String -> Variable
-mkVar s = Variable (clearSource s)
+mkVar s str = Variable s'{source=Just $ Variable s' str} str
+  where s' = clearSource s
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"

@@ -29,6 +29,7 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Syntax.Base as T
 import           Validation.Substitution (free)
+import Util.StoreSource (Storable(storeSource))
 
 elaboration :: PMP.PatternS -> (VP.Defs, ElabS)
 elaboration patternS = runState elaboration' (patternToElab patternS)
@@ -112,9 +113,9 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (clearSource (getSpan b)) m . Bind (clearSource (getSpan b)) b t1 <$> buildExp e bs t2
+    storeSource . E.Abs (clearSource (getSpan b)) m . Bind (clearSource (getSpan b)) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs (clearSource p) . Bind (clearSource p1) x k <$> buildExp e bs t
+    storeSource . E.TypeAbs (clearSource p) . Bind (clearSource p1) x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromSignatures f

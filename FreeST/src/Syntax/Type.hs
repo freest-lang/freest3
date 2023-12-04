@@ -95,7 +95,8 @@ instance Located Type where
 
 -- Derived forms
 unit :: Span a -> Type 
-unit s = Labelled (clearSource s) Record Map.empty 
+unit s = Labelled s'{source = Just $ Labelled s' Record Map.empty} Record Map.empty 
+  where s' = clearSource s
 
 tuple :: Span Type -> [Type] -> Type
 tuple s ts = Labelled s Record (tupleTypeMap ts)
