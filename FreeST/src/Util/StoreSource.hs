@@ -11,6 +11,7 @@ import qualified Data.Map.Strict   as Map
 import Util.State (FreestS (ast))
 import Parse.Phase (Parse)
 import Syntax.AST ( AST(..), Types )
+import Data.Maybe (isJust)
 
 -- every instance of Storable keeps a copy of itself in its Span (if it has one)
 -- storeSource is called recursively 
@@ -18,8 +19,12 @@ class Storable a where
     storeSource :: a -> a
 
 defaultStoreSource :: Located a => a -> a
-defaultStoreSource x = setSpan s{source=Just x} x
-    where s = getSpan x
+defaultStoreSource x
+    | hasSource = x 
+    | otherwise = setSpan s{source=Just x} x
+    where 
+        s = getSpan x
+        hasSource = isJust $ source s
 
 -- T.TypeMap == Signatures
 instance Storable T.TypeMap where
