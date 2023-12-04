@@ -22,6 +22,7 @@ module Syntax.Base
   , mkNewVar
   , Span(..)
   , defaultSpan
+  , showSource
   , Located(..)
   , isWild
   , clearSource
@@ -60,6 +61,12 @@ instance Ord (Span a) where
 
 defaultSpan :: Span a
 defaultSpan = Span defaultPos defaultPos Nothing ""
+
+showSource :: (Located a, Show a) => a -> String
+showSource x = f $ getSpan x
+  where
+    f (Span _ _ (Just x) _) = show x
+    f (Span _ _ Nothing  _) = "<no-source>" ++ show x -- DEBUG ONLY; TODO: REMOVE STRING LITERAL
 
 -- Multiplicity for types and expressions
 

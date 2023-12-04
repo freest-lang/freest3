@@ -25,16 +25,16 @@ class Show a => Style a where
   style :: (Stylable -> String -> String) -> Stylable -> TypeOpsEnv -> a -> String 
 
 instance Style T.Type where
-  style f sty tops  = f sty . show . getDefault tops
+  style f sty tops  = f sty . showSource . getDefault tops
   
 instance Style E.Exp where
-  style f sty tops  = f sty . show . getDefault tops
+  style f sty tops  = f sty . showSource . getDefault tops
 
 instance Style K.Kind where
   style f sty _ = f sty . show
 
 instance Style Variable where
-  style f sty _ = {-quote . -} f sty . show
+  style f sty _ = {-quote . -} f sty . showSource
 
 instance Style Signatures where
   style f sty _ = f sty . show
