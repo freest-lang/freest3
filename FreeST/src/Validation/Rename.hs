@@ -182,7 +182,7 @@ renameTypes ts =
 -- [t/x]u, substitute t for for every free occurrence of x in u;
 -- rename the resulting type
 subs :: T.Type -> Variable -> T.Type -> T.Type
-subs t x u = renameType $ Subs.subs t x u
+subs t x u = renameType $ Subs.subsSource t x u
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type

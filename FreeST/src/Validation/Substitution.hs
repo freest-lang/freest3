@@ -19,6 +19,7 @@ module Validation.Substitution
   , subsAll
   , unfold
   , free
+  , subsSource
   )
 where
 
@@ -30,6 +31,7 @@ import qualified Syntax.Type as T
 import           Util.Error ( internalError )
 import           Elaboration.Duality
 import qualified Data.Set as Set
+import Debug.Trace
 
 
 -- [t/x]u, substitute t for for every occurrence of x in u
@@ -147,3 +149,34 @@ subs t x (Dualof p u)     = Dualof p (subs t x u)
 subs _ _ t                = t
 
 -}
+
+-- Applies a substitution in both the type and its stored source
+subsSource :: T.Type -> Variable -> T.Type -> T.Type
+subsSource t x (T.Labelled p s m  ) = T.Labelled (subsSource' t x p) s (Map.map (subsSource t x) m)
+subsSource t x (T.Message p pol t1) = T.Message  (subsSource' t x p) pol (subsSource t x t1)
+subsSource t x (T.Arrow p m t1 t2 ) = T.Arrow    (subsSource' t x p) m (subsSource t x t1) (subsSource t x t2)
+subsSource t x (T.Semi   p t1 t2  ) = T.Semi     (subsSource' t x p) (subsSource t x t1) (subsSource t x t2)
+subsSource t x (T.Rec    p b      ) = T.Rec      (subsSource' t x p) (subsSourceBind t x b)
+subsSource t x (T.Forall p b      ) = T.Forall   (subsSource' t x p) (subsSourceBind t x b)
+subsSource t x u@(T.Var s y)
+  | y == x    = t
+  | otherwise = u
+subsSource t'@(T.Var _ t) x u@(T.Dualof p (T.Var p' y))
+  | y == x    = T.Dualof (subsSource' t' x p) $ T.Var p' t
+  | otherwise = u
+subsSource t x u@(T.Dualof p (T.Var p' y))
+  | y == x    = dualof t
+  | otherwise = u
+subsSource _ _ t            = t
+
+-- subsSource' :: (Show t, Show x, Show a, Subs t x a) => t -> x -> Span a -> Span a
+subsSource' :: Subs t x a => t -> x -> Span a -> Span a
+subsSource' t x s = 
+  case source s of
+  Just src -> --trace ("[" ++ show t ++ " / " ++ show x ++ "] " ++ show (source s) ++ " = " ++ show (subs t x src)) 
+    s{source = Just $ subs t x src}
+  Nothing  -> s
+
+
+subsSourceBind :: T.Type -> Variable -> Bind a T.Type -> Bind a T.Type
+subsSourceBind t x (Bind p y k u) = Bind (subsSource' t x p) y k (subsSource t x u)
