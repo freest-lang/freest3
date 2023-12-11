@@ -1,3 +1,15 @@
 
 -- Discard linear values
 let (_, _) = new @!Int () in ()
+
+-- Tuples of different dimensions
+
+(Λa:1T => \x:a -> x) @(Int, Int) ((), ())
+
+(Λa:1T => \x:a -> x) @(Bool, Bool) ((), ())
+
+(Λa:1T => \x:a -> x) @(Int, Int, Int) ((), (), ())
+
+(Λa:1T => \x:a -> x) @((), ()) (5, 6)
+
+(Λa:1T => \x:a -> x) @((), ()) (True, False)
