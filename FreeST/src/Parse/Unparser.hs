@@ -200,10 +200,11 @@ instance Unparse T.Type where
   unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
     where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
   unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
-  unparse (T.Labelled _ T.Record m) 
-    | Map.null m = (maxRator, "()")
-    | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
-  unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
+  unparse (T.Labelled _ T.Record m) = -- Currently all our Records are tuples
+    (maxRator, "(" ++ showTupleType m ++ ")")
+    -- | Map.null m = (maxRator, "()")
+    -- | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
+  unparse (T.Semi _ t u) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
@@ -227,8 +228,8 @@ showDatatype m = intercalate " | "
   showAsSequence :: T.Type -> String
   showAsSequence (T.Labelled _ _ t) = 
     let fs = unwords (map (show . snd) $ Map.toList t) in
-    if fs == "" then "" else " "++fs
-  showAsSequence _               = ""
+    if null fs then fs else " " ++ fs
+  showAsSequence _ = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
