@@ -17,18 +17,15 @@ import           Test.Hspec
 import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
-import Parse.Read
-import           Data.List                      ( intercalate )
-import           Data.List.Split                ( chunksOf )
-import qualified Data.Map.Strict               as Map
-import           Syntax.Kind                   ( KindEnv )
-import           Syntax.Base                   ( defaultPos
-                                               , mkVar
-                                               , defaultSpan
-                                               )
-import           Util.State              ( Errors )
+import 	         Parse.Read
+import           Data.List       ( intercalate )
+import           Data.List.Split ( chunksOf )
+import qualified Data.Map.Strict as Map
+import           Syntax.Kind     ( KindEnv )
+import           Syntax.Base     ( mkVar, defaultSpan )
+import           Util.State      ( Errors )
 import           Util.Error
-import Data.Bifunctor
+import           Data.Bifunctor
 -- import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]

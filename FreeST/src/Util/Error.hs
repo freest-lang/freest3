@@ -35,7 +35,7 @@ showError :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
 showError sty f tops err =
   title err sty (getSpan err) base ++ "\n  " ++ msg err sty tops modEither
   where
-    mod = trimModule f (defModule $ getSpan err)
+    mod = trimModule f (moduleName $ getSpan err)
     base = replaceBaseName f (fromEither mod)
     modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan err)
     trimModule f mod
@@ -242,7 +242,7 @@ instance Message ErrorType where
         verb = if c > 1 then "were" else "was" in
     "Found " ++ show c ++ " top-level linear function" ++ plural ++ " that " ++ verb ++ " not consumed.\n  They are:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
-             acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
+             acc ++ "\n    " ++ moduleName s ++ ":" ++ show s ++ ": " ++
              red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts _ = "Type variable not in scope: " ++ style red sty ts a
@@ -321,7 +321,7 @@ instance Message ErrorType where
     "With kind: " ++ style red sty ts (show k)
 --  Runtime
   msg (ErrorFunction s e) _ _ _ = -- TODO: This one is from the point of view of the callee not the caller
-    e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
+    e ++ "\n  error, called at module" ++ moduleName s ++ ":" ++ show (startPos s)
   msg (UndefinedFunction s) _ _ _ = 
-    "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
+    "undefined function, called at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (RuntimeError _ e) _ _ _ = "Exception: " ++ e

@@ -5,7 +5,7 @@
 module Parse.Phase where
 
 import           Syntax.AST
-import           Syntax.Base
+import           Syntax.Base hiding (moduleName)
 import qualified Syntax.Expression as E
 import           Util.Error
 import           Util.State
@@ -22,7 +22,6 @@ data Parse
 
 type instance XDef Parse = [([E.Pattern], E.Exp)] -- ~ ParseEnvPat
 type instance XExtra Parse = Extra 
-  -- (ModuleName, Imports, ParseEnvChoices, RunOpts)
 
 type ParseS = FreestS Parse
 type ParseState = StateT ParseS (Either ErrorType)

@@ -31,14 +31,11 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.MkName ( mkTrue, mkFalse )
 import qualified Syntax.Type as T
-
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Prelude                 hiding ( Left
-                                                , Right
-                                                ) -- needed for Associativity
+import           Prelude  hiding ( Left, Right ) -- needed for Associativity
 
 instance Show Span where
   show (Span sp fp _)
@@ -49,7 +46,7 @@ instance Show Span where
       showPos (l,c) = show l ++ ":" ++ show c
 
 showModuleName :: Span -> String
-showModuleName s = showModuleWithDots (defModule s)
+showModuleName s = showModuleWithDots (moduleName s)
 
 showModuleWithDots :: String -> String
 showModuleWithDots = map (\x -> if x == '/' then '.' else x )
@@ -83,11 +80,7 @@ instance Show T.Polarity where
 -- see Syntax.Variables
 
 instance Show Variable where
-  show = showVar
-
-showVar :: Variable -> String
-showVar = dropWhile (\c -> isDigit c || c == '#') . intern
--- showVar = intern -- for testing purposes
+  show = extern
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 

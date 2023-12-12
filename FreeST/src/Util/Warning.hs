@@ -15,7 +15,7 @@ import           System.FilePath
 
 showWarnings :: Stylable -> String -> TypeOpsEnv -> WarningType -> String
 showWarnings sty f tops wrn =
-  let mod = trimModule f (defModule $ getSpan wrn) in
+  let mod = trimModule f (moduleName $ getSpan wrn) in
   let base = replaceBaseName f (fromEither mod) in
   let modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan wrn) in    
     title wrn sty (getSpan wrn) base ++ "\n  " ++ msg wrn sty tops modEither
@@ -31,7 +31,7 @@ data WarningType =
   deriving Show
 
 instance Located WarningType where
-  getSpan (NoPrelude f)             = defaultSpan {defModule = f}
+  getSpan (NoPrelude f)             = defaultSpan {moduleName = f}
   getSpan (NonExhaustiveCase p _ _) = p
 
 instance Message WarningType where

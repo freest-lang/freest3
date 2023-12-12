@@ -66,7 +66,7 @@ checkMainFunction = do
         let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main sigs) sigs in
         addError (UnrestrictedMainFun sp main t k)
     else when (isMainFlagSet runOpts) $
-      addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
+      addError (MainNotDefined (defaultSpan {moduleName = runFilePath runOpts}) main)
 
 checkLinearity :: TypingState ()
 checkLinearity = do

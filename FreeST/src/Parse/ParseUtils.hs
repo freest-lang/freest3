@@ -15,7 +15,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParseUtils where
 
-import           Parse.Phase
+import           Parse.Phase hiding (moduleName)
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.MkName (mkTrue, mkFalse)
@@ -125,7 +125,7 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
+  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (moduleName $ getSpan l)
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
