@@ -90,22 +90,26 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 -- Returns a normalised type in case the type can become fat terminal
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
-fatTerminal t@T.Int{}             = Just t
-fatTerminal t@T.Float{}           = Just t
-fatTerminal t@T.Char{}            = Just t
-fatTerminal t@T.String{}          = Just t
-fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Labelled p t m) | t == T.Variant || t == T.Record = 
+fatTerminal t@T.Int{}         = Just t
+fatTerminal t@T.Float{}       = Just t
+fatTerminal t@T.Char{}        = Just t
+fatTerminal t@T.String{}      = Just t
+fatTerminal (T.Arrow p m t u) =
+  Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Labelled p T.Variant m) =
   Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
+fatTerminal (T.Labelled p T.Record m) =
+  Just (T.Labelled p T.Record) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t
-fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
+fatTerminal (T.Message p pol t) =
+  Just (T.Message p pol) <*> fatTerminal t
 -- These two would preclude distributivity:
 -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
 -- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
 -- Default
-fatTerminal _                     = Nothing
+fatTerminal _ = Nothing
 
 {-
 -- Can this type become a fat terminal?
