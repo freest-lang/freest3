@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 Type equality up to bound variable renaming
 -}
 
-module Bisimulation.AlphaEquivalence
+module Equivalence.AlphaEquivalence
   (
   )
 where

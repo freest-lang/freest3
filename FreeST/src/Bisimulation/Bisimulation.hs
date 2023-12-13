@@ -21,7 +21,7 @@ where
 import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
-import           Bisimulation.AlphaEquivalence
+import           Equivalence.AlphaEquivalence
 -- import qualified Bisimulation.ThreeValuedLogic as TVL
 -- import           Bisimulation.AlphaEquivalenceTrinary
 import           Bisimulation.Grammar
