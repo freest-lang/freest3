@@ -1,5 +1,5 @@
 {- |
-Module      :  Equivalence.Equivalence
+Module      :  Equivalence.TypeEquivalence
 Description :  Type equivalence
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,16 +11,16 @@ Portability :  portable | non-portable (<reason>)
 Try first alpha equivalence; if it fails try bisimulation
 -}
 
-module Equivalence.Equivalence
+module Equivalence.TypeEquivalence
   ( equivalent
   )
 where
 
-import Equivalence.AlphaEquivalence
+import Equivalence.AlphaCongruence
 import Bisimulation.Bisimulation
 import qualified Syntax.Type                   as T
 
 equivalent :: T.Type -> T.Type -> Bool
 equivalent t u =
-  t == u || -- Alpha-equivalence, 30% speed up in :program tests
+  t == u || -- Alpha-congruence, 30% speed up in :program tests
   bisimilar t u

@@ -26,7 +26,7 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
-import           Equivalence.Equivalence (equivalent)
+import           Equivalence.TypeEquivalence (equivalent)
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import           Validation.Phase
