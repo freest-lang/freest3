@@ -1,5 +1,5 @@
 {-|
-Module      :  Validation.Extract
+Module      :  Typing.Extract
 Description :  The various extract functions
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -14,7 +14,7 @@ Each function normalises the type, checks whether it is of the right form and
 issues an error if not.
 -}
 
-module Validation.Extract
+module Typing.Extract
   ( function
   , pair
   , forall
@@ -27,12 +27,12 @@ module Validation.Extract
   )
 where
 
-import           Validation.Normalisation ( normalise )
+import           Typing.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
 import           Util.Error
-import           Validation.Phase
+import           Typing.Phase
 import           Util.State
 
 import           Data.Functor

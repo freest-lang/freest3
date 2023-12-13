@@ -1,6 +1,6 @@
 {-|
 
-Module      :  Validation.Typing
+Module      :  Typing.Typing
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase #-}
 
-module Validation.Typing
+module Typing.Typing
   ( typeCheck
   )
 where
@@ -27,9 +27,9 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Equivalence.TypeEquivalence (equivalent)
-import qualified Validation.Extract as Extract
-import qualified Validation.Rename as Rename ( subs )
-import           Validation.Phase hiding (Typing)
+import qualified Typing.Extract as Extract
+import qualified Typing.Rename as Rename ( subs )
+import           Typing.Phase hiding (Typing)
 
 import qualified Kinding.Kinding as K
 import           Util.Error

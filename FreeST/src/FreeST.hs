@@ -21,9 +21,9 @@ import           Util.CmdLine
 import           Util.Error
 import           Util.State
 import           Util.Warning
-import           Validation.Phase
-import           Validation.Rename ( renameState )
-import           Validation.Typing ( typeCheck )
+import           Typing.Phase
+import           Typing.Rename ( renameState )
+import           Typing.Typing ( typeCheck )
 import           PatternMatch.PatternMatch
 
 import           Control.Monad.State hiding (void)
@@ -101,6 +101,6 @@ checkAndRun runOpts = do
       where
         s = defaultSpan
 
-elabToTyping :: RunOpts -> Validation.Phase.Defs -> ElabS -> TypingS
+elabToTyping :: RunOpts -> Typing.Phase.Defs -> ElabS -> TypingS
 elabToTyping runOpts defs s = s {ast=newAst, extra = runOpts}
   where newAst = AST {types=types $ ast s, signatures=signatures $ ast s, definitions = defs}

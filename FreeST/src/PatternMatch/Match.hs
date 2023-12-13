@@ -15,7 +15,7 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import qualified Validation.Rename as R
+import qualified Typing.Rename as R
 
 import           Control.Bool (ifThenElseM)
 import           Control.Monad (when)

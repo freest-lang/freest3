@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances #-}
 {- |
-Module      :  Validation.Substitution
+Module      :  Typing.Substitution
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -13,7 +13,7 @@ Substitution and unfolding recursive types.
 
 -}
 
-module Validation.Substitution
+module Typing.Substitution
   ( subs
   , cosubs
   , subsAll
@@ -63,7 +63,7 @@ instance Subs T.Type Variable T.Type where
   subs _ _ t            = t
   -- Can't issue this error because we use
   -- this function during the elaboration of dualofs
-  --  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+  --  subs _ _ t@T.Dualof{} = internalError "Typing.Substitution.subs" t
 
 
 instance (Subs T.Type Variable t) => Subs T.Type Variable (Bind k t) where
@@ -97,7 +97,7 @@ instance Cosubs t => Cosubs (Bind K.Kind t) where
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (Bind _ x _ u)) = subs t x u
-unfold t = internalError "Validation.Substitution.unfold" t
+unfold t = internalError "Typing.Substitution.unfold" t
 
 
 -- The set of free type variables in a type

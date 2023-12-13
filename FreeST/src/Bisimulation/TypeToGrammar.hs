@@ -21,8 +21,8 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import           Bisimulation.Grammar
 import           Elaboration.Replace ( changePos )
-import           Validation.Normalisation ( normalise )
-import qualified Validation.Substitution as Substitution ( subsAll )
+import           Typing.Normalisation ( normalise )
+import qualified Typing.Substitution as Substitution ( subsAll )
 import           Kinding.Terminated ( terminated )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_)
