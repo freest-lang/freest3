@@ -73,6 +73,8 @@ loading FreeST into the interpreter.
     $ stack build
 ```
 
+If you move a module to a different folder, update `Freest/package.yaml`.
+
 ## FreeST Samples
 
 Code examples available in directory

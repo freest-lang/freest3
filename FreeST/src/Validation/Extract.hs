@@ -27,7 +27,7 @@ module Validation.Extract
   )
 where
 
-import           Equivalence.Normalisation ( normalise )
+import           Validation.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
