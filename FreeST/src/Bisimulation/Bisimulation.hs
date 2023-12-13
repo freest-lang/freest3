@@ -20,7 +20,7 @@ where
 
 import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
-import           Equivalence.TypeToGrammar      ( convertToGrammar )
+import           Bisimulation.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
