@@ -19,8 +19,6 @@ module Validation.Typing
   )
 where
 
-import           Bisimulation.Bisimulation ( bisimilar )
-import           Parse.Unparser () -- debug
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
@@ -28,13 +26,15 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
-import           Util.Error
-import           Util.State hiding (void)
-import           Util.Warning
+import           Equivalence.Equivalence (equivalent)
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import           Validation.Phase
 import qualified Validation.Rename as Rename ( subs )
+import           Util.Error
+import           Util.State hiding (void)
+import           Util.Warning
+import           Parse.Unparser () -- debug
 
 import           Control.Monad.State ( when
                                      , unless, evalState, MonadState (get)
@@ -218,7 +218,7 @@ checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()
 checkEquivTypes exp kEnv expected actual =
   -- unless (equivalent kEnv actual expected) $
-  unless (bisimilar actual expected) $
+  unless (equivalent actual expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
