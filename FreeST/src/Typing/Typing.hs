@@ -30,7 +30,6 @@ import           Equivalence.TypeEquivalence (equivalent)
 import qualified Typing.Extract as Extract
 import qualified Typing.Rename as Rename ( subs )
 import           Typing.Phase hiding (Typing)
-
 import qualified Kinding.Kinding as K
 import           Util.Error
 import           Util.State hiding (void)
@@ -43,6 +42,7 @@ import           Control.Monad.State ( when, get
                                      )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
+import           Debug.Trace
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -226,7 +226,7 @@ synthetise kEnv (E.Case p e fm) = do
   sigs <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  mapM_ (checkEquivTypes e kEnv t) ts
+  mapM_ (checkEquivTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return t
@@ -282,15 +282,15 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   (t', u') <- Extract.function e =<< synthetise kEnv e
-  checkEquivTypes e kEnv t' t
-  checkEquivTypes e kEnv u' u
-checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
+  checkEquivTypes e t' t
+  checkEquivTypes e u' u
+checkAgainst kEnv e t = checkEquivTypes e t =<< synthetise kEnv e
 
-checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()
-checkEquivTypes exp kEnv expected actual =
-  -- unless (equivalent kEnv actual expected) $
-  unless (equivalent actual expected) $
+checkEquivTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
+checkEquivTypes exp expected actual =
+  unless (equivalent expected actual) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
+    -- (trace (show (expected, actual)) $ addError (NonEquivTypes (getSpan exp) expected actual exp))
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()

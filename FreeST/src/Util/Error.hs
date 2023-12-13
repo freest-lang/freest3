@@ -270,8 +270,9 @@ instance Message ErrorType where
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
   msg (NonEquivTypes _ t u e) sty ts _ =
-    "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
-    style red sty ts u ++"\n                for expression " ++ style red sty ts e
+        "Couldn't match expected type " ++ style red sty ts t ++
+    "\n              with actual type " ++ style red sty ts u ++
+    "\n                for expression " ++ style red sty ts e
   msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts _
     | Map.null diff =
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++
