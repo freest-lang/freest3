@@ -63,7 +63,7 @@ library:
     - Validation.Normalisation
     - Validation.Rename
     - Validation.Substitution
-    - Validation.TypeChecking
+    - Validation.Typing
     - Kinding.Subkind
     - Kinding.Terminated
     - Kinding.Kinding

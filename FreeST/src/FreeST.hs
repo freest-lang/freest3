@@ -7,8 +7,6 @@ module FreeST
   )
 where
 
-import PatternMatch.PatternMatch
-
 import           Elaboration.Elaboration -- ( elaboration )
 import           Elaboration.Phase
 import           Interpreter.Eval ( evalAndPrint )
@@ -25,7 +23,8 @@ import           Util.State
 import           Util.Warning
 import           Validation.Phase
 import           Validation.Rename ( renameState )
-import           Validation.TypeChecking ( typeCheck )
+import           Validation.Typing ( typeCheck )
+import           PatternMatch.PatternMatch
 
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
