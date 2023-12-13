@@ -1,5 +1,5 @@
 {-|
-Module      :  Validation.Contractive
+Module      :  Kinding.Contractive
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.Contractive
+module Kinding.Contractive
   ( contractive
   )
 where
@@ -19,7 +19,7 @@ where
 import           Syntax.Base            (Bind(..), Variable)
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Validation.Terminated
+import           Kinding.Terminated
 import qualified Data.Set as Set
 
 contractive :: K.PolyVars -> Variable -> T.Type -> Bool

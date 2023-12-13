@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-|
-Module      :  Validation.Kinding
+Module      :  Kinding.Kinding
 Description :  Check the type formation
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -13,7 +13,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.Kinding
+module Kinding.Kinding
   ( synthetise
   , checkAgainst
   , checkAgainstSession
@@ -28,8 +28,8 @@ import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import           Validation.Contractive
-import           Validation.Subkind ( (<:), join, meet )
+import           Kinding.Contractive
+import           Kinding.Subkind ( (<:), join, meet )
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor

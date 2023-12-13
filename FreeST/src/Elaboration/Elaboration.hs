@@ -15,12 +15,11 @@ import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import           Validation.Kinding (synthetise)
-import qualified Validation.Subkind as SK (join)
 import qualified PatternMatch.Phase as PMP
 import           Elaboration.Phase
 import qualified Validation.Phase as VP
-
+import qualified Kinding.Subkind as SK (join)
+import           Kinding.Kinding (synthetise)
 import           Control.Monad.State hiding (void)
 import           Data.Char (isLower)
 import           Data.Functor hiding (void)

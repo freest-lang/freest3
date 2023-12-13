@@ -28,9 +28,9 @@ import qualified Syntax.Type as T
 import           Syntax.Value
 import           Equivalence.TypeEquivalence (equivalent)
 import qualified Validation.Extract as Extract
-import qualified Validation.Kinding as K -- K Again?
 import           Validation.Phase
 import qualified Validation.Rename as Rename ( subs )
+import qualified Kinding.Kinding as K -- K Again?
 import           Util.Error
 import           Util.State hiding (void)
 import           Util.Warning

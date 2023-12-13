@@ -61,14 +61,13 @@ library:
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Normalisation
-    - Validation.Subkind
-    - Validation.Terminated
-    - Validation.Contractive
     - Validation.Rename
-    - Validation.Kinding
     - Validation.Substitution
     - Validation.Typing
     - Validation.TypeChecking
+    - Kinding.Subkind
+    - Kinding.Terminated
+    - Kinding.Kinding
     - Interpreter.Builtin
     - Interpreter.Eval
     - Parse.Phase
