@@ -37,12 +37,12 @@ class Default t where
 
 type Pos = (Int, Int)
 
--- Span
+-- Location information for the various syntactic categories
 
 data Span = Span
-  { startPos     :: Pos
-  , endPos       :: Pos
-  , moduleName    :: FilePath
+  { startPos   :: Pos
+  , endPos     :: Pos
+  , moduleName :: FilePath
   } deriving (Eq, Ord)
 
 defaultSpan :: Span

@@ -1,9 +1,9 @@
 module Validation.TestSubKindValidSpec ( spec ) where
 
-import           Test.Hspec
+import Test.Hspec
 import Syntax.Base
 import Syntax.Kind
-import Validation.Subkind
+import Kinding.Subkind
 import Parse.Unparser
 
 spec :: Spec

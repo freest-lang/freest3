@@ -17,7 +17,7 @@ import           Test.Hspec
 import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
-import 	         Parse.Read
+import           Parse.Read
 import           Data.List       ( intercalate )
 import           Data.List.Split ( chunksOf )
 import qualified Data.Map.Strict as Map

@@ -3,15 +3,16 @@ module Validation.TestTypesInvalidSpec
   )
 where
 
+import qualified Syntax.Type as T
+import           Elaboration.ResolveDuality as Dual
+import           Kinding.Kinding ( synthetise )
+import           Typing.Rename ( renameType )
+import           Elaboration.Phase
+import           Util.State ( initialS, errors )
+import           SpecUtils
+
 import           Control.Monad.State ( execState )
 import qualified Data.Map.Strict as Map ( empty )
-import           Elaboration.ResolveDuality as Dual
-import           SpecUtils
-import qualified Syntax.Type as T
-import           Util.State ( initialS, errors )
-import           Validation.Kinding ( synthetise )
-import           Validation.Rename ( renameType )
-import  Elaboration.Phase
 import           Text.Read
 
 spec :: Spec

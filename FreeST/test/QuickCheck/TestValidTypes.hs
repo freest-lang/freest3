@@ -6,15 +6,16 @@ module TestValidTypes
   )
 where
 
+import           ArbitraryTypes
 import           Syntax.Base
 import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
-import           Validation.Kinding
-import           Validation.Phase
-import           Bisimulation.Bisimulation        ( bisimilar )
+import           Kinding.Kinding
+import           Typing.Phase
+import           Bisimulation.Bisimulation    ( bisimilar )
 import           Util.State
+
 import           Control.Monad.State
-import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
 import           Test.QuickCheck
 import           Debug.Trace

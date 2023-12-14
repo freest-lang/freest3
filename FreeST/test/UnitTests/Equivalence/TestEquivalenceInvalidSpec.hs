@@ -3,13 +3,13 @@ module Equivalence.TestEquivalenceInvalidSpec
   )
 where
 
-import Bisimulation.Bisimulation ( bisimilar )
+import Equivalence.TypeEquivalence ( equivalent )
 import Control.Monad.State ( execState, evalState )
 import SpecUtils
 import Syntax.Kind as K
 import Util.State ( initial, errors, initialS )
-import Validation.Kinding ( synthetise )
-import Validation.Rename ( renameTypes )
+import Kinding.Kinding ( synthetise )
+import Typing.Rename ( renameTypes )
 import Elaboration.ResolveDuality ( resolve )
 import Elaboration.Phase ( extraElab )
 
@@ -18,7 +18,7 @@ matchInvalidSpec [k, t, u]  |
   wellFormed kEnv t' &&
   wellFormed kEnv u' = it
     (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-    (bisimilar t' u' `shouldBe` False)
+    (equivalent t' u' `shouldBe` False)
   where
     kEnv     = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
