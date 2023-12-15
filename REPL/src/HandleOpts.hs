@@ -19,9 +19,9 @@ import           Util.Error
 import           Util.GetTOps
 import           Util.State hiding (void)
 import           Utils
-import qualified Validation.Kinding as K
-import           Validation.Rename ( renameState )
-import           Validation.TypeChecking ( typeCheck )
+import qualified Kinding.Kinding as K
+import           Typing.Rename ( renameState )
+import           Typing.Typing ( typeCheck )
 
 import           Control.Monad.State
 import           Data.Char (isUpper)
