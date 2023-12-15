@@ -6,7 +6,7 @@ module Utils where
 import           Data.Void
 import           Syntax.AST
 import qualified Util.State as S
-import Validation.Phase
+import           Typing.Phase
 
 import           Control.Arrow ((***))
 import           Control.Monad.Extra (ifM)
