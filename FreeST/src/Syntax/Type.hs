@@ -19,16 +19,22 @@ module Syntax.Type
   , unit 
   , tuple 
 --  , Multiplicity(..)
+  , free
+  , isFreeIn
   )
 where
 
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
+import           Syntax.MkName (mkTupleLabels)
 import qualified Data.Map.Strict               as Map
-import Syntax.MkName (mkTupleLabels)
+import qualified Data.Set as Set
 
 data Polarity = Out | In deriving Eq
+
 data View = External | Internal deriving Eq
+
+data Sort = Record | Variant | Choice View deriving Eq
 
 data Type =
   -- Functional Types
@@ -54,8 +60,6 @@ data Type =
 -- | App Pos Type Type
 
 type TypeMap = Map.Map Variable Type
-
-data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
   omission = Int
@@ -84,3 +88,44 @@ tuple s ts = Labelled s Record tupleTypeMap
 
 unit :: Span -> Type 
 unit s = tuple s []
+
+-- The set of free type variables in a type
+free :: Type -> Set.Set Variable
+  -- Functional Types
+free (Arrow _ _ t u) = free t `Set.union` free u
+free (Labelled _ _ m) =
+  Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
+  -- Session Types
+free (Semi _ t u) = free t `Set.union` free u
+free (Message _ _ t) = free t 
+  -- Polymorphism and recursive types
+free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Var _ x) = Set.singleton x
+  -- Type operators
+free (Dualof _ t) = free t
+  --Int, Float, Char, String, Skip, End
+free _ = Set.empty 
+
+isFreeIn :: Variable -> Type -> Bool
+isFreeIn a t = a `Set.member` free t
+
+-- Does a given type variable x occur free in a type t?
+-- If not, then rec x.t can be renamed to t alone.
+-- isFreeIn :: Variable -> T.Type -> Bool
+--   -- Labelled
+-- isFreeIn x (T.Labelled _ _ m) =
+--   Map.foldr' (\t b -> x `isFreeIn` t || b) False m
+--     -- Functional types
+-- isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+--     -- Session types
+-- isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
+-- isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
+--   -- Polymorphism
+-- isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
+--   -- Functional or session 
+-- isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
+-- isFreeIn x (T.Var    _ y               ) = x == y
+--   -- Type operators
+-- isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
+-- isFreeIn _ _                             = False
