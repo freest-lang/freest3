@@ -279,3 +279,9 @@ Skip
 []
 (Int, Int)
 ((), ())
+
+-- Star (unrestricted session) types
+
+[]
+!Int ; *!Int
+*!Int

@@ -1027,7 +1027,7 @@ rec x:1S. !x
 (Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
--- This a current and well known bug
+-- Forall
 []
 !(forall a . a) ; Skip
 !(forall b . b)
@@ -1035,6 +1035,18 @@ rec x:1S. !x
 []
 !(∀a . a -> a) -> Skip
 !(∀b . b -> b) -> Skip ; Skip
+
+[]
+!(∀a . (rec b:1S . !Int ; b) -> a) -> Skip
+!(∀c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
+
+[]
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
+[]
+∀a:1S . ∀c:1S . c 1-> a
+∀a:1S . ∀c:1S . c 1-> Skip ; a
 
 -- Two alpha-equivalent types
 []
@@ -1215,3 +1227,57 @@ dualof (rec a:1S . !a                       ; Close)
 -- []
 -- rec y:1S. Skip ; y ; ?Int
 -- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
+
+-- Star (unrestricted session) types
+
+[]
+*!Int
+rec a:*S . !Int ; a
+
+[]
+forall a:1S . *!a
+forall a:1S . rec x:*S . !a ; x
+
+[]
+*?Int
+rec x:*S . ?Int ; x
+
+[]
+forall a:1S . *?a
+forall a:1S . rec x:*S . ?a ; x
+
+[]
+*+{A, B, C}
+rec x:*S . +{A:x, B:x, C:x}
+
+[]
+*&{A, B, C}
+rec x:*S . &{A:x, B:x, C:x}
+
+[]
+*!Int ; !Int
+*!Int
+
+[]
+*!Int ; !Char
+*!Int
+
+[]
+*!Int ; ?Char
+*!Int
+
+[]
+forall a:1S . *!Int ; a
+*!Int
+
+[]
+*!(*?!Int)
+*!(*?(Skip;!Int))
+
+[]
+*!(*?*?Int)
+*!(*?(rec a:*S . ?Int ; a))
+
+[]
+*!(*?*+{A,B})
+*!(*?(*+{A,B};Skip))

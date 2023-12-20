@@ -26,12 +26,13 @@ import qualified Typing.Substitution as Substitution ( subsAll )
 import           Kinding.Terminated ( terminated )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_)
+
 import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
-
+import           Debug.Trace
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
@@ -46,53 +47,48 @@ typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
--- Syntactic equality
 toGrammar t = case fatTerminal t of
   Just t' ->  getLHS $ Map.singleton (show t') []
   Nothing -> toGrammar' t
 
+-- Only non fat terminals
 toGrammar' :: T.Type -> TransState Word
 -- Functional Types
-toGrammar' (T.Arrow _ p t u) = do
+toGrammar' (T.Arrow _ m t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
-toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't test this type directly
+  getLHS $ Map.fromList [(show m ++ "d", xs), (show m ++ "r", ys)] -- domain, range
+toGrammar' (T.Labelled _ s m) = do
   ms <- tMapM toGrammar m
-  let a = if t == T.Variant then "<>" else "{}" 
-  getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
--- Session Types
-toGrammar' (T.Skip _)        = return []
-toGrammar' t@T.End{}         = getLHS $ Map.singleton (show t) [bottom]
-toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
+  getLHS $ Map.mapKeys (\k -> show s ++ show k) ms
+-- toGrammar' (T.Labelled _ t m) | t == T.Variant || t == T.Record = do
+--   ms <- tMapM toGrammar m
+--   getLHS $ Map.insert (show t ++ "✓") [] $ Map.mapKeys (\k -> show t ++ show k) ms
+toGrammar' (T.Skip _) = return []
+toGrammar' t@T.End{} = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
-  getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
--- toGrammar' (T.Choice _ v m) = do
---   ms <- tMapM toGrammar m
---   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar' (T.Labelled _ (T.Choice v) m) = do
-  ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
+  getLHS $ Map.fromList [(show p ++ "p", xs ++ [bottom]), (show p ++ "c", [])] -- payload, continuation
 -- Polymorphism and recursive types
-toGrammar' (T.Forall _ (Bind _ _ k t)) = do
+-- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
+toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton ('∀' : show k) xs
-toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
+  getLHS $  Map.singleton ('∀' : (intern a) ++ ":" ++ show k) xs
+toGrammar' (T.Var _ a) = getLHS $ Map.singleton (intern a) []
+toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 -- Type operators
 toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (show t) []
--- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 -- Fat terminal types can be compared for syntactic equality
 -- Returns a normalised type in case the type can become fat terminal
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
-fatTerminal t@T.Int{}         = Just t
-fatTerminal t@T.Float{}       = Just t
-fatTerminal t@T.Char{}        = Just t
-fatTerminal t@T.String{}      = Just t
+fatTerminal t@T.Int{} = Just t
+fatTerminal t@T.Float{} = Just t
+fatTerminal t@T.Char{} = Just t
+fatTerminal t@T.String{} = Just t
 fatTerminal (T.Arrow p m t u) =
   Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Labelled p T.Variant m) =
@@ -110,44 +106,31 @@ fatTerminal (T.Message p pol t) =
 -- Default
 fatTerminal _ = Nothing
 
-{-
--- Can this type become a fat terminal?
-syntactic :: T.Type -> Bool
--- Functional Types
-syntactic t@T.Int{}             = True
-syntactic t@T.Char{}            = True
-syntactic t@T.String{}          = True
-syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
-syntactic (T.Pair _ t u)        = syntactic t && syntactic u
-syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
--- Session Types
-syntactic (T.Semi _ T.Skip{} t) = syntactic t
-syntactic (T.Semi _ t T.Skip{}) = syntactic t
-syntactic (T.Message _ _ t)     = syntactic t
--- These two would preclude distributivity:
--- syntactic (T.Semi p t u)      = 
--- syntactic (T.Choice p pol m)  = 
--- Default
-syntactic _                     = False
--}
+instance Show T.Sort where
+  show T.Record = "{}"
+  show T.Variant = "[]"
+  show (T.Choice v) = show v
 
+-- Collect productions
 
 type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
+  -- Functional Types
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
+  -- Session Types
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
--- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Labelled _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
-collect σ t@(T.Rec _ (Bind _ x _ u)) = do
-  let σ' = (t, x) : σ
+  -- Polymorphism and recursive types
+-- collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
+collect σ t@(T.Rec _ (Bind _ a _ u)) = do
+  let σ' = (t, a) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
   m         <- getTransitions z
-  addProductions x (Map.map (++ zs) m)
+  addProductions a (Map.map (++ zs) m)
   collect σ' u
-collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Labelled _ T.Record m) = tMapM_ (collect σ) m
 collect _ _ = return ()
 
 -- The state of the translation to grammar
@@ -181,10 +164,7 @@ getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
-  return $ makeFreshVar n
-
-makeFreshVar :: Int -> Variable
-makeFreshVar n = mkVar defaultSpan ("#X" ++ show n)
+  return $ mkVar defaultSpan ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
@@ -200,10 +180,6 @@ getSubstitution = gets substitution
 putProductions :: Variable -> Transitions -> TransState ()
 putProductions x m =
   modify $ \s -> s { productions = Map.insert x m (productions s) }
-
--- putProduction :: Variable -> Label -> Word -> TransState ()
--- putProduction x l w =
---   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
 putSubstitution :: Variable -> Variable -> TransState ()
 putSubstitution x y =

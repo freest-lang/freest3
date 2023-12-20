@@ -11,33 +11,35 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
+
 {-# LANGUAGE TupleSections #-}
+
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
   )
 where
 
-import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
-import qualified Syntax.Type                   as T
-import           Bisimulation.TypeToGrammar      ( convertToGrammar )
+import           Syntax.Base                ( Variable ) -- Nonterminal symbols are type variables
+import qualified Syntax.Type                as T
+import           Bisimulation.TypeToGrammar ( convertToGrammar )
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import qualified Data.Sequence                 as Queue
+import           Bisimulation.Minimal
+
+import qualified Data.Map.Strict            as Map
+import qualified Data.Set                   as Set
+import qualified Data.Sequence              as Queue
 import           Data.Bifunctor
-import           Data.List                      ( isPrefixOf
-                                                , union, stripPrefix
-                                                )
+import           Data.List                  ( isPrefixOf, union, stripPrefix )
 -- Word is (re)defined in module Equivalence.Grammar
-import           Prelude                 hiding ( Word )
+import           Prelude                    hiding ( Word )
+import           Data.Bitraversable         ( bisequence )
 import           Debug.Trace
-import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm (convertToGrammar [t, u])
-  -- (trace (show (t, u)) $ bisimilarGrm (convertToGrammar [t, u]))
+bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
+  -- (trace (show (minimal t, minimal u)) $ bisimilarGrm (convertToGrammar [minimal t, minimal u]))
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool

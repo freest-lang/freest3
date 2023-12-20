@@ -175,12 +175,12 @@ instance Message ErrorType where
     "File " ++ style red sty tops (f -<.> "fst") ++ " is missing the module header."
   msg (MultipleFieldDecl sp1 sp2 x) sty ts _ =
     "Multiple declarations of field " ++ style red sty ts x ++
-    " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
+    " in a choice type.\n\t Declared at " ++ show sp1 ++ " and " ++ show sp2
   msg (RedundantPMatch _ x) sty ts _ =
     "Pattern match is redundant\n\t In a case alternative: " ++  style red sty ts x
   msg (DuplicateVar p tVar x p') sty ts _ =
     "Conflicting definitions for the " ++ tVar ++ " variable " ++ style red sty ts x ++
-    "\n\tBound at: " ++ show p' ++ " and " ++ show p
+    "\n\t Bound at: " ++ show p' ++ " and " ++ show p
   msg (DuplicateFieldInDatatype p pv p') sty ts _ =
     "Multiple declarations of " ++ style red sty ts pv ++ " in a datatype declaration" ++
      "\n\tDeclared at: " ++ show p ++ " and " ++ show p'
@@ -193,7 +193,7 @@ instance Message ErrorType where
           prettyList (x:xs)   = x ++ ", "    ++ prettyList xs
   msg (MultipleDeclarations p pv p') sty ts _ =
     "Ambiguous occurrence " ++ style red sty ts pv ++
-    "\n\tDeclared in modules: " ++ showModule (showModuleName p') p' ++
+    "\n\t Declared in modules: " ++ showModule (showModuleName p') p' ++
     "\n\t                     " ++ showModule (showModuleName p) p
   msg (MultipleTypeDecl p t p') sty ts _ =
     "Multiple declarations of type " ++ style red sty ts t ++
@@ -201,17 +201,17 @@ instance Message ErrorType where
     "\n\t                      " ++ showModule (showModuleName p) p
   msg (MultipleFunBindings sp1 x sp2) sty ts _ =
     "Multiple bindings for function " ++ style red sty ts x ++
-    "\n\t Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
+    "\n\t  Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
     "\n\t                      " ++ showModule (showModuleName sp1) sp1
   msg (ConflictChoiceCons p chan p2) sty ts _ =
     "Confliting definitions between a choice and a constructor " ++
     style red sty ts (show chan) ++ 
-    "\n  Declared in file/module: " ++ showModule (showModuleName p) p ++
-    "\n                           " ++ showModule (showModuleName p2) p2 
+    "\n  Declared in module: " ++ showModule (showModuleName p) p ++
+    "\n                     " ++ showModule (showModuleName p2) p2 
   msg (DifNumberOfArguments p fun) sty ts _ =
     "Equations for " ++ style red sty ts (show fun) ++
     " have different number of arguments " ++
-    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    "\n  Declared in module " ++ showModule (showModuleName p) p ++
     ": " ++ red sty (show fun)
   msg (InvalidVariablePatternChan p v) sty ts _ = 
     "Cannot mix variables with pattern-matching channel choices." ++
@@ -224,7 +224,7 @@ instance Message ErrorType where
     "Wrong number of arguments in function " ++ style red sty ts (show fun) ++
     "\n  expecting " ++ style red sty ts (show exp) ++
     ", but got " ++ style red sty ts (show got) ++
-    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    "\n  Declared in module " ++ showModule (showModuleName p) p ++
     ":\n  " ++ red sty (show fun ++ " : " ++ show t)
   msg (DualOfNonSession _ t) sty ts _ = 
     "Dualof applied to a non session type: " ++ style red sty ts t
@@ -240,7 +240,7 @@ instance Message ErrorType where
     let c = length env 
         plural = if c > 1 then "s" else ""
         verb = if c > 1 then "were" else "was" in
-    "Found " ++ show c ++ " top-level linear function" ++ plural ++ " that " ++ verb ++ " not consumed.\n  They are:" ++
+    "Found " ++ show c ++ " top-level linear expression" ++ plural ++ " that " ++ verb ++ " not consumed.\n  They are:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
              acc ++ "\n    " ++ moduleName s ++ ":" ++ show s ++ ": " ++
              red sty (show k ++ " : " ++ show v)) "" env    

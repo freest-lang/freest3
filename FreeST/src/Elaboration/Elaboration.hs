@@ -17,7 +17,6 @@ import qualified Kinding.Subkind as SK (join)
 import           Kinding.Kinding (synthetise)
 import           Typing.Normalisation ( normalise )
 import qualified Typing.Phase as VP
-import           Typing.Substitution (free)
 import qualified PatternMatch.Phase as PMP
 import           Util.Error
 import           Util.State
@@ -89,7 +88,7 @@ replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFr
   where quantifyLowerFreeVars t = 
           foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t))
                 t
-                (Set.filter (isLower.head.show) $ free t)
+                (Set.filter (isLower.head.show) $ T.free t)
           where p = getSpan t
 
 replaceDefinitions :: Defs -> ElabState ()

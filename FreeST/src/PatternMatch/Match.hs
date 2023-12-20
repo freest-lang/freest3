@@ -231,7 +231,7 @@ replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
 replaceExp v p (CasePat s e flp)      = do
   checkChanVarCase flp                                            -- checks if there are variables with channel patterns
-  nVar <- R.renameVar $ Variable (getSpan e) "unLetHiddenVar"     -- creates an hidden variable
+  nVar <- R.renameVar $ Variable (getSpan e) "unLetHiddenVar" (-1)    -- creates an hidden variable
   UnLet s nVar <$> replaceExp v p e
                <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e
@@ -241,9 +241,9 @@ replaceBind v p b@(Bind {var=v1,body=exp}) = replaceExp v p exp
                                          <&> (\e -> b {var=replaceVar v p v1,body=e})
 
 replaceVar :: Variable -> Variable -> Variable -> Variable
-replaceVar (Variable _ name) (Variable _ name1) v@(Variable span name2)
-  | name1 == name2 = Variable span name
-  | otherwise      = v
+replaceVar v@(Variable _ str i) v1 v2
+  | intern v1 == intern v2 = Variable (getSpan v2) str i
+  | otherwise      = v2
 
 substitute :: Variable -> Variable -> ([Variable],Exp) -> PatternState ([Variable],Exp)
 substitute v p (vs,e) = (,) (map (replaceVar v p) vs) <$> replaceExp v p e

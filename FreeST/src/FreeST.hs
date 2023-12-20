@@ -63,14 +63,13 @@ checkAndRun runOpts = do
   -- | Rename & TypeCheck
   let s4 = execState (renameState >> typeCheck) (elabToTyping runOpts defs elabS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
-  when (hasErrors s4)  (die $ getErrors runOpts s4)
+  when (hasErrors s4) (die $ getErrors runOpts s4)
   
   -- | Check whether a given function signature has a corresponding
   --   binding
   let sigs = Map.keysSet (noConstructors (types $ ast s4) (signatures $ ast s4))
   let p = Map.keysSet (definitions $ ast s4)
   let bs1 = Set.difference (Set.difference sigs p) bs -- (builtins s4)
-
   unless (Set.null bs1) $
     die $ getErrors runOpts $ initialS {errors = Set.foldr (noSig (getSignaturesS s4)) [] bs1}
   

@@ -140,7 +140,8 @@ showInfo b f var = f var >>= \case
     | b         -> lift $ putStrLn $ infoHeader (B.getSpan t) ++ infoData var t
     | otherwise -> do
         m <- getFromDefinitions var
-        let s = uncurry (B.Span (B.startPos $ B.getSpan t)) (maybe defSpan mbLocExp m)
+        let (f, moduleName) = maybe defSpan mbLocExp m
+            s = B.Span moduleName (B.startPos $ B.getSpan t) f
         getTypeNames >>= lift . putStrLn . (infoHeader s ++) . infoFun var t m
      where
        defSpan = (B.endPos $ B.getSpan t, B.moduleName $ B.getSpan t)

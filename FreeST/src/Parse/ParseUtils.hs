@@ -26,32 +26,39 @@ import           Util.State hiding (void)
 import           Control.Monad.State
 import           Data.List ( find )
 import qualified Data.Map.Strict as Map
+import           Data.Maybe ( fromMaybe )
 
 -- Modules
 
+modulePath :: ParseState FilePath
+modulePath = do
+  f <- getFileName
+  m <- getModuleName
+  return $ fromMaybe f m
+
 mkSpan :: Located a => a -> ParseState Span
 mkSpan a = do
-  let (Span p1 p2 _) = getSpan a
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  let (Span _ p1 p2) = getSpan a
+  m <- modulePath
+  return $ Span m p1 p2
 
 mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState Span
 mkSpanSpan a b = do
-  let (Span p1 _ _) = getSpan a
-  let (Span _ p2 _) = getSpan b
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  let (Span _ p1 _) = getSpan a
+  let (Span _ _ p2) = getSpan b
+  m <- modulePath
+  return $ Span m p1 p2
 
 mkSpanFromSpan :: Located a => Span -> a -> ParseState Span
-mkSpanFromSpan (Span p1 _ _) a = do
-  let (Span _ p2 _) = getSpan a
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+mkSpanFromSpan (Span _ p1 _) a = do
+  let (Span _ _ p2) = getSpan a
+  m <- modulePath
+  return $ Span m p1 p2
 
 liftModToSpan :: Span -> ParseState Span
-liftModToSpan (Span p1 p2 _) = do
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+liftModToSpan (Span _ p1 p2) = do
+  m <- modulePath
+  return $ Span m p1 p2
 
 -- Parse errors
 
@@ -125,7 +132,7 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (moduleName $ getSpan l)
+  where s = Span (moduleName $ getSpan l) (startPos $ getSpan l) (endPos $ getSpan r)
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
@@ -141,7 +148,6 @@ leftSection op e s = do
   where
     genFstType (T.Arrow _ _ t _) = t
     genFstType t = t
-
     
 -- Datatypes
 
@@ -155,3 +161,8 @@ insertMap = Map.insertWith (++)
 condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
 condCase s i t e = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))
                                              ,(mkFalse s, ([],e))]
+
+-- This is used for star-types only. It should not be needed at parse time. But
+-- then we need star types in Syntax.Type.Type
+freshTVar :: MonadState (FreestS a) m => Span -> m Variable
+freshTVar p = mkVar p . ('a' :) . show <$> getNextIndex
