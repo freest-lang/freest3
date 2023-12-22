@@ -55,6 +55,7 @@ defaultSpan = Span "<default>" (0, 0) (0, 0) Default
 
 class Located t where
   getSpan :: t -> Span
+  setSpan :: Span -> t -> t
 
 -- Multiplicity for types and expressions
 

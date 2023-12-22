@@ -80,6 +80,22 @@ instance Located Type where
   getSpan (Var p _       ) = p
   getSpan (Dualof p _    ) = p
 
+  setSpan s (Int  _           ) = Int s
+  setSpan s (Float _          ) = Float s
+  setSpan s (Char _           ) = Char s
+  setSpan s (String _         ) = String s
+  setSpan s (Arrow _ t1 t2 m  ) = Arrow s t1 t2 m
+  setSpan s (Labelled _ srt tm)  = Labelled s srt tm 
+  setSpan s (Skip _           ) = Skip s
+  setSpan s (End _ p          ) = End s p
+  setSpan s (Semi _ t1 t2  ) = Semi s t1 t2
+  setSpan s (Message _ p t ) = Message s p t
+  setSpan s (Forall _ b    ) = Forall s b
+  setSpan s (Rec _ b       ) = Rec s b
+  setSpan s (Var _ v       ) = Var s v
+  setSpan s (Dualof _ t    ) = Dualof s t
+  
+
 -- Derived forms
 tuple :: Span -> [Type] -> Type
 tuple s ts = Labelled s Record tupleTypeMap
