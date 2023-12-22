@@ -346,7 +346,7 @@ scanTokens input filename =
         AlexEOF -> Right []
         AlexError _ ->
           let p = internalPos pos in
-          Left $ LexicalError (Span filename (startPos p) (endPos p)) (show $ head input)
+          Left $ LexicalError (Span filename (startPos p) (endPos p) User) (show $ head input)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
@@ -370,7 +370,7 @@ trim = reverse . trim' . reverse . trim'
 -- POSITIONS
 
 internalPos :: AlexPosn -> Span
-internalPos (AlexPn _ l c) = let p = (l, c) in Span "<default>" p p
+internalPos (AlexPn _ l c) = let p = (l, c) in Span "<default>" p p User
 
 -- TODO: proper spans?, proper filename
 instance Located Token where

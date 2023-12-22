@@ -38,7 +38,7 @@ import qualified Data.Set as Set
 import           Prelude  hiding ( Left, Right ) -- needed for Associativity
 
 instance Show Span where
-  show (Span _ p1 p2)
+  show (Span _ p1 p2 _)
     | p1 == p2  = showPos p1
     | fst p1 == fst p2 = showPos p1 ++ "-" ++ show (snd p2)
     | otherwise = showPos p1 ++ "-" ++ showPos p2

@@ -38,27 +38,27 @@ modulePath = do
 
 mkSpan :: Located a => a -> ParseState Span
 mkSpan a = do
-  let (Span _ p1 p2) = getSpan a
+  let (Span _ p1 p2 _) = getSpan a
   m <- modulePath
-  return $ Span m p1 p2
+  return $ Span m p1 p2 User
 
 mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState Span
 mkSpanSpan a b = do
-  let (Span _ p1 _) = getSpan a
-  let (Span _ _ p2) = getSpan b
+  let (Span _ p1 _ _) = getSpan a
+  let (Span _ _ p2 _) = getSpan b
   m <- modulePath
-  return $ Span m p1 p2
+  return $ Span m p1 p2 User
 
 mkSpanFromSpan :: Located a => Span -> a -> ParseState Span
-mkSpanFromSpan (Span _ p1 _) a = do
-  let (Span _ _ p2) = getSpan a
+mkSpanFromSpan (Span _ p1 _ _) a = do
+  let (Span _ _ p2 _) = getSpan a
   m <- modulePath
-  return $ Span m p1 p2
+  return $ Span m p1 p2 User
 
 liftModToSpan :: Span -> ParseState Span
-liftModToSpan (Span _ p1 p2) = do
+liftModToSpan (Span _ p1 p2 _) = do
   m <- modulePath
-  return $ Span m p1 p2
+  return $ Span m p1 p2 User
 
 -- Parse errors
 
@@ -132,7 +132,7 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (moduleName $ getSpan l) (startPos $ getSpan l) (endPos $ getSpan r)
+  where s = Span (moduleName $ getSpan l) (startPos $ getSpan l) (endPos $ getSpan r) User
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr

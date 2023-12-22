@@ -17,6 +17,7 @@ module Syntax.Base
   , Bind(..)
   , Variable(..)
   , Span(..)
+  , Category(..)
   , Located(..)
   , defaultSpan
   , intern
@@ -42,10 +43,13 @@ data Span = Span
   { moduleName :: FilePath
   , startPos   :: Pos
   , endPos     :: Pos
+  , category   :: Category
   } deriving (Eq, Ord)
 
+data Category = Default | User | Generated deriving (Eq, Ord) 
+
 defaultSpan :: Span
-defaultSpan = Span "<default>" (0, 0) (0, 0)
+defaultSpan = Span "<default>" (0, 0) (0, 0) Default
 
 -- The span of the various syntactic categories
 
