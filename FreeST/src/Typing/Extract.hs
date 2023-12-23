@@ -23,29 +23,29 @@ module Typing.Extract
   , outChoiceMap
   , inChoiceMap
   , datatypeMap
-  , choiceBranch
+  , choiceBranch -- for select C e
   )
 where
 
-import           Typing.Normalisation ( normalise )
 import           Syntax.Base
-import qualified Syntax.Expression as E
-import qualified Syntax.Type as T
-import           Util.Error
+import qualified Syntax.Expression    as E
+import qualified Syntax.Type          as T
+import           Syntax.MkName        (mkTupleLabels)
+import           Typing.Normalisation ( normalise )
 import           Typing.Phase
+import           Util.Error
 import           Util.State
 
 import           Data.Functor
-import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
-import Syntax.MkName (mkTupleLabels)
+import qualified Data.Map.Strict      as Map
+import qualified Data.Set             as Set
 
 
 function :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 function e t =
   case normalise t of
     (T.Arrow _ _ u v) -> return (u, v)
-    u               -> let p = getSpan e in
+    u -> let p = getSpan e in
       addError (ExtractError p "an arrow" e u) $> (omission p, omission p)
 
 pair :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
@@ -53,7 +53,7 @@ pair e t =
   case normalise t of
     (T.Labelled _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
       return (m Map.! l0, m Map.! l1)
-    u              -> let p = getSpan u in
+    u -> let p = getSpan u in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
   where l0 = head mkTupleLabels defaultSpan
         l1 = (mkTupleLabels !! 1) defaultSpan 
@@ -62,7 +62,7 @@ forall :: E.Exp -> T.Type -> TypingState T.Type
 forall e t =
   case normalise t of
     u@T.Forall{} -> return u
-    u            -> let p = getSpan e in
+    u -> let p = getSpan e in
       addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
 
 output :: E.Exp -> T.Type -> TypingState (T.Type, T.Type)
@@ -113,7 +113,7 @@ datatypeMap e t =
       addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
 
 choiceBranch :: Span -> T.TypeMap -> Variable -> T.Type -> TypingState T.Type
-choiceBranch p tm x t = case tm Map.!? x of
-  Just t  -> return t
-  Nothing -> addError (BranchNotInScope p x t) $> omission p
+choiceBranch p tm a t = case tm Map.!? a of
+  Just t -> return t
+  Nothing -> addError (BranchNotInScope p a t) $> omission p
 
