@@ -20,7 +20,7 @@ import           Util.GetTOps
 import           Util.State hiding (void)
 import           Utils
 import qualified Kinding.Kinding as K
-import           Typing.Rename ( renameState )
+import           Typing.Rename ( renameProgram )
 import           Typing.Typing ( typeCheck )
 
 import           Control.Monad.State
@@ -54,7 +54,7 @@ freestLoadAndRun  _ f _ _ False = freestError $ FileNotFound f
 freestLoadAndRun _ f _ False _ = freestError $ WrongFileExtension f
 freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
 --   wrapIO_ (parseAndImport (s{runOpts=defaultOpts{runFilePath=f}}))
---     $ unlessM (wrapExec $ elaboration >> stopPipeline (renameState >> typeCheck))
+--     $ unlessM (wrapExec $ elaboration >> stopPipeline (renameProgram >> typeCheck))
 --          (lift $ putStrLn msg)
 
 freestError :: ErrorType -> REPLState ()
@@ -235,7 +235,7 @@ check s runFilePath successMsg = do
       if hasErrors elabS
       then liftIO $ putStrLn $ getErrors runOpts elabS
       else            
-        let s4 = execState (renameState >> typeCheck) (elabToTyping runOpts{runFilePath} defs elabS) in
+        let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts{runFilePath} defs elabS) in
         if hasErrors s4 then liftIO $ putStrLn $ getErrors runOpts s4
         else put s4 >>
           maybe (return ()) (liftIO . putStrLn) successMsg

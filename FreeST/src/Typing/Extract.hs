@@ -74,15 +74,9 @@ input = message T.In "an input"
 message :: T.Polarity -> String -> E.Exp -> T.Type -> TypingState (T.Type, T.Type)
 message pol msg e t =
   case normalise t of
-    u@(T.Message p pol' b) ->
-      if pol == pol' then return (b, T.Skip p) else messageErr u
-    u@(T.Semi _ (T.Message _ pol' b) v) ->
-      if pol == pol' then return (b, v) else messageErr u
-    u -> messageErr u
- where
-  messageErr :: T.Type -> TypingState (T.Type, T.Type)
-  messageErr u =
-    addError (ExtractError (getSpan e) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
+    T.Semi _ (T.Message _ pol' u) v | pol == pol' -> return (u, v)
+    u -> addError (ExtractError (getSpan e) msg e u) $>
+           (omission $ getSpan u, T.Skip $ getSpan u)
 
 outChoiceMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 outChoiceMap = choiceMap T.External "an external choice (&)"
@@ -93,24 +87,15 @@ inChoiceMap = choiceMap T.Internal "an internal choice (+)"
 choiceMap :: T.View -> String -> E.Exp -> T.Type -> TypingState T.TypeMap
 choiceMap view msg e t =
   case normalise t of
-    (T.Labelled _ (T.Choice view') m) ->
-      if view == view' then return m else choiceErr t
-    (T.Semi _ (T.Labelled _ (T.Choice view') m) u) ->
-      if view == view'
-      then return $ Map.map (\v -> T.Semi (getSpan v) v u) m
-      else choiceErr t
-    u -> choiceErr u
- where
-  choiceErr :: T.Type -> TypingState T.TypeMap
-  choiceErr u =
-    addError (ExtractError (getSpan e) msg e u) $> Map.empty
+    (T.Semi _ (T.Labelled _ (T.Choice view') m) u) | view == view' ->
+      return $ Map.map (\v -> T.Semi (getSpan v) v u) m
+    u -> addError (ExtractError (getSpan e) msg e u) $> Map.empty
 
 datatypeMap :: E.Exp -> T.Type -> TypingState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Labelled _ T.Variant m) -> return m
-    u                ->
-      addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
+    u -> addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
 
 choiceBranch :: Span -> T.TypeMap -> Variable -> T.Type -> TypingState T.Type
 choiceBranch p tm a t = case tm Map.!? a of

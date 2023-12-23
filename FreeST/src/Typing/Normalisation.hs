@@ -1,6 +1,6 @@
 {- |
 Module      :  Typing.Normalisation
-Description :  Unfold recursive types and terminated types
+Description :  Normalise a session type
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -8,8 +8,20 @@ Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-Unfold recursive types and get rid of terminated types, in such a way that the
-top level constructor of the resulting type is not a rec and not Skip;T.
+Normalise a session type by
+
+- Unfolding recursive types
+- Getting rid of terminated types
+- Tame the associativity of semicolon
+- Turn message and choice types T into T;Skip
+
+in such a way that the resulting type
+- is T;U where T is !, ?, + or &,
+- is never a recursive type (rec types are unfolded), or
+- is the original type
+
+top level constructor of the resulting type is either not a rec
+and not Skip;T.
 -}
 
 module Typing.Normalisation
@@ -17,16 +29,21 @@ module Typing.Normalisation
   )
 where
 
-import           Syntax.Base                ( Span, Bind(..) )
-import qualified Syntax.Type                 as T
-import           Typing.Substitution     ( subs )
-import           Kinding.Terminated          ( terminated )
-import           Util.Error                  ( internalError )
+import           Syntax.Base         ( Span, Bind(..) )
+import qualified Syntax.Type         as T
+import           Kinding.Terminated  ( terminated )
+import           Typing.Substitution ( subs )
+import           Util.Error          ( internalError )
+
 
 normalise :: T.Type -> T.Type
+  -- Session Types
 normalise (T.Semi p t u)
   | terminated t = normalise u
   | otherwise    = append p (normalise t) u
+normalise (T.Message s p t) = T.Semi s (T.Message s p t) (T.Skip s)
+normalise (T.Labelled s c@T.Choice{}  m) = T.Semi s (T.Labelled s c m) (T.Skip s)
+  -- recursive types
 normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)
 normalise t@T.Dualof{} = internalError "Typing.Normalisation.normalise" t
 normalise t = t

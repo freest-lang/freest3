@@ -10,12 +10,8 @@ import           Paths_FreeST ( getDataFileName )
 import           Syntax.Base
 import           Util.State
 import           Utils
-import           Typing.Rename ( renameState )
-import           Typing.Typing ( typeCheck )
 import qualified Typing.Typing as T
 import           Parse.Phase
-import           Typing.Phase
-import           Elaboration.Phase
 import           PatternMatch.PatternMatch
 
 import           Control.Monad.State

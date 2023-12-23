@@ -9,7 +9,7 @@ import           Typing.Phase
 import           Elaboration.Elaboration ( elaboration )
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.Phase
-import           Typing.Rename
+import           Typing.Rename ( renameProgram, rename )
 import           Typing.Typing ( checkAgainst )
 import           Parse.Phase
 import           PatternMatch.PatternMatch
@@ -41,7 +41,7 @@ isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (error
 
   test t e s' = do
     setErrors (errors s')
-    renameState
+    renameProgram
     t' <- rename Map.empty Map.empty t
     e' <- rename Map.empty Map.empty e
     checkAgainst Map.empty e' t'
