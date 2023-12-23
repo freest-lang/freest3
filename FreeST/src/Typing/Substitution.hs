@@ -64,7 +64,7 @@ instance Subs T.Type where
   --  subs _ _ t@T.Dualof{} = internalError "Typing.Substitution.subs" t
 
 instance (Subs t) => Subs (Bind k t) where
-  subs t a (Bind p y k u) = Bind p y k (subs t a u)
+  subs t a (Bind p b k u) = Bind p b k (subs t a u)
 
 -- [t/co-a]u, substitute t for for every occurrence of covariable a in u
 

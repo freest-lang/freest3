@@ -22,7 +22,7 @@ import           Util.Error
 import           Util.State
 import           Util.Warning
 import           Typing.Phase
-import           Typing.Rename ( renameState )
+import           Typing.Rename ( renameProgram )
 import           Typing.Typing ( typeCheck )
 import           PatternMatch.PatternMatch
 
@@ -61,7 +61,7 @@ checkAndRun runOpts = do
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
   -- | Rename & TypeCheck
-  let s4 = execState (renameState >> typeCheck) (elabToTyping runOpts defs elabS)
+  let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts defs elabS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
   when (hasErrors s4) (die $ getErrors runOpts s4)
   
