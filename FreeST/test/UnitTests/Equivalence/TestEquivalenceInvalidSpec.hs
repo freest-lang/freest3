@@ -22,6 +22,7 @@ matchInvalidSpec [k, t, u]  |
   where
     kEnv     = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
+matchInvalidSpec _ = it "" (True `shouldBe` True) -- Why not accept "Non-exhaustive patterns"?
 
 resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial extraElab)

@@ -10,6 +10,9 @@ Portability :  portable
 
 Renames the polymorphic variables of a type by choosing the first variable not
 free in the type.
+
+Additionally transforms types of the form `rec a:k.T` in `T` when x is not free
+in `T`. This facilitates translation into grammars.
 -}
 
 module Bisimulation.Minimal 
@@ -37,7 +40,9 @@ minimal t@(Forall s1 (Bind s2 a k u)) =
   Forall s1 (Bind s2 b k (minimal (subs vb a u)))
     where b = mkNewVar (first t) a
           vb = Var (getSpan b) b
-minimal (Rec s1 (Bind s2 a k t)) = Rec s1 (Bind s2 a k (minimal t))
+minimal (Rec s1 (Bind s2 a k t))
+  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal t))
+  | otherwise = minimal t
   -- Type operators
 minimal (Dualof s t) = Dualof s (minimal t)
   -- Int, Float, Char, String, Skip, End, Var

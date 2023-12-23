@@ -90,25 +90,13 @@ instance Rename T.Type where
   rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
   -- Polymorphism and recursive types
   rename tbs pbs (T.Forall p b) = T.Forall p <$> rename tbs pbs b
-  -- rename tbs pbs t@(T.Forall s1 (Bind s2 a k u)) = do
-    -- let b = mkNewVar (first t) a
-    -- let vb = T.Var (getSpan b) b
-    -- u' <- rename tbs pbs (subs vb a u)
-    -- return $ T.Forall s1 (Bind s2 b k u')
-  rename tbs pbs (T.Rec p b)
-    | isProperRec b = T.Rec p <$> rename tbs pbs b
-    | otherwise     = rename tbs pbs (body b)
+  rename tbs pbs (T.Rec p b) = T.Rec p <$> rename tbs pbs b
   rename tbs _ (T.Var p a) = return $ T.Var p (findWithDefaultVar a tbs)
   -- Type operators
   rename tbs pbs (T.Dualof p t@T.Var{}) = T.Dualof p <$> rename tbs pbs t
   rename _ _ t@T.Dualof{} = internalError "Typing.Rename.rename" t
   -- Int, Float, Char, String, Skip, End
   rename _ _ t = return t
-
--- Does a given bind form a proper rec?
--- Does the bound type variable occur free the type?
-isProperRec :: Bind K.Kind T.Type -> Bool
-isProperRec (Bind _ a _ t) = a `T.isFreeIn` t
 
 -- Expressions
 
