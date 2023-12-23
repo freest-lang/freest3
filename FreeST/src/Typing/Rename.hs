@@ -169,7 +169,12 @@ renameTypes ts =
 -- [t/x]u, substitute t for for every free occurrence of x in u;
 -- rename the resulting type
 subs :: T.Type -> Variable -> T.Type -> T.Type
-subs t a u = renameType $ Subs.subs t a u
+subs = renameType `compose3` Subs.subs
+-- subs t a u = renameType $ Subs.subs t a u
+
+-- https://gist.github.com/cscalfani/30ff149a75fc5580d1f8aec61f8e5283
+compose3 :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
+compose3 = (.) . (.) . (.)
 
 -- Unfold a recursive type (one step only)
 -- rename the resulting type
