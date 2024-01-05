@@ -459,7 +459,7 @@ runServer handle state c =
 type OutStream : 1S = +{ PutChar : !Char ; OutStream
                        , PutStr  : !String ; OutStream
                        , PutStrLn: !String ; OutStream
-                       , SClose  : Close
+                       , SWait   : Wait
                        }
 
 -- | Unrestricted session type for the `OutStream` type.
@@ -467,7 +467,7 @@ type OutStreamProvider : *S = *?OutStream
 
 -- | Closes an `OutStream` channel endpoint. Behaves as a `close`.
 hCloseOut : OutStream -> ()
-hCloseOut c = c |> select SClose |> close
+hCloseOut c = c |> select SWait |> wait
 
 __hGenericPut : forall a:*T . (OutStream -> !a ; OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
@@ -646,8 +646,8 @@ __runPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrOut printer |> __runPrinter ()
 __runPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter ()
-__runPrinter _ (SClose printer) =
-  wait printer
+__runPrinter _ (SWait printer) =
+  close printer
 
 -- Stderr
 
@@ -665,8 +665,8 @@ __runErrPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
 __runErrPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
-__runErrPrinter _ (SClose printer) =
-  wait printer
+__runErrPrinter _ (SWait printer) =
+  close printer
 
 -- Stdin
 
