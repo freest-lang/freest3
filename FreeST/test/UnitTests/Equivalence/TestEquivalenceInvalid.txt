@@ -258,30 +258,10 @@ Skip
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close
 (rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Wait
 
--- Un vs. Lin types
-
 []
-(rec a:1S . !Int ; a)
-(rec a:*S . !Int ; a)
-
-[]
-(rec a:1S . ?((rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close) ; a)
-(rec a:*S . ?((rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close) ; a)
-
-[]
-(rec a:1S . +{A: a})
-(rec a:*S . +{A: a})
-
-[]
-(rec a:1S . &{A: a})
-(rec a:*S . &{A: a})
+forall a:1S . *!Int ; a
+*!Int
 
 []
 (Int, Int)
 ((), ())
-
--- Star (unrestricted session) types
-
-[]
-!Int ; *!Int
-*!Int
