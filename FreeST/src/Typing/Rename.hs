@@ -60,7 +60,7 @@ renameFun f t = do
 
 -- Renaming the various syntactic categories
 
-type Substitution = Map.Map String Variable -- Why String and not Syntax.Base.Variable?
+type Substitution = Map.Map Variable Variable
 
 class Rename t where
   rename :: MonadState (FreestS a) m =>
@@ -68,8 +68,8 @@ class Rename t where
     Substitution -> -- For program variables, τ
     t -> m t
 -- Note: Type variables and program variables come from two different universes.
--- We would like this type, Λa => λa:a -> λb:a -> a, the type of the truth value
--- true in System F, to be well formed.
+-- We would like type Λa => λa:a -> λb:a -> a, the type of the truth value true
+-- in System F, to be well formed.
 
 -- Renaming binds
 
@@ -78,14 +78,14 @@ instance Rename (Bind T.Type E.Exp) where
   rename σ τ (Bind p x t e) = do
     x' <- rename σ τ x
     t' <- rename σ τ t
-    e' <- rename σ (insertVar x x' τ) e
+    e' <- rename σ (Map.insert x x' τ) e
     return $ Bind p x' t' e'
 
 -- (∀ a:k . t) or (Λ a:k => e)
 instance Rename te => Rename (Bind K.Kind te) where
   rename σ τ (Bind p a k te) = do
     a' <- rename σ τ a
-    te' <- rename (insertVar a a' σ) τ te
+    te' <- rename (Map.insert a a' σ) τ te
     return $ Bind p a' k te'
 
 -- Renaming types
@@ -102,7 +102,7 @@ instance Rename T.Type where
   rename σ τ (T.Rec p b@(Bind _ a _ t))
     | a `T.isFreeIn` t = T.Rec p <$> rename σ τ b
     | otherwise = rename σ τ t
-  rename σ _ (T.Var p a) = return $ T.Var p (findWithDefaultVar a σ)
+  rename σ _ (T.Var p a) = return $ T.Var p (Map.findWithDefault a a σ)
   -- Type operators
   rename σ τ (T.Dualof p t@T.Var{}) = T.Dualof p <$> rename σ τ t
   rename _ _ t@T.Dualof{} = internalError "Typing.Rename.rename" t
@@ -120,7 +120,7 @@ renameTypes ts =
 
 instance Rename E.Exp where
   -- Variable
-  rename _ τ (E.Var p x) = return $ E.Var p (findWithDefaultVar x τ)
+  rename _ τ (E.Var p x) = return $ E.Var p (Map.findWithDefault x x τ)
   -- Abstraction intro and elim
   rename σ τ (E.Abs p m b) = E.Abs p m <$> rename σ τ b
   rename σ τ (E.App p e1 e2) = E.App p <$> rename σ τ e1 <*> rename σ τ e2
@@ -130,7 +130,7 @@ instance Rename E.Exp where
     x'  <- rename σ τ x
     y'  <- rename σ τ y
     e1' <- rename σ τ e1
-    e2' <- rename σ (insertVar y y' (insertVar x x' τ)) e2
+    e2' <- rename σ (Map.insert y y' (Map.insert x x' τ)) e2
     return $ E.BinLet p x' y' e1' e2'
   -- Datatype elim
   rename σ τ (E.Case p e fm) =
@@ -143,7 +143,7 @@ instance Rename E.Exp where
   rename σ τ (E.UnLet p x e1 e2) = do
     x'  <- rename σ τ x
     e1' <- rename σ τ e1
-    e2' <- rename σ (insertVar x x' τ) e2
+    e2' <- rename σ (Map.insert x x' τ) e2
     return $ E.UnLet p x' e1' e2'
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ e = return e
@@ -155,7 +155,7 @@ renameField σ τ (xs, e) = do
   return (xs', e')
  where
   insertProgVars :: [Variable] -> Substitution
-  insertProgVars xs' = foldr (uncurry insertVar) τ (zip xs xs')
+  insertProgVars xs' = foldr (uncurry Map.insert) τ (zip xs xs')
 
 -- Renaming variables
 
@@ -166,14 +166,6 @@ renameVar :: MonadState (FreestS a) m => Variable -> m Variable
 renameVar x = do
   n <- getNextIndex
   return $ mkNewVar n x
-
--- Managing variables
-
-insertVar :: Variable -> Variable -> Substitution -> Substitution
-insertVar x = Map.insert (intern x)
-
-findWithDefaultVar :: Variable -> Substitution -> Variable
-findWithDefaultVar x = Map.findWithDefault x (intern x)
 
 -- Substitution and unfold, the renamed versions
 
