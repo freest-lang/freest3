@@ -73,18 +73,20 @@ class Rename t where
 
 -- Renaming binds
 
-instance Rename t => Rename (Bind K.Kind t) where
-  rename σ τ (Bind p a k t) = do
-    a' <- rename σ τ a
-    t' <- rename (insertVar a a' σ) τ t
-    return $ Bind p a' k t'
-
+-- (λ x:t -> e)
 instance Rename (Bind T.Type E.Exp) where
   rename σ τ (Bind p x t e) = do
     x' <- rename σ τ x
     t' <- rename σ τ t
     e' <- rename σ (insertVar x x' τ) e
     return $ Bind p x' t' e'
+
+-- (∀ a:k . t) or (Λ a:k => e)
+instance Rename te => Rename (Bind K.Kind te) where
+  rename σ τ (Bind p a k te) = do
+    a' <- rename σ τ a
+    te' <- rename (insertVar a a' σ) τ te
+    return $ Bind p a' k te'
 
 -- Renaming types
 
@@ -97,7 +99,9 @@ instance Rename T.Type where
   rename σ τ (T.Message p pol t) = T.Message p pol <$> rename σ τ t
   -- Polymorphism and recursive types
   rename σ τ (T.Forall p b) = T.Forall p <$> rename σ τ b
-  rename σ τ (T.Rec p b) = T.Rec p <$> rename σ τ b
+  rename σ τ (T.Rec p b@(Bind _ a _ t))
+    | a `T.isFreeIn` t = T.Rec p <$> rename σ τ b
+    | otherwise = rename σ τ t
   rename σ _ (T.Var p a) = return $ T.Var p (findWithDefaultVar a σ)
   -- Type operators
   rename σ τ (T.Dualof p t@T.Var{}) = T.Dualof p <$> rename σ τ t

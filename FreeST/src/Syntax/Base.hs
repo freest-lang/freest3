@@ -25,7 +25,6 @@ module Syntax.Base
   , mkNewVar
   , isWild
 ) where
-import Data.Char (isDigit)
 
 -- Default value for the various syntactic categories
 
