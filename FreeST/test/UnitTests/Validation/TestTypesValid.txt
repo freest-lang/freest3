@@ -146,9 +146,6 @@ rec a : 1T . a 1-> a
 forall b: 1S . rec a: 1S. b
 1T
 
-forall b: 1S . rec a: 1S. b
-1T
-
 forall b: 1S . rec a: 1S. b ; a
 1T
 
@@ -203,7 +200,7 @@ forall a: 1S . forall b: 1S . forall z: 1S . (rec b: 1S.+{A: (b;&{A: (Skip;(rec 
 
 -- Forall
 
-∀ a . a -> a -> a -- Intean type as Church Encoding
+∀ a . a -> a -> a -- Int type as Church Encoding
 1T
 
 ∀ a : 1T . a
@@ -268,7 +265,7 @@ rec y: 1S .             +{B: !(), C: !Int} ; (+{A: y;!(), C: !()} ; y)
 rec x:1S . rec y:1S . +{B: !(), C: !Int} ; ((+{A: y, C: Skip};!())  ; x)
 1S
 
--- Messages not of kind ML
+-- Messages of kind other than ML
 
 !(Int, Int)
 1S
@@ -299,6 +296,9 @@ rec a:1S . ?(!Int; a)
 *&{Mon, Tue, ed, Thu, Fri, Sat, Sun}
 *S
 
+!Int ; *!Int
+1S
+
 -- Shared channels, raw syntax
 
 rec a:*S . !Int; a
@@ -312,3 +312,9 @@ rec a:*S . +{One: a, Two: a}
 
 rec a:*S . &{One: a, Two: a}
 *S
+
+!Int ; rec a:*S . !Int ; a
+1S
+
+!Int ; !Int ; !Int ; !Int ; rec a:*S . !Int ; a
+1S
