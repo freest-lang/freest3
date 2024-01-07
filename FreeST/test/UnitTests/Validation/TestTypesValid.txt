@@ -146,6 +146,12 @@ rec a : 1T . a 1-> a
 forall b: 1S . rec a: 1S. b
 1T
 
+forall b: 1S . rec a: 1S. b
+1T
+
+forall b: 1S . rec a: 1S. b ; a
+1T
+
 forall a: 1S . rec d: 1S. rec c: 1S. rec b : 1S. a
 1T
 

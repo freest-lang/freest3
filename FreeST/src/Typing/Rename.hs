@@ -99,7 +99,7 @@ instance Rename T.Type where
   rename σ τ (T.Message p pol t) = T.Message p pol <$> rename σ τ t
   -- Polymorphism and recursive types
   rename σ τ (T.Forall p b) = T.Forall p <$> rename σ τ b
-  rename σ τ (T.Rec p b@(Bind _ a _ t))
+  rename σ τ (T.Rec p b@(Bind _ a _ t)) -- = T.Rec p <$> rename σ τ b
     | a `T.isFreeIn` t = T.Rec p <$> rename σ τ b
     | otherwise = rename σ τ t
   rename σ _ (T.Var p a) = return $ T.Var p (Map.findWithDefault a a σ)
