@@ -142,7 +142,7 @@ rec a : *S . ! Int; ?Bool; a
 
 rec a : *S . +{A : !Int; a}
 
--- Session types of the form rec a:*T . !Int that are equivalent to valid types
+-- Session types of the form `rec a:*T . !Int` that are equivalent to valid types
 
 rec a . !Int
 1S
@@ -165,3 +165,10 @@ forall a: 1S . forall b: 1S . forall z: 1S . !Int;((!Int;+{A: b, B: Skip});(rec 
 forall a: 1S . forall b: 1S . forall z: 1S . ((rec w: 1S. &{B: ((+{A: &{B: a, C: Skip}};(+{A: ?Int, B: w, C: (?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(a;((&{B: !Int, C: Skip};((rec δ: *S. ?());b));(?Int;(+{B: a, C: ?Int};(!Int;Skip))))))
 1T
 
+-- Skip^omega
+
+rec x:*S . Skip; x
+
+rec x:*S . Skip; x; Skip
+
+rec x:*S . Skip ; x ; x ; x
