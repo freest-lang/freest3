@@ -89,7 +89,7 @@ Int
 Int
 
 
-(\x:(rec x: *S. Skip;Close, Skip;Wait) -> λy:Int 1-> let (w,r) = x in close w; wait r; y) (new @(Skip;Close) ()) 23
+(\x:(rec x: 1S. Skip;Close, Skip;Wait) -> λy:Int 1-> let (w,r) = x in close w; wait r; y) (new @(Skip;Close) ()) 23
 Int
 
 (\x:(Skip;Close,Skip;Wait) -> λy:Int 1-> let (r,w) = x in close r ; wait w ; y) (new @(Skip;Close) ()) 23

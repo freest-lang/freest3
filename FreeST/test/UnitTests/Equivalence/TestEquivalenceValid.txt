@@ -1098,6 +1098,14 @@ dualof (rec a:1S . !a                       ; Close)
 
 -- Terminated Recursive Types
 
+[]
+rec b:1S . Skip
+Skip
+
+[]
+rec b:1S . Skip
+rec b:1S . rec b:1S . Skip
+
 -- Ill-formed - TODO: should be well-formed
 -- []
 -- rec x:*S. Skip

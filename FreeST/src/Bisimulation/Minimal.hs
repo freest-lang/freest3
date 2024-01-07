@@ -40,7 +40,12 @@ minimal t@(Forall s1 (Bind s2 a k u)) =
   Forall s1 (Bind s2 b k (minimal (subs vb a u)))
     where b = mkNewVar (first t) a
           vb = Var (getSpan b) b
-minimal (Rec s1 (Bind s2 a k t)) = Rec s1 (Bind s2 a k (minimal t))
+minimal (Rec s1 (Bind s2 a k t))
+  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal t))
+  -- Required by the current translation to grammar. Otherwise:
+  -- uncaught exception: PatternMatchFail
+  --  src/Bisimulation/TypeToGrammar.hs:130:3-39: Non-exhaustive patterns in z : zs  
+  | otherwise = minimal t
   -- Type operators
 minimal (Dualof s t) = Dualof s (minimal t)
   -- Int, Float, Char, String, Skip, End, Var

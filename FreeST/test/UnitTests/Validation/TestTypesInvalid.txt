@@ -128,17 +128,40 @@ Int -> rec a: 1S. rec b: 1S. rec c: 1S. rec d: 1S. a
 (rec a: *T. rec b: *T. rec c: *T. rec d: *T. a) -> Bool
 (rec a: *S. rec b: *S. rec c: *S. rec d: *S. a, Int)
 
--- Shared channels
-rec a:SU . ?Int; ?Int; a
-
-rec a:SU . +{One: !Int, Two: ?Int, Three: Skip}; a
-
 -- Higher order
 
 ?((Skip ; Skip) ; Int)
 
 -- Unrestricted types
 
+rec a:SU . ?Int; ?Int; a
+
+rec a:SU . +{One: !Int, Two: ?Int, Three: Skip}; a
+
 rec a : *S . ! Int; ?Bool; a
 
 rec a : *S . +{A : !Int; a}
+
+-- Session types of the form rec a:*T . !Int that are equivalent to valid types
+
+rec a . !Int
+1S
+
+rec a . dualof Int
+1S
+
+forall a: 1S . forall b: 1S . forall z: 1S . !Int;(((!Int;Skip);(Skip;+{A: b, B: Skip}));(Skip;(rec b_0: *S. (&{A: ((?Char;(Skip;a));Skip), C: !Int};Skip))))
+1T
+
+forall a: 1S . forall b: 1S . forall z: 1S . !Int;((!Int;+{A: b, B: Skip});(rec b_1: *S. &{A: ((?Char;Skip);a), C: !Int}))
+1T
+
+(rec b . +{A: (rec b . (rec a : 1S . (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
+1S
+
++{A: (rec b. +{A: (((Skip;?Int);!());(rec b . +{A: (rec b : 1S. +{A:(((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b : 1S. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
+1S
+
+forall a: 1S . forall b: 1S . forall z: 1S . ((rec w: 1S. &{B: ((+{A: &{B: a, C: Skip}};(+{A: ?Int, B: w, C: (?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(a;((&{B: !Int, C: Skip};((rec δ: *S. ?());b));(?Int;(+{B: a, C: ?Int};(!Int;Skip))))))
+1T
+
