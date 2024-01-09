@@ -27,6 +27,6 @@ contractive s a (T.Semi _ t u)
   | terminated t                         = contractive s a u
   | otherwise                            = contractive s a t
 contractive s a (T.Rec _ (Bind _ _ _ t)) = contractive s a t
-contractive s a (T.Var _ b)              = a /= b && b `Set.notMember` s
+contractive s a (T.Var b)                = a /= b && b `Set.notMember` s
 contractive _ _ _                        = True
 

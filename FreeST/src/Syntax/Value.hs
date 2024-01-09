@@ -24,17 +24,17 @@ isVal E.TypeAbs{} = True
 isVal E.Pair{}    = True
 -- | l v -- TODO
 -- | select l
-isVal (E.App _ (E.Var p x) _) | x == mkSelect p = True
+isVal (E.App _ (E.Var x) _) | x == mkSelect defaultSpan = True
 -- | send [T]
-isVal (E.TypeApp _ (E.Var p x) _) | x == mkSend p = True
+isVal (E.TypeApp _ (E.Var x) _) | x == mkSend defaultSpan = True
 -- | send [T] v
-isVal (E.App _ (E.TypeApp _ (E.Var p x) _) v) | x == mkSend p = isVal v
+isVal (E.App _ (E.TypeApp _ (E.Var x) _) v) | x == mkSend defaultSpan = isVal v
 -- | send [T] v [U]
-isVal (E.TypeApp _ (E.App _ (E.TypeApp _ (E.Var p x) _) v) _) | x == mkSend p = isVal v
+isVal (E.TypeApp _ (E.App _ (E.TypeApp _ (E.Var x) _) v) _) | x == mkSend defaultSpan = isVal v
 -- | receive [T]  
-isVal (E.TypeApp _ (E.Var p x) _) | x == mkReceive p = True
+isVal (E.TypeApp _ (E.Var x) _) | x == mkReceive defaultSpan = True
 -- | receive [T] [U]
-isVal (E.TypeApp _ (E.TypeApp _ (E.Var p x) _) _) | x == mkReceive p = True
-isVal (E.App _ (E.Var p x) _) | x == mkClose p = True
+isVal (E.TypeApp _ (E.TypeApp _ (E.Var x) _) _) | x == mkReceive defaultSpan = True
+isVal (E.App _ (E.Var x) _) | x == mkClose defaultSpan = True
 -- | otherwise
 isVal _ = False

@@ -18,7 +18,7 @@ module Equivalence.TypeToGrammar
 where
 
 import           Bisimulation.Grammar
-import           Elaboration.Replace ( changePos )
+import           Parse.Unparser
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Type as T
@@ -49,7 +49,7 @@ typeToGrammar t = collect [] t >> toGrammar t
 toGrammar :: T.Type -> TransState Word
 -- Syntactic equality
 toGrammar t = case fatTerminal t of
-  Just t' ->  getLHS $ Map.singleton (show t') []
+  Just t' ->  getLHS $ Map.singleton (snd $ unparse t') []
   Nothing -> toGrammar' t
 
 toGrammar' :: T.Type -> TransState Word
@@ -64,7 +64,7 @@ toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't t
   getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
-toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' t@(T.End _) = getLHS $ Map.singleton (snd $ unparse t) [bottom]
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
@@ -80,9 +80,9 @@ toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar t
   getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
+toGrammar' t@T.Var{} = getLHS $ Map.singleton (snd $ unparse t) []
 -- Type operators
-toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (show t) []
+toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (snd $ unparse t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
@@ -96,7 +96,7 @@ fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Labelled p t m) | t == T.Variant || t == T.Record = 
-  Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
+  Just (T.Labelled p t) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t

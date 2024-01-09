@@ -31,27 +31,27 @@ import qualified Data.Map.Strict as Map
 
 mkSpan :: Located a => a -> ParseState Span
 mkSpan a = do
-  let (Span p1 p2 _) = getSpan a
+  let (Span p1 p2 _ _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 "" f) (Span p1 p2 "") <$> getModuleName
 
 mkSpanSpan :: (Located a, Located b) => a -> b -> ParseState Span
 mkSpanSpan a b = do
-  let (Span p1 _ _) = getSpan a
-  let (Span _ p2 _) = getSpan b
+  let (Span p1 _ _ _) = getSpan a
+  let (Span _ p2 _   _) = getSpan b
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 "" f) (Span p1 p2 "") <$> getModuleName
 
 mkSpanFromSpan :: Located a => Span -> a -> ParseState Span
-mkSpanFromSpan (Span p1 _ _) a = do
-  let (Span _ p2 _) = getSpan a
+mkSpanFromSpan (Span p1 _ _ _) a = do
+  let (Span _ p2 _ _) = getSpan a
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 "" f) (Span p1 p2 "") <$> getModuleName
 
 liftModToSpan :: Span -> ParseState Span
-liftModToSpan (Span p1 p2 _) = do
+liftModToSpan (Span p1 p2 _ _) = do
   f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 "" f) (Span p1 p2 "") <$> getModuleName
 
 -- Parse errors
 
@@ -124,11 +124,13 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
-binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
-  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
+binOp l op r = E.App s (E.App (getSpan l) (E.Var op) l) r
+  where s  = Span (startPos sl) (endPos sr) "" (defModule sl)
+        sl = getSpan l
+        sr = getSpan r
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
-unOp op expr s = E.App s (E.Var (getSpan op) op) expr
+unOp op expr s = E.App s (E.Var op) expr
 
 leftSection :: Variable -> E.Exp -> Span -> ParseState E.Exp
 leftSection op e s = do
@@ -137,7 +139,7 @@ leftSection op e s = do
   let v = mkNewVar i (mkVar s "_x")
   let t = genFstType (sigs Map.! op)
   return $ E.Abs s Un (Bind s v t
-             (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
+             (E.App s (E.App s (E.Var op) (E.Var v)) e))
   where
     genFstType (T.Arrow _ _ t _) = t
     genFstType t = t
@@ -147,7 +149,7 @@ leftSection op e s = do
 
 typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListsToUnArrows a = 
-  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
+  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var a) ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)

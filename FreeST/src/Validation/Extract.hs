@@ -34,6 +34,7 @@ import qualified Syntax.Expression as E
 import qualified Syntax.Type as T
 import           Util.Error
 import           Validation.Phase
+import           Util.KeepSrc
 import           Util.State
 
 import           Data.Functor
@@ -76,14 +77,14 @@ message :: T.Polarity -> String -> E.Exp -> T.Type -> TypingState (T.Type, T.Typ
 message pol msg e t =
   case normalise t of
     u@(T.Message p pol' b) ->
-      if pol == pol' then return (b, T.Skip p) else messageErr u
+      if pol == pol' then return (b, keepSrc $ T.Skip p) else messageErr u
     u@(T.Semi _ (T.Message _ pol' b) v) ->
       if pol == pol' then return (b, v) else messageErr u
     u -> messageErr u
  where
   messageErr :: T.Type -> TypingState (T.Type, T.Type)
   messageErr u =
-    addError (ExtractError (getSpan e) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
+    addError (ExtractError (getSpan e) msg e u) $> (keepSrc $ T.unit (getSpan u), keepSrc $ T.Skip $ getSpan u)
 
 end :: E.Exp -> T.Type -> TypingState ()
 end e t =

@@ -68,12 +68,12 @@ instance Equivalence T.Type where
     equiv v kEnv (T.Forall _ (Bind p a1 k1 t1)) (T.Forall _ (Bind _ a2 k2 t2))
       = k1 <: k2 && k2 <: k1 &&
            equiv v (Map.insert a1 k1 kEnv) t1
-            (Subs.subs (T.Var p a1) a2 t2)
+            (Subs.subs (T.Var a1) a2 t2)
     equiv v kEnv t1@T.Rec{} t2 =
       equiv (Set.insert (getSpan t1, getSpan t2) v) kEnv (Subs.unfold t1) t2
     equiv v kEnv t1 t2@T.Rec{} =
       equiv (Set.insert (getSpan t1, getSpan t2) v) kEnv t1 (Subs.unfold t2)
-    equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
+    equiv _ _ (T.Var a1) (T.Var a2) = a1 == a2 -- Polymorphic variable
     -- Should not happen
     equiv _ _ t1@T.Dualof{} _ =
       internalError "Equivalence.Equivalence.equivalent" t1

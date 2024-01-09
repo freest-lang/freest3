@@ -9,9 +9,7 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.AST
-import           Syntax.Program (TypeOpsEnv) -- TODO: remove on merge to keep-source
 import qualified Syntax.Type as T
-import           Util.GetTOps
 import           Util.Message
 
 import           Data.Either.Extra (fromEither, isLeft)
@@ -31,12 +29,12 @@ internalError fun syntax =
 
 -- | Format errors
       
-showErrors :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
-showErrors sty f tops err =
+showErrors :: Stylable -> String -> ErrorType -> String
+showErrors sty f err =
   let mod = trimModule f (defModule $ getSpan err) in
   let base = replaceBaseName f (fromEither mod) in
   let modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan err) in    
-    title err sty (getSpan err) base ++ "\n  " ++ msg err sty tops modEither
+    title err sty (getSpan err) base ++ "\n  " ++ msg err sty modEither
   where
     trimModule f mod
       | null mod                = Left $ takeBaseName f
@@ -152,91 +150,93 @@ instance Located ErrorType where
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
 
+  setSpan _ x = x -- TODO: not used at the moment
+
 
 instance Message ErrorType where
   title _ sty = msgHeader (red sty "error:") sty
   
-  msg (FileNotFound f) sty ts _ =
-    "File " ++ style red sty ts f ++ " does not exist (No such file or directory)"
-  msg (WrongFileExtension f) sty ts _ = 
+  msg (FileNotFound f) sty _ =
+    "File " ++ style red sty f ++ " does not exist (No such file or directory)"
+  msg (WrongFileExtension f) sty _ = 
    "File has not a valid file extension\n\tExpecting: " ++ red sty (quote $ f -<.> "fst") ++
-   "\n\tbut got:   " ++ style red sty ts f
-  msg (LexicalError _ tk) sty _ _ = "Lexical error on input " ++ red sty tk
-  msg (PrematureEndOfFile _) _ _ _ =  "Parse error: Premature end of file"
-  msg (ParseError _ x) sty _ _ = "Parse error on input: " ++ red sty (quote x)
+   "\n\tbut got:   " ++ style red sty f
+  msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
+  msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
+  msg (ParseError _ x) sty _ = "Parse error on input: " ++ red sty (quote x)
 
-  msg (ImportNotFound _ m f) sty tops _ =
-    "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
-    "\n  Locations searched:\n\t" ++ style red sty tops f 
-  msg (NameModuleMismatch _ m f) sty tops _ =
+  msg (ImportNotFound _ m f) sty _ =
+    "Could not find module " ++ style red sty (showModuleWithDots m) ++
+    "\n  Locations searched:\n\t" ++ style red sty f 
+  msg (NameModuleMismatch _ m f) sty _ =
     "File name does not match the module name.\n    Module name: " ++
-    style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
-  msg (MissingModHeader _ f) sty tops _ =
-    "File " ++ style red sty tops (f -<.> "fst") ++ " is missing the module header."
-  msg (MultipleFieldDecl sp1 sp2 x) sty ts _ =
-    "Multiple declarations of field " ++ style red sty ts x ++
+    style red sty (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty (f -<.> "fst")
+  msg (MissingModHeader _ f) sty _ =
+    "File " ++ style red sty (f -<.> "fst") ++ " is missing the module header."
+  msg (MultipleFieldDecl sp1 sp2 x) sty _ =
+    "Multiple declarations of field " ++ style red sty x ++
     " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
-  msg (RedundantPMatch _ x) sty ts _ =
-    "Pattern match is redundant\n\t In a case alternative: " ++  style red sty ts x
-  msg (DuplicateVar p tVar x p') sty ts _ =
-    "Conflicting definitions for the " ++ tVar ++ " variable " ++ style red sty ts x ++
+  msg (RedundantPMatch _ x) sty _ =
+    "Pattern match is redundant\n\t In a case alternative: " ++  style red sty x
+  msg (DuplicateVar p tVar x p') sty _ =
+    "Conflicting definitions for the " ++ tVar ++ " variable " ++ style red sty x ++
     "\n\tBound at: " ++ show p' ++ " and " ++ show p
-  msg (DuplicateFieldInDatatype p pv p') sty ts _ =
-    "Multiple declarations of " ++ style red sty ts pv ++ " in a datatype declaration" ++
+  msg (DuplicateFieldInDatatype p pv p') sty _ =
+    "Multiple declarations of " ++ style red sty pv ++ " in a datatype declaration" ++
      "\n\tDeclared at: " ++ show p ++ " and " ++ show p'
-  msg (MissingChoices p vs p') sty ts _ = 
-    "Declared " ++ fields ++ (prettyList $ map (style red sty ts) vs) ++ 
+  msg (MissingChoices p vs p') sty _ = 
+    "Declared " ++ fields ++ (prettyList $ map (style red sty) vs) ++ 
     " at: " ++ show p ++ ", but missing on " ++ show p'
     where fields = if length vs == 1 then "field " else "fields "
           prettyList (x:[])   = x
           prettyList (x:y:[]) = x ++ " and " ++ y
           prettyList (x:xs)   = x ++ ", "    ++ prettyList xs
-  msg (MultipleDeclarations p pv p') sty ts _ =
-    "Ambiguous occurrence " ++ style red sty ts pv ++
+  msg (MultipleDeclarations p pv p') sty _ =
+    "Ambiguous occurrence " ++ style red sty pv ++
     "\n\tDeclared in modules: " ++ showModule (showModuleName p') p' ++
     "\n\t                     " ++ showModule (showModuleName p) p
-  msg (MultipleTypeDecl p t p') sty ts _ =
-    "Multiple declarations of type " ++ style red sty ts t ++
+  msg (MultipleTypeDecl p t p') sty _ =
+    "Multiple declarations of type " ++ style red sty t ++
     "\n\t Declared in modules: " ++ showModule (showModuleName p') p' ++
     "\n\t                      " ++ showModule (showModuleName p) p
-  msg (MultipleFunBindings sp1 x sp2) sty ts _ =
-    "Multiple bindings for function " ++ style red sty ts x ++
+  msg (MultipleFunBindings sp1 x sp2) sty _ =
+    "Multiple bindings for function " ++ style red sty x ++
     "\n\t Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
     "\n\t                      " ++ showModule (showModuleName sp1) sp1
-  msg (ConflictChoiceCons p chan p2) sty ts _ =
+  msg (ConflictChoiceCons p chan p2) sty _ =
     "Confliting definitions between a choice and a constructor " ++
-    style red sty ts (show chan) ++ 
+    style red sty (show chan) ++ 
     "\n  Declared in file/module: " ++ showModule (showModuleName p) p ++
     "\n                           " ++ showModule (showModuleName p2) p2 
-  msg (DifNumberOfArguments p fun) sty ts _ =
-    "Equations for " ++ style red sty ts (show fun) ++
+  msg (DifNumberOfArguments p fun) sty _ =
+    "Equations for " ++ style red sty (show fun) ++
     " have different number of arguments " ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ": " ++ red sty (show fun)
-  msg (InvalidVariablePatternChan p v) sty ts _ = 
+  msg (InvalidVariablePatternChan p v) sty _ = 
     "Cannot mix variables with pattern-matching channel choices." ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ": " ++ red sty (show v)
-  msg (TypeVarOutOfScope _ x) sty ts _ = "Type variable not in scope: " ++ style red sty ts x
-  msg (FuctionLacksSignature _ x) sty ts _ =
-    "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
-  msg (WrongNumberOfArguments p fun exp got t) sty ts _ =
-    "Wrong number of arguments in function " ++ style red sty ts (show fun) ++
-    "\n  expecting " ++ style red sty ts (show exp) ++
-    ", but got " ++ style red sty ts (show got) ++
+  msg (TypeVarOutOfScope _ x) sty _ = "Type variable not in scope: " ++ style red sty x
+  msg (FuctionLacksSignature _ x) sty _ =
+    "The binding for function " ++ style red sty x ++ " lacks an accompanying type signature"
+  msg (WrongNumberOfArguments p fun exp got t) sty _ =
+    "Wrong number of arguments in function " ++ style red sty (show fun) ++
+    "\n  expecting " ++ style red sty (show exp) ++
+    ", but got " ++ style red sty (show got) ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ":\n  " ++ red sty (show fun ++ " : " ++ show t)
-  msg (DualOfNonSession _ t) sty ts _ = 
-    "Dualof applied to a non session type: " ++ style red sty ts t
-  msg (SignatureLacksBinding _ x t) sty ts _ = 
-    "The type signature for "  ++ style red sty ts x ++
-    " lacks an accompanying binding\n\t Type signature: " ++ style red sty ts t
-  msg (MainNotDefined _ main) sty ts _ =
-    "Main function " ++ style red sty ts main ++ " is not defined"
-  msg (UnrestrictedMainFun _ x t k) sty ts _ = 
-    "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
-    style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (LinearFunctionNotConsumed _ env) sty _ _ =
+  msg (DualOfNonSession _ t) sty _ = 
+    "Dualof applied to a non session type: " ++ style red sty t
+  msg (SignatureLacksBinding _ x t) sty _ = 
+    "The type signature for "  ++ style red sty x ++
+    " lacks an accompanying binding\n\t Type signature: " ++ style red sty t
+  msg (MainNotDefined _ main) sty _ =
+    "Main function " ++ style red sty main ++ " is not defined"
+  msg (UnrestrictedMainFun _ x t k) sty _ = 
+    "The type of " ++ style red sty x ++ " must be non linear\n\t Found type " ++
+    style red sty t ++ " of kind " ++ style red sty k
+  msg (LinearFunctionNotConsumed _ env) sty _ =
     let c = length env 
         plural = if c > 1 then "s" else ""
         verb = if c > 1 then "were" else "was" in
@@ -245,43 +245,43 @@ instance Message ErrorType where
              acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
              red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
-  msg (TypeVarNotInScope _ a) sty ts _ = "Type variable not in scope: " ++ style red sty ts a
-  msg (TypeNotContractive _ t a) sty ts _ =
-    "Type " ++ style red sty ts t ++ " is not contractive on type variable " ++
-    style red sty ts a
-  msg (CantMatchKinds _ k k' t) sty ts _ =
-    "Couldn't match expected kind " ++ style red sty ts k ++ "\n\t with actual kind " ++
-    style red sty ts k' ++ "\n\t for type " ++ style red sty ts t
-  msg (ExpectingSession _ t k) sty ts _ =
-    "Expecting a session type\n\t found type " ++ style red sty ts t ++ " of kind " ++
-    style red sty ts k
+  msg (TypeVarNotInScope _ a) sty _ = "Type variable not in scope: " ++ style red sty a
+  msg (TypeNotContractive _ t a) sty _ =
+    "Type " ++ style red sty t ++ " is not contractive on type variable " ++
+    style red sty a
+  msg (CantMatchKinds _ k k' t) sty _ =
+    "Couldn't match expected kind " ++ style red sty k ++ "\n\t with actual kind " ++
+    style red sty k' ++ "\n\t for type " ++ style red sty t
+  msg (ExpectingSession _ t k) sty _ =
+    "Expecting a session type\n\t found type " ++ style red sty t ++ " of kind " ++
+    style red sty k
 -- Validation.Typing
-  msg (TypeAbsBodyNotValue _ e e') sty ts _ =
-    "The body of type abstraction " ++ style red sty ts e ++ "\n                        namely " ++
-    style red sty ts e' ++ "\n                is not a value"
-  msg (VarOrConsNotInScope p pv) sty ts b =
-    let styledVar = style red sty ts pv in
+  msg (TypeAbsBodyNotValue _ e e') sty _ =
+    "The body of type abstraction " ++ style red sty e ++ "\n                        namely " ++
+    style red sty e' ++ "\n                is not a value"
+  msg (VarOrConsNotInScope p pv) sty b =
+    let styledVar = style red sty pv in
     let modDesc = if isLeft b then "file" else "module" in
     "Variable or data constructor not in scope: " ++ styledVar ++
     -- "\n  In " ++ modDesc ++ ": " ++ fromEither b ++ -- showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
     "\n  (is " ++ styledVar ++ " defined in a module that you forgot to import?)"
-  msg (LinProgVar _ x t k) sty ts _ =
-    "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
-    style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (NonEquivTypes _ t u e) sty ts _ =
-    "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
-    style red sty ts u ++"\n                for expression " ++ style red sty ts e
-  msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts _
+  msg (LinProgVar _ x t k) sty _ =
+    "Program variable " ++ style red sty x ++ " is linear at the end of its scope\n\t  variable " ++
+    style red sty x ++ " is of type " ++ style red sty t ++ " of kind " ++ style red sty k
+  msg (NonEquivTypes _ t u e) sty _ =
+    "Couldn't match expected type " ++ style red sty t ++ "\n              with actual type " ++
+    style red sty u ++"\n                for expression " ++ style red sty e
+  msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty _
     | Map.null diff =
-      "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++
-      "\n\tvariable " ++ style red sty ts var1 ++ " is of type " ++ style red sty ts type1 ++
-      "\n\t  and the function is " ++ style red sty ts e ++
+      "Linear variable " ++ style red sty var1 ++ " was consumed in the body of an unrestricted function" ++
+      "\n\tvariable " ++ style red sty var1 ++ " is of type " ++ style red sty type1 ++
+      "\n\t  and the function is " ++ style red sty e ++
       "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
     | otherwise = 
-      "Linear variable " ++ style red sty ts var2 ++ " was created in the body of an unrestricted function" ++
-      "\n\tvariable " ++ style red sty ts var2 ++ " is of type " ++ style red sty ts type2 ++
-      "\n\t  and the function is " ++ style red sty ts e ++
+      "Linear variable " ++ style red sty var2 ++ " was created in the body of an unrestricted function" ++
+      "\n\tvariable " ++ style red sty var2 ++ " is of type " ++ style red sty type2 ++
+      "\n\t  and the function is " ++ style red sty e ++
       "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
       where diff = sigs2 Map.\\ sigs1
             var1 = head $ Map.keys $ sigs1 Map.\\ sigs2
@@ -294,34 +294,34 @@ instance Message ErrorType where
     -- "\n\t    and the function is " ++ style red sty ts e ++
     -- "\n\t (unrestricted functions cannot update the context)" ++
     -- "\n\t (if you must update the context, consider using a linear function)"
-  msg (NonEquivEnvsInBranch _ sigs1 sigs2 e) sty ts _ =
+  msg (NonEquivEnvsInBranch _ sigs1 sigs2 e) sty _ =
     "Couldn't match the final contexts in two distinct branches in a case or conditional expression " ++
-    "\n\t       One context is " ++ style red sty ts sigs1 {-(sigs1 Map.\\ sigs2-} ++
-    "\n\t         the other is " ++ style red sty ts sigs2 {-(sigs2 Map.\\ sigs1-} ++
-    "\n\tand the expression is " ++ style red sty ts e ++
+    "\n\t       One context is " ++ style red sty sigs1 {-(sigs1 Map.\\ sigs2-} ++
+    "\n\t         the other is " ++ style red sty sigs2 {-(sigs2 Map.\\ sigs1-} ++
+    "\n\tand the expression is " ++ style red sty e ++
     "\n\t(was a variable consumed in one branch and not in the other?)" ++
     "\n\t(is there a variable with different types in the two contexts?)"
-  msg (DataConsNotInScope _ x) sty ts _ = "Data constructor " ++ style red sty ts x ++ " not in scope."
-  msg (WrongNumOfCons _ x i xs e) sty ts _ =
-    "The constructor " ++ style red sty ts x ++ " should have " ++ red sty (show i) ++
+  msg (DataConsNotInScope _ x) sty _ = "Data constructor " ++ style red sty x ++ " not in scope."
+  msg (WrongNumOfCons _ x i xs e) sty _ =
+    "The constructor " ++ style red sty x ++ " should have " ++ red sty (show i) ++
     " arguments, but has been given " ++ red sty (show $ length xs) ++
     "\n\t In the pattern (" ++ show (startPos $ getSpan x) ++ " - " ++ show (endPos $ getSpan e)  ++ "): " ++
-    red sty (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show (getDefault ts e))
-  msg (ExtractError _ s e t) sty ts _ = 
-    "Expecting " ++ s ++ " type for expression " ++ style red sty ts e ++
+    red sty (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e)
+  msg (ExtractError _ s e t) sty _ = 
+    "Expecting " ++ s ++ " type for expression " ++ style red sty e ++
     "\n                      " ++ replicate (length s) ' ' ++
-    "found type " ++ style red sty ts t
-  msg (BranchNotInScope _ x t) sty ts _ =
-    "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
-    " is not present in the internal choice type " ++ style red sty ts t ++
+    "found type " ++ style red sty t
+  msg (BranchNotInScope _ x t) sty _ =
+    "Choice branch not in scope.\n\t Branch " ++ style red sty x ++
+    " is not present in the internal choice type " ++ style red sty t ++
     "\n\t Defined at: " ++ show (getSpan t)
-  msg (UnendedSession s t k) sty ts _ =
+  msg (UnendedSession s t k) sty _ =
     "Session type created with new does not reach an End\n\t" ++
-    "In type: " ++ style red sty ts (show t) ++ "\n\t" ++
-    "With kind: " ++ style red sty ts (show k)
+    "In type: " ++ style red sty (show t) ++ "\n\t" ++
+    "With kind: " ++ style red sty (show k)
 --  Runtime
-  msg (ErrorFunction s e) _ _ _ = -- TODO: This one is from the point of view of the callee not the caller
+  msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
-  msg (UndefinedFunction s) _ _ _ = 
+  msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
-  msg (RuntimeError _ e) _ _ _ = "Exception: " ++ e
+  msg (RuntimeError _ e) _ _ = "Exception: " ++ e

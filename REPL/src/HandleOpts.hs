@@ -16,7 +16,6 @@ import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Util.GetTOps
 import           Util.State hiding (void)
 import           Utils
 import qualified Validation.Kinding as K
@@ -58,7 +57,7 @@ freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
 --          (lift $ putStrLn msg)
 
 freestError :: ErrorType -> REPLState ()
-freestError = lift . putStrLn . showErrors True "<FreeST>" Map.empty
+freestError = lift . putStrLn . showErrors True "<FreeST>"
 
 -- | -------------------------------------------------------
 -- | Reloads the previously loaded file
@@ -90,7 +89,7 @@ typeOf [] = lift $ putStrLn "syntax: ':t <expression-to-synthetise-type>'"
 typeOf q = do
   let query = mkVar defaultSpan q
   getFromSignatures query >>= \case
-   Just t -> getTypeNames >>= \tn -> lift $ putStrLn $ q ++ " : " ++ show (getDefault tn t)
+   Just t -> lift $ putStrLn $ q ++ " : " ++ show t
    Nothing -> lift $ putStrLn $ q ++ " is not in scope."
 
 -- | -------------------------------------------------------
@@ -108,7 +107,7 @@ kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
 kindOf ts = do  
   case parseType "<interactive>" ts of
     Left errors -> return () -- showErrors
-    Right a@(T.Var _ x) -> getFromTypes x >>= synthVariable a x
+    Right a@(T.Var x) -> getFromTypes x >>= synthVariable a x
     Right t -> K.synthetise Map.empty t >>= pretty ts
   where
     synthVariable :: T.Type -> Variable -> Maybe (K.Kind, T.Type) -> REPLState ()
@@ -140,8 +139,8 @@ showInfo b f var = f var >>= \case
     | b         -> lift $ putStrLn $ infoHeader (getSpan t) ++ infoData var t
     | otherwise -> do
         m <- getFromDefinitions var
-        let s = uncurry (Span (startPos $ getSpan t)) (maybe defSpan mbLocExp m)
-        getTypeNames >>= lift . putStrLn . (infoHeader s ++) . infoFun var t m
+        let s = uncurry (Span (startPos $ getSpan t)) (maybe defSpan mbLocExp m) (source $ getSpan t)
+        lift $ putStrLn $ (infoHeader s ++) $ infoFun var t m
      where
        defSpan = (endPos $ getSpan t, defModule $ getSpan t)
        mbLocExp e  = let se = getSpan e in (endPos se, defModule se)
@@ -158,9 +157,9 @@ infoData x t = (if isDatatype t then "\ndata " else "\ntype ")
       | x == var b = " : " ++ show (binder b) ++ " = " ++ showData x (body b)
     showData _ t = show t
     
-infoFun :: Variable -> T.Type -> Maybe E.Exp -> TypeOpsEnv -> String
-infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++ 
-      maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show (getDefault tn e)) mbe
+infoFun :: Variable -> T.Type -> Maybe E.Exp -> String
+infoFun var t mbe = "\n" ++ show var ++ " : " ++ show t ++ 
+      maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show e) mbe
 
 -- | -------------------------------------------------------
 -- | Handles a multiline command.

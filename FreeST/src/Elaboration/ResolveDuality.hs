@@ -12,6 +12,7 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
+import           Util.KeepSrc
 import           Util.State
 import           Validation.Substitution
 
@@ -81,7 +82,7 @@ solveType v (T.Forall p (Bind p' a k t)) =
   T.Forall p . Bind p' a k <$> solveType v t
 solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
-solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
+solveType v d@(T.Dualof p t) = solveDual v (changePos p t)
 -- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
 
@@ -97,10 +98,10 @@ solveDual v (T.Labelled p (T.Choice pol) m) =
 solveDual v t@(T.Rec p b) = do
   u <- solveDBind solveDual v b
   return $ cosubs t (var b) (T.Rec p u)
-solveDual _ (T.Var p a) = pure $ T.Dualof p $ T.Var p a
+solveDual _ (T.Var a) = pure $ forceKeepSrc $ T.Dualof (getSpan a) $ T.Var a
 -- Dualof
-solveDual _ (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
-solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
+solveDual _ (T.Dualof _ (T.Var a)) = pure $ T.Var a
+solveDual v d@(T.Dualof p t) = solveType v (changePos p t)
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
 
@@ -117,22 +118,4 @@ solveDBind
   -> Bind a T.Type
   -> ElabState (Bind a T.Type)
 solveDBind solve v (Bind p a k t) =
-  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof p $ T.Var p a) a t)
-
--- |Change position of a given type with a given position
-changePos :: Span -> T.Type -> T.Type
-changePos p (T.Int    _       ) = T.Int p
-changePos p (T.Float  _       ) = T.Float p
-changePos p (T.Char   _       ) = T.Char p
-changePos p (T.String _       ) = T.String p
-changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
-changePos p (T.Labelled _ s m  ) = T.Labelled p s m
-changePos p (T.Skip _         ) = T.Skip p
-changePos p (T.End  _         ) = T.End p
-changePos p (T.Semi    _ t   u) = T.Semi p t u
-changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Rec    _ xs    ) = T.Rec p xs
-changePos p (T.Forall _ xs    ) = T.Forall p xs
-changePos p (T.Var    _ x     ) = T.Var p x
-changePos p (T.Dualof _ (T.Var _ x)) = T.Dualof p $ T.Var p x
-changePos p (T.Dualof _ t     ) = T.Dualof p t
+  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof p $ T.Var a) a t)

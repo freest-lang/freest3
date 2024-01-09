@@ -29,6 +29,7 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Util.Error
+import           Util.KeepSrc
 import           Util.State hiding (void)
 import           Util.Warning
 import qualified Validation.Extract as Extract
@@ -45,12 +46,12 @@ import qualified Data.Map.Strict as Map
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ T.Int p
-synthetise _ (E.Float p _ ) = return $ T.Float p
-synthetise _ (E.Char p _  ) = return $ T.Char p
-synthetise _ (E.Unit p    ) = return $ T.unit p
-synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv e@(E.Var p x) =
+synthetise _ (E.Int  p _  ) = return $ forceKeepSrc $ T.Int p
+synthetise _ (E.Float p _ ) = return $ forceKeepSrc $ T.Float p
+synthetise _ (E.Char p _  ) = return $ forceKeepSrc $ T.Char p
+synthetise _ (E.Unit p    ) = return $ forceKeepSrc $ T.unit p
+synthetise _ (E.String p _) = return $ forceKeepSrc $ T.String p
+synthetise kEnv e@(E.Var x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -79,28 +80,28 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
-  return $ T.Arrow p mult t1 t2
+  return $ forceKeepSrc $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
+synthetise kEnv (E.App p (E.App _ (E.Var x) (E.Var c)) e)
   | x == mkSelect p = do
     t <- synthetise kEnv e
     m <- Extract.inChoiceMap e t
     Extract.choiceBranch p m c t
   -- Collect e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
+synthetise kEnv (E.App p (E.Var x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Labelled p T.Variant
-    (Map.map (T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
+  return $ keepSrc $ T.Labelled p T.Variant
+    (Map.map (forceKeepSrc . T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
+synthetise kEnv (E.App p (E.Var x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return $ T.tuple p [u1, u2]
+  return $ forceKeepSrc $ T.tuple p [u1, u2]
   -- Send e1 e2
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
+synthetise kEnv (E.App p (E.App _ (E.Var x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
@@ -108,9 +109,9 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
+synthetise kEnv (E.App p fork@(E.Var x) e) | x == mkFork p = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
-  synthetise kEnv (E.App p (E.TypeApp p fork t) e)
+  synthetise kEnv (keepSrc $ E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
@@ -120,9 +121,9 @@ synthetise kEnv (E.App _ e1 e2) = do
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
-  T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
+  forceKeepSrc . T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
-synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
+synthetise kEnv (E.TypeApp p new@(E.Var x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
@@ -137,7 +138,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Labelled p T.Record $ 
+  return $ forceKeepSrc $ T.Labelled p T.Record $ 
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -212,7 +213,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   (t', u') <- Extract.function e =<< synthetise kEnv e
   checkEquivTypes e kEnv t' t
-  checkEquivTypes e kEnv u' u
+  checkEquivTypes e kEnv u' u 
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> TypingState ()

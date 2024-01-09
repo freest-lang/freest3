@@ -59,7 +59,7 @@ renameFun f t = do
 
 -- Renaming the various syntactic categories
 
-type Bindings = Map.Map String String -- Why String and not Syntax.Base.Variable?
+type Bindings = Map.Map Variable Variable
 
 class Rename t where
   rename :: MonadState (FreestS a) m => Bindings -> Bindings -> t -> m t
@@ -86,7 +86,7 @@ instance Rename (Bind T.Type E.Exp) where
 
 instance Rename T.Type where
   -- Labelled
-  rename tbs pbs (T.Labelled p s m)   = T.Labelled p s <$> tMapM (rename tbs pbs) m
+  rename tbs pbs (T.Labelled p s m)  = T.Labelled p s <$> tMapM (rename tbs pbs) m
   -- Functional types
   rename tbs pbs (T.Arrow p m t u)   = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
   rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
@@ -98,9 +98,9 @@ instance Rename T.Type where
   rename tbs pbs (T.Rec    p b)
     | isProperRec b = T.Rec p <$> rename tbs pbs b
     | otherwise     = rename tbs pbs (body b)
-  rename tbs _ (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
-  rename tbs _ (T.Dualof p (T.Var p' a)) =
-    return $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
+  rename tbs _ (T.Var      a     ) = return $ T.Var (findWithDefaultVar a tbs)
+  rename tbs _ (T.Dualof p (T.Var a)) =
+    return $ T.Dualof p $ T.Var (findWithDefaultVar a tbs)
 --rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
   rename _ _ t@T.Dualof{}          = internalError "Validation.Rename.rename" t
@@ -112,7 +112,7 @@ instance Rename T.Type where
 
 instance Rename E.Exp where
   -- Variable
-  rename _ pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
+  rename _ pbs (E.Var x) = return $ E.Var (findWithDefaultVar x pbs)
   -- Abstraction intro and elim
   rename tbs pbs (E.Abs p m b) = E.Abs p m <$> rename tbs pbs b
   rename tbs pbs (E.App p e1 e2) = E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2
@@ -162,11 +162,12 @@ renameVar x = do
   return $ mkNewVar n x
 
 insertVar :: Variable -> Variable -> Bindings -> Bindings
-insertVar x y = Map.insert (intern x) (intern y)
+insertVar x y = Map.insert x y
 
 findWithDefaultVar :: Variable -> Bindings -> Variable
 findWithDefaultVar x bs =
-  mkVar (getSpan x) (Map.findWithDefault (intern x) (intern x) bs)
+  -- mkVar (getSpan x) (Map.findWithDefault (intern x) (intern x) bs)
+  Map.findWithDefault x x bs
 
 -- Rename a type
 renameType :: T.Type -> T.Type
@@ -186,7 +187,7 @@ subs t x u = renameType $ Subs.subs t x u
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
-unfold = renameType . Subs.unfold
+unfold = renameType . Subs.unfold 
 
 -- Does a given bind form a proper rec?
 -- Does the Bind type variable occur free the type?
@@ -208,7 +209,7 @@ isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
   -- Functional or session 
 isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
-isFreeIn x (T.Var    _ y               ) = x == y
+isFreeIn x (T.Var      y             ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
 isFreeIn _ _                             = False

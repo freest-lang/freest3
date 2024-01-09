@@ -53,11 +53,11 @@ eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
 eval _ _ _   _ (E.String _ s                  )    = return $ String s
 eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
 eval fun _ ctx _ (E.Abs _ _ (Bind _ x _ e))        = return $ Closure fun x e ctx
-eval fun tys ctx eenv (E.Var    _ x            ) = evalVar fun tys ctx eenv x
+eval fun tys ctx eenv (E.Var      x            ) = evalVar fun tys ctx eenv x
 eval fun tys ctx eenv (E.TypeApp _ e _         ) = eval fun tys ctx eenv e >>= \case
   (TypeAbs v ctx) -> eval fun tys ctx eenv v
   v -> return v
-eval fun tys ctx eenv (E.App p (E.Var _ x) e)
+eval fun tys ctx eenv (E.App p (E.Var x) e)
   | x == mkSelect p =
       return $ PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send (Label $ show e) c)
   | x == mkCollect p = eval fun tys ctx eenv e
@@ -96,7 +96,7 @@ evalCase name s tys ctx eenv m (Cons x xs) =
   case m Map.!? x of
     Nothing ->
       let msg = "Non-exhaustive patterns in function " ++ show name in
-      die $ showErrors True "" Map.empty (RuntimeError s msg)
+      die $ showErrors True "" (RuntimeError s msg)
     Just (patterns, e) -> 
       let lst            = zip patterns xs in
       let ctx1 = foldl (\acc (c, y : _) -> Map.insert c y acc) ctx lst in 
@@ -115,4 +115,4 @@ evalVar _ tys ctx eenv x
      return $ exception (UndefinedFunction (getSpan x))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
   where
-    exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err
+    exception err = unsafePerformIO $ die $ showErrors False "" err

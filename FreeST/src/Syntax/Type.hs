@@ -46,7 +46,7 @@ data Type =
   -- Polymorphism and recursive types
   | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
   | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
-  | Var Span Variable
+  | Var Variable
   -- Type operators
   | Dualof Span Type
 --  | CoVar Span Variable
@@ -59,7 +59,7 @@ type TypeMap = Map.Map Variable Type
 data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
-  omission = Int
+  omission = setSrc "Int" . Int
 
 instance Located Type where
   getSpan (Int  p       ) = p
@@ -74,11 +74,26 @@ instance Located Type where
   getSpan (Message p _ _) = p
   getSpan (Forall p _   ) = p
   getSpan (Rec p _      ) = p
-  getSpan (Var p _      ) = p
+  getSpan (Var v      ) = getSpan v
   -- getSpan (Abs p _      ) = p
   -- getSpan (App p _ _    ) = p
   getSpan (Dualof p _   ) = p
 --  getSpan (CoVar p _   ) = p
+
+  setSpan s (Int _) = Int s
+  setSpan s (Float _) = Float s
+  setSpan s (Char _) = Char s
+  setSpan s (String _) = String s
+  setSpan s (Arrow _ m t1 t2) = Arrow s m t1 t2
+  setSpan s (Labelled _ st tm) = Labelled s st tm
+  setSpan s (Skip _) = Skip s
+  setSpan s (End _) = End s
+  setSpan s (Semi _ t1 t2) = Semi s t1 t2
+  setSpan s (Message _ p t) = Message s p t 
+  setSpan s (Forall _ b) = Forall s b
+  setSpan s (Rec _ b) = Rec s b
+  setSpan s (Var v) = Var $ setSpan s v
+  setSpan s (Dualof _ t) = Dualof s t
 
 -- Derived forms
 unit :: Span -> Type 

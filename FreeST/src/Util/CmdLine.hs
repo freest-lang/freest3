@@ -57,8 +57,8 @@ handleFlags fg@(RunOpts f _ _ sty _) = do
   unless ("fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
-    fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
-    wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
+    fileDoNotExist = showErrors sty "FreeST" (FileNotFound f)
+    wrongFileExtension = showErrors sty "FreeST" (WrongFileExtension f)
 
 flags :: Bool -> IO RunOpts
 flags b = handleFlags =<< execParser opts

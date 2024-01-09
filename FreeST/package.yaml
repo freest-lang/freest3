@@ -56,8 +56,9 @@ library:
 #    - Util.PrettyError
     - Util.State
     - Util.CmdLine
+    - Util.KeepSrc
 #    - Util.PreludeLoader
-    - Util.GetTOps
+    # - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind

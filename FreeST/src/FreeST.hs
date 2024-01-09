@@ -23,6 +23,7 @@ import           Util.CmdLine
 import           Util.Error
 import           Util.State
 import           Util.Warning
+import           Util.KeepSrc
 import           Validation.Phase
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
@@ -50,15 +51,28 @@ checkAndRun runOpts = do
   let bs = Set.difference sigs penv
 
   -- | Parse
-  s2 <- parseAndImport s1{extra = (extra s1){runOpts}}
+  s2 <- keepSrc <$> parseAndImport s1{extra = (extra s1){runOpts}}
   when (hasErrors s2) (die $ getErrors runOpts s2)
 
+  -- -- | Solve type declarations and dualof operators
+  -- let s3 = emptyPEnv $ execState elaboration $ keepSrcState s2
+  -- when (hasErrors s3) (die $ getErrors s3)
+
+  -- -- | Rename
+  -- let s4 = execState renameState $ keepSrcState s3
+
+  -- -- | Type check
+  -- let s5 = keepSrcState $ execState typeCheck $ keepSrcState s4
+  -- when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings s5)
+  -- when (hasErrors s5)  (die $ getErrors s5)
+  
   -- | PatternMatch
   let patternS = patternMatch s2
   when (hasErrors patternS) (die $ getErrors runOpts patternS)
 
   -- | Elaboration
-  let (defs, elabS) = elaboration patternS
+  let (defs, elabS') = elaboration patternS
+  let elabS = keepSrc elabS'
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
   -- | Rename & TypeCheck
@@ -97,7 +111,7 @@ checkAndRun runOpts = do
     forkHandlers [] e = e
     forkHandlers ((fun, var) : xs) e =
       E.UnLet s (mkWild s)
-        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        (E.App s (E.Var (mkFork s)) (E.App s (E.Var (mkVar s fun)) (E.Var (mkVar s var)))) 
         $ forkHandlers xs e 
       where
         s = defaultSpan

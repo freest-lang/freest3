@@ -1,6 +1,5 @@
 module Syntax.Program
-  ( TypeOpsEnv
-  , noConstructors
+  ( noConstructors
   , isDatatypeContructor
   , isDatatype
   )
@@ -11,11 +10,6 @@ import qualified Data.Map.Strict as Map
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Type as T
-
--- Mapping between positions & type operators (Typename & Dualof)
--- Used to give better error messages
--- TODO: remove upon merge to keep-source
-type TypeOpsEnv = Map.Map Span T.Type
 
 -- A given type environment without constructors
 noConstructors :: Types -> Signatures -> Signatures

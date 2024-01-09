@@ -14,6 +14,7 @@ import qualified Syntax.Kind as K
 import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
 import           Util.Error
+import           Util.KeepSrc
 import           Util.State
 import           Validation.Kinding (synthetise)
 import qualified Validation.Subkind as SK (join)
@@ -88,7 +89,7 @@ fixConsTypes = do
 replaceSignatures :: Signatures -> ElabState ()
 replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
   where quantifyLowerFreeVars t = 
-          foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t))
+          foldr (\v t -> keepSrc $ T.Forall p (T.Bind p v (K.ut p) t))
                 t
                 (Set.filter (isLower.head.show) $ free t)
           where p = getSpan t
@@ -112,9 +113,9 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
+    fmap forceKeepSrc $ E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
+    fmap forceKeepSrc $ E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromSignatures f

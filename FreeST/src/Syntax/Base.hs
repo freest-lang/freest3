@@ -50,15 +50,26 @@ negPos (i, j) = (negate i, negate j)
 
 class Located t where
   getSpan :: t -> Span
+  setSpan :: Span -> t ->  t
+  
+  setSrc :: String -> t -> t
+  setSrc src x = setSpan s{source = src} x
+    where s = getSpan x
+
+  -- copies start and end positions from the first into the second, keeps all else
+  changePos :: Span -> t -> t
+  changePos s y = setSpan sy{startPos= startPos s, endPos= endPos s} y
+    where sy = getSpan y
 
 data Span = Span
   { startPos     :: Pos
   , endPos       :: Pos
+  , source       :: String
   , defModule    :: FilePath
   } deriving (Eq, Ord)
 
 defaultSpan :: Span
-defaultSpan = Span defaultPos defaultPos ""
+defaultSpan = Span defaultPos defaultPos "" ""
 
 negSpan :: Span -> Span
 negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
@@ -81,6 +92,7 @@ instance Ord Variable where
   
 instance Located Variable where
   getSpan (Variable p _) = p
+  setSpan s (Variable _ v) = Variable s v
 
 instance Default Variable where
   omission p = mkVar p "omission"
@@ -91,7 +103,7 @@ intern (Variable _ x) = x
 
 -- Making a variable from a string, type or program
 mkVar :: Span -> String -> Variable
-mkVar = Variable
+mkVar s name = Variable s{source=name} name
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"
@@ -99,6 +111,7 @@ isWild (Variable _ x) = x == "_"
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is
 mkNewVar :: Int -> Variable -> Variable
+-- mkNewVar next v = Variable (getSpan v) (show next)
 mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
 
 -- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 

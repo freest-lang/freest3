@@ -51,13 +51,13 @@ instance Subs T.Type Variable T.Type where
   -- Polymorphism and recursion
   subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
   subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
-  subs t x u@(T.Var _ y)
+  subs t x u@(T.Var y)
     | y == x    = t
     | otherwise = u
-  subs (T.Var _ t) x u@(T.Dualof p (T.Var p' y))
-    | y == x    = T.Dualof p $ T.Var p' t
+  subs (T.Var t) x u@(T.Dualof p (T.Var y))
+    | y == x    = T.Dualof p $ T.Var t
     | otherwise = u
-  subs t x u@(T.Dualof p (T.Var p' y))
+  subs t x u@(T.Dualof p (T.Var y))
     | y == x    = dualof t
     | otherwise = u
   subs _ _ t            = t
@@ -84,7 +84,7 @@ instance Cosubs T.Type where
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
   cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
-  cosubs t x u@(T.Dualof _ (T.Var _ y))
+  cosubs t x u@(T.Dualof _ (T.Var y))
     | y == x = t
     | otherwise = u
   cosubs _ _ t            = t
@@ -108,7 +108,7 @@ free (T.Message _ _ t) = free t
 free (T.Semi _ t u) = free t `Set.union` free u
 free (T.Rec    _ (Bind _ x _ t)) = Set.delete x (free t)
 free (T.Forall _ (Bind _ x _ t)) = Set.delete x (free t)
-free (T.Var _ x) = Set.singleton x
+free (T.Var x) = Set.singleton x
 free (T.Dualof _ x) = free x
 free _ = Set.empty 
 

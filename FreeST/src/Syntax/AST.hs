@@ -77,16 +77,16 @@ initialSigs = Map.fromList listTypes
 
 listTypes :: [(Variable, T.Type)]
 listTypes = typeListToType (mkList ds)
-              [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])]
+              [(mkCons ds,[T.Int ds, T.Var (mkList ds)]), (mkNil ds, [])]
 
 listType :: T.Type
-listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
+listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var (mkList ds)]), (mkNil ds, [])])
 
 -- For constructors (used in Parser.y and here for lists)
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun
  where -- Convert a list of types and a final type constructor to a type
-  typeToFun []       = T.Var (getSpan a) a
+  typeToFun []       = T.Var a
   typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
 
 

@@ -26,7 +26,6 @@ data FreestS a = FreestS
   , nextIndex :: Int
   , errors :: Errors
   , warnings :: Warnings
-  , typenames :: TypeOpsEnv -- TODO: Remove with the new errors 
   , extra :: XExtra a
   }
 
@@ -44,7 +43,6 @@ initial ext = FreestS {
   , nextIndex = 0
   , errors = []
   , warnings = []
-  , typenames = Map.empty
   , extra = ext
   }
 
@@ -58,7 +56,6 @@ initialS = FreestS {
   , nextIndex = 0
   , errors = []
   , warnings = []
-  , typenames = Map.empty
   , extra = void
   }
 
@@ -132,7 +129,7 @@ getNextIndex = do
 
 getErrors :: RunOpts -> FreestS a -> String
 getErrors runOpts s = (intercalate "\n" . map f . take 10 . reverse . errors) s
-  where f = showErrors (isStylable runOpts) (runFilePath runOpts) (typenames s)
+  where f = showErrors (isStylable runOpts) (runFilePath runOpts)
 
 hasErrors :: FreestS a -> Bool
 hasErrors = not . null . errors
@@ -147,7 +144,7 @@ setErrors errors = S.modify (\s -> s { errors })
 
 getWarnings :: RunOpts -> FreestS a -> String
 getWarnings runOpts s = (intercalate "\n" . map f . take 10 . reverse . warnings) s
-  where f = showWarnings (runFilePath runOpts) (typenames s)
+  where f = showWarnings (runFilePath runOpts)
 
 hasWarnings :: FreestS a -> Bool
 hasWarnings = not . null . warnings
@@ -156,8 +153,8 @@ addWarning :: WarningType -> FreestState a ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 
 -- | Fresh var
-freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
-freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
+freshVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
+freshVar s p = getNextIndex >>= \i -> return $ mkNewVar i $ mkVar p s
 
 
 -- | RUNOPTS, Move to other module ???
@@ -211,26 +208,6 @@ tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
 tMapWithKeyM_ f m = S.void $ tMapWithKeyM f m
-
--- | TYPENAMES
-
-addTypeName :: S.MonadState (FreestS a) m => Span -> T.Type -> m ()
-addTypeName p t = S.modify (\s -> s { typenames = Map.insert p t (typenames s) })
-
-getTypeNames :: S.MonadState (FreestS a) m => m TypeOpsEnv
-getTypeNames = S.gets typenames
-
-findTypeName :: S.MonadState (FreestS a) m => Span -> T.Type -> m T.Type
-findTypeName p t = Map.findWithDefault t p <$> getTypeNames
-
-addDualof :: S.MonadState (FreestS a) m => T.Type -> m ()
-addDualof d@(T.Dualof p t) = do
-  tn <- getTypeNames
-  case tn Map.!? getSpan t of
-    Just (T.Dualof _ _) -> return ()
-    Just u -> S.modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
-    Nothing -> S.modify (\s -> s { typenames = Map.insert p d tn })
-addDualof t = internalError "Util.State.addDualof" t
 
 -- | Debug Function
 

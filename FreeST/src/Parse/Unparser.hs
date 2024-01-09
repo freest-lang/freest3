@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -17,7 +18,9 @@ https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 -}
 
 module Parse.Unparser
-  ( showFieldMap
+  ( Unparse(..)
+  , Sourceable(..)
+  , showFieldMap
   , showBindType
   , showBindExp
   , showBindTerm
@@ -29,7 +32,7 @@ import           Syntax.AST
 import           Syntax.Base
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Syntax.MkName ( mkTrue, mkFalse )
+import           Syntax.MkName ( mkTrue, mkFalse, mkCollect )
 import qualified Syntax.Type as T
 
 import           Data.Char ( isDigit )
@@ -41,7 +44,7 @@ import           Prelude                 hiding ( Left
                                                 ) -- needed for Associativity
 
 instance Show Span where
-  show (Span sp fp _)
+  show (Span sp fp _ _)
     | sp == fp  = showPos sp
     | otherwise = showPos sp ++ "-" ++ showPos fp
     where
@@ -81,12 +84,12 @@ instance Show T.Polarity where
 -- Note: show should be aligned with the creation of new variables;
 -- see Syntax.Variables
 
-instance Show Variable where
-  show = showVar
+instance Unparse Variable where
+  unparse v = (maxRator, show v)
 
-showVar :: Variable -> String
-showVar = dropWhile (\c -> isDigit c || c == '#') . intern
--- showVar = intern -- for testing purposes
+instance Show Variable where
+  show = dropWhile (\c -> isDigit c || c == '#') . intern
+  -- show = source . getSpan
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
@@ -184,6 +187,7 @@ class Unparse t where
 
 instance Show T.Type where
   show = snd . unparse
+  -- show = source . getSpan
 
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
@@ -192,7 +196,7 @@ instance Unparse T.Type where
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
-  unparse (T.Var  _ a     ) = (maxRator, show a)
+  unparse (T.Var a        ) = (maxRator, show a)
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
@@ -202,7 +206,7 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right arrowRator
   unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
     where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Variant m) = (maxRator, {-"[" ++-} showDatatype m {-++ "]"-})
   unparse (T.Labelled _ T.Record m) 
     | Map.null m = (maxRator, "()")
     | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
@@ -249,6 +253,7 @@ showChoiceLabels m = intercalate ", "
 
 instance Show Exp where
   show = snd . unparse
+  -- show = source . getSpan
 
 instance Unparse Exp where
   -- Basic values
@@ -258,44 +263,44 @@ instance Unparse Exp where
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
-  unparse (E.Var  _ x) = (maxRator, show x)
+  unparse (E.Var x) = (maxRator, show x)
   -- Abstraction intro and elim
   unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
     l = bracket (unparse e1) Left disjRator
     r = bracket (unparse e2) Right disjRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(&&)" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "(&&)" =
    (conjRator, l ++ " && " ++ r)
    where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isCmp x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isCmp x =
    (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
-  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+  unparse e@(E.App _ (E.App _ (E.Var x) _) _) | show x == "(::)" =
     (maxRator, "[" ++ intercalate ", " list ++ "]")
     where
       list = map (snd . unparse) (joinList e)
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAppend x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isAppend x =
    (appendRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left appendRator
     r = bracket (unparse e2) Right appendRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isMult x =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | isMult x =
    (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "^" =
+  unparse (E.App _ (E.App _ (E.Var x) e1) e2) | show x == "^" =
    (powerRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left powerRator
@@ -321,6 +326,10 @@ instance Unparse Exp where
     where s1 = bracket (unparse e) Left inRator
           s2 = bracket (unparse $ snd $ m Map.! mkTrue  p) NonAssoc inRator
           s3 = bracket (unparse $ snd $ m Map.! mkFalse p) Right    inRator
+  -- Case #collect
+  unparse (E.Case _ (E.App _ (E.Var collect) chan) m) | collect == mkCollect defaultSpan =
+    (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
+    where s = bracket (unparse chan) NonAssoc inRator
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
@@ -382,8 +391,21 @@ sigsToList :: Signatures -> [String]
 sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
 
 joinList :: E.Exp -> [E.Exp]
-joinList (E.Var _ x) | show x == "[]"   = []
-joinList (E.App _ (E.App _ (E.Var _ x) e1) e2)
+joinList (E.Var x) | show x == "[]"   = []
+joinList (E.App _ (E.App _ (E.Var x) e1) e2)
   | show x == "(::)" = e1 : joinList e2
   | show x == "[]"   = []  
 joinList e = [e]
+
+
+class Sourceable a where
+    showSource :: a -> String
+
+instance Sourceable Variable where
+    showSource = source . getSpan
+
+instance Sourceable T.Type where
+    showSource = source . getSpan
+
+instance Sourceable E.Exp where
+    showSource = source . getSpan

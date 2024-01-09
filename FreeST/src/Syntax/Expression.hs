@@ -33,7 +33,7 @@ data Exp =
   | Char Span Char
   | String Span String
   -- Variable
-  | Var Span Variable
+  | Var Variable
   -- Abstraction intro and elim
   | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T 1-> e
   | App Span Exp Exp     -- e1 e2
@@ -66,14 +66,31 @@ instance Located Exp where
   getSpan (Float p _          ) = p
   getSpan (Char p _           ) = p
   getSpan (String p _         ) = p
-  getSpan (Var p _            ) = p
+  getSpan (Var x              ) = getSpan x
   getSpan (Abs p _ _          ) = p
-  getSpan (UnLet p _ _ _      ) = p
   getSpan (App p _ _          ) = p
-  getSpan (TypeApp p _ _      ) = p
-  getSpan (TypeAbs p _        ) = p
-  getSpan (Cond p _ _ _       ) = p
   getSpan (Pair p _ _         ) = p
   getSpan (BinLet p _ _ _ _   ) = p
   getSpan (Case  p _ _        ) = p
   getSpan (CasePat  p _ _     ) = p
+  getSpan (TypeAbs p _        ) = p
+  getSpan (TypeApp p _ _      ) = p
+  getSpan (Cond p _ _ _       ) = p
+  getSpan (UnLet p _ _ _      ) = p
+
+  setSpan s (Unit _              ) = Unit s 
+  setSpan s (Int _ i             ) = Int s i
+  setSpan s (Float _ f           ) = Float s f
+  setSpan s (Char _ c            ) = Char s c
+  setSpan s (String _ str        ) = String s str
+  setSpan s (Var   v             ) = Var (setSpan s v)
+  setSpan s (Abs _ m b           ) = Abs s m b
+  setSpan s (App _ e1 e2         ) = App s e1 e2
+  setSpan s (Pair _ e1 e2        ) = Pair s e1 e2
+  setSpan s (BinLet _ v1 v2 e1 e2) = BinLet s v1 v2 e1 e2
+  setSpan s (Case  _ e fm        ) = Case s e fm
+  setSpan s (CasePat  _ e fl     ) = CasePat s e fl
+  setSpan s (TypeAbs _ b         ) = TypeAbs s b
+  setSpan s (TypeApp _ e t       ) = TypeApp s e t
+  setSpan s (Cond _ e1 e2 e3     ) = Cond s e1 e2 e3
+  setSpan s (UnLet _ v e1 e2     ) = UnLet s v e1 e2
