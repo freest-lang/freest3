@@ -106,6 +106,7 @@ rec a: *M . !a
 
 forall b: 1S. !Int; rec a: 1S. b; a
 
+forall b:1S . rec a:*T . b
 
 -- Non contractive types
 
