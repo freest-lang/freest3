@@ -66,7 +66,7 @@ flags b = handleFlags =<< execParser opts
     opts = info (versionParser v <*> runOptsParser <**> helper) desc
     desc = fullDesc
      <> progDesc "Run FreeST"
-     <> header v
+     <> header (v ++ ", https://freest-lang.github.io") 
     
     v = "FreeST, Version " ++ showVersion version ++ if b then "-dev" else ""
 

@@ -24,10 +24,9 @@ internalError :: (Show a, Located a) => String -> a -> b
 internalError fun syntax =
   error
     $  show (getSpan syntax)
-    ++ ": Internal error at "
-    ++ fun
-    ++ ": "
-    ++ show syntax
+    ++ ": Internal error at " ++ fun  ++ ": " ++ show syntax
+    ++ "\nPlease report to freest-lang@listas.ciencias.ulisboa.pt"
+    
 
 -- | Format program error
       
