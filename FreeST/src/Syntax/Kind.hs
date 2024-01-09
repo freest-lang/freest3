@@ -40,7 +40,7 @@ data Multiplicity = Un | Lin deriving Eq
 data Kind = Kind Span Multiplicity PreKind
 
 instance Eq Kind where
-  (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2
+  (Kind _ m1 b1) == (Kind _ m2 b2) = m1 == m2 && b1 == b2
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
@@ -54,11 +54,11 @@ instance Default Kind where
 -- Abbreviations for the six available kinds
 lt, ut, ls, us, la, ua :: Span -> Kind
 lt p = Kind p Lin Top 
-ut p = Kind p Un Top 
+ut p = Kind p Un  Top 
 ls p = Kind p Lin Session 
-us p = Kind p Un Session
+us p = Kind p Un  Session
 la p = Kind p Lin Absorb
-ua p = Kind p Un Absorb
+ua p = Kind p Un  Absorb
 
 isLin :: Kind -> Bool
 isLin (Kind _ m _) = m == Lin

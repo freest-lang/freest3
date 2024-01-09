@@ -37,12 +37,12 @@ instance Subsort K.Multiplicity where
   _     <: _    = True
 
 instance Subsort K.PreKind where
-  K.Top <: K.Session = False
+  K.Top     <: K.Session = False
   K.Session <: K.Absorb = False
-  _     <: _         = True
+  _         <: _        = True
 
 instance Subsort K.Kind where
-  K.Kind _ b1 m1 <: K.Kind _ b2 m2 = b1 <: b2 && m1 <: m2
+  K.Kind _ m1 b1 <: K.Kind _ m2 b2 = m1 <: m2 && b1 <: b2
 
 -- The least upper bound of two kinds
 
