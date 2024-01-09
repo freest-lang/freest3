@@ -246,7 +246,7 @@ instance Message ErrorType where
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts _ = "Type variable not in scope: " ++ style red sty ts a
   msg (TypeNotContractive _ t a) sty ts _ =
-    "Type " ++ style red sty ts t ++ " is not contractive on type variable " ++
+    "Type " ++ style red sty ts t ++ " is not contractive on rec type identifier " ++
     style red sty ts a
   msg (CantMatchKinds _ k k' t) sty ts _ =
     "Couldn't match expected kind " ++ style red sty ts k ++ "\n\t with actual kind " ++
