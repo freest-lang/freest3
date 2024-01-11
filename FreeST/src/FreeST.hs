@@ -33,7 +33,7 @@ import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
 
 isDev :: Bool
-isDev = False
+isDev = True
 
 main :: IO ()
 main = checkAndRun =<< flags isDev -- handleOpts =<< compilerOpts =<< getArgs
