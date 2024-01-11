@@ -36,8 +36,6 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- Exported Functions: Top-level definitions of those defined in this module
-
 -- synthetise :: MonadState FreestS m => K.KindEnv -> T.Type -> m K.Kind
 synthetise :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 synthetise kenv = synthetise' (Map.keysSet kenv) kenv
@@ -48,8 +46,6 @@ checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 checkAgainstSession :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
--- Kinding
--- Returns the kind of a given type
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 -- Functional types
 synthetise' _ _ (T.Int    p) = return $ K.ut p
@@ -57,7 +53,7 @@ synthetise' _ _ (T.Float  p) = return $ K.ut p
 synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
-  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p m K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
@@ -145,11 +141,6 @@ mult :: MonadState (FreestS a) m => K.Multiplicity -> T.Type -> m Bool
 mult m1 t = do
   (K.Kind _ m2 _) <- synthetise' Set.empty Map.empty t
   return $ m2 == m1
-
--- Type to kind multiplicity
-typeToKindMult :: Multiplicity -> K.Multiplicity
-typeToKindMult Lin = K.Lin
-typeToKindMult Un = K.Un
 
 -- Unnormed lifted to types
 unr :: Set.Set Variable -> T.Type -> Bool

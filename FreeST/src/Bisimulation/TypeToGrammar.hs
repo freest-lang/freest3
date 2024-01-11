@@ -24,6 +24,7 @@ import           Elaboration.Replace ( changePos )
 import           Typing.Normalisation ( normalise )
 import qualified Typing.Substitution as Substitution ( subsAll )
 import           Kinding.Terminated ( terminated )
+import           Parse.Unparser ( showArrow )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_)
 
@@ -57,7 +58,7 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ m t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(show m ++ "d", xs), (show m ++ "r", ys)] -- domain, range
+  getLHS $ Map.fromList [(showArrow m ++ "d", xs), (showArrow m ++ "r", ys)] -- domain, range
 toGrammar' (T.Labelled _ s m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> show s ++ show k) ms

@@ -29,13 +29,11 @@ module Syntax.Kind
   )
 where
 
-import           Syntax.Base hiding ( Multiplicity(..) )
+import           Syntax.Base -- hiding ( Multiplicity(..) )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 data PreKind = Session | Top | Absorb deriving (Ord, Eq)
-
-data Multiplicity = Un | Lin deriving Eq
 
 data Kind = Kind Span Multiplicity PreKind
 

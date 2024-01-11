@@ -23,6 +23,7 @@ module Parse.Unparser
   , showBindTerm
   , showModuleName
   , showModuleWithDots
+  , showArrow
   ) where
 
 import           Syntax.AST
@@ -51,14 +52,6 @@ showModuleName s = showModuleWithDots (moduleName s)
 showModuleWithDots :: String -> String
 showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 
-instance Show K.Multiplicity where
-  show K.Un  = "*"
-  show K.Lin = "1"
-
-instance Show Multiplicity where
-  show Un  = "->"
-  show Lin = "1->"
-
 instance Show T.View where
   show T.External = "&"
   show T.Internal = "+"
@@ -67,17 +60,20 @@ instance Show T.Polarity where
   show T.In  = "?"
   show T.Out = "!"
 
--- Program and Type Variables
-
--- Note: show should be aligned with the creation of new variables;
--- see Syntax.Variables
-
 instance Show Variable where
   show = extern
 
+instance Show Multiplicity where
+  show Un  = "*"
+  show Lin = "1"
+
+-- Arrow multiplicity has a different textual representation
+showArrow :: Multiplicity -> String
+showArrow Un  = "->"
+showArrow Lin = "1->"
+
 -- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
 -- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
-
 showSortedVar :: (Show a, Show b) => a -> b -> Bool -> String
 showSortedVar x t False = show x ++ ":" ++ show t
 showSortedVar x t True = show x ++ ":(" ++ show t ++ ")"
@@ -90,7 +86,7 @@ instance Show K.PreKind where
   show K.Absorb  = "A"
 
 instance Show K.Kind where
-  show (K.Kind _ p m) = show p ++ show m
+  show (K.Kind _ m p) = show m ++ show p
 
 -- Binds
 
@@ -106,8 +102,8 @@ showBindExp (Bind _ a k e) = showBind a k False "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
-showBindTerm (Bind _ x t@T.Arrow{} e) m = showBind x t True (show m) e -- λ x:(t) -> e
-showBindTerm (Bind _ x t e) m = showBind x t False (show m) e -- λ x:t -> e
+showBindTerm (Bind _ x t@T.Arrow{} e) m = showBind x t True (showArrow m) e -- λ x:(t) -> e
+showBindTerm (Bind _ x t e) m = showBind x t False (showArrow m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
@@ -184,7 +180,7 @@ instance Unparse T.Type where
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (showArrow m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
