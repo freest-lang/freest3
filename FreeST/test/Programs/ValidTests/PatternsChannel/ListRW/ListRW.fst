@@ -2,6 +2,14 @@ data IList = Nil | Cons Int IList
 
 type IListW : 1S = +{NilC: Skip, ConsC: !Int; IListW}
 
+iFold : forall a:1T b:1S .
+  a -> (Int -> a -> a) 1-> (dualof IListW);b 1-> (a, b)
+iFold n f (NilC  c) = (n, c)
+iFold n f (ConsC c) = 
+  let (m, c) = receive c in
+  let (n, c) = iFold @a@b n f c in
+  (f m n, c)
+
 iListW : forall a:1S . IList -> IListW;a -> a
 iListW Nil         c = select NilC c
 iListW (Cons x xs) c = select ConsC c |> send x |> iListW @a xs
@@ -25,14 +33,6 @@ iLength (ConsC c) =
 
 iLength' : forall a:1S . (dualof IListW);a -> (Int, a)
 iLength' x = iFold @Int@a 0 (+) x
-
-iFold : forall a:1T b:1S .
-  a -> (Int -> a -> a) 1-> (dualof IListW);b 1-> (a, b)
-iFold n f (NilC  c) = (n, c)
-iFold n f (ConsC c) = 
-  let (m, c) = receive c in
-  let (n, c) = iFold @a@b n f c in
-  (f m n, c)
 
 aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))

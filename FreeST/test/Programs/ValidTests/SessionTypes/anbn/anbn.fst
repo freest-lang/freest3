@@ -19,10 +19,6 @@ type S0 : 1S = +{A: S1}
 -- Production S1
 type S1 : 1S = +{A: S1; +{B: Skip}, B: Skip}
 
--- The client selects a given number of A's
-client : Int -> S0;Close -> ()
-client n c = c |> select A |> client' @Close (n - 1) |> close
-
 -- for each A selected a B is also selected
 client' : forall a : 1S . Int -> S1;a -> a
 client' n c =
@@ -34,12 +30,9 @@ client' n c =
     let c = client' @(+{B: Skip} ; a) (n - 1) c in -- +{B: Skip}; a
     select B c                                  -- a
 
--- The server offers the choice composed by A
-server : dualof S0;Wait -> ()
-server c =
-  match c with {
-    A c -> c |> server' @Wait |> wait
-  }
+-- The client selects a given number of A's
+client : Int -> S0;Close -> ()
+client n c = c |> select A |> client' @Close (n - 1) |> close
 
 -- For each A selected, a choice for B is also offered
 server' : forall a : 1S . dualof S1; a -> a
@@ -52,6 +45,13 @@ server' c =
        }),                                  -- a
     B c ->                                  -- a
       c
+  }
+
+-- The server offers the choice composed by A
+server : dualof S0;Wait -> ()
+server c =
+  match c with {
+    A c -> c |> server' @Wait |> wait
   }
 
 main : ()

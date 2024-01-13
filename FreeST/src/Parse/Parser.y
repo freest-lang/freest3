@@ -42,6 +42,7 @@ import           Paths_FreeST ( getDataFileName )
   where    {TokenWhere _}
   module   {TokenModule _}  
   import   {TokenImport _}  
+  mutual   {TokenMutual _}
   Int      {TokenIntT _}
   Float    {TokenFloatT _}
   Char     {TokenCharT _}
@@ -179,8 +180,7 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3) }
-  -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3 >> addToEvalOrder [x]) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
   | Pattern Op Pattern '=' Exp   {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $5}
@@ -195,6 +195,15 @@ Decl :: { () }
       mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
       uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
     }
+  | mutual '{' Mutual '}'    {% addToEvalOrder $3 }
+  | mutual '{' Mutual NL '}' {% addToEvalOrder $3 }
+
+Mutual :: { [Variable] }
+  : MutualDecl           { $1 }
+  | MutualDecl ',' Mutual { $1 ++ $3 }
+
+MutualDecl :: { [Variable] }
+  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3) >> return $1 }
 
 ProgVarList :: { [Variable] }
   : ProgVar                 { [$1] }

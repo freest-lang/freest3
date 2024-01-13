@@ -10,6 +10,27 @@ type OrderingChannel : 1S = +{
   Ascending: Skip,
   Descending: Skip}
 
+-- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting
+-- function is a parameter.
+
+append : IntList -> IntList -> IntList
+append Nil          ys = ys
+append (Cons x xs') ys = Cons x (append xs' ys)
+
+split : (Int -> Int -> Bool) -> Int -> IntList -> (IntList, IntList) -> (IntList, IntList)
+split cmp y Nil          pair = pair
+split cmp y (Cons x xs') pair = 
+  let (smaller, greater) = pair in
+  split cmp y xs' (if cmp x y
+                    then (Cons x smaller, greater)
+                    else (smaller, Cons x greater))
+
+quicksort : (Int -> Int -> Bool) -> IntList -> IntList
+quicksort cmp Nil = Nil
+quicksort cmp (Cons x xs') =
+  let (smaller, greater) = split cmp x xs' (Nil, Nil) in
+  append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
+
 -- Send a series of integer values to the server; receive and print
 -- the values in ascending or descending order
 client : OrderingChannel;Close -> ()
@@ -47,23 +68,3 @@ main =
   let (w, r) = new @(OrderingChannel;Close) () in
   fork @() (\_:()1-> sortingServer @Wait Nil r |> snd @IntList @Wait |> wait);
   client w
-
--- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting
--- function is a parameter.
-quicksort : (Int -> Int -> Bool) -> IntList -> IntList
-quicksort cmp Nil = Nil
-quicksort cmp (Cons x xs') =
-  let (smaller, greater) = split cmp x xs' (Nil, Nil) in
-  append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
-
-split : (Int -> Int -> Bool) -> Int -> IntList -> (IntList, IntList) -> (IntList, IntList)
-split cmp y Nil          pair = pair
-split cmp y (Cons x xs') pair = 
-  let (smaller, greater) = pair in
-  split cmp y xs' (if cmp x y
-                    then (Cons x smaller, greater)
-                    else (smaller, Cons x greater))
-
-append : IntList -> IntList -> IntList
-append Nil          ys = ys
-append (Cons x xs') ys = Cons x (append xs' ys)

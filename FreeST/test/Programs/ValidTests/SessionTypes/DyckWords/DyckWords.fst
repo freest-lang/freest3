@@ -21,6 +21,17 @@ type D : 1S = +{ Lt : T;D, Dollar : Skip }
 type T : 1S = +{ Lt : T;T, Gt : Skip }
 
 -- Read from a channel; print what is read
+readT : forall a: 1S . dualof T;a -> a
+readT c =
+  match c with {
+    Lt c ->
+      putStr (show @Char '<');
+      readT @a (readT @(dualof T ; a) c),
+    Gt c ->
+      putStr (show @Char '>');
+      c
+  }
+
 readD : forall a: 1S . dualof D;a -> a
 readD c =
   match c with {
@@ -31,15 +42,17 @@ readD c =
       putStr (show  @Char '$');
       c
   }
-readT : forall a: 1S . dualof T;a -> a
-readT c =
-  match c with {
-    Lt c ->
-      putStr (show @Char '<');
-      readT @a (readT @(dualof T ; a) c),
-    Gt c ->
-      putStr (show @Char '>');
-      c
+
+forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b 1-> (a, b)
+forwardT in' out =
+  match in' with {
+    Lt in' ->
+      let out = select Lt out in
+      let (in', out) = forwardT @(dualof T ; a) @(T ; b) in' out in
+      forwardT @a @b in' out,
+    Gt in' ->
+      let out = select Gt out in
+      (in', out)
   }
 
 -- Read from a channel and immediately write on another channel
@@ -55,16 +68,17 @@ forwardD in' out =
          (in', out)
   }
 
-forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b 1-> (a, b)
-forwardT in' out =
-  match in' with {
-    Lt in' ->
+concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b 1-> T;c 1-> (a, (b, c))
+concatT in1 in2 out =
+  match in1 with {
+    Lt in1 ->
       let out = select Lt out in
-      let (in', out) = forwardT @(dualof T ; a) @(T ; b) in' out in
-      forwardT @a @b in' out,
-    Gt in' ->
+      let (in1, in2out) = concatT @(dualof T ; a) @b @(T ; c) in1 in2 out in
+      let (in2, out) = in2out in
+      concatT @a @b @c in1 in2 out,
+    Gt in1 ->
       let out = select Gt out in
-      (in', out)
+      (in1, (in2, out))
   }
 
 -- Read from a channel; read from a second channel; while writing on a
@@ -81,19 +95,6 @@ concatD in1 in2 out =
       let (in2, out) = forwardD @b @c in2 out in
          (in1, (in2, out))
   } -- forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -> (a, b)
-
-concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b 1-> T;c 1-> (a, (b, c))
-concatT in1 in2 out =
-  match in1 with {
-    Lt in1 ->
-      let out = select Lt out in
-      let (in1, in2out) = concatT @(dualof T ; a) @b @(T ; c) in1 in2 out in
-      let (in2, out) = in2out in
-      concatT @a @b @c in1 in2 out,
-    Gt in1 ->
-      let out = select Gt out in
-      (in1, (in2, out))
-  }
 
 -- A few functions to write on channels
 writeLtGt, writeDollar, writeLtLtGtGtLtGt, writeLtLtGtLtGtGt : D;Close -> Close

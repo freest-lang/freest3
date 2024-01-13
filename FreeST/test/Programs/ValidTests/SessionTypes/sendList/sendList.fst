@@ -17,8 +17,8 @@ write Nil c =
   c |> select NilC
     |> close
 
-main, aList : List
-
-main = forkWith @ListC @() (write aList) |> read
+aList, main : List
 
 aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
+main = forkWith @ListC @() (write aList) |> read
+

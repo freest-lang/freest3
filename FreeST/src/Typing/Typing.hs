@@ -55,12 +55,32 @@ typeCheck = do
   -- Gets the state and only continues if there are no errors so far
   s <- get
   unless (hasErrors s) $ do
-    -- * Check function bodies
-    tMapWithKeyM_ (checkFunBody (signatures $ ast s)) =<< getDefs
+    -- * Remove signatures with definitions
+    defs <- getDefs
+    sigs <- getSignatures
+    setSignatures $ Map.filterWithKey (\k _ -> Map.notMember k defs) sigs
+    -- * Check definitions in evaluation order
+    mapM_ (checkDefs sigs) =<< getEvalOrder
     -- * Check the main function
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
+  where 
+    checkDefs :: Signatures -> [Variable] -> TypingState () 
+    checkDefs sigs [ ] = return () 
+    checkDefs sigs xs = do 
+      let xts = map (\x -> (x, sigs Map.! x)) xs
+      mapM_ (uncurry addToSignatures) xts 
+      mapM_ (checkDef xs) xts 
+    
+    checkDef :: [Variable] -> (Variable, T.Type) -> TypingState ()
+    checkDef xs (x,t) = do
+      defs <- getDefs 
+      case defs Map.!? x of  
+        Nothing -> return () 
+        Just e  -> do when (length xs > 1 && not (isVal e)) 
+                        (addError (MutualDefNotValue (getSpan x) x e)) 
+                      checkAgainst Map.empty e t
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
@@ -87,7 +107,7 @@ checkLinearity :: TypingState ()
 checkLinearity = do
   sigs <- getSignatures
   m <- filterM (K.lin . snd) (Map.toList sigs)
-  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
+  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m)
 
 buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
                  -> TypingState ([Variable], E.Exp)
@@ -210,7 +230,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Labelled p T.Record $ 
+  return $ T.Labelled p T.Record $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do

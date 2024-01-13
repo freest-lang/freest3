@@ -8,20 +8,8 @@ Church Encoding _ Natural Numbers
 
 type Nat = ∀ a . (a -> a) -> a -> a
 
-zero, zero', one, two, three, four : Nat
-
+zero : Nat 
 zero = Λ a => λs:(a -> a) -> λz:a -> z
-
--- Abbreviated version
-zero' s z = z
-
-one s z = s z
-
-two s z = s (s z)
-
-three s z = s (s (s z))
-
-four = succ' three
 
 succ', square : Nat -> Nat
 succ' n = Λ a => λ s:(a->a) z:a -> s (n  @a s z)
@@ -73,6 +61,19 @@ pred' n = snd' (n  @Pair shift (pair zero zero))
 
 toInt : Nat -> Int
 toInt n = n  @Int (λx:Int -> x + 1) 0
+
+zero', one, two, three, four : Nat
+
+-- Abbreviated version
+zero' s z = z
+
+one s z = s z
+
+two s z = s (s z)
+
+three s z = s (s (s z))
+
+four = succ' three
 
 main : Int
 main = toInt $ pred' $ plus one three

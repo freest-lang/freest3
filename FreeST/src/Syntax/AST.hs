@@ -31,6 +31,7 @@ data AST a = AST
   { types       :: Types
   , signatures  :: Signatures
   , definitions :: Definitions a
+  , evalOrder   :: [[Variable]]
   } 
 
 initialAST :: AST a
@@ -38,10 +39,14 @@ initialAST = AST
   { types       = initialTypes
   , signatures  = initialSigs
   , definitions = Map.empty
+  , evalOrder   = []
   }
 
 addSignature :: Variable -> T.Type -> AST a -> AST a
 addSignature f t ast = ast{signatures = Map.insert f t (signatures ast)} 
+
+addEvalOrder :: [Variable] -> AST a -> AST a
+addEvalOrder xs ast = ast{evalOrder = evalOrder ast ++ [xs]} 
 
 addType :: Variable -> K.Kind -> T.Type -> AST a -> AST a
 addType x k t ast = ast{types = Map.insert x (k,t) (types ast)}

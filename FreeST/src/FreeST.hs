@@ -72,16 +72,8 @@ checkAndRun runOpts = do
   let bs1 = Set.difference (Set.difference sigs p) bs -- (builtins s4)
   unless (Set.null bs1) $
     die $ getErrors runOpts $ initialS {errors = Set.foldr (noSig (getSignaturesS s4)) [] bs1}
-  
-  -- | Check if main was left undefined, eval and print result otherwise
-  let m = getMain runOpts  
-  when (m `Map.member` getSignaturesS s4) $ evalAndPrint m s4 $
-    forkHandlers 
-      [ ("__runStdout", "__stdout")
-      , ("__runStderr", "__stderr")
-      , ("__runStdin", "__stdin")] 
-      (getDefsS s4 Map.! m)
 
+  evalAndPrint (getMain runOpts) s4 
   where
     noSig :: Signatures -> Variable -> Errors -> Errors
     noSig sigs f acc = SignatureLacksBinding (getSpan f) f (sigs Map.! f) : acc
@@ -91,15 +83,10 @@ checkAndRun runOpts = do
       | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }
       | otherwise    = s1
 
-    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
-    forkHandlers [] e = e
-    forkHandlers ((fun, var) : xs) e =
-      E.UnLet s (mkWild s)
-        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
-        $ forkHandlers xs e 
-      where
-        s = defaultSpan
-
 elabToTyping :: RunOpts -> Typing.Phase.Defs -> ElabS -> TypingS
 elabToTyping runOpts defs s = s {ast=newAst, extra = runOpts}
-  where newAst = AST {types=types $ ast s, signatures=signatures $ ast s, definitions = defs}
+  where newAst = AST { types=types $ ast s
+                     , signatures=signatures $ ast s
+                     , definitions = defs
+                     , evalOrder = evalOrder $ ast s
+                     }

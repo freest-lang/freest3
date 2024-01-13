@@ -18,12 +18,12 @@ type TreeC : 1S = +{
 
 -- Reading a channel end: consuming dualof TreeChannel
 
-readTree : dualof TreeChannel -> Tree
-readTree r = 
-  let (tree, r) = read @Wait r in 
-  wait r;
-  tree
--- where
+receiveCh : forall a:1S . ?(?Int; Close) ; a -> (Int, a)
+receiveCh c =
+  let (r, c) = receive c in
+  let x = receiveAndClose @(Int) r in
+  (x, c)
+
 read : forall a:1S . dualof TreeC ; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) =
@@ -32,20 +32,24 @@ read (NodeC c) =
   let (r, c) = read @a c in
   (Node l x r, c)
 
-receiveCh : forall a:1S . ?(?Int; Close) ; a -> (Int, a)
-receiveCh c =
-  let (r, c) = receive c in
-  let x = receiveAndClose @(Int) r in
-  (x, c)
+readTree : dualof TreeChannel -> Tree
+readTree r = 
+  let (tree, r) = read @Wait r in 
+  wait r;
+  tree
+
 
 -- Writing a tree on a channel: consuming TreeChannel
 
 data Tree = Leaf | Node Tree Int Tree
 
-writeTree : Tree -> TreeChannel -> ()
-writeTree tree writer =
-  write @Close tree writer |> close
--- where
+sendCh : forall a:1S . Int -> !(?Int ; Close) ; a -> a
+sendCh x c =
+  let (r, w) = new @(?Int ; Close) () in
+  let c = send r c in
+  sendAndWait @(Int) x w ;
+  c
+
 write : forall a:1S . Tree -> TreeC ; a -> a
 write Leaf c = select LeafC c
 write (Node l x r) c = 
@@ -54,12 +58,9 @@ write (Node l x r) c =
     |> sendCh @(TreeC ; a) x
     |> write @a r
 
-sendCh : forall a:1S . Int -> !(?Int ; Close) ; a -> a
-sendCh x c =
-  let (r, w) = new @(?Int ; Close) () in
-  let c = send r c in
-  sendAndWait @(Int) x w ;
-  c
+writeTree : Tree -> TreeChannel -> ()
+writeTree tree writer =
+  write @Close tree writer |> close
 
 -- Go: transmit aTree
 

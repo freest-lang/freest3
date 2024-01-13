@@ -7,14 +7,6 @@ g : forall a:1S . ?Char;a -> a
 g c = let (_,c) = receive c in c
 
 
-main : ()
-main =
-  let (w,r) = new @(!Char;T) () in
-  fork (\_:() 1-> f @T w |> writer 0) ;
-  g @(dualof T) r |> reader
-
-type T : 1S = !Int;T;?Int
-
 writer : Int -> T -> ()
 writer i c =
   let _ = writer (i + 1) (send i c)
@@ -25,3 +17,12 @@ reader c =
   let (i, c) = receive c in
   print @Int i;
   reader c
+
+type T : 1S = !Int;T;?Int
+
+main : ()
+main =
+  let (w,r) = new @(!Char;T) () in
+  fork (\_:() 1-> f @T w |> writer 0) ;
+  g @(dualof T) r |> reader
+

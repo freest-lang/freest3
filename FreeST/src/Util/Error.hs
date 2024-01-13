@@ -103,6 +103,7 @@ data ErrorType =
   | ErrorFunction Span String
   | UndefinedFunction Span
   | RuntimeError Span String
+  | MutualDefNotValue Span Variable E.Exp
   deriving Show
 
 instance Located ErrorType where
@@ -151,6 +152,7 @@ instance Located ErrorType where
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
+  getSpan (MutualDefNotValue p _ _         ) = p
 
 
 instance Message ErrorType where
@@ -264,8 +266,8 @@ instance Message ErrorType where
     let modDesc = if isLeft b then "file" else "module" in
     "Variable or data constructor not in scope: " ++ styledVar ++
     -- "\n  In " ++ modDesc ++ ": " ++ fromEither b ++ -- showModule (showModuleName p) p ++
-    "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
-    "\n  (is " ++ styledVar ++ " defined in a module that you forgot to import?)"
+    "\n  (Is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
+    "\n  (Is " ++ styledVar ++ " defined later or in a module that you forgot to import?)"
   msg (LinProgVar _ x t k) sty ts _ =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
@@ -278,12 +280,12 @@ instance Message ErrorType where
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++
       "\n\tvariable " ++ style red sty ts var1 ++ " is of type " ++ style red sty ts type1 ++
       "\n\t  and the function is " ++ style red sty ts e ++
-      "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
+      "\n\t(This risks duplicating or discarding the variable! Consider using a linear function instead.)"
     | otherwise = 
       "Linear variable " ++ style red sty ts var2 ++ " was created in the body of an unrestricted function" ++
       "\n\tvariable " ++ style red sty ts var2 ++ " is of type " ++ style red sty ts type2 ++
       "\n\t  and the function is " ++ style red sty ts e ++
-      "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
+      "\n\t(This risks duplicating or discarding the variable! Consider using a linear function instead.)"
       where diff = sigs2 Map.\\ sigs1
             var1 = head $ Map.keys $ sigs1 Map.\\ sigs2
             type1 = sigs1 Map.! var1
@@ -300,8 +302,8 @@ instance Message ErrorType where
     "\n\t       One context is " ++ style red sty ts sigs1 {-(sigs1 Map.\\ sigs2-} ++
     "\n\t         the other is " ++ style red sty ts sigs2 {-(sigs2 Map.\\ sigs1-} ++
     "\n\tand the expression is " ++ style red sty ts e ++
-    "\n\t(was a variable consumed in one branch and not in the other?)" ++
-    "\n\t(is there a variable with different types in the two contexts?)"
+    "\n\t(Was a variable consumed in one branch and not in the other?)" ++
+    "\n\t(Is there a variable with different types in the two contexts?)"
   msg (DataConsNotInScope _ x) sty ts _ = "Data constructor " ++ style red sty ts x ++ " not in scope."
   msg (WrongNumOfCons _ x i xs e) sty ts _ =
     "The constructor " ++ style red sty ts x ++ " should have " ++ red sty (show i) ++
@@ -326,3 +328,4 @@ instance Message ErrorType where
   msg (UndefinedFunction s) _ _ _ = 
     "undefined function, called at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (RuntimeError _ e) _ _ _ = "Exception: " ++ e
+  msg (MutualDefNotValue _ x e) sty ts _ = "The body of mutual definition " ++ style red sty ts x ++ " is not a value."

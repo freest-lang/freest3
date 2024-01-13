@@ -18,13 +18,6 @@ type TermChannel : 1S  = +{
    Mult: TermChannel;TermChannel
  }
 
--- Read an arithmetic expression from a channel; compute its value;
--- return the value on the same channel.
-computeService : dualof TermChannel ; !Int ; Close -> ()
-computeService c =
-  let (n1, c1) = receiveEval @(!Int ; Close) c in
-  c1 |> send n1 |> close
-
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
 -- residual.
@@ -42,6 +35,13 @@ receiveEval c =
       let (n2, c) = receiveEval @a c in
       (n1 * n2, c)
   }
+
+-- Read an arithmetic expression from a channel; compute its value;
+-- return the value on the same channel.
+computeService : dualof TermChannel ; !Int ; Close -> ()
+computeService c =
+  let (n1, c1) = receiveEval @(!Int ; Close) c in
+  c1 |> send n1 |> close
 
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel ; ?Int ; Wait -> Int

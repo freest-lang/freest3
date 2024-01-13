@@ -72,6 +72,12 @@ getAST = S.gets ast
 addToSignatures :: S.MonadState (FreestS a) m => Variable -> T.Type -> m ()
 addToSignatures b t = S.modify (\s -> s{ast = addSignature b t (ast s)})
 
+getEvalOrder :: S.MonadState (FreestS a) m => m [[Variable]]
+getEvalOrder =  S.gets (evalOrder . ast)
+
+addToEvalOrder :: S.MonadState (FreestS a) m => [Variable] -> m ()
+addToEvalOrder xs = S.modify (\s -> s{ast = addEvalOrder xs (ast s)})
+
 getSignatures ::  S.MonadState (FreestS a) m => m Signatures
 getSignatures = S.gets (signatures . ast)
 

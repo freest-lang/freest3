@@ -16,6 +16,7 @@ import qualified Data.Map.Strict as Map
 
 
 import           System.IO                      ( Handle )
+import Typing.Phase (Defs)
 
 data Value =
     Unit
@@ -26,8 +27,8 @@ data Value =
   | String String
   | Cons Variable [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
-  | Closure Variable Variable E.Exp Ctx -- The first variable is just the function name
-  | TypeAbs E.Exp Ctx
+  | Closure Variable Variable E.Exp Ctx Defs -- The first variable is just the function name
+  | TypeAbs E.Exp Ctx Defs 
   | PrimitiveFun (Value -> Value)
   | Chan ChannelEnd
   | Fork

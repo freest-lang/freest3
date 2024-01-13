@@ -26,15 +26,6 @@ boolServer c =
       |> wait
   }
 
-main : Bool
-main = s1
-
-s1 : Bool
-s1 =
-  let c1 = startClient client1 in
-  let c2 = startClient client2 in
-  c1 || c2
-
 client1 : BoolClient -> Bool
 client1 w = w |> select And
               |> send True
@@ -52,6 +43,15 @@ startClient client =
   let (w,r) = new @BoolClient () in
   fork @() $ (\_:()1-> boolServer r);
   client w
+
+s1 : Bool
+s1 =
+  let c1 = startClient client1 in
+  let c2 = startClient client2 in
+  c1 || c2
+
+main : Bool
+main = s1
 
 
 -- remove skips from the end

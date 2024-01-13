@@ -12,18 +12,18 @@ type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 
 type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
-eStack : ∀ a: 1S . EStack;a -> a
-eStack c =
-  match c with {
-    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
-    Stop  c -> c
-  }
-
 neStack : ∀ a: 1S . Int -> NEStack;a -> a
 neStack x c =
   match c with {
     Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
     Pop  c -> send x c
+  }
+
+eStack : ∀ a: 1S . EStack;a -> a
+eStack c =
+  match c with {
+    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
+    Stop  c -> c
   }
 
 aStackClient : dualof EStack;Close -> Int

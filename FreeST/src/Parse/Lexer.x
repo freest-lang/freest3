@@ -59,6 +59,7 @@ tokens :-
   module                        { \p s -> TokenModule(internalPos p) }
   where                         { \p s -> TokenWhere (internalPos p) }
   import                        { \p s -> TokenImport (internalPos p) }
+  mutual                        { \p s -> TokenMutual (internalPos p) }
   ("->"|→|"*->"|"*→")           { \p s -> TokenUnArrow (internalPos p) }
   ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
@@ -243,6 +244,7 @@ data Token =
   | TokenModule Span
   | TokenWhere Span
   | TokenImport Span
+  | TokenMutual Span
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -333,6 +335,7 @@ instance Show Token where
   show (TokenModule _) = "module"
   show (TokenWhere _)  = "where"
   show (TokenImport _)  = "import"
+  show (TokenMutual _) = "mutual"
 
 -- Trim newlines
 scanTokens :: String -> FilePath -> Either ErrorType [Token] 
@@ -462,6 +465,7 @@ instance Located Token where
   getSpan (TokenModule p) = p
   getSpan (TokenWhere p) = p
   getSpan (TokenImport p) = p
+  getSpan (TokenMutual p) = p 
 --  pos t = error $ show t
 
 
