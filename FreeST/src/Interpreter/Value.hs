@@ -15,7 +15,7 @@ import qualified Control.Concurrent.Chan as C
 import qualified Data.Map.Strict as Map
 
 
-import           System.IO                      ( Handle )
+import           System.IO ( Handle )
 
 data Value =
     Unit
@@ -79,7 +79,6 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
 showNativeList :: [[Value]] -> String
 showNativeList [[Cons _ []]]           = ""
 showNativeList ([Cons _ ([y]:ys)]:_) = "," ++ show y ++ showNativeList ys
-
 
 instance Located Value where
   getSpan _ = defaultSpan

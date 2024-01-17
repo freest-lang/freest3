@@ -2,8 +2,6 @@
 module Parse.Read where
 
 import           Parse.Parser
-import           Parse.Phase
-import           Syntax.AST
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Type

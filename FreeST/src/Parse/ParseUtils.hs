@@ -31,10 +31,7 @@ import           Data.Maybe ( fromMaybe )
 -- Modules
 
 modulePath :: ParseState FilePath
-modulePath = do
-  f <- getFileName
-  m <- getModuleName
-  return $ fromMaybe f m
+modulePath = fromMaybe <$> getFileName <*> getModuleName
 
 mkSpan :: Located a => a -> ParseState Span
 mkSpan a = do
@@ -87,14 +84,14 @@ checkDupBind x xs
 
 checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> ParseState ()
 checkDupCons (x, _) xts
-  | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
+  | any cmp xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
   | otherwise =
       getFromSignatures x >>= \case
        Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
        Nothing -> return ()
   where
-    compare (y, _) = y == x
-    pos = maybe defaultSpan (getSpan . fst) (find compare xts)
+    cmp (y, _) = y == x
+    pos = maybe defaultSpan (getSpan . fst) (find cmp xts)
 
 checkDupProgVarDecl :: Variable -> ParseState ()
 checkDupProgVarDecl x = do

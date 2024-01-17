@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
 import           Elaboration.Elaboration ( elaboration )
