@@ -14,7 +14,6 @@ bear a different (natural number).
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase, FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module Typing.Rename
   ( renameProgram

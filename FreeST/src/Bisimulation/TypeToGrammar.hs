@@ -33,7 +33,6 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
-import           Debug.Trace
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
@@ -75,7 +74,7 @@ toGrammar' (T.Message _ p t) = do
 -- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
 toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton ('∀' : (intern a) ++ ":" ++ show k) xs
+  getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (intern a) []
 toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 -- Type operators
@@ -175,8 +174,8 @@ getTransitions x = do
   ps <- getProductions
   return $ ps Map.! x
 
-getSubstitution :: TransState Substitution
-getSubstitution = gets substitution
+-- getSubstitution :: TransState Substitution
+-- getSubstitution = gets substitution
 
 putProductions :: Variable -> Transitions -> TransState ()
 putProductions x m =

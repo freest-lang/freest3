@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -21,7 +20,6 @@ module Parse.Unparser
   , showBindType
   , showBindExp
   , showBindTerm
-  , showModuleName
   , showModuleWithDots
   , showArrow
   ) where
@@ -36,7 +34,9 @@ import qualified Syntax.Type as T
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Prelude  hiding ( Left, Right ) -- needed for Associativity
+import           Prelude hiding ( Left, Right ) -- needed for Associativity
+import           System.FilePath
+
 
 instance Show Span where
   show (Span _ p1 p2)
@@ -45,12 +45,9 @@ instance Show Span where
     | otherwise = showPos p1 ++ "-" ++ showPos p2
     where
       showPos (l,c) = show l ++ ":" ++ show c
-
-showModuleName :: Span -> String
-showModuleName s = showModuleWithDots (moduleName s)
-
+  
 showModuleWithDots :: String -> String
-showModuleWithDots = map (\x -> if x == '/' then '.' else x )
+showModuleWithDots = map (\x -> if isPathSeparator x then '.' else x )
 
 instance Show T.View where
   show T.External = "&"
@@ -110,7 +107,7 @@ showBindTerm (Bind _ x t e) m = showBind x t False (showArrow m) e -- λ x:t -> 
 data Precedence =
     PMin
   | PIn      -- in, else, match, case (expressions)
-  | PNew     -- new T
+--  | PNew     -- new T
   | PDisj    -- ||
   | PConj    -- &&
   | PAppend  -- ++, ^^
@@ -133,10 +130,11 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
+-- newRator,
+minRator, inRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
   :: Rator
 inRator = (PIn, Right)
-newRator = (PNew, NonAssoc)
+-- newRator = (PNew, NonAssoc)
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
@@ -184,8 +182,8 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
-    where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
+  unparse (T.Labelled _ T.Variant m) | isBool  = (maxRator, "Bool")
+    where isBool = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
   unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
   unparse (T.Labelled _ T.Record m) = -- Currently all our Records are tuples
     (maxRator, "(" ++ showTupleType m ++ ")")

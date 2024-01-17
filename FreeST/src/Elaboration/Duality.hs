@@ -91,7 +91,7 @@ instance Subs T.Type Variable T.Type where
   subs (T.Var _ t) x u@(T.Dualof p (T.Var p' y))
     | y == x    = T.Dualof p $ T.Var p' t
     | otherwise = u
-  subs t x u@(T.Dualof p (T.Var p' y))
+  subs t x u@(T.Dualof _ (T.Var _ y))
     | y == x    = dualof t
     | otherwise = u
   subs _ _ t            = t

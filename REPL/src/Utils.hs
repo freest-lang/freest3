@@ -3,16 +3,12 @@
 {-# LANGUAGE TypeFamilies #-}
 module Utils where
 
-import           Data.Void
-import           Syntax.AST
 import qualified Util.State as S
 import           Typing.Phase
 
 import           Control.Arrow ((***))
-import           Control.Monad.Extra (ifM)
 import           Control.Monad.State
 import           Data.Char (isSpace)
-import           Data.Functor
 import           Data.List
 import           System.Console.Haskeline
 
@@ -26,6 +22,7 @@ import           System.Console.Haskeline
 -- type ReplS = S.FreestS REPL
 type REPLState = StateT TypingS IO
 
+interactiveRunOpts :: S.RunOpts
 interactiveRunOpts = S.defaultOpts{S.runFilePath="<interactive>"}
 
 
