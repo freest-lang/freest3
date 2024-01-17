@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -107,7 +106,7 @@ kindOf :: String -> REPLState ()
 kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
 kindOf ts = do  
   case parseType "<interactive>" ts of
-    Left errors -> return () -- showErrors
+    Left _ -> return () -- showErrors
     Right a@(T.Var _ x) -> getFromTypes x >>= synthVariable a x
     Right t -> K.synthetise Map.empty t >>= pretty ts
   where

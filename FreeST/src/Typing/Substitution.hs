@@ -55,7 +55,7 @@ instance Subs T.Type where
     | a == b    = T.Dualof s1 $ T.Var s2 t
     | otherwise = u
   -- Type operators
-  subs t a u@(T.Dualof s1 (T.Var s2 b))
+  subs t a u@(T.Dualof _ (T.Var _ b))
     | a == b    = dualof t
     | otherwise = u
   subs _ _ t = t

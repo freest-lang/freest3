@@ -20,7 +20,7 @@ type Stylable = Bool
 
 class Message a where
   title :: a -> Stylable -> Span -> FilePath -> String
-  msg   :: a -> Stylable -> TypeOpsEnv -> Either String String -> String
+  msg   :: a -> Stylable -> TypeOpsEnv -> String
   
 
 class Show a => Style a where

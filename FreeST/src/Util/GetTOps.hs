@@ -40,8 +40,6 @@ instance DefaultTypeOp Exp where
   getDefault m (Case p e fm  ) = Case p (getDefault m e) (getDefault m fm)
   getDefault m (TypeAbs p b  ) = TypeAbs p $ getDefault m b
   getDefault m (TypeApp p e t) = TypeApp p (getDefault m e) (getDefault m t)
-  getDefault m (Cond p e1 e2 e3) =
-    Cond p (getDefault m e1) (getDefault m e2) (getDefault m e3)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
   getDefault _ e           = e

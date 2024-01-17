@@ -39,12 +39,10 @@ import           Util.Warning
 import           Parse.Unparser () -- debug
 
 import           Control.Monad
-import           Control.Monad.State ( when, get
-                                     , unless, evalState, MonadState (get)
-                                     )
+import           Control.Monad.State ( evalState, MonadState (get))
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
+
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -106,12 +104,12 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
     E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
 
 
-  numberOfArgs :: T.Type -> Int
-  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  numberOfArgs _                 = 0
+  -- numberOfArgs :: T.Type -> Int
+  -- numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
+  -- numberOfArgs _                 = 0
 
-  numberOfFields :: T.Type -> Int
-  numberOfFields (T.Labelled _ _  tm) = Map.size tm
+  -- numberOfFields :: T.Type -> Int
+  -- numberOfFields (T.Labelled _ _  tm) = Map.size tm
 
 --
 
@@ -123,7 +121,7 @@ synthetise _ (E.Float p _ ) = return $ T.Float p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv e@(E.Var p x) =
+synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -296,7 +294,7 @@ checkEquivTypes exp expected actual =
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
-checkEquivEnvs p error exp kEnv sigs1 sigs2 =
+checkEquivEnvs p error exp _ sigs1 sigs2 =
   -- unless (equivalent kEnv sigs1 sigs2) $
   unless (Map.keysSet sigs1 == Map.keysSet sigs2) $
     addError (error p (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)

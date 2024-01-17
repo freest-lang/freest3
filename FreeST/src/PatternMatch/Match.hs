@@ -44,8 +44,8 @@ checkNumArgs :: PP.Defs -> PatternState ()
 checkNumArgs = tMapWithKeyM_ checkNumArgs'
 
 checkNumArgs' :: Variable -> [([Pattern],Exp)] -> PatternState ()
-checkNumArgs' fn lines  
-  | allSame $ map (length.fst) lines = return ()                  -- if every line has the same amount of arguments all is fine
+checkNumArgs' fn eqs  
+  | allSame $ map (length . fst) eqs = return ()                  -- if every line has the same amount of arguments all is fine
   | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn   -- if not there's an error
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
@@ -98,15 +98,13 @@ fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all li
 matchFuns :: PP.Defs -> PatternState Defs
 matchFuns = mapM matchFun
 
+-- creates new vars for the posterior lambda creation
 matchFun :: [Equation] -> PatternState ([Variable],Exp)
-matchFun xs@((ps,_):_) = mapM newVar ps                       -- creates new vars for the posterior lambda creation
-                     >>= \args -> (,) args <$> match args xs 
-
+matchFun xs@((ps,_):_) = mapM newVar ps >>= \args -> (,) args <$> match args xs 
 
 match :: [Variable] -> [Equation] -> PatternState Exp
-match vs x = do
-  ifThenElseM (isRuleChan  x)                                 -- observes if it has channel patterns
-              (ruleChan vs x) (match' vs x)
+match vs x = -- observes if it has channel patterns
+  ifThenElseM (isRuleChan  x) (ruleChan vs x) (match' vs x)
 
 match' :: [Variable] -> [Equation] -> PatternState Exp
 match' vs x                                                   -- then goes to check other rules
@@ -138,7 +136,7 @@ isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be 
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> PatternState Exp
-ruleEmpty _ ((_,e):cs) = (\v -> replaceExp v v e) =<< v
+ruleEmpty _ ((_,e):_) = (\v -> replaceExp v v e) =<< v
   where v = R.renameVar $ mkWild defaultSpan
 
 -- var -------------------------------------------------------------
@@ -158,7 +156,7 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                             
   
 -- rule con aux 
 destruct :: [Equation] -> PatternState (Variable, [Variable], [Equation])
-destruct l@((p:ps,_):cs) = mapM newVar (pPats p)       -- creates new vars, for the case expression and the algorithm
+destruct l@((p:_,_):_) = mapM newVar (pPats p)       -- creates new vars, for the case expression and the algorithm
                        <&> flip ((,,) (pVar p)) l'     -- transforms into a case
   where l' = map (\(p:ps,e) -> (pPats p ++ ps, e)) l   -- unfolds the patterns
 
@@ -241,7 +239,7 @@ replaceBind v p b@(Bind {var=v1,body=exp}) = replaceExp v p exp
                                          <&> (\e -> b {var=replaceVar v p v1,body=e})
 
 replaceVar :: Variable -> Variable -> Variable -> Variable
-replaceVar v@(Variable _ str i) v1 v2
+replaceVar (Variable _ str i) v1 v2
   | intern v1 == intern v2 = Variable (getSpan v2) str i
   | otherwise      = v2
 

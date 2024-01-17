@@ -1,5 +1,5 @@
 {
-{-# LANGUAGE TupleSections, NamedFieldPuns #-}
+{-# LANGUAGE TupleSections, NamedFieldPuns, MultiWayIf #-}
 module Parse.Parser
 where
 
@@ -565,17 +565,15 @@ parseAndImport initial = do
     doImports moduleName imported (curImport:toImport) s
       | curImport `Set.member` imported = doImports moduleName imported toImport s
       | otherwise = do
-          let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
-          exists <- doesFileExist fileToImport
-          if exists then
-            importModule s fileToImport curImport moduleName imported toImport
-          else do
-            fileToImport <- getDataFileName $ curImport -<.> "fst"
-            isStdLib <- doesFileExist fileToImport
-            if isStdLib then
-              importModule s fileToImport curImport moduleName imported toImport                
-            else 
-              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}
+         let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
+         exists <- doesFileExist fileToImport
+         stdLib <- getDataFileName (curImport -<.> "fst")
+         isStdLib <- doesFileExist stdLib         
+         if | exists -> importModule s fileToImport curImport moduleName imported toImport
+            | isStdLib -> importModule s stdLib curImport moduleName imported toImport
+            | otherwise ->
+               pure $ s {errors = errors s ++
+                        [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}
 
     importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
     importModule s fileToImport curImport moduleName imported toImport = do
@@ -585,20 +583,6 @@ parseAndImport initial = do
         pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
       else
         doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
-
-
--- TODO: test MissingModHeader
-
-{-      case B.moduleName s' of
-        Just modName -> 
-          if curImport /= modName then
-            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
-          else
-            doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
-        Nothing ->
-            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{moduleName} curImport]}
--}   
-
           
 -- Error Handling
 parseError :: [Token] -> ParseState a

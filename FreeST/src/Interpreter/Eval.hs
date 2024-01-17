@@ -9,7 +9,7 @@ import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.MkName
-import           Syntax.Program hiding (Prog)
+import           Syntax.Program
 import           Util.Error
 import           Util.State hiding (void)
 import           Typing.Phase
@@ -86,10 +86,12 @@ eval fun tys ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tys ctx eenv e1
   eval fun tys (Map.insert x v ctx) eenv e2
 eval fun tys ctx eenv (E.Case s e m) = eval fun tys ctx eenv e >>=  evalCase fun s tys ctx eenv m 
+eval fun _ _ _ _ = internalError "Interpreter.Eval.eval" fun
+
 
 evalCase :: Variable -> Span -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
-evalCase name _ tys ctx eenv m (Chan c) = do
-  (Label !v, !c) <- receive c
+evalCase name _ tys ctx eenv m (Chan c0) = do
+  (Label !v, !c) <- receive c0
   let (patterns : _, e) = m Map.! mkVar defaultSpan v
   let ctx'              = Map.insert patterns (Chan c) ctx
   eval name tys ctx' eenv e
