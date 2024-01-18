@@ -57,7 +57,7 @@ freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
 --          (lift $ putStrLn msg)
 
 freestError :: ErrorType -> REPLState ()
-freestError = lift . putStrLn . showError True "<FreeST>" Map.empty
+freestError = lift . putStrLn . showError True (Right "<FreeST>") Map.empty
 
 -- | -------------------------------------------------------
 -- | Reloads the previously loaded file
