@@ -15,6 +15,7 @@ import           Util.GetTOps
 import           Util.Message
 
 import qualified Data.Map as Map
+import           Data.Either.Extra
 import           System.FilePath
 
 -- | Format internal error
@@ -28,10 +29,17 @@ internalError fun syntax =
     
 
 -- | Format program error
-      
-showError :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
+type PathOrFreeST = Either String String
+
+showError :: Stylable -> PathOrFreeST -> TypeOpsEnv -> ErrorType -> String
 showError sty f tops err =
-  title err sty (getSpan err) f ++ "\n  " ++ msg err sty tops
+  title err sty (getSpan err) path ++ "\n  " ++ msg err sty tops
+ where
+   path = 
+     let modInfo = moduleName (getSpan err) in
+     if hasExtension modInfo || isRight f
+     then fromEither f
+     else replaceFileName (fromLeft' f) (modInfo -<.> "fst")
 
 -- | Errors
 
