@@ -179,7 +179,7 @@ defaultOpts = RunOpts { runFilePath   = ""
                       , isStylable    = True
                       , quietmode     = False
                       , subtyping     = True 
-                      , subTimeout_ms = 6*10^3 -- 1min
+                      , subTimeout_ms = 6*10^4 -- 1min
                       }
 
 

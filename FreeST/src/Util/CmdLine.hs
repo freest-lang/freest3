@@ -42,11 +42,12 @@ runOptsParser = RunOpts
     <> help "Suppress warnings" )
   <*> flag True False
      ( long "no-sub"
-    <> long "no-sub"
     <> help "Disable subtyping")
   <*> option auto 
-     ( long "sub-timeout"
-    <> help "Set the timeout (milliseconds) for subtyping")
+     ( value (6*10^4) 
+    <> long "check-timeout" 
+    <> help "Set timeout limit in milliseconds for equivalence/subtype checking. "
+    <> metavar "TIME") 
 
 
 versionParser :: String -> Parser (a -> a)

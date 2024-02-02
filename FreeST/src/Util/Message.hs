@@ -42,6 +42,8 @@ instance Style Signatures where
 instance Style FilePath where
   style f sty _ = quote . f sty
 
+instance Style Int where 
+  style f sty _ = f sty . show 
 
 quote :: String -> String
 quote str = '\'' : str ++ "'" 

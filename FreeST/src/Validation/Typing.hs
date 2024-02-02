@@ -21,6 +21,7 @@ where
 
 
 import Control.Monad.State
+import Control.Exception ( evaluate )
 import Data.Functor
 import qualified Data.Map.Strict as Map
 import Util.Error
@@ -158,7 +159,7 @@ synthetise kEnv (E.Case p e fm) = do
   sigs <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  mapM_ (checkSubtypeOf e t) ts
+  mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return t
@@ -213,23 +214,19 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e t = do 
+  u   <- synthetise kEnv e
+  compareTypes e t u 
+
+compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
+compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
-  (if sub then checkSubtypeOf else checkEquivTypes) e t =<< synthetise kEnv e
-
-checkEquivTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
-checkEquivTypes exp expected actual =
-  unless (bisimilar actual expected) $
-    addError (TypeMismatch (getSpan exp) expected actual exp)
-
-checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> TypingState ()
-checkSubtypeOf exp expected actual = do
-  timeout_ms <- subTimeout_ms <$> getRunOpts
-  attempt    <- liftIO $ timeout (timeout_ms * 10^3) 
-                                 (return $ actual `subtypeOf` expected)
-  case attempt of 
-    Just isSub -> unless isSub
-                $ addError (TypeMismatch (getSpan exp) expected actual exp)
-    Nothing    -> addError (SubtypingTimeout (getSpan exp) expected actual exp)
+  timeout_ms   <- subTimeout_ms <$> getRunOpts
+  let cmp = if sub then subtypeOf else bisimilar 
+  checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
+  case checkAttempt of 
+    Just checks -> unless checks 
+                 $ addError (TypeMismatch (getSpan e) t u e)
+    Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
