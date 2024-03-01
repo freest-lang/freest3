@@ -10,7 +10,7 @@ This module converts a list of session types into a simple grammar without
 unreachable symbols
 -}
 
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, ViewPatterns #-}
 
 module Bisimulation.TypeToGrammar
   ( convertToGrammar
@@ -47,39 +47,31 @@ typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
-toGrammar t = case fatTerminal t of
-  Just t' ->  getLHS $ Map.singleton (show t') []
-  Nothing -> toGrammar' t
-
--- Only non fat terminals
-toGrammar' :: T.Type -> TransState Word
+toGrammar (fatTerminal -> Just t') = getLHS $ Map.singleton (FatTerm $ show t') []
 -- Functional Types
-toGrammar' (T.Arrow _ m t u) = do
+toGrammar (T.Arrow _ m t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(showArrow m ++ "d", xs), (showArrow m ++ "r", ys)] -- domain, range
-toGrammar' (T.Labelled _ s m) = do
+  getLHS $ Map.fromList $ [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | m == Lin] -- domain, range
+toGrammar (T.Labelled _ s m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> show s ++ show k) ms
--- toGrammar' (T.Labelled _ t m) | t == T.Variant || t == T.Record = do
---   ms <- tMapM toGrammar m
---   getLHS $ Map.insert (show t ++ "✓") [] $ Map.mapKeys (\k -> show t ++ show k) ms
-toGrammar' (T.Skip _) = return []
-toGrammar' t@T.End{} = getLHS $ Map.singleton (show t) [bottom]
-toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
-toGrammar' (T.Message _ p t) = do
+  getLHS $ Map.insert (Labelled s) [] $ Map.mapKeys (Label s . show) ms
+toGrammar (T.Skip _) = return []
+toGrammar (T.End _ p) = getLHS $ Map.singleton (End p) [bottom]
+toGrammar (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
+toGrammar (T.Message _ p t) = do
   xs <- toGrammar t
-  getLHS $ Map.fromList [(show p ++ "p", xs ++ [bottom]), (show p ++ "c", [])] -- payload, continuation
+  getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])] -- payload, continuation
 -- Polymorphism and recursive types
 -- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
-toGrammar' (T.Forall _ (Bind _ a k t)) = do
+toGrammar (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
-toGrammar' (T.Var _ a) = getLHS $ Map.singleton (intern a) []
-toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
+  getLHS $  Map.singleton (Forall (intern a) k) xs
+toGrammar (T.Var _ a) = getLHS $ Map.singleton (Var $ intern a) []
+toGrammar (T.Rec _ (Bind _ a _ _)) = return [a]
 -- Type operators
-toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (show t) []
-toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+toGrammar t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
+toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 -- Fat terminal types can be compared for syntactic equality
 -- Returns a normalised type in case the type can become fat terminal
@@ -89,12 +81,14 @@ fatTerminal t@T.Int{} = Just t
 fatTerminal t@T.Float{} = Just t
 fatTerminal t@T.Char{} = Just t
 fatTerminal t@T.String{} = Just t
-fatTerminal (T.Arrow p m t u) =
-  Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Labelled p T.Variant m) =
-  Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
-fatTerminal (T.Labelled p T.Record m) =
-  Just (T.Labelled p T.Record) <*> mapM fatTerminal m
+-- This would preclude multiplicity subtyping:
+-- fatTerminal (T.Arrow p m t u) =
+--   Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+-- These would preclude width subtyping (apply when subtyping is disabled?):
+-- fatTerminal (T.Labelled p T.Variant m) =
+--   Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
+-- fatTerminal (T.Labelled p T.Record m) =
+--   Just (T.Labelled p T.Record) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t

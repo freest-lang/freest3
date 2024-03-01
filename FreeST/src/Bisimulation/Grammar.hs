@@ -28,7 +28,7 @@ map from labels to lists of type variables.
 {-# LANGUAGE FlexibleInstances #-}
 
 module Bisimulation.Grammar
-  ( Label
+  ( Label(..)
   , Transitions
   , Productions
   , Grammar(..)
@@ -40,6 +40,8 @@ module Bisimulation.Grammar
 where
 
 import           Syntax.Base
+import qualified Syntax.Kind as K 
+import qualified Syntax.Type as T 
 import           Parse.Unparser                 ( )
 import qualified Data.Map.Strict               as Map
 import           Data.List                      ( intercalate )
@@ -47,7 +49,21 @@ import           Data.List                      ( intercalate )
 import           Prelude                 hiding ( Word )
 
 -- Terminal symbols are called labels
-type Label = String
+-- Terminal symbols are called labels
+data Label = FatTerm String
+           | ArrowD
+           | ArrowR
+           | Arrow1
+           | End T.Polarity
+           | Label T.Sort String
+           | Labelled T.Sort 
+           | MessageP T.Polarity
+           | MessageC T.Polarity  
+           | Pair1
+           | Pair2
+           | Forall String K.Kind 
+           | Var String    
+  deriving (Eq, Ord)
 
 -- Non-terminal symbols are type variables Variable
 -- Words are strings of non-terminal symbols
@@ -93,6 +109,24 @@ instance Show Grammar where
     "start words: (" ++ intercalate ", " (map showWord xss) ++
     ")\nproductions: " ++ showProductions p
 
+instance Show Label where 
+  show (FatTerm s) = s 
+  show ArrowD = "->d"
+  show ArrowR = "->r"
+  show Arrow1 = "->1"
+  show (End p) = show (T.End defaultSpan p)
+  show (Label (T.Choice v) l) = show v ++ l
+  show (Label s l) = show (Labelled s) ++ l
+  show (Labelled T.Record) = "{}"
+  show (Labelled T.Variant) = "⟨⟩"
+  show (Labelled (T.Choice v)) = show v ++ "{}"
+  show (MessageP p) = show p ++ "p"   
+  show (MessageC p) = show p ++ "c"
+  show Pair1 = "π1" 
+  show Pair2 = "π2" 
+  show (Forall a k) = "∀" ++ a ++ ":" ++ show k
+  show (Var a) = a
+
 showWord :: Word -> String
 showWord = unwords . map intern
 
@@ -104,4 +138,4 @@ showProductions = Map.foldrWithKey showTransitions ""
 
     showTransition :: Variable -> Label -> Word -> String -> String
     showTransition x l xs s =
-      s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ showWord xs
+      s ++ "\n" ++ intern x ++ " -> " ++ show l ++ " " ++ showWord xs

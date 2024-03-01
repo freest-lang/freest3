@@ -61,7 +61,7 @@ checkAndRun runOpts = do
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
   -- | Rename & TypeCheck
-  let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts defs elabS)
+  s4 <- execStateT (renameProgram >> typeCheck) (elabToTyping runOpts defs elabS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
   when (hasErrors s4) (die $ getErrors runOpts s4)
   

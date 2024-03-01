@@ -29,6 +29,7 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
 import           Equivalence.TypeEquivalence (equivalent)
+import           Equivalence.Subtyping (subtype)
 import qualified Typing.Extract as Extract
 import qualified Typing.Rename as Rename ( subs )
 import           Typing.Phase hiding (Typing)
@@ -38,11 +39,13 @@ import           Util.State hiding (void)
 import           Util.Warning
 import           Parse.Unparser () -- debug
 
+import           Control.Exception (evaluate)
 import           Control.Monad
-import           Control.Monad.State ( evalState, MonadState (get))
+import           Control.Monad.State (evalState, evalStateT, MonadState (get), liftIO)
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-
+import           System.Timeout (timeout)
+import Parse.Read
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -180,7 +183,9 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   return u2
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  s <- get 
+  u <- liftIO $ evalStateT (synthetise kEnv e) s
+  (_, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
@@ -226,7 +231,7 @@ synthetise kEnv (E.Case p e fm) = do
   sigs <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  mapM_ (checkEquivTypes e t) ts
+  mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return t
@@ -280,17 +285,20 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e (T.Arrow _ Lin t u) = do
-  (t', u') <- Extract.function e =<< synthetise kEnv e
-  checkEquivTypes e t' t
-  checkEquivTypes e u' u
-checkAgainst kEnv e t = checkEquivTypes e t =<< synthetise kEnv e
+checkAgainst kEnv e t = do 
+  u   <- synthetise kEnv e
+  compareTypes e t u 
 
-checkEquivTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
-checkEquivTypes exp expected actual =
-  unless (equivalent expected actual) $
-    addError (NonEquivTypes (getSpan exp) expected actual exp)
-    -- (trace (show (expected, actual)) $ addError (NonEquivTypes (getSpan exp) expected actual exp))
+compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
+compareTypes e t u = do 
+  sub <- subtyping <$> getRunOpts
+  timeout_ms   <- checkTimeout_ms <$> getRunOpts
+  let cmp = if sub then subtype else equivalent  
+  checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
+  case checkAttempt of 
+    Just checks -> unless checks 
+                 $ addError (TypeMismatch (getSpan e) t u e)
+    Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()

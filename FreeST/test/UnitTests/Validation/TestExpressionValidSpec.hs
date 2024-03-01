@@ -31,13 +31,13 @@ spec = describe "Valid expressions" $ do
 matchValidExpressionSpec :: (Typing.Phase.Defs, ElabS) -> [String] -> Spec
 matchValidExpressionSpec p [e, t] =
   it (e ++ " : " ++ t) $
-    isExpr p (read e) (read t) `shouldBe` Left True
+    isExpr p (read e) (read t) >>= (`shouldBe` Left True)
 
-isExpr :: (Typing.Phase.Defs, ElabS) -> Exp -> Type -> TestExpectation
-isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (errors s)
+isExpr :: (Typing.Phase.Defs, ElabS) -> Exp -> Type -> IO TestExpectation
+isExpr (defs, prelude) e t = testValidExpectation True . errors <$> s -- null (errors s)
  where
   s    = let ((t',e'), s') = runState resolveBoth prelude in
-         execState (test t' e' s') (elabToTyping defaultOpts defs s')
+         execStateT (test t' e' s') (elabToTyping defaultOpts defs s')
 
   test t e s' = do
     setErrors (errors s')

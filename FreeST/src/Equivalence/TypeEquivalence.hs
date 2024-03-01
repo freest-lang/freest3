@@ -16,7 +16,7 @@ module Equivalence.TypeEquivalence
   )
 where
 
-import Equivalence.AlphaCongruence()
+import Equivalence.AlphaCongruence ()
 import Bisimulation.Bisimulation
 import qualified Syntax.Type                   as T
 

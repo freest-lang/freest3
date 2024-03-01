@@ -40,6 +40,9 @@ data Kind = Kind Span Multiplicity PreKind
 instance Eq Kind where
   (Kind _ m1 b1) == (Kind _ m2 b2) = m1 == m2 && b1 == b2
 
+instance Ord Kind where
+  (Kind _ m1 b1) <= (Kind _ m2 b2) = m1 <= m2 && b1 <= b2
+
 instance Located Kind where
   getSpan (Kind p _ _) = p
 

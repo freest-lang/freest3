@@ -14,7 +14,7 @@ type instance XDef Typing = E.Exp -- Prog
 type instance XExtra Typing = RunOpts
 
 type TypingS = FreestS Typing
-type TypingState = FreestState Typing
+type TypingState = StateT TypingS IO
 
 type Defs = Definitions Typing -- (XDef Typing)
 

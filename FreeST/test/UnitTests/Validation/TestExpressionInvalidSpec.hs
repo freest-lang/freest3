@@ -21,13 +21,13 @@ spec = describe "Invalid expression tests" $ do
   mapM_ matchInvalidExpSpec e
 
 matchInvalidExpSpec :: String -> Spec
-matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
+matchInvalidExpSpec e = it e $ isExpr (read e) >>= (`shouldBe` False)
 
-isExpr :: Exp -> Bool
-isExpr e = null (errors s)
+isExpr :: Exp -> IO Bool
+isExpr e = null . errors <$> s
  where
   (e',s0) = runState (Dual.resolve e) EP.initialElab
-  s = execState (synthetise Map.empty e') (VP.initialTyp defaultOpts){errors=errors s0}
+  s = execStateT (synthetise Map.empty e') (VP.initialTyp defaultOpts){errors=errors s0}
 
 main :: IO ()
 main = hspec spec

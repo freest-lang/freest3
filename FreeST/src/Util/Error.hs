@@ -87,7 +87,8 @@ data ErrorType =
   | TypeAbsBodyNotValue Span E.Exp E.Exp
   | VarOrConsNotInScope Span Variable
   | LinProgVar Span Variable T.Type K.Kind
-  | NonEquivTypes Span T.Type T.Type E.Exp
+  | TypeMismatch Span T.Type T.Type E.Exp
+  | TypeCheckTimeout Span Bool T.Type T.Type E.Exp Int 
   | NonEquivEnvsInBranch Span Signatures Signatures E.Exp
   | NonEquivEnvsInUnFun Span Signatures Signatures E.Exp
   | DataConsNotInScope Span Variable
@@ -134,7 +135,8 @@ instance Located ErrorType where
   getSpan (TypeAbsBodyNotValue p _ _       ) = p
   getSpan (VarOrConsNotInScope p _         ) = p
   getSpan (LinProgVar p _ _ _              ) = p
-  getSpan (NonEquivTypes p _ _ _           ) = p
+  getSpan (TypeMismatch p _ _ _            ) = p
+  getSpan (TypeCheckTimeout p _ _ _ _ _    ) = p 
   getSpan (NonEquivEnvsInBranch p _ _ _    ) = p
   getSpan (NonEquivEnvsInUnFun p _ _ _     ) = p
   getSpan (DataConsNotInScope p _          ) = p
@@ -247,10 +249,19 @@ instance Message ErrorType where
   msg (LinProgVar _ x t k) sty ts =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (NonEquivTypes _ t u e) sty ts =
+  msg (TypeMismatch _ t u e) sty ts =
         "Couldn't match expected type " ++ style red sty ts t ++
     "\n              with actual type " ++ style red sty ts u ++
     "\n                for expression " ++ style red sty ts e
+  msg (TypeCheckTimeout _ sub t u e to) sty ts =
+    "Timeout when matching expected type " ++ style red sty ts t ++ "\n" ++
+    "                     with actual type " ++ style red sty ts u ++ "\n" ++
+    "                       for expression " ++ style red sty ts e ++ "\n" ++
+    (if sub then "    Subtyping "++bold sty "enabled"++", timeout set to "++red sty (show to++"ms")++"\n"++ 
+                 "  Subtyping for context-free session types is undecidable, so FreeST may not be able to determine relation between certain types.\n" 
+            else "  Subtyping "++style bold sty ts "disabled"++", timeout set to "++show to++"ms \n") ++ 
+    "  Consider " ++ (if sub then "disabling subtyping with the "++bold sty "'--no-sub'"++" flag, or " else "") ++ "setting a higher timeout limit with the "++bold sty "'--check-timeout TIME'"++" option." ++ "\n" ++
+    "  Please report this to the FreeST development team at "++bold sty "freest-lang@listas.ciencias.ulisboa.pt"
   msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts
     | Map.null diff =
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++

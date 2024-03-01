@@ -152,27 +152,31 @@ getWarnings runOpts s = (intercalate "\n" . map f . take 10 . reverse . warnings
 hasWarnings :: FreestS a -> Bool
 hasWarnings = not . null . warnings
 
-addWarning :: WarningType -> FreestState a ()
+addWarning :: S.MonadState (FreestS a) m =>  WarningType -> m ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 
 
 -- | RUNOPTS, Move to other module ???
 
-data RunOpts = RunOpts { runFilePath  :: FilePath
---                     , preludeFile  :: Maybe FilePath
-                       , args         :: [String]
-                       , mainFunction :: Maybe Variable
-                       , isStylable   :: Bool
-                       , quietmode    :: Bool
+data RunOpts = RunOpts { runFilePath     :: FilePath
+--                     , preludeFile     :: Maybe FilePath
+                       , args            :: [String]
+                       , mainFunction    :: Maybe Variable
+                       , isStylable      :: Bool
+                       , quietmode       :: Bool
+                       , subtyping       :: Bool  
+                       , checkTimeout_ms :: Int
                        } deriving Show
 
 defaultOpts :: RunOpts
-defaultOpts = RunOpts { runFilePath  = ""
---                    , preludeFile  = Just "Prelude.fst"
-                      , args = []
-                      , mainFunction = Nothing
-                      , isStylable   = True
-                      , quietmode    = False
+defaultOpts = RunOpts { runFilePath     = ""
+--                    , preludeFile     = Just "Prelude.fst"
+                      , args            = []
+                      , mainFunction    = Nothing
+                      , isStylable      = True
+                      , quietmode       = False
+                      , subtyping       = True
+                      , checkTimeout_ms = 6*10^4 -- 1min
                       }
 
 

@@ -30,11 +30,11 @@ import           Syntax.MkName (mkTupleLabels)
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set as Set
 
-data Polarity = Out | In deriving Eq
+data Polarity = Out | In deriving (Eq, Ord)
 
-data View = External | Internal deriving Eq
+data View = External | Internal deriving (Eq, Ord)
 
-data Sort = Record | Variant | Choice View deriving Eq
+data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 data Type =
   -- Functional Types

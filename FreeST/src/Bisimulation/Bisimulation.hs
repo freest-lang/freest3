@@ -17,6 +17,14 @@ reflexive, congruence, and BPA rules.
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
+  -- For subtyping
+  , Expansion
+  , Node 
+  , expand 
+  , reflex
+  , headCongruence
+  , bpa1 
+  , bpa2 
   )
 where
 
@@ -42,7 +50,7 @@ bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
+bisimilarGrm (Grammar [xs, ys] ps) = expand bisimExpansion queue rules ps
  where
   rules | allNormed ps = [reflex, headCongruence, bpa2,       filtering]
         | otherwise    = [reflex, headCongruence, bpa1, bpa2, filtering]
@@ -52,6 +60,8 @@ type Node = Set.Set (Word, Word)
 
 type Ancestors = Node
 
+type Expansion = Productions -> (Word, Word) -> Maybe Node
+
 type Branch = (Node, Ancestors)
 
 type BranchQueue = Queue.Seq Branch
@@ -60,13 +70,13 @@ type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
 -- The expand-simplify loop
 
-expand :: BranchQueue -> [NodeTransformation] -> Productions -> Bool
-expand Queue.Empty _ _ = False
-expand ((n, a) Queue.:<| q) rules ps
+expand :: Expansion -> BranchQueue -> [NodeTransformation] -> Productions -> Bool
+expand expansion Queue.Empty _ _ = False
+expand expansion ((n, a) Queue.:<| q) rules ps
   | Set.null n = True
-  | otherwise = case expandNode ps n of
-    Nothing -> expand q rules ps
-    Just n' -> expand (simplify q branch rules ps) rules ps
+  | otherwise = case expandNode expansion ps n of
+    Nothing -> expand expansion q rules ps
+    Just n' -> expand expansion (simplify q branch rules ps) rules ps
       where
         n'' = pruneNode ps n'
         branch = Set.singleton (n'', Set.union a n)
@@ -90,26 +100,23 @@ maxLength n
   | Set.null n = 0
   | otherwise  = maximum (Set.map (\(a, b) -> max (length a) (length b)) n)
 
-expandNode :: Productions -> Node -> Maybe Node
-expandNode ps = Set.foldr
+expandNode :: Expansion -> Productions -> Node -> Maybe Node
+expandNode expansion ps = Set.foldr
   (\p acc -> case acc of
     Nothing -> Nothing
-    Just n' -> case expandPair ps p of
+    Just n' -> case expansion ps p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')
   )
   (Just Set.empty)
 
-expandPair :: Productions -> (Word, Word) -> Maybe Node
-expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
-                       | otherwise                        = Nothing
+bisimExpansion :: Expansion 
+bisimExpansion ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+                           | otherwise                        = Nothing
  where
+  match m1 m2 = Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
   m1 = transitions xs ps
   m2 = transitions ys ps
-
-match :: Transitions -> Transitions -> Node
-match m1 m2 =
-  Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
