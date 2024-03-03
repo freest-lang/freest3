@@ -1,6 +1,6 @@
 data List = Nil | Cons Int List
 
-flatten : forall a:1S . List -> (rec x: 1S. +{NilC: Skip, ConsC: !Int;x});a -> a
+flatten : List -> (rec x: 1S. +{NilC: Skip, ConsC: !Int;x});a -> a
 flatten Nil        c = select NilC c
 flatten (Cons h t) c = select ConsC c
                     |> send h 

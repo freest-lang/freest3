@@ -9,7 +9,7 @@ type Stream = +{
 }
 -}
 
-type MathServer : 1S = +
+type MathServer = +
   { Add: MathServer
   , Mult: MathServer
   , Const: !Int;MathServer
