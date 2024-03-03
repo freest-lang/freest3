@@ -1,9 +1,9 @@
 data List = Nil | Cons Int List
 
-type SendList : 1S = +{Nil: Skip, Cons: !Int;SendList}
-type RecvList : 1S = dualof SendList
+type SendList = +{Nil: Skip, Cons: !Int;SendList}
+type RecvList = dualof SendList
 
-flatten : ∀ a:1S . List -> SendList;a -> a
+flatten : List -> SendList;a -> a
 flatten l c =
   case l of {
     Nil -> select Nil c,
@@ -13,7 +13,7 @@ flatten l c =
       flatten @a t c
   }
 
-reconstruct : ∀ a:1S . RecvList;a -> (List, a)
+reconstruct : RecvList;a -> (List, a)
 reconstruct c =
   match c with {
     Nil c -> (Nil, c),

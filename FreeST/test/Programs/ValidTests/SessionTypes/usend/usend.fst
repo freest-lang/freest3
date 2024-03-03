@@ -12,8 +12,8 @@ unrestricted values. The partially evaluated function can then be reused, contra
 -}
 
 --send : ∀a:1T .     a *-> ∀b:1S .            !a;b 1-> b
-unsend : ∀a:*T .     a *-> ∀b:1S .     () *-> !a;b 1-> b
-unsend = Λa:*T => λx:a *-> Λb:1S => λ_:() *-> send @a x @b
+unsend : ∀a .     a *-> ∀b .     () *-> !a;b 1-> b
+unsend = Λa => λx:a *-> Λb => λ_:() *-> send @a x @b
 
 main : Int
 main =
