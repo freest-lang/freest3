@@ -88,7 +88,9 @@ ctyping kEnv tapp@(E.TypeApp s e t) = do
   k <- cg kEnv t
   (t1, u) <- ctyping kEnv e 
   ~(T.Forall _ b) <- Extract.forall e t1
-  unless (k == K.la s || k == K.us s || k == K.la s) $ addConstraint $ KindC k (binder b)
+--  debugM $ show tapp ++ "       " ++ show (binder b)
+  -- unless (k == K.la s || k == K.us s || k == K.la s) $
+  addConstraint $ KindC k (binder b)
   return (subs t (var b) (body b), u)
 ctyping kEnv e@(E.BinLet _ x y e1 e2) = do
   (t1, u1) <- ctyping kEnv e1

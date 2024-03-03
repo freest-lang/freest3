@@ -156,7 +156,7 @@ quantifyPoly = tMapWithKeyM_ (\v t -> quantifyLowerFreeVars t >>= addToSignature
   
 infer :: InfState ()
 infer = do
-  -- let var = mkVar defaultSpan "pushE"
+  -- let var = mkVar defaultSpan "snd'"
   -- sigs <- getSignatures
   -- debugM $ show $ sigs Map.! var
   -- vars <- getMVariables
@@ -173,14 +173,16 @@ infer = do
   
   s <- getSignatures
   getSignatures >>= tMapM_ (cg Map.empty)
-  -- c <- getConstraints
-  -- debugM $ show c
+
 
   getDefs >>= tMapM_ (ctyping Map.empty)
   setSignatures s
+  -- c <- getConstraints
+  -- debugM $ show c
 
   subs' <- unify
   let subs1 = joinSubstitutions subs subs'
+  -- debugM $ show subs1
   -- getSignatures >>= setSignatures . Map.map (subsOnType subs)
   -- getDefs >>= setDefs . Map.map (subsOnExp subs)
 --  emptyConstraints

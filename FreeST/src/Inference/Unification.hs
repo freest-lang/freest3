@@ -50,12 +50,13 @@ unifyInner sigma (KindC (K.Kind _ _ (K.PKVar pk)) k2:cs) =
   unifyInner (joinSubstitutions sigma (Map.singleton pk (prekind sigma k2))) cs
 
 unifyInner sigma (KindC k1 (K.Kind _ (MultVar m) (K.PKVar pk)):cs) =
-  let subs = Map.fromList [(m, mult sigma k1), (pk, prekind sigma k1)] in
-  unifyInner (joinSubstitutions sigma subs) cs
-unifyInner sigma (KindC k1 (K.Kind _ (MultVar m) _):cs) =
-  unifyInner (joinSubstitutions sigma (Map.singleton m (mult sigma k1))) cs
-unifyInner sigma (KindC k1 (K.Kind _ _ (K.PKVar pk)):cs) =
-  unifyInner (joinSubstitutions sigma (Map.singleton pk (prekind sigma k1))) cs
+  -- let subs = Map.fromList [(m, mult sigma k1), (pk, prekind sigma k1)] in
+  -- unifyInner (joinSubstitutions sigma subs) cs
+  unifyInner sigma cs
+unifyInner sigma (KindC k1 (K.Kind _ (MultVar m) _):cs) = unifyInner sigma cs
+--  unifyInner (joinSubstitutions sigma (Map.singleton m (mult sigma k1))) cs
+unifyInner sigma (KindC k1 (K.Kind _ _ (K.PKVar pk)):cs) = unifyInner sigma cs
+--  unifyInner (joinSubstitutions sigma (Map.singleton pk (prekind sigma k1))) cs
 
 unifyInner sigma c@(KindC k1 k2: cs) = -- unifyInner sigma cs
   if k1 <: k2 then unifyInner sigma cs

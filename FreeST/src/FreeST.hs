@@ -70,12 +70,12 @@ checkAndRun runOpts = do
   when (hasErrors infS) (die $ getErrors runOpts infS)
 --  let (s,infS) = runState infer (elabToInf (pkVariables $ extra s2) (mVariables $ extra s2) defs elabS)
 
---   let var = mkVar defaultSpan "pushE"
+--  let var = mkVar defaultSpan "snd'"
   
 -- --  print $ (types $ ast elabS) Map.! var
 --   -- print $ (signatures $ ast elabS) Map.! var
---   print $ (signatures $ ast infS) Map.! var
---   print $ (definitions $ ast infS) Map.! var
+  -- print $ (signatures $ ast infS) Map.! var
+  -- print $ (definitions $ ast infS) Map.! var
   -- print $ IP.constraints $ extra infS
   -- print $ IP.mVariables $ extra infS
   -- print $ IP.pkVariables $ extra infS

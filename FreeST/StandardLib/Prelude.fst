@@ -388,7 +388,7 @@ send_ x c = c |> send x |> sink @*!a
 -- | Session initiation. Accepts a request for a linear session on a shared
 -- | channel. The requester uses a conventional `receive` to obtain the channel
 -- | end.
-accept : forall a . *!a -> dualof a
+accept : forall a : 1A . *!a -> dualof a
 accept c =
   let (x, y) = new @a () in
   send x c;
@@ -405,7 +405,7 @@ accept c =
 -- |   -- send the string to be printed
 -- |   c |> send "Hello!" |> wait
 -- | ```
-forkWith : (dualof a 1-> b) -> a
+forkWith : forall a:1A b:*T . (dualof a 1-> b) -> a
 forkWith f =
   let (x, y) = new @a () in
   fork (\_:() 1-> f y);
