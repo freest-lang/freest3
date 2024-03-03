@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 
 Module      :  Typing.Typing
@@ -18,6 +19,7 @@ module Typing.Typing
   ( typeCheck
   , synthetise -- for tests
   , checkAgainst -- for tests
+  , buildMap
   )
 where
 
@@ -93,32 +95,6 @@ checkLinearity = do
   m <- filterM (K.lin . snd) (Map.toList sigs)
   unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
 
-buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
-                 -> TypingState ([Variable], E.Exp)
-buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
-    if n /= length xs
-      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
-      else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
-  Just t -> internalError "variant not a record type" t
-  Nothing -> -- Data constructor not in scope
-    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
- where
-  buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
-  buildAbstraction' ([], e) _ = e
-  buildAbstraction' (x : xs, e) (t:ts) =
-    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
-
-
-  -- numberOfArgs :: T.Type -> Int
-  -- numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  -- numberOfArgs _                 = 0
-
-  -- numberOfFields :: T.Type -> Int
-  -- numberOfFields (T.Labelled _ _  tm) = Map.size tm
-
---
-
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
@@ -186,12 +162,12 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   return u2
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  (_,_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
-  (u1, u2) <- Extract.function e1 t
+  (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
@@ -287,7 +263,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do
-  (t', u') <- Extract.function e =<< synthetise kEnv e
+  (_, t', u') <- Extract.function e =<< synthetise kEnv e
   checkEquivTypes e t' t
   checkEquivTypes e u' u
 checkAgainst kEnv e t = checkEquivTypes e t =<< synthetise kEnv e
@@ -307,9 +283,27 @@ checkEquivEnvs p error exp _ sigs1 sigs2 =
 
 -- Build abstractions for each case element
 
-buildMap :: Span -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
+buildMap :: MonadState (FreestS a) m => Span -> E.FieldMap -> T.TypeMap -> m E.FieldMap
 buildMap p fm tm = do
   when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
   where tmS = Map.size tm
         fmS = Map.size fm
+
+
+buildAbstraction :: MonadState (FreestS a) m => T.TypeMap -> Variable -> ([Variable], E.Exp)
+                 -> m ([Variable], E.Exp)
+buildAbstraction tm x (xs, e) = case tm Map.!? x of
+  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
+    if n /= length xs
+      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
+      else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
+  Just t -> internalError "variant not a record type" t
+  Nothing -> -- Data constructor not in scope
+    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
+ where
+  buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
+  buildAbstraction' ([], e) _ = e
+  buildAbstraction' (x : xs, e) (t:ts) =
+    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
+

@@ -63,11 +63,13 @@ instance Show Variable where
 instance Show Multiplicity where
   show Un  = "*"
   show Lin = "1"
+  show (MultVar x) = show x
 
 -- Arrow multiplicity has a different textual representation
 showArrow :: Multiplicity -> String
 showArrow Un  = "->"
 showArrow Lin = "1->"
+showArrow _ = error "tmp"
 
 -- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
 -- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
@@ -81,6 +83,7 @@ instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
   show K.Absorb  = "A"
+  show (K.PKVar x) = show x
 
 instance Show K.Kind where
   show (K.Kind _ m p) = show m ++ show p
