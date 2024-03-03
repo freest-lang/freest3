@@ -5,8 +5,8 @@ Based on the 'Ami and Boe' example from
 
 -}
 
-type CakeStore   : *S = *?CakeService
-type CakeService : 1S = &{ Cake: End
+type CakeStore   = *?CakeService
+type CakeService = &{ Cake: End
                          , Disappointment: End 
                          }
 

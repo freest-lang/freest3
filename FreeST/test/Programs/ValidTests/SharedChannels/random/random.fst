@@ -1,10 +1,10 @@
-type IntStream : *S = *!Int
+type IntStream = *!Int
 
-type BitStream : *S = IntStream
-type Random    : *S = dualof IntStream
+type BitStream = IntStream
+type Random    = dualof IntStream
 
 -- Args -> *!SendType
-genericUnSender : forall a . a -> (rec b:*S . !a;b) -> ()
+genericUnSender : a -> (rec b:*S . !a;b) -> ()
 genericUnSender x chan =
     genericUnSender @a x $ send x chan
 

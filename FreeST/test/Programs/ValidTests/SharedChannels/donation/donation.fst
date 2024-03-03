@@ -9,18 +9,18 @@ Note that FreeST does not have refinement types
 type CreditCard = String
 
 -- type Promotion : *S = *?(String, CreditCard, Int)
-type Promotion  : *S = *?Promotion'
-type Promotion' : 1S = !String; !CreditCard; !Int; End 
+type Promotion  = *?Promotion'
+type Promotion' = !String; !CreditCard; !Int; End 
 
-type Decision : 1S = &{ Accepted: ?Promotion; End
-                      , Denied  : ?String   ; End
-                      }
+type Decision = &{ Accepted: ?Promotion; End
+                 , Denied  : ?String   ; End
+                 }
 
-type DonationS : *S = *!Donation
-type Donation : 1S = +{ SetTitle: !String; Donation
-                      , SetDate : !Int   ; Donation
-                      , Commit  : Decision
-                      }
+type DonationS = *!Donation
+type Donation  = +{ SetTitle: !String; Donation
+                  , SetDate : !Int   ; Donation
+                  , Commit  : Decision
+                  }
 
 
 -- 2. One possible client

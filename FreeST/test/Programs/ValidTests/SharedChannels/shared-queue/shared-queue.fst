@@ -1,7 +1,7 @@
 -- channel types
 
-type Head : *S = {- Dequeue -} *?Int
-type Tail : *S = {- Enqueue -} *!Int
+type Head = {- Dequeue -} *?Int
+type Tail = {- Enqueue -} *!Int
 
 type Internal : 1S = ?Int; ?Internal; End 
 
@@ -42,7 +42,7 @@ dequeue queue =
 
 -- counter
 
-type Counter : *S = *?Int
+type Counter = *?Int
 
 initCounter : Counter
 initCounter = 
