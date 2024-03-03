@@ -1,4 +1,4 @@
-data T = C T
+data T  = C T
 
 -- Not bound to terminate
 main : T
