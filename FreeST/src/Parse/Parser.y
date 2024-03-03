@@ -319,6 +319,7 @@ Pattern :: { Pattern }
   : ProgVarWild                            { E.PatVar  $1    }
   | Constructor                            { E.PatCons $1 [] }
   | '['']'                                 { E.PatCons (mkNil $ getSpan $1) [] }
+  -- | '(' PatternC ',' Tuple ')'             { () }
   | '(' Pattern '::' Pattern ')'           { E.PatCons (mkCons $ getSpan $3) ($2:[$4]) }
   | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
   | '(' Pattern ')'                        { $2 }
@@ -331,11 +332,13 @@ GuardsFun :: { Exp }
   : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '=' Exp             { $4 }
 
+-- Tuple :: { Exp }
+--   : PatternC                       { $1 }
+--   | PatternC ',' Tuple             { () }
 
 ExpList :: { E.Exp }
   : ']'             { E.Var (getSpan $1) (mkNil (getSpan $1)) }
   | ',' Exp ExpList { binOp $2 (mkCons (getSpan $2)) $3 }
-
 
 Op :: { Variable }
    : CMP  {% flip mkVar (getText $1) `fmap` mkSpan $1 }
