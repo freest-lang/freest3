@@ -319,10 +319,14 @@ Pattern :: { Pattern }
   : ProgVarWild                            { E.PatVar  $1    }
   | Constructor                            { E.PatCons $1 [] }
   | '['']'                                 { E.PatCons (mkNil $ getSpan $1) [] }
-  -- | '(' PatternC ',' Tuple ')'             { () }
+  -- | '(' PatternC ',' TuplePattern ')'      { E.PatCons (mkTuple (length $4) $ getSpan $3) ($2:$4) }
   | '(' Pattern '::' Pattern ')'           { E.PatCons (mkCons $ getSpan $3) ($2:[$4]) }
   | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
   | '(' Pattern ')'                        { $2 }
+
+-- TuplePattern :: { [Pattern] }
+--   : PatternC                       { [$1] }
+--   | PatternC ',' Tuple             { $1:$3 }
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
@@ -331,10 +335,6 @@ GuardsCase :: { Exp }
 GuardsFun :: { Exp }
   : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '=' Exp             { $4 }
-
--- Tuple :: { Exp }
---   : PatternC                       { $1 }
---   | PatternC ',' Tuple             { () }
 
 ExpList :: { E.Exp }
   : ']'             { E.Var (getSpan $1) (mkNil (getSpan $1)) }

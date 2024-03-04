@@ -63,6 +63,10 @@ mkList = mk "[Int]"
 mkCons = mk "(::)"
 mkNil  = mk "[]"
 
+-- mkTuple :: Int -> Span -> Variable
+-- mkTuple i s = mk constructor s -- TODOX
+--   where constructor = "(" ++ (replicate i ',') ++ ")"
+
 mkTupleLabels :: [Span -> Variable]
 mkTupleLabels = map (mk . show) [0..]
 
