@@ -21,6 +21,9 @@ import           System.Directory
 import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
+import Debug.Trace (traceM)
+import qualified Syntax.Expression as E
+import Syntax.MkName
 
 
 main :: IO ()
@@ -128,10 +131,21 @@ parseOpt s (Just xs)
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
             then liftS $ putStrLn $ getErrors runOpts s1
-            else liftS $ evalAndPrint (mkVar defaultSpan "main") st e
+            else liftS $ evalAndPrint (mkVar defaultSpan "main") st $
+                  forkHandlers 
+                    [ ("__runStdout", "__stdout")
+                    , ("__runStderr", "__stderr")
+                    , ("__runStdin", "__stdin")] 
+                    e
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
 
-
-
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkWild s)
+        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan
