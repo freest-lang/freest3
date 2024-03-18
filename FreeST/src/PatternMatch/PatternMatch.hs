@@ -28,4 +28,6 @@ patternMatching s = do
   matchFuns s1 >>= setDefs
 
 parseToPattern :: PP.ParseS -> PatternS
-parseToPattern s = s {ast = (ast s){definitions = Map.empty}, extra = void}
+parseToPattern s =
+  s { ast = (ast s){definitions = Map.empty}
+    , extra = Extra {pEnvChoices = PP.pEnvChoices (extra s)}}

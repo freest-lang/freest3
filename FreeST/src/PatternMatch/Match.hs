@@ -36,7 +36,8 @@ type Equation = ([Pattern],Exp)
 checkChoices :: PP.Defs -> PatternState ()
 checkChoices pec = do
   cons <- Set.toList <$> getConstructors -- [Variable]
-  map (\c -> (find (== c) cons,c)) (PP.pEnvChoices pec)
+  chs <- getPEnvChoices 
+  map (\c -> (find (== c) cons,c)) chs -- (PP.pEnvChoices pec)
     & filter (isJust . fst)
     & mapM_ (\(Just cons,chan) -> addError 
       $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
