@@ -21,7 +21,7 @@ patternMatch parseS =
 -- | 6. Remove all patterns
 patternMatching :: PP.Defs -> PatternState ()
 patternMatching s = do
-  --  Match.checkChoices =<< getPEnvChoices
+  checkChoices s
   checkNumArgs s
   checkChanVar s
   let s1 = addMissingVars s

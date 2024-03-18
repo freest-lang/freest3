@@ -1,6 +1,6 @@
 module PatternMatch.Match
   (addMissingVars
-  -- , checkChoices
+  , checkChoices
   , checkNumArgs
   , checkChanVar
   , matchFuns
@@ -22,7 +22,8 @@ import           Control.Monad (when)
 import           Control.Monad.Extra ((&&^))
 import           Data.Function ((&))
 import           Data.Functor ((<&>))
-import           Data.List (groupBy,sortOn,transpose)
+import           Data.List (find,groupBy,sortOn,transpose)
+import           Data.Maybe (isJust)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -30,14 +31,15 @@ type Equation = ([Pattern],Exp)
 
 -- Function validation before translation --------------------------
 
--- -- check if there is choices with the same name as contructors
+-- check if there is choices with the same name as contructors
 -- checkChoices :: ParseEnvChoices -> FreestState ()
--- checkChoices pec = do
---   cons <- Set.toList <$> getConstructors -- [Variable]
---   map (\c -> (find (== c) cons,c)) pec
---     & filter (isJust . fst)
---     & mapM_ (\(Just cons,chan) -> addError 
---             $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
+checkChoices :: PP.Defs -> PatternState ()
+checkChoices pec = do
+  cons <- Set.toList <$> getConstructors -- [Variable]
+  map (\c -> (find (== c) cons,c)) (PP.pEnvChoices pec)
+    & filter (isJust . fst)
+    & mapM_ (\(Just cons,chan) -> addError 
+      $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
 
 -- check if the number of arguments is the same for every function definition
 checkNumArgs :: PP.Defs -> PatternState ()

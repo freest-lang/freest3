@@ -64,7 +64,7 @@ data ErrorType =
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
   -- Elab
-  -- | ConflictChoiceCons Span Variable Span
+  | ConflictChoiceCons Span Variable Span
   | DifNumberOfArguments Span Variable 
   | InvalidVariablePatternChan Span Variable
   | TypeVarOutOfScope Span Variable
@@ -116,7 +116,7 @@ instance Located ErrorType where
   getSpan (MissingChoices p _ _            ) = p
   getSpan (MultipleDeclarations p _ _      ) = p
   getSpan (MultipleTypeDecl p _ _          ) = p
-  -- getSpan (ConflictChoiceCons p _ _        ) = p
+  getSpan (ConflictChoiceCons p _ _        ) = p
   getSpan (DifNumberOfArguments p _        ) = p
   getSpan (InvalidVariablePatternChan p _  ) = p
   getSpan (TypeVarOutOfScope p _           ) = p
@@ -187,9 +187,9 @@ instance Message ErrorType where
     "Ambiguous occurrence " ++ style red sty ts pv ++ declInTwoModules p p'
   msg (MultipleTypeDecl p t p') sty ts =
     "Multiple declarations of type " ++ style red sty ts t ++ declInTwoModules p p'
-  -- msg (ConflictChoiceCons p chan p2) sty ts =
-  --   "Confliting definitions between a choice and a constructor " ++
-  --   style red sty ts (show chan) ++ declInTwoModules p p2
+  msg (ConflictChoiceCons p chan p2) sty ts =
+    "Confliting definitions between a choice and a constructor " ++
+    style red sty ts (show chan) ++ declInTwoModules p p2
   msg (DifNumberOfArguments p fun) sty ts =
     "Equations for " ++ style red sty ts (show fun) ++
     " have different number of arguments " ++
