@@ -92,8 +92,8 @@ synthetise' s kEnv mu@(T.Rec _ (Bind _ a k t)) = do
     then pure $ K.Kind p m K.Absorb
     else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
-  (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ K.Kind p m K.Top
+  (K.Kind _ m v) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
+  return $ K.Kind p m v
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
@@ -105,6 +105,7 @@ synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
             (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
+synthetise' _ _ t = internalError "Validation.Kinding.synthetise'.unexpectedConditions" t
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: MonadState (FreestS a) m => K.PolyVars -> Variable -> T.Type -> m ()
