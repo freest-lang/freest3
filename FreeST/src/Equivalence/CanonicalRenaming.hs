@@ -1,5 +1,11 @@
 
 
+
+module Equivalence.CanonicalRenaming
+  ( canonicallyRename
+  )
+where
+
 import qualified Data.Set    as Set
 
 import qualified Syntax.Base as B

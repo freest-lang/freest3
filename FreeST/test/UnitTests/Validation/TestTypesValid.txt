@@ -333,3 +333,20 @@ rec a:*S . &{One: a, Two: a}
 
 !Int ; !Int ; !Int ; !Int ; rec a:*S . !Int ; a
 1S
+
+-- Passing types
+
+forall a:1S . a
+1S
+
+∀ a : 1S . !a;Skip
+1S
+
+forall a:1T . forall b:1S . a -> !a;b 1-> b
+1S
+
+rec a:1S . &{Done: Skip, More: forall b:*T . ?b;a}
+1S
+
+rec a:1S . +{Done: Skip, More: forall b:*T . !b;a}
+1S

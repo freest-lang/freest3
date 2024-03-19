@@ -173,3 +173,9 @@ rec x:*S . Skip; x
 rec x:*S . Skip; x; Skip
 
 rec x:*S . Skip ; x ; x ; x
+
+
+-- Passing types
+
+forall a : 1S . !a;Skip
+1T
