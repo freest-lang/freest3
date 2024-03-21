@@ -41,8 +41,9 @@ import qualified Syntax.Kind as K
 import Syntax.Value
 import Validation.Phase
 import qualified Validation.Extract as Extract
-import qualified Validation.Kinding as K -- K Again?
+import           Validation.Phase
 import qualified Validation.Rename as Rename ( subs )
+import qualified Kinding.Kinding as K -- K Again?
 import System.Timeout (timeout)
 import           Util.Error
 import           Util.State hiding (void)

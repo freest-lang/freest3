@@ -21,12 +21,11 @@ import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
-import           Util.Error
-import           Util.State
-import qualified Validation.Kinding as K
+import qualified Kinding.Kinding as K
 import           Validation.Phase hiding (Typing)
 import qualified Validation.Typing as Typing -- Again
-
+import           Util.Error
+import           Util.State
 import           Control.Monad
 import           Control.Monad.State ( get )
 import qualified Data.Map.Strict as Map

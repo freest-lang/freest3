@@ -1,5 +1,5 @@
 {- |
-Module      :  Validation.Subkind
+Module      :  Kinding.Subkind
 Description :  The subkind relation
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 -}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Validation.Subkind
+module Kinding.Subkind
   ( (<:)
   , Join (..)
   , Meet (..)

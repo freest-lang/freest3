@@ -17,17 +17,15 @@ module Bisimulation.TypeToGrammar
   )
 where
 
+import           Syntax.Base
+import qualified Syntax.Type as T
 import           Bisimulation.Grammar
 import           Elaboration.Replace ( changePos )
 import           Validation.Normalisation ( normalise )
-import           Syntax.Base
-import qualified Syntax.Type as T
-import qualified Syntax.Kind as K
+import qualified Validation.Substitution as Substitution ( subsAll )
+import           Kinding.Terminated ( terminated )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_)
-import qualified Validation.Substitution as Substitution ( subsAll )
-import           Validation.Terminated ( terminated )
-
 import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict as Map

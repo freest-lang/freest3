@@ -17,11 +17,11 @@ module Validation.Normalisation
   )
 where
 
-import           Syntax.Base                    ( Span, Bind(..) )
-import qualified Syntax.Type                   as T
-import           Validation.Terminated          ( terminated )
-import           Validation.Substitution        ( subs )
-import           Util.Error                     ( internalError )
+import           Syntax.Base                ( Span, Bind(..) )
+import qualified Syntax.Type                 as T
+import           Validation.Substitution     ( subs )
+import           Kinding.Terminated          ( terminated )
+import           Util.Error                  ( internalError )
 
 -- TACAS 2020
 normalise :: T.Type -> T.Type
