@@ -41,7 +41,6 @@ import           Equivalence.TypeEquivalence (equivalent)
 import qualified Typing.Extract as Extract
 import qualified Typing.Rename as Rename ( subs )
 import           Typing.Phase hiding (Typing)
-
 import qualified Kinding.Kinding as K
 import           Util.Error
 import           Util.State hiding (void)
