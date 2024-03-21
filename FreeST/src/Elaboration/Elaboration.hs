@@ -2,32 +2,32 @@
 
 module Elaboration.Elaboration (elaboration) where
 
--- import qualified Elaboration.Match as Match
-import           Elaboration.Replace
-import           Elaboration.ResolveDuality as Dual
-import           Elaboration.ResolveEquations
-import           Validation.Normalisation ( normalise )
+import qualified Syntax.Base as T
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
-import           Util.Error
-import           Util.State
-import qualified PatternMatch.Phase as PMP
+import           Elaboration.Replace
+import           Elaboration.ResolveDuality as Dual
+import           Elaboration.ResolveEquations
 import           Elaboration.Phase
-import qualified Validation.Phase as VP
 import qualified Kinding.Subkind as SK (join)
 import           Kinding.Kinding (synthetise)
+import           Typing.Normalisation ( normalise )
+import qualified Typing.Phase as VP
+import           Typing.Substitution (free)
+import qualified PatternMatch.Phase as PMP
+import           Util.Error
+import           Util.State
+
 import           Control.Monad.State hiding (void)
 import           Data.Char (isLower)
 import           Data.Functor hiding (void)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set as Set
-import qualified Syntax.Base as T
-import           Validation.Substitution (free)
 
 elaboration :: PMP.PatternS -> (VP.Defs, ElabS)
 elaboration patternS = runState elaboration' (patternToElab patternS)

@@ -12,7 +12,7 @@ import           Syntax.MkName
 import           Syntax.Program hiding (Prog)
 import           Util.Error
 import           Util.State hiding (void)
-import           Validation.Phase
+import           Typing.Phase
 import           Syntax.AST
 
 import           Control.Concurrent ( forkIO )

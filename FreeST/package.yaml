@@ -61,10 +61,11 @@ library:
     - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
-    - Validation.Normalisation
-    - Validation.Rename
-    - Validation.Substitution
-    - Validation.Typing
+    - Typing.Typing
+    - Typing.Normalisation
+    - Typing.Rename
+    - Typing.Substitution
+    - Typing.Phase
     - Kinding.Subkind
     - Kinding.Terminated
     - Kinding.Kinding
@@ -73,7 +74,6 @@ library:
     - Parse.Phase
     - PatternMatch.Phase
     - Elaboration.Phase
-    - Validation.Phase
     - PatternMatch.PatternMatch
 
 executables:

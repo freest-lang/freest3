@@ -1,5 +1,5 @@
 {- |
-Module      :  Validation.Normalisation
+Module      :  Typing.Normalisation
 Description :  Unfold recursive types and terminated types
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -12,14 +12,14 @@ Unfold recursive types and get rid of terminated types, in such a way that the
 top level constructor of the resulting type is not a rec and not Skip;T.
 -}
 
-module Validation.Normalisation
+module Typing.Normalisation
   ( normalise
   )
 where
 
 import           Syntax.Base                ( Span, Bind(..) )
 import qualified Syntax.Type                 as T
-import           Validation.Substitution     ( subs )
+import           Typing.Substitution     ( subs )
 import           Kinding.Terminated          ( terminated )
 import           Util.Error                  ( internalError )
 
@@ -29,7 +29,7 @@ normalise (T.Semi p t u)
   | terminated t = normalise u
   | otherwise    = append p (normalise t) u
 normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)
-normalise t@T.Dualof{} = internalError "Validation.Normalisation.normalise" t
+normalise t@T.Dualof{} = internalError "Typing.Normalisation.normalise" t
 normalise t = t
 
 -- Subtyping

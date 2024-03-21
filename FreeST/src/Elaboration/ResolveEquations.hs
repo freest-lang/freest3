@@ -6,7 +6,7 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import           Validation.Rename ( isFreeIn )
+import           Typing.Rename ( isFreeIn )
 
 import           Data.Functor
 import           Data.Map.Strict as Map

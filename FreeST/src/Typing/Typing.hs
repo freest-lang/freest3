@@ -1,6 +1,6 @@
 {-|
 
-Module      :  Validation.Typing
+Module      :  Typing.Typing
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase #-}
 
-module Validation.Typing
+module Typing.Typing
   ( typeCheck
   )
 where
@@ -37,11 +37,24 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Syntax.Value
+import           Equivalence.TypeEquivalence (equivalent)
+import qualified Typing.Extract as Extract
+import qualified Typing.Rename as Rename ( subs )
+import           Typing.Phase hiding (Typing)
+
+import qualified Kinding.Kinding as K
+import           Util.Error
+import           Util.State hiding (void)
+import           Util.Warning
+import           Parse.Unparser () -- debug
+
+import           Control.Monad
+import           Control.Monad.State ( when, get
+                                     , unless, evalState, MonadState (get)
+                                     )
+import           Data.Functor
+import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
-import qualified Validation.Extract as Extract
-import qualified Kinding.Kinding as K -- K Again?
-import           Validation.Phase
-import qualified Validation.Rename as Rename ( subs )
 
 typeCheck :: TypingState ()
 typeCheck = do

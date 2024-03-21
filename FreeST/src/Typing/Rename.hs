@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {- |
-Module      :  Validation.Rename
+Module      :  Typing.Rename
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase, FlexibleInstances #-}
 
-module Validation.Rename
+module Typing.Rename
   ( renameState
   , renameType
   , renameTypes
@@ -33,8 +33,8 @@ import           Syntax.Program ( noConstructors )
 import qualified Syntax.Type as T
 import           Util.Error ( internalError )
 import           Util.State
-import           Validation.Phase
-import qualified Validation.Substitution as Subs
+import           Typing.Phase
+import qualified Typing.Substitution as Subs
 
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
@@ -103,7 +103,7 @@ instance Rename T.Type where
     return $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
 --rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
-  rename _ _ t@T.Dualof{}          = internalError "Validation.Rename.rename" t
+  rename _ _ t@T.Dualof{}          = internalError "Typing.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
   rename _ _ t                       = return t
 

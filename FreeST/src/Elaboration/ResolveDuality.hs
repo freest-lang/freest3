@@ -13,7 +13,7 @@ import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import           Validation.Substitution
+import           Typing.Substitution
 
 import           Data.Functor
 import qualified Data.Set as Set
