@@ -4,15 +4,15 @@ module Validation.TestExpressionInvalidSpec
 where
 
 import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
-import           Elaboration.ResolveDuality    as Dual
+import qualified Data.Map.Strict            as Map
+import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
 import           Syntax.Expression
-import           Validation.Typing              ( synthetise )
+import           Typing.Typing              ( synthetise )
 import           Util.State
 import qualified Elaboration.Phase as EP
-import qualified Validation.Phase as VP
-import FreeST
+import qualified Typing.Phase as VP
+import           FreeST
 
 spec :: Spec
 spec = describe "Invalid expression tests" $ do

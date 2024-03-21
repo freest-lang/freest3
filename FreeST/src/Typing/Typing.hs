@@ -16,6 +16,8 @@ Portability :  portable | non-portable (<reason>)
 
 module Typing.Typing
   ( typeCheck
+  , synthetise -- for tests
+  , checkAgainst -- for tests
   )
 where
 

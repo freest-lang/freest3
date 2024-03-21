@@ -9,16 +9,17 @@ module ArbitraryTypes
   )
 where
 
+import qualified Syntax.Type          as T
+import qualified Syntax.Kind          as K
+import           Syntax.Base          hiding ( pos )
+import           Kinding.Contractive
+import           Kinding.Terminated   (terminated)
+import qualified Typing.Rename        as Rename
+
 import           Test.QuickCheck
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
-import           Syntax.Base             hiding ( pos )
-import           Validation.Contractive
-import qualified Validation.Rename             as Rename
 import           Control.Monad
-import qualified Data.Set                      as S
-import qualified Data.Map.Strict               as M
-import           Validation.Terminated (terminated)
+import qualified Data.Set             as S
+import qualified Data.Map.Strict      as M
 
 pos :: Span
 pos = defaultSpan

@@ -68,6 +68,7 @@ library:
     - Typing.Phase
     - Kinding.Subkind
     - Kinding.Terminated
+    - Kinding.Contractive
     - Kinding.Kinding
     - Interpreter.Builtin
     - Interpreter.Eval
@@ -75,6 +76,7 @@ library:
     - PatternMatch.Phase
     - Elaboration.Phase
     - PatternMatch.PatternMatch
+    - Equivalence.TypeEquivalence
 
 executables:
   freest:

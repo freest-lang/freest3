@@ -3,24 +3,24 @@ module Equivalence.TestEquivalenceValidSpec
   )
 where
 
-import Bisimulation.Bisimulation ( bisimilar )
-import Control.Monad.State ( execState, evalState )
-import Elaboration.ResolveDuality
-import SpecUtils
-import Syntax.Kind as K
-import Util.State ( initial, errors, defaultOpts )
-import Validation.Kinding ( synthetise )
-import Validation.Rename
+import           Syntax.Kind as K
+import           Elaboration.ResolveDuality
 import qualified Elaboration.Phase as EP
-import qualified Validation.Phase as VP
+import qualified Typing.Phase as VP
+import           Typing.Rename
+import           Kinding.Kinding ( synthetise )
+import           Equivalence.TypeEquivalence ( equivalent )
+import           SpecUtils
+import           Util.State ( initial, errors, defaultOpts )
 
+import Control.Monad.State ( execState, evalState )
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] |
   wellFormed kEnv t' &&
   wellFormed kEnv u' = it
     (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-    (bisimilar t' u' `shouldBe` True)
+    (equivalent t' u' `shouldBe` True)
   where
     kEnv = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
