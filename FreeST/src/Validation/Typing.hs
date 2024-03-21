@@ -28,7 +28,8 @@ import Util.Error
 import Util.State hiding (void)
 import Util.Warning
 
-import Bisimulation.Bisimulation ( bisimilar )
+-- import Bisimulation.Bisimulation ( bisimilar )
+import Equivalence.Equivalence ( equivalent )
 import Bisimulation.Subtyping ( subtypeOf )
 import Parse.Unparser () -- debug
 import Syntax.Base
@@ -43,6 +44,16 @@ import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import qualified Validation.Rename as Rename ( subs )
 import System.Timeout (timeout)
+import           Util.Error
+import           Util.State hiding (void)
+import           Util.Warning
+import           Parse.Unparser () -- debug
+
+import           Control.Monad.State ( when
+                                     , unless, evalState, MonadState (get)
+                                     )
+import           Data.Functor
+import qualified Data.Map.Strict as Map
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
@@ -221,7 +232,7 @@ compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
 compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
   timeout_ms   <- subTimeout_ms <$> getRunOpts
-  let cmp = if sub then subtypeOf else bisimilar 
+  let cmp = if sub then subtypeOf else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 
     Just checks -> unless checks 

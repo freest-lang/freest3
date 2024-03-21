@@ -1,5 +1,5 @@
 {- |
-Module      :  Bisimulation.AlphaEquivalence
+Module      :  Equivalence.AlphaEquivalence
 Description :  Alpha equivalence for types
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>

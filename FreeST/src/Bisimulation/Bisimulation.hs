@@ -36,7 +36,7 @@ import Bisimulation.Grammar
 import Bisimulation.Norm
 import Equivalence.TypeToGrammar ( convertToGrammar )
 import qualified Validation.Subkind as SK
-import Syntax.Base (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variables
+import Syntax.Base (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variablesgg
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 
@@ -52,9 +52,8 @@ import Prelude hiding ( Word ) -- Word is redefined in module Equivalence.Gramma
 
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u =
-  t == u || -- Alpha-equivalence, 30% speed up in :program tests
-  bisimilarGrm (convertToGrammar [t, u])
+bisimilar t u = bisimilarGrm (convertToGrammar [t, u])
+
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
