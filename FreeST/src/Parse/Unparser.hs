@@ -84,8 +84,9 @@ instance Show Variable where
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
-showSortedVar :: (Show a, Show b) => a -> b -> String
-showSortedVar x t = show x ++ ":" ++ show t
+showSortedVar :: (Show a, Show b) => a -> b -> Bool -> String
+showSortedVar x t False = show x ++ ":" ++ show t
+showSortedVar x t True = show x ++ ":(" ++ show t ++ ")"
 
 -- Kind
 
@@ -99,22 +100,23 @@ instance Show K.Kind where
 
 -- Binds
 
-showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
-showKind var sort arrow term =
-  showSortedVar var sort ++ spaced arrow ++ show term
+showBind :: (Show a, Show b, Show c) => a -> b -> Bool -> String -> c -> String
+showBind var sort paren arrow term =
+  showSortedVar var sort paren ++ spaced arrow ++ show term
 
 -- instance Show t => Show (K.Bind t) where
---   show (K.Bind _ a k t) = showKind a k "=>" t
+--   show (K.Bind _ a k t) = showBind a k "=>" t
 
 showBindType :: Bind K.Kind T.Type -> String
-showBindType (Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
+showBindType (Bind _ a k t) = showBind a k False "." t -- ∀ a:k . t
 
 showBindExp :: Bind K.Kind E.Exp -> String
-showBindExp (Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
+showBindExp (Bind _ a k e) = showBind a k False "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
-showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
+showBindTerm (Bind _ x t@T.Arrow{} e) m = showBind x t True (show m) e -- λ x:(t) -> e
+showBindTerm (Bind _ x t e) m = showBind x t False (show m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
@@ -226,8 +228,8 @@ showDatatype m = intercalate " | "
   showAsSequence :: T.Type -> String
   showAsSequence (T.Labelled _ _ t) = 
     let fs = unwords (map (show . snd) $ Map.toList t) in
-    if fs == "" then "" else " "++fs
-  showAsSequence _               = ""
+    if null fs then fs else " " ++ fs
+  showAsSequence _ = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
@@ -375,7 +377,7 @@ instance {-# OVERLAPPING #-} Show Signatures where
   show sigs = "[" ++ intercalate "\n\t\t   ," (sigsToList sigs) ++ "]"
 
 sigsToList :: Signatures -> [String]
-sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
+sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v False : acc) []
 
 joinList :: E.Exp -> [E.Exp]
 joinList (E.Var _ x) | show x == "[]"   = []
