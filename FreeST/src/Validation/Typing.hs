@@ -1,6 +1,6 @@
 {-|
 
-Module      :  Validation.TypeChecking
+Module      :  Validation.Typing
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase #-}
 
-module Validation.TypeChecking
+module Validation.Typing
   ( typeCheck
   )
 where
