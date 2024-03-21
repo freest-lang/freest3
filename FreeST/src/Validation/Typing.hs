@@ -29,7 +29,7 @@ import Util.State hiding (void)
 import Util.Warning
 
 -- import Bisimulation.Bisimulation ( bisimilar )
-import Equivalence.Equivalence ( equivalent )
+import Equivalence.TypeEquivalence ( equivalent )
 import Bisimulation.Subtyping ( subtypeOf )
 import Parse.Unparser () -- debug
 import Syntax.Base

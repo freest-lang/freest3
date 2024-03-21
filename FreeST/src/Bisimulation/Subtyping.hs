@@ -9,7 +9,8 @@ import Data.Tuple (swap)
 import Bisimulation.Bisimulation
 import Bisimulation.Grammar
 import Bisimulation.Norm (allNormed)
-import Equivalence.TypeToGrammar ( convertToGrammar )
+import Bisimulation.TypeToGrammar ( convertToGrammar )
+import Equivalence.TypeEquivalence
 import qualified Syntax.Type as T 
 
 
