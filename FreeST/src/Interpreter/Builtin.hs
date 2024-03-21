@@ -145,7 +145,7 @@ initialCtx = Map.fromList
   -- Files
   , (var "__openFile",
       PrimitiveFun (\(String s) ->
-      PrimitiveFun (\(Cons (Variable _ mode) _) -> IOValue $
+      PrimitiveFun (\(Cons (Variable _ mode _) _) -> IOValue $
         case mode of
           "ReadMode"   -> openFile s ReadMode   >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
           "WriteMode"  -> openFile s WriteMode  >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle

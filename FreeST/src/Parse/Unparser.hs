@@ -31,17 +31,18 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.MkName ( mkTrue, mkFalse )
 import qualified Syntax.Type as T
+
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Prelude  hiding ( Left, Right ) -- needed for Associativity
+import           Prelude hiding ( Left, Right ) -- needed for Associativity
 
 instance Show Span where
-  show (Span sp fp _)
-    | sp == fp  = showPos sp
-    | fst sp == fst fp = showPos sp ++ "-" ++ show (snd fp)
-    | otherwise = showPos sp ++ "-" ++ showPos fp
+  show (Span _ p1 p2)
+    | p1 == p2  = showPos p1
+    | fst p1 == fst p2 = showPos p1 ++ "-" ++ show (snd p2)
+    | otherwise = showPos p1 ++ "-" ++ showPos p2
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
@@ -51,25 +52,18 @@ showModuleName s = showModuleWithDots (moduleName s)
 showModuleWithDots :: String -> String
 showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 
--- Multiplicities
-
--- Kind
 instance Show K.Multiplicity where
   show K.Un  = "*"
   show K.Lin = "1"
 
--- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
   show Un  = "->"
   show Lin = "1->"
-
--- Choice view
 
 instance Show T.View where
   show T.External = "&"
   show T.Internal = "+"
 
--- Message Polarity
 instance Show T.Polarity where
   show T.In  = "?"
   show T.Out = "!"
@@ -82,7 +76,8 @@ instance Show T.Polarity where
 instance Show Variable where
   show = extern
 
--- Sorted variable. Either a:k or x:t (just to get the spacing right)
+-- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
+-- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
 
 showSortedVar :: (Show a, Show b) => a -> b -> Bool -> String
 showSortedVar x t False = show x ++ ":" ++ show t
@@ -103,9 +98,6 @@ instance Show K.Kind where
 showBind :: (Show a, Show b, Show c) => a -> b -> Bool -> String -> c -> String
 showBind var sort paren arrow term =
   showSortedVar var sort paren ++ spaced arrow ++ show term
-
--- instance Show t => Show (K.Bind t) where
---   show (K.Bind _ a k t) = showBind a k "=>" t
 
 showBindType :: Bind K.Kind T.Type -> String
 showBindType (Bind _ a k t) = showBind a k False "." t -- ∀ a:k . t

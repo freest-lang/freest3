@@ -155,9 +155,9 @@ hasWarnings = not . null . warnings
 addWarning :: S.MonadState (FreestS a) m =>  WarningType -> m ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
 
--- | Fresh var
-freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
-freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
+-- -- | Fresh var
+-- freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
+-- freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | RUNOPTS, Move to other module ???
 

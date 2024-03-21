@@ -16,17 +16,16 @@ module Syntax.Base
   , Multiplicity(..)
   , Bind(..)
   , Variable(..)
+  , Span(..)
+  , Located(..)
+  , defaultSpan
   , intern
   , extern
   , mkVar
   , mkNewVar
-  , Span(..)
-  , defaultSpan
-  , Located(..)
   , isWild
 ) where
-
-import           Data.Char ( isDigit )
+import Data.Char (isDigit)
 
 -- Default value for the various syntactic categories
 
@@ -37,16 +36,18 @@ class Default t where
 
 type Pos = (Int, Int)
 
--- Location information for the various syntactic categories
+-- Span: the name of the module plus start and end position
 
 data Span = Span
-  { startPos   :: Pos
+  { moduleName :: FilePath
+  , startPos   :: Pos
   , endPos     :: Pos
-  , moduleName :: FilePath
   } deriving (Eq, Ord)
 
 defaultSpan :: Span
-defaultSpan = Span (0, 0) (0, 0) "<default>"
+defaultSpan = Span "<default>" (0, 0) (0, 0)
+
+-- The span of the various syntactic categories
 
 class Located t where
   getSpan :: t -> Span
@@ -55,45 +56,43 @@ class Located t where
 
 data Multiplicity = Un | Lin deriving Eq
 
--- Variables for types and programs
+-- Variables for types and expressions
 
-data Variable = Variable Span String
+data Variable = Variable Span String Int
 
 instance Eq Variable where
   x == y = intern x == intern y
-  
+ 
 instance Ord Variable where
   x <= y = intern x <= intern y
 
 instance Located Variable where
-  getSpan (Variable s _) = s
+  getSpan (Variable s _ _) = s
 
 instance Default Variable where
   omission s = mkVar s "<default>"
 
 -- The internal representation of a variable
 intern :: Variable -> String
-intern (Variable _ x) = x
+intern (Variable _ str (-1)) = str -- We need this because renaming comes to late; renameState should be move to a position after parse
+intern (Variable _ _ n) = show n
 
 -- The program-level representation of a variable
 extern :: Variable -> String
-extern (Variable _ x) = showVar x
+extern (Variable _ str _) = str
+-- extern = intern -- for debugging purposes
 
-showVar :: String -> String
-showVar = dropWhile (\c -> isDigit c || c == '#')
-
--- Making a variable from a string
+-- Making a variable from a span and string
 mkVar :: Span -> String -> Variable
-mkVar = Variable
+mkVar s str = Variable s str (-1)
 
--- Making a new variable from a given variable. The new variable is unique if
--- the integer is
+-- Making a variable from an integer and a variable. The new variable is
+-- unique if the integer is.
 mkNewVar :: Int -> Variable -> Variable
-mkNewVar next (Variable s str) = Variable s (show next ++ '#' : showVar str)
+mkNewVar next (Variable s str _) = Variable s str next
 
 isWild :: Variable -> Bool
-isWild (Variable _ x) = x == "_"
+isWild (Variable _ str _) = str == "_"
 
 -- Bind for (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e)
-
 data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}
