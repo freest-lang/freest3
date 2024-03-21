@@ -6,7 +6,7 @@ module Elaboration.Elaboration (elaboration) where
 import           Elaboration.Replace
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
-import           Equivalence.Normalisation ( normalise )
+import           Validation.Normalisation ( normalise )
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E

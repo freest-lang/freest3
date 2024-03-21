@@ -19,7 +19,7 @@ where
 
 import           Bisimulation.Grammar
 import           Elaboration.Replace ( changePos )
-import           Equivalence.Normalisation ( normalise )
+import           Validation.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K

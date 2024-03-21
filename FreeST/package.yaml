@@ -42,7 +42,6 @@ library:
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration   
 #    - Equivalence.Equivalence
-    - Equivalence.Normalisation
     - Syntax.Base
     - Syntax.AST
     - Syntax.Type
@@ -62,6 +61,7 @@ library:
     - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
+    - Validation.Normalisation
     - Validation.Subkind
     - Validation.Terminated
     - Validation.Contractive
