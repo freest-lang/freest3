@@ -1,6 +1,6 @@
 module Util.Error
   ( ErrorType(..)
-  , showErrors
+  , showError
   , internalError
   ) where
 
@@ -18,7 +18,7 @@ import           Data.Either.Extra (fromEither, isLeft)
 import qualified Data.Map as Map
 import           System.FilePath
 
--- | Internal errors
+-- | Format internal error
 
 internalError :: (Show a, Located a) => String -> a -> b
 internalError fun syntax =
@@ -29,15 +29,15 @@ internalError fun syntax =
     ++ ": "
     ++ show syntax
 
--- | Format errors
+-- | Format program error
       
-showErrors :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
-showErrors sty f tops err =
-  let mod = trimModule f (defModule $ getSpan err) in
-  let base = replaceBaseName f (fromEither mod) in
-  let modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan err) in    
-    title err sty (getSpan err) base ++ "\n  " ++ msg err sty tops modEither
+showError :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
+showError sty f tops err =
+  title err sty (getSpan err) base ++ "\n  " ++ msg err sty tops modEither
   where
+    mod = trimModule f (defModule $ getSpan err)
+    base = replaceBaseName f (fromEither mod)
+    modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan err)
     trimModule f mod
       | null mod                = Left $ takeBaseName f
       | isExtensionOf "fst" mod = Left $ takeBaseName mod
@@ -149,7 +149,7 @@ instance Located ErrorType where
   getSpan (WrongNumOfCons p _ _ _ _        ) = p
   getSpan (ExtractError p _ _ _            ) = p
   getSpan (BranchNotInScope p _ _          ) = p
-  getSpan (UnendedSession p _ _              ) = p
+  getSpan (UnendedSession p _ _            ) = p
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p

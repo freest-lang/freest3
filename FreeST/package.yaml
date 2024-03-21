@@ -49,6 +49,7 @@ library:
     - Syntax.Expression
     - Syntax.Kind
     - Syntax.Program
+    - Syntax.MkName
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser
