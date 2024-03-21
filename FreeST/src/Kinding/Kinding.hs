@@ -91,9 +91,8 @@ synthetise' s kEnv mu@(T.Rec _ (Bind _ a k t)) = do
   if unr s kEnv mu
     then pure $ K.Kind p m K.Absorb
     else pure k'
-synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
-  (K.Kind _ m v) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ K.Kind p m v
+synthetise' s kEnv (T.Forall _ (Bind p a k t)) =
+  synthetise' (Set.insert a s) (Map.insert a k kEnv) t
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
