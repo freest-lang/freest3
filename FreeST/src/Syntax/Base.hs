@@ -74,7 +74,7 @@ instance Default Variable where
 
 -- The internal representation of a variable
 intern :: Variable -> String
-intern (Variable _ str (-1)) = str -- We need this because renaming comes to late; renameState should be move to a position after parse
+intern (Variable _ str (-1)) = str -- We need this because renaming comes too late; renameProgram should be move to a position after parse
 intern (Variable _ _ n) = show n
 
 -- The program-level representation of a variable

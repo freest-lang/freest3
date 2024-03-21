@@ -16,7 +16,7 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE InstanceSigs #-}
 
 module Typing.Rename
-  ( renameState
+  ( renameProgram
   , renameVar
   , subs
   , unfold
@@ -35,13 +35,12 @@ import qualified Typing.Substitution as Subs
 import           Typing.Phase
 import           Util.Error ( internalError )
 import           Util.State
-import           Bisimulation.Minimal 
+
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 
-renameState :: TypingState ()
-renameState = do
+renameProgram :: TypingState ()
+renameProgram = do
   -- Types
   tys <- getTypes
   -- | Why do we need to rename the tenv ??
