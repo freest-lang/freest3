@@ -22,13 +22,14 @@ module Typing.Substitution
   )
 where
 
--- import           Elaboration.Duality
-import qualified Data.Map.Strict as Map
+
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Util.Error ( internalError )
 import           Elaboration.Duality
+import           Util.Error ( internalError )
+
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 
