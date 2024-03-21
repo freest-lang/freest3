@@ -1,5 +1,5 @@
 {- |
-Module      :  Equivalence.TypeToGrammar
+Module      :  Bisimulation.TypeToGrammar
 Description :  Converting types to grammars
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -12,7 +12,7 @@ unreachable symbols
 
 {-# LANGUAGE FlexibleInstances #-}
 
-module Equivalence.TypeToGrammar
+module Bisimulation.TypeToGrammar
   ( convertToGrammar
   )
 where

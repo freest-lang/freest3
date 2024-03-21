@@ -28,19 +28,19 @@ where
 
 import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
-import           Equivalence.TypeToGrammar      ( convertToGrammar )
-import           Equivalence.AlphaEquivalence
--- import qualified Bisimulation.ThreeValuedLogic as TVL
--- import           Bisimulation.AlphaEquivalenceTrinary
-import Bisimulation.Grammar
-import Bisimulation.Norm
-import Equivalence.TypeToGrammar ( convertToGrammar )
-import qualified Validation.Subkind as SK
-import Syntax.Base (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variablesgg
-import qualified Syntax.Kind as K
-import qualified Syntax.Type as T
-
-import Data.Bifunctor
+import           Bisimulation.TypeToGrammar      ( convertToGrammar )
+import           Bisimulation.Grammar
+import           Bisimulation.Norm
+import qualified Data.Map.Strict               as Map
+import qualified Data.Set                      as Set
+import qualified Data.Sequence                 as Queue
+import           Data.Bifunctor
+import           Data.List                      ( isPrefixOf
+                                                , union, stripPrefix
+                                                )
+-- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                 hiding ( Word )
+import           Debug.Trace
 import Data.Bitraversable (bisequence)
 import Data.List ( isPrefixOf, union, stripPrefix )
 import qualified Data.Map.Strict as Map
