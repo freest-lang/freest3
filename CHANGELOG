@@ -1,3 +1,18 @@
+# Version 3.1.0
+  - New kind A for channels that may be closed
+  - `new` function is restricted to types of kind A (`new : forall a:1A . () -> (a, dualof a)`)
+  - New types: `Wait` and `Close` (for closing channels)
+  - Function `close` (for channels of type `Close`)
+  - Function `wait` (for channels of type `Wait`)
+  - Tuning error messages
+  - Tuning show for runtime values
+  - New `Float` type
+  - Floating-point arithmetic
+  - Function `consume` becomes `readApply`
+  - Function over lists `append` becomes `(++)`
+  - Sequential composition of expressions (`;`) can be used as section
+  - Bug fixes
+
 # Version 3.0.0
   - REPL (freesti)
   - New syntax for kinds: 1S and *S for linear and unrestricted session types, 1T and *T for linear and unrestricted functional types

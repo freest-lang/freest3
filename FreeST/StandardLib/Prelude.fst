@@ -367,6 +367,16 @@ receiveAndClose c =
   close c;
   x
 
+-- | Sends a value on a given channel and then waits for the channel to be
+-- | closed. Returns ().
+sendAndWait : forall a:1T . a -> !a ; Wait 1-> ()
+sendAndWait x c = c |> send x |> wait
+
+-- | Sends a value on a given channel and then closes the channel.
+-- | Returns ().
+sendAndClose : forall a:1T . a -> !a ; Close 1-> ()
+sendAndClose x c = c |> send x |> close
+
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
 receive_ : forall a:1T . *?a -> a
 receive_ c = c |> receive |> fst @a @*?a

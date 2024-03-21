@@ -191,7 +191,7 @@ or
 
 ### Program specs (valid or invalid programs)
 ```bash
-    $ stack test :programs --ta "-m SPEC_NAME"
+    $ stack test :programs --ta 1"-m SPEC_NAME"
 ```
 
 with one of the following `SPEC_NAME`s:
@@ -251,6 +251,17 @@ information available and contains links for more specific information)
 $ stack install graphmod
 $ find FreeST/src/ -name '*.hs' | xargs graphmod -q -p | xdot -
 
+# Generating documentation from FreeST source code
+
+Similarly to [Haddock](https://hackage.haskell.org/package/haddock), FreeST also has a tool to 
+  generate documentation in Markdown from source code files, for example:
+
+```
+$ runhaskell scripts/DocGen.hs FreeST/StandardLib/Prelude.fst > Prelude.md
+```
+
+Lines starting with `-- | ` are treated as documentation for what comes after it (datatype or
+  function). If a line starts with `-- # `, it will be treated as the header for a new section. 
 
 # Build & Run other tools
 
