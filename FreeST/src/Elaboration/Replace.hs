@@ -55,19 +55,25 @@ instance Replace E.Exp where
 instance Replace E.FieldMap where
   replace = mapM (\(ps, e) -> (ps, ) <$> replace e)
 
-
--- | Changing positions
--- Change position of a given type with a given position
+-- Replace the span of a type with a given span
 changePos :: Span -> T.Type -> T.Type
-changePos p (T.Int  _         ) = T.Int p
-changePos p (T.Char _         ) = T.Char p
-changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
--- Datatype
--- Skip
-changePos p (T.Semi    _ t   u) = T.Semi p t u
-changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Labelled _ s   m) = T.Labelled p s m
-changePos p (T.Rec     _ xs   ) = T.Rec p xs
-changePos p (T.Forall  _ xs   ) = T.Forall p xs
--- TypeVar
-changePos _ t                   = t
+  -- Functional Types
+changePos s (T.Int _          ) = T.Int s
+changePos s (T.Float _        ) = T.Float s
+changePos s (T.Char _         ) = T.Char s
+changePos s (T.String _       ) = T.String s
+changePos s (T.Arrow _ p t u  ) = T.Arrow s p t u
+-- changePos s (T.Arrow _ pol t u) = T.Arrow s pol (changePos s t) (changePos s u)
+changePos s (T.Labelled _ st m) = T.Labelled s st m
+  -- Session Types
+changePos s (T.Skip _         ) = T.Skip s
+changePos s (T.End _ p        ) = T.End s p
+changePos s (T.Semi _ t u     ) = T.Semi s t u
+changePos s (T.Message _ p t  ) = T.Message s p t
+  -- Polymorphism and recursive types
+changePos s (T.Forall _ b     ) = T.Forall s b
+changePos s (T.Rec _ b        ) = T.Rec s b
+changePos s (T.Var _ v        ) = T.Var s v
+  -- Type operators
+changePos s (T.Dualof _ t     ) = T.Dualof s t
+-- changePos _ t                   = t
