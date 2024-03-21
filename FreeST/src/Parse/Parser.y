@@ -12,7 +12,7 @@ import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Parse.Phase
+import           Parse.Phase hiding (moduleName)
 import           Util.State
 import           Syntax.AST
   
@@ -552,7 +552,7 @@ parseDefs s filename input =
 parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
   let filename = getFName initial  
---  s <- parseProgram (initial {moduleName = Nothing})   
+--  s <- parseProgram (initial {B.moduleName = Nothing})   
   s <- parseProgram (setModule initial Nothing)
   let baseName = takeBaseName (getFName s)
   case getModule s of
@@ -563,41 +563,41 @@ parseAndImport initial = do
   where
     doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
     doImports _ _ [] s = return s
-    doImports defModule imported (curImport:toImport) s
-      | curImport `Set.member` imported = doImports defModule imported toImport s
+    doImports moduleName imported (curImport:toImport) s
+      | curImport `Set.member` imported = doImports moduleName imported toImport s
       | otherwise = do
-          let fileToImport = replaceBaseName defModule curImport -<.> "fst"
+          let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
           exists <- doesFileExist fileToImport
           if exists then
-            importModule s fileToImport curImport defModule imported toImport
+            importModule s fileToImport curImport moduleName imported toImport
           else do
             fileToImport <- getDataFileName $ curImport -<.> "fst"
             isStdLib <- doesFileExist fileToImport
             if isStdLib then
-              importModule s fileToImport curImport defModule imported toImport                
+              importModule s fileToImport curImport moduleName imported toImport                
             else 
-              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
+              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}
 
     importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
-    importModule s fileToImport curImport defModule imported toImport = do
+    importModule s fileToImport curImport moduleName imported toImport = do
       s' <- parseProgram (setModule s Nothing & setFName fileToImport)
       let modName = fromJust $ getModule s'
       if curImport /= modName then
-        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
+        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
       else
-        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
+        doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
 
 
 -- TODO: test MissingModHeader
 
-{-      case moduleName s' of
+{-      case B.moduleName s' of
         Just modName -> 
           if curImport /= modName then
-            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
+            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
           else
-            doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+            doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
         Nothing ->
-            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
+            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{moduleName} curImport]}
 -}   
 
           

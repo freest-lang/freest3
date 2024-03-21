@@ -61,11 +61,11 @@ instance Default Type where
   omission = Int
 
 instance Located Type where
-  getSpan (Int  p       ) = p
-  getSpan (Float p      ) = p
-  getSpan (Char p       ) = p
-  getSpan (String p     ) = p
-  getSpan (Arrow p _ _ _) = p
+  getSpan (Int  p        ) = p
+  getSpan (Float p       ) = p
+  getSpan (Char p        ) = p
+  getSpan (String p      ) = p
+  getSpan (Arrow p _ _ _ ) = p
   getSpan (Labelled p _ _) = p
   getSpan (Skip p        ) = p
   getSpan (End p _       ) = p
@@ -74,13 +74,13 @@ instance Located Type where
   getSpan (Forall p _    ) = p
   getSpan (Rec p _       ) = p
   getSpan (Var p _       ) = p
-  getSpan (Dualof p _   ) = p
+  getSpan (Dualof p _    ) = p
 
 -- Derived forms
-unit :: Span -> Type 
-unit s = Labelled s Record Map.empty 
-
 tuple :: Span -> [Type] -> Type
-tuple s ts = Labelled s Record (tupleTypeMap ts)
-  where tupleTypeMap :: [Type] -> TypeMap
-        tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
+tuple s ts = Labelled s Record tupleTypeMap
+  where tupleTypeMap =
+          Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
+
+unit :: Span -> Type 
+unit s = tuple s []

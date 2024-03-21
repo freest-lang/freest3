@@ -276,3 +276,6 @@ Skip
 (rec a:1S . &{A: a})
 (rec a:*S . &{A: a})
 
+[]
+(Int, Int)
+((), ())

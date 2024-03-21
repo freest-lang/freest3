@@ -1,3 +1,29 @@
+-- WARNING - Do not use the Prelude
 
 -- Discard linear values
+
 let (_, _) = new @!Int () in ()
+
+-- Tuples of different types
+
+(Λa:1T => \x:a -> x) @((), ()) (True, False)
+
+(Λa:1T => \x:a -> x) @(Bool, Bool) ((), ())
+
+(Λa:1T => \x:a -> x) @(Int, Int, Int) ((), (), ())
+
+(Λa:1T => \x:a -> x) @((), (), ()) (5, 6, 7)
+
+(Λa:1T => \x:a -> x) @(Int, (Int, Int)) ((), ((), ()))
+
+(Λa:1T => \x:a -> x) @((Int, Int), Int) (((), ()), ())
+
+(Λa:1T => \x:a -> x) @(((), ()), ()) ((5, 6), 7)
+
+(Λa:1T => \x:a -> x) @((), ((), ())) (5, (6, 7))
+
+(Λa:1T => \x:a -> x) @((), ()) (5, 6)
+
+(Λa:1T => \x:a -> x) @(Int, Int) ((), ())
+
+(\x:(Int, Int) -> x) ((), ())

@@ -14,92 +14,86 @@ module Syntax.Base
   ( Default(..)
   , Pos
   , Multiplicity(..)
-  , defaultPos
-  , negPos
   , Bind(..)
   , Variable(..)
   , intern
+  , extern
   , mkVar
   , mkNewVar
   , Span(..)
   , defaultSpan
   , Located(..)
-  , negSpan
   , isWild
 ) where
 
--- Default for the various syntactic categories
+import           Data.Char ( isDigit )
+
+-- Default value for the various syntactic categories
 
 class Default t where
   omission :: Span -> t
 
--- Position
+-- Position: line and column
 
 type Pos = (Int, Int)
 
--- class Position t where
---   pos :: t -> Pos  
-
-defaultPos :: Pos
-defaultPos = (0, 0)
-
-negPos :: Pos -> Pos
-negPos (i, j) = (negate i, negate j)
-
 -- Span
-
-class Located t where
-  getSpan :: t -> Span
 
 data Span = Span
   { startPos     :: Pos
   , endPos       :: Pos
-  , defModule    :: FilePath
+  , moduleName    :: FilePath
   } deriving (Eq, Ord)
 
 defaultSpan :: Span
-defaultSpan = Span defaultPos defaultPos ""
+defaultSpan = Span (0, 0) (0, 0) "<default>"
 
-negSpan :: Span -> Span
-negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
+class Located t where
+  getSpan :: t -> Span
 
 -- Multiplicity for types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
--- Type and program variable
+-- Variables for types and programs
+
 data Variable = Variable Span String
 
 instance Eq Variable where
-  (Variable _ x) == (Variable _ y) = x == y
+  x == y = intern x == intern y
   
 instance Ord Variable where
-  (Variable _ x) <= (Variable _ y) = x <= y
+  x <= y = intern x <= intern y
 
--- instance Position Variable where
---   pos (Variable p _) = startPos p
-  
 instance Located Variable where
-  getSpan (Variable p _) = p
+  getSpan (Variable s _) = s
 
 instance Default Variable where
-  omission p = mkVar p "omission"
+  omission s = mkVar s "<default>"
 
--- The string, internal representation of a variable
+-- The internal representation of a variable
 intern :: Variable -> String
 intern (Variable _ x) = x
 
--- Making a variable from a string, type or program
+-- The program-level representation of a variable
+extern :: Variable -> String
+extern (Variable _ x) = showVar x
+
+showVar :: String -> String
+showVar = dropWhile (\c -> isDigit c || c == '#')
+
+-- Making a variable from a string
 mkVar :: Span -> String -> Variable
 mkVar = Variable
+
+-- Making a new variable from a given variable. The new variable is unique if
+-- the integer is
+mkNewVar :: Int -> Variable -> Variable
+mkNewVar next (Variable s str) = Variable s (show next ++ '#' : showVar str)
 
 isWild :: Variable -> Bool
 isWild (Variable _ x) = x == "_"
 
--- Making a new variable from a given variable. The variable is
--- unique up to the point where the integer is
-mkNewVar :: Int -> Variable -> Variable
-mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
+-- Bind for (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e)
 
--- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
 data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}
