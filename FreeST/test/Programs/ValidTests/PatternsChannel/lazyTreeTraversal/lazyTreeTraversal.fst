@@ -31,13 +31,11 @@ type XploreNodeChan : 1S = &{
  }
 
 -- The client. Send the tree as requested by the server.
-mutual { exploreTree : forall a:1S . XploreTreeChan;a -> Tree 1-> a
-       , exploreNode : forall a:1S . XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
-       }
-
+exploreTree : forall a:1S . XploreTreeChan;a -> Tree 1-> a
 exploreTree c Leaf         = select LeafC c
 exploreTree c (Node x l r) = exploreNode@a (select NodeC c) x l r
 
+and exploreNode : forall a:1S . XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
 exploreNode (Value c) x l r = exploreNode@a (send x c) x l r
 exploreNode (Left  c) x l r = let c = exploreTree@(XploreNodeChan;a) c l in
                               exploreNode@a c x l r
@@ -47,13 +45,11 @@ exploreNode (Exit  c) x l r = c
 
 -- The server. Compute the product of the values in a tree;
 -- explicitely request the values; stop as soon a zero is received
-mutual { server : forall a:1S . dualof XploreTreeChan ;a -> Int 1-> (a, Int)
-       , serverNode : forall a:1S . dualof XploreNodeChan;a -> Int 1-> (a, Int)
-       }
-
+server : forall a:1S . dualof XploreTreeChan ;a -> Int 1-> (a, Int)
 server (LeafC c1) n = (c1, n)
 server (NodeC c1) n = serverNode@a c1 n
 
+and serverNode : forall a:1S . dualof XploreNodeChan;a -> Int 1-> (a, Int)
 serverNode c n =
   let (m, c) = receive (select Value c) in
   if m == 0

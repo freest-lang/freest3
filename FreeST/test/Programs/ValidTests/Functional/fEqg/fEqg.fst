@@ -1,8 +1,8 @@
-main : Int
-main = f 5
+g : Int -> Int
+g x = x
 
 f : Int -> Int
 f = g
 
-g : Int -> Int
-g x = x
+main : Int
+main = f 5

@@ -1,10 +1,10 @@
 type Ping : 1S = !Int ; Pong
 type Pong : 1S = ?Int ; Ping
 
-mutual { ping : Int -> Ping -> Diverge
-       , pong : Pong -> Diverge
-       }
+ping : Int -> Ping -> Diverge
 ping n c = c |> send n |> pong
+
+and pong : Pong -> Diverge
 pong c =
   let (n, c) = receive c in
   print @Int n;

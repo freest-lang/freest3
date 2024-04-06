@@ -2,14 +2,14 @@
 
 type Counter : *S = *?Int
 
-initCounter : Counter
-initCounter = 
-    forkWith @Counter @() (\ch:*!Int 1-> runCounter 0 ch)
-
 runCounter : Int -> dualof Counter -> ()
 runCounter i counter =
     send_ @Int i counter;
     runCounter (i+1) counter
+
+initCounter : Counter
+initCounter = 
+    forkWith @Counter @() (\ch:*!Int 1-> runCounter 0 ch)
 
 ---------------------------------- SharedQueue ----------------------------------
 
@@ -22,23 +22,23 @@ runCounter i counter =
 
 {- nodes -}
 
-runHeadNode : forall a:1T . (rec x:1S . ?a; ?x; End) -> dualof *?a 1-> ()
+runHeadNode : forall a:1T . (rec x:1S . ?a; ?x; Wait) -> dualof *?a 1-> ()
 runHeadNode prev head = 
     -- receive value |> next node endpoint
     let (i, prev) = receive prev in
     let (prev', prev) = receive prev in
-    close prev;
+    wait prev;
     -- send value to client
     send_ @a i head;
     -- run node with new endpoint
     runHeadNode @a prev' head
 
-runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x; End) -> dualof *!a 1-> ()
+runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x; Wait) -> dualof *!a 1-> ()
 runTailNode next tail =
     let i = receive_ @a tail in
     let next' = 
-        forkWith @dualof (rec x:1S . ?a; ?x; End) @()
-            (\c:(rec x:1S . ?a; ?x; End) 1-> send i next |> send c |> close) 
+        forkWith @dualof (rec x:1S . ?a; ?x; Wait) @()
+            (\c:(rec x:1S . ?a; ?x; Wait) 1-> send i next |> send c |> close) 
         in
     runTailNode @a next' tail 
 
@@ -46,7 +46,7 @@ runTailNode next tail =
 
 initQueue : forall a:1T . () -> (*?a, *!a)
 initQueue _ =
-    let (internalC, internalS) = new @(rec x:1S . ?a; ?x; End) () in
+    let (internalC, internalS) = new @(rec x:1S . ?a; ?x; Wait) () in
     ( forkWith @*?a @() (runHeadNode @a internalC)
     , forkWith @*!a @() (runTailNode @a internalS)
     )
@@ -70,17 +70,10 @@ data List = Nil
 
 type SharedList : *S = *?ListC
 type ListC : 1S = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
-                   , Close: End 
+                   , Stop: Close  
                    }
 
 {- list server -}
-
-initList : SharedList
-initList = forkWith @SharedList @() runListServer
-
-runListServer : dualof SharedList 1-> ()
-runListServer ch =
-    runServer @ListC @List runListService Nil ch
 
 runListService : List -> dualof ListC 1-> List
 runListService list ch = 
@@ -100,10 +93,18 @@ runListService list ch =
             |> hCloseOut;
             --
             runListService (Cons (productId, issue, rmaNumber) list) ch,
-        Close c ->
-            close c; 
+        Stop c ->
+            wait c; 
             list
     }
+
+runListServer : dualof SharedList 1-> ()
+runListServer ch =
+    runServer @ListC @List runListService Nil ch
+
+
+initList : SharedList
+initList = forkWith @SharedList @() runListServer
 
 {- client functions -}
 
@@ -116,7 +117,7 @@ append ch triple =
     |> send productId
     |> send issue
     |> send rmaNumber
-    |> select Close
+    |> select Stop
     |> close 
 
 ---------------------------------- SharedMap ----------------------------------
@@ -187,7 +188,7 @@ fromJustOrDefault default maybeVal =
 type SharedMap : *S = *?MapC
 type MapC : 1S = +{ Put: !ProductName; ValueC     ; MapC
                   , Get: !ProductName; MaybeValueC; MapC
-                  , Close: End
+                  , Stop: Close
                   }
 
 type ValueC : 1S = !Amount; !Price
@@ -197,13 +198,6 @@ type MaybeValueC : 1S = &{ JustVal: dualof ValueC
                          }
 
 {- map server -}
-
-initMapWith : Map -> SharedMap
-initMapWith map = forkWith @SharedMap @() (runMapServer map)
-
-runMapServer : Map -> dualof SharedMap 1-> ()
-runMapServer map ch = 
-    runServer @MapC @Map runMapService map ch
 
 runMapService : Map -> dualof MapC 1-> Map
 runMapService map ch =
@@ -225,10 +219,17 @@ runMapService map ch =
                             send price
                      } in
             runMapService map ch,
-        Close ch -> 
-            close ch; 
+        Stop ch -> 
+            wait ch; 
             map
     }
+
+runMapServer : Map -> dualof SharedMap 1-> ()
+runMapServer map ch = 
+    runServer @MapC @Map runMapService map ch
+
+initMapWith : Map -> SharedMap
+initMapWith map = forkWith @SharedMap @() (runMapServer map)
 
 {- client functions -}
 
@@ -258,45 +259,25 @@ getLin pName ch =
 {- channel types -}
 
 type Bank : *S = *?BankService
-type BankService : 1S = {- CreatePayment: -} !Price; ?PaymentC; End
+type BankService : 1S = {- CreatePayment: -} !Price; ?PaymentC; Close 
 
-type PaymentC : 1S = !CCNumber; !CCCode; End 
+type PaymentC : 1S = !CCNumber; !CCCode; Close 
 
 {- bank worker -}
 
-
-initBank : Bank
-initBank = 
-    -- runWith [Bank] $
-    --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
-    let (c, s) = new @Bank () in
-    parallel @() 2 (\_:() -> bankWorker s);
-    c
-
-bankWorker : dualof Bank -> ()
-bankWorker =
-    runServer @BankService @() (runBankService) ()
-
 -- TODO: Expand this function
 -- | Executes a function
-runWith : forall a:1S . (dualof a 1-> ()) -> a
+runWith : forall a:1A . (dualof a 1-> ()) -> a
 runWith f =
     let (c, s) = new @a () in
     f s;
     c
 
-runBankService : () -> dualof BankService 1-> ()
-runBankService _ ch =
-    let (price, ch) = receive ch in
-    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch |> close)
-    |> runPayment price
-    
-
 runPayment : Price -> dualof PaymentC -> ()
 runPayment price ch =
     -- mock up 
     let (ccnumber, ch) = receive ch in
-    let cccode = receiveAndClose @Int ch in 
+    let cccode = receiveAndWait @Int ch in 
     -- logging
     receive_ @OutStream stdout
     |> hPutStr "Payment processed \t @ amount: "
@@ -306,6 +287,26 @@ runPayment price ch =
     |> hPutStr ", credit card code: "
     |> hPutStrLn (show @Int cccode)
     |> hCloseOut
+
+
+runBankService : () -> dualof BankService 1-> ()
+runBankService _ ch =
+    let (price, ch) = receive ch in
+    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch |> wait)
+    |> runPayment price
+
+bankWorker : dualof Bank -> ()
+bankWorker =
+    runServer @BankService @() (runBankService) ()
+
+
+initBank : Bank
+initBank = 
+    -- runWith [Bank] $
+    --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
+    let (c, s) = new @Bank () in
+    parallel @() 2 (\_:() -> bankWorker s);
+    c
 
 {- client functions -}
 
@@ -330,17 +331,17 @@ type CCCode = Int
 type TechStore   : *S = *?TechService
 type TechService : 1S = +{ Buy: ?BuyC
                          , Rma: ?RmaC
-                         }
+                         };Close 
 
 type BuyC : 1S = !ProductName; AvailabilityC
-type RmaC : 1S = !ProductId; !Issue; ?RmaNumber; End 
+type RmaC : 1S = !ProductId; !Issue; ?RmaNumber; Close  
 
 type AvailabilityC : 1S = &{ Available : ?Price; CheckoutC
-                           , OutOfStock: End
+                           , OutOfStock: Wait 
                            }
 
-type CheckoutC : 1S = +{ Confirm: ?PaymentC; End 
-                       , Cancel : End
+type CheckoutC : 1S = +{ Confirm: ?PaymentC; Close 
+                       , Cancel : Close
                        }
 
 
@@ -354,11 +355,11 @@ runStoreFront buyQueue rmaQueue store =
     match accept @TechService store with {
         Buy ch ->
             let (c, s) = new @BuyC () in
-            send c ch;
+            send c ch |> wait;
             enqueue @dualof BuyC s buyQueue,
         Rma ch ->
             let (c, s) = new @RmaC () in
-            send c ch;
+            send c ch |> wait;
             enqueue @dualof RmaC s rmaQueue
             -- enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (accept [RmaC, Skip] ch)) rmaQueue
     };
@@ -366,24 +367,6 @@ runStoreFront buyQueue rmaQueue store =
 
 {- buy workers -}
 
-buyWorker : BuyQueue -> SharedMap -> Bank -> ()
-buyWorker buyQueue map bank = 
-    let ch = dequeue @dualof BuyC buyQueue in
-    --
-    let (pName, ch) = receive ch in
-    -- (try to) reserve from stock
-    let (amount, price) = fromJustOrDefault (0, 0) $ getFromStock pName map in
-    if amount < 1
-    then select OutOfStock ch |> close 
-    else
-        let ch = select Available ch |> send price in
-            match ch with {
-                Confirm ch -> send (createPayment price bank) ch |> close,
-                Cancel ch  -> close ch; returnToStock pName map
-            }
-    ;
-    --
-    buyWorker buyQueue map bank
 
 getFromStock : ProductName -> SharedMap -> MaybeValue
 getFromStock pName map =
@@ -401,10 +384,9 @@ getFromStock pName map =
             then putLin pName (amount-1, price) mapS
             -- if no stock, nothing
             else mapS
-    } |> select Close |> close ;
+    } |> select Stop |> close ;
     --
     maybeVal
-    
 
 returnToStock : ProductName -> SharedMap -> ()
 returnToStock pName map =
@@ -417,7 +399,26 @@ returnToStock pName map =
         JustValue val -> 
             let (amount, price) = val in
             putLin pName (amount+1, price) mapS
-    } |> select Close |> close 
+    } |> select Stop |> close 
+
+buyWorker : BuyQueue -> SharedMap -> Bank -> ()
+buyWorker buyQueue map bank = 
+    let ch = dequeue @dualof BuyC buyQueue in
+    --
+    let (pName, ch) = receive ch in
+    -- (try to) reserve from stock
+    let (amount, price) = fromJustOrDefault (0, 0) $ getFromStock pName map in
+    if amount < 1
+    then select OutOfStock ch |> close 
+    else
+        let ch = select Available ch |> send price in
+            match ch with {
+                Confirm ch -> send (createPayment price bank) ch |> wait,
+                Cancel ch  -> wait ch; returnToStock pName map
+            }
+    ;
+    --
+    buyWorker buyQueue map bank
 
 {- rma workers -}
 
@@ -429,11 +430,19 @@ rmaWorker rmaQueue counter rmaList =
     let (issue    , ch) = receive ch in
     let rmaNumber = receive_ @Int counter in
     append rmaList (productId, issue, rmaNumber);
-    send rmaNumber ch |> close ;
+    send rmaNumber ch |> wait ;
     --
     rmaWorker rmaQueue counter rmaList
 
 {- store setup -}
+
+initialStock : Map
+initialStock = 
+    mapPut 'C' (2, 20) $
+    mapPut 'B' (3, 5 ) $
+    mapPut 'A' (1, 50) $
+    Empty
+
 
 setupStore : Bank -> TechStore 
 setupStore bank =
@@ -449,30 +458,19 @@ setupStore bank =
     -- store front
     forkWith @TechStore @() $ runStoreFront buyQueue rmaQueue
 
-initialStock : Map
-initialStock = 
-    mapPut 'C' (2, 20) $
-    mapPut 'B' (3, 5 ) $
-    mapPut 'A' (1, 50) $
-    Empty
-
-
 ---------------------------------- Clients ----------------------------------
 
 {- buy clients -}
 
 client0 : TechStore -> ()
 client0 ch = 
-    -- wait to be served by store
-    let store = receive_ @TechService ch in
-    -- go to the buy queue
-    let (buyC, _) = receive $ select Buy store in
-    -- wait & do my business
-    -- ask for product 'A'
-    let buyC = send 'A' buyC in
+    let buyC = receive_ @TechService ch -- wait to be served by store
+               |> select Buy            -- go to the buy queue
+               |> receiveAndClose @BuyC  
+               |> send 'A' in 
     match buyC with {
         OutOfStock c ->
-            close c; 
+            wait c; 
             putStrLn "[Client 0] I was unable to buy product 'A'",
         Available buyC -> 
             let (price, buyC) = receive buyC in
@@ -481,7 +479,7 @@ client0 ch =
             then buyC |> select Cancel
                       |> close
             else buyC |> select Confirm 
-                      |> receiveAndClose @(PaymentC;End)
+                      |> receiveAndClose @(PaymentC;Close)
                       |> send 123123123
                       |> send 123 
                       |> close
@@ -490,20 +488,21 @@ client0 ch =
 {- rma clients -}
 
 client1 : TechStore -> ()
-client1 ch =
-    -- wait to be served by store
-    let store = receive_ @TechService ch in
-    -- go to the rma queue
-    let (rmaC, _) = receive $ select Rma store in
-    -- wait & do my business
-    let rmaId = rmaC |> send 1234567890
-                     |> send "Monitor flickers when punched"
-                     |> receiveAndClose @Int in
+client1 ch = 
+    ch |> receive_ @TechService 
+       |> select Rma 
+       |> receiveAndClose @RmaC 
+       |> send 1234567890
+       |> send "Monitor flickers when punched"
+       |> receiveAndClose @Int; 
     ()
 
 ---------------------------------- Main ----------------------------------
 
 {- main -}
+
+diverge : () -> ()
+diverge u = diverge u
 
 main : ()
 main =
@@ -512,7 +511,4 @@ main =
     fork (\_:() 1-> client0 store);
     fork (\_:() 1-> client0 store);
     fork (\_:() 1-> client1 store);
-    diverge 
-
-diverge : ()
-diverge = diverge
+    diverge ()

@@ -31,6 +31,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
+import Util.State (prependEOs)
 
 isDev :: Bool
 isDev = False
@@ -47,11 +48,9 @@ checkAndRun runOpts = do
   let sigs = Map.keysSet (noConstructors (getTypesS s1) (getSignaturesS s1))
   let penv = Map.keysSet (getDefsS s1)
   let bs = Set.difference sigs penv
-
   -- | Parse
-  s2 <- parseAndImport s1{extra = (extra s1){runOpts}}
+  s2 <- (`prependEOs` s1) <$> parseAndImport s1{extra = (extra s1){runOpts}}
   when (hasErrors s2) (die $ getErrors runOpts s2)
-
   -- | PatternMatch
   let patternS = patternMatch s2
   when (hasErrors patternS) (die $ getErrors runOpts patternS)

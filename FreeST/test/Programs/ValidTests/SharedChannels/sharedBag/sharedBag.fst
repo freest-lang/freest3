@@ -1,5 +1,5 @@
 -- | The client view of a linear interaction with a bag (multiset) of integer values
-type Bag:1S = +{Put: !Int, Get: ?Int};End 
+type Bag:1S = +{Put: !Int, Get: ?Int};Close 
   
 -- | The client view of a shared interaction with a bag
 type SharedBag = *?Bag
@@ -9,9 +9,14 @@ type State = (*?Int, *!Int)
 
 -- Server side
 
--- | An empty shared bag
-emptyBagServer : dualof SharedBag -> Diverge
-emptyBagServer = bagServer (new @*?Int ())
+-- | Handling a linear interaction with a particular client
+handleClient : State -> dualof Bag -> ()
+handleClient state chan =
+  let (readFromState, writeOnState) = state in
+  match chan with
+    { Get chan -> let (n, _) = receive readFromState in send n chan |> wait 
+    , Put chan -> let _ = send (receiveAndWait @Int chan) writeOnState in ()
+    }
 
 -- | A shared bag server with a state
 bagServer : State -> dualof SharedBag -> Diverge
@@ -21,14 +26,9 @@ bagServer state serverChannel =
   fork (\_:() 1-> handleClient state serverSide);
   bagServer state serverChannel
 
--- | Handling a linear interaction with a particular client
-handleClient : State -> dualof Bag -> ()
-handleClient state chan =
-  let (readFromState, writeOnState) = state in
-  match chan with
-    { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
-    , Put chan -> let _ = send (receiveAndClose @Int chan) writeOnState in ()
-    }
+-- | An empty shared bag
+emptyBagServer : dualof SharedBag -> Diverge
+emptyBagServer = bagServer (new @*?Int ())
 
 -- Client side, utilities
 

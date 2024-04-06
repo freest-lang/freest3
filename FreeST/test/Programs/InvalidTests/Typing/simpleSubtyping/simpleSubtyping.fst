@@ -1,13 +1,13 @@
-writer : +{C: Skip, D: Skip} -> Skip
-writer c = select c D
+writer : +{C: Close, D: Close} -> ()
+writer c = c |> select D |> close 
 
-reader : &{C: Skip} -> Skip
+reader : &{C: Wait} -> ()
 reader c = match c with {
-    C c -> c
+    C c -> wait c
   }
   
-main : Skip
+main : ()
 main =
-  let (w, r) = new @+{C: Skip, D: Skip} () in
-  let _ = fork @Skip (\_:() 1-> writer w) in
+  let (w, r) = new @+{C: Close, D: Close} () in
+  let _ = fork @() (\_:() 1-> writer w) in
   reader r

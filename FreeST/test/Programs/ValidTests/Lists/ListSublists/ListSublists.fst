@@ -1,5 +1,12 @@
 import List
 
+equalPair : ([Int], [Int]) -> ([Int], [Int]) -> Bool
+equalPair p1 p2 = 
+    let (xs , ys ) = p1 in
+    let (xs', ys') = p2 in
+    equal xs xs' && equal ys ys'
+
+
 main : Bool
 main =
     let list = [1, 2, 3, 4] in 
@@ -41,9 +48,3 @@ main =
     equalPair (break (<0) list) (list, []) &&
     equalPair (break (>0) list) ([], list) &&
     equalPair (break (>=3) list) ([1, 2], [3, 4])
-
-equalPair : ([Int], [Int]) -> ([Int], [Int]) -> Bool
-equalPair p1 p2 = 
-    let (xs , ys ) = p1 in
-    let (xs', ys') = p2 in
-    equal xs xs' && equal ys ys'

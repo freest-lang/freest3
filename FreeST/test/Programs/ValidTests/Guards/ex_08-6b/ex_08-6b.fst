@@ -4,13 +4,6 @@ data List = Nil | List Int List | ListC Char List
 data Nbr = E | Nbr Int Nbr
 data MaybeList = Empty | Only List
 
-jogar : Nbr -> List -> Int -> MaybeList
-jogar num list x =
-    let jogada = jogar' num list x in
-    if isCompleted jogada
-        then Empty
-        else Only jogada
-
 jogar' : Nbr -> List -> Int -> List
 jogar' E             list            x = Nil
 jogar' (Nbr y rest1) Nil             x = Nil
@@ -24,13 +17,20 @@ isCompleted Nil            = True
 isCompleted (List  _ rest) = isCompleted rest
 isCompleted (ListC _ _)    = False
 
-jogarJogo : Nbr -> List -> Nbr -> List
-jogarJogo num l E = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' Nil))))
-jogarJogo num l (Nbr x rest) = jogarJogo' num l rest $ jogar num l x
+jogar : Nbr -> List -> Int -> MaybeList
+jogar num list x =
+    let jogada = jogar' num list x in
+    if isCompleted jogada
+        then Empty
+        else Only jogada
 
 jogarJogo' : Nbr -> List -> Nbr -> MaybeList -> List
 jogarJogo' num l rest Empty       = ListC 'A' (ListC 'c' (ListC 'e' (ListC 'r' (ListC 't' (ListC 'o' (ListC 'u' Nil))))))
 jogarJogo' num l rest (Only list) = jogarJogo num list rest
+
+and jogarJogo : Nbr -> List -> Nbr -> List
+jogarJogo num l E = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' Nil))))
+jogarJogo num l (Nbr x rest) = jogarJogo' num l rest $ jogar num l x
 
 create : Int -> List
 create n | n == 0 = Nil | otherwise = ListC '-' (create (n-1))

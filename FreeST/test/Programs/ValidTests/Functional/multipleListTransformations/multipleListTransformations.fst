@@ -8,16 +8,16 @@ sum' l =
     Cons x y -> x + sum' y
   }
 
--- sumNegatives -
-sumNegatives : IntList -> Int
-sumNegatives l = sum' (toNegative l)
-
 toNegative : IntList -> IntList
 toNegative l =
     case l of {
         Nil -> Nil,
         Cons x y -> Cons (-x) (toNegative y)
     } 
+
+-- sumNegatives -
+sumNegatives : IntList -> Int
+sumNegatives l = sum' (toNegative l)
 
 -- specInterchange (specific)
 specInterchange : IntList -> (Int -> Int -> Int) -> (Int -> Int -> Int) -> Int

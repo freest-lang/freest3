@@ -43,15 +43,14 @@ ftpd pid b =
 
 -- |An FTP thread: receive a request from the demon;
 -- |authenticate the client; pass the thread to the actions loop
-mutual { ftpThread : State -> FTPThread -> Diverge
-       , actions : State -> dualof FTPSession -> FTPThread 1-> Diverge
-       }
+ftpThread : State -> FTPThread -> Diverge
 ftpThread state b =
   -- TODO: authenticate the client
   actions state (receive_ @dualof FTPSession b) b
 
 -- |A linear interaction with the client;
 -- |once done become an FTP thread
+and actions : State -> dualof FTPSession -> FTPThread 1-> Diverge
 actions state s b =
   match s with
     { Get s ->

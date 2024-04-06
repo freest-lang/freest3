@@ -5,13 +5,13 @@ sum' : IntList -> Int
 sum' Nil        = 0
 sum' (Cons x y) = x + sum' y
 
--- sumNegatives -
-sumNegatives : IntList -> Int
-sumNegatives l = sum' (toNegative l)
-
 toNegative : IntList -> IntList
 toNegative Nil        = Nil
 toNegative (Cons x y) = Cons (-x) (toNegative y)
+
+-- sumNegatives -
+sumNegatives : IntList -> Int
+sumNegatives l = sum' (toNegative l)
 
 -- specInterchange (specific)
 specInterchange : IntList -> (Int -> Int -> Int) -> (Int -> Int -> Int) -> Int

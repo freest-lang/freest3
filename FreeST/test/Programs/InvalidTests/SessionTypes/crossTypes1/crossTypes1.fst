@@ -1,7 +1,7 @@
 data List = Cons Int List | Nil
 
 type ListOut : 1S = +{Nil : Skip, Cons: !Int;ListOut}
-type ListIn = dualof ListOut
+type ListIn  : 1S = dualof ListOut
 
 rcvList : forall a : 1S . ListOut;a -> (List, a)
 rcvList c =
@@ -17,16 +17,16 @@ sendList : forall a : 1S . ListIn;a -> List -> a
 sendList c l =
   case l of {
     Cons x xs ->
-      let c = select c Cons in
-      let c = send c x in
+      let c = select Cons c in
+      let c = send x c in
       sendList @a c xs,
-    Nil       -> select c Nil
+    Nil       -> select Nil c
   }
 
 
 main : List
 main =
-  let (x, y) = new @ListOut;End () in
+  let (x, y) = new @(ListOut;Close) () in
   let _      = fork @() (\_:()-> sendList @End x aList |> close) in
   let (list, y) = rcvList @End y in
   close y; 

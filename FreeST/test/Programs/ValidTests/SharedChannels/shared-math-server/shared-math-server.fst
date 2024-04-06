@@ -2,15 +2,8 @@ type MathServer  : *S = *?MathService
 type MathService : 1S = +{ Plus   : !Int; !Int; ?Int; MathService
                          , Greater: !Int; !Int; ?Bool; MathService
                          , Neg    : !Int; ?Int; MathService
-                         , Close  : End
+                         , End    : Close 
                          }
-
-runMathServer : dualof MathServer -> ()
-runMathServer ch =
-    let (c, s) = new @MathService () in
-    let ch = send c ch in
-    runMathService s;
-    runMathServer ch
 
 runMathService : dualof MathService -> ()
 runMathService ch =
@@ -26,8 +19,15 @@ runMathService ch =
         Neg     ch -> 
             let (n1, ch) = receive ch in
             runMathService $ send (-n1) ch,
-        Close   ch -> close ch
+        End     ch -> wait ch
     }
+
+runMathServer : dualof MathServer -> ()
+runMathServer ch =
+    let (c, s) = new @MathService () in
+    let ch = send c ch in
+    runMathService s;
+    runMathServer ch
 
 client1 : MathServer -> ()
 client1 ch =
@@ -41,8 +41,8 @@ client1 ch =
                |> send n
                |> receive
                in
-    select Close c |> close;
-    printIntLn m
+    select End c |> close;
+    print @Int m
 
 client2 : MathServer -> ()
 client2 ch =
@@ -52,8 +52,8 @@ client2 ch =
                |> send 1
                |> receive
                in
-    select Close c |> close; 
-    printBoolLn b
+    select End c |> close; 
+    print @Bool b
 
 main : ()
 main =

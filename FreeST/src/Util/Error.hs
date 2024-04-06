@@ -17,6 +17,7 @@ import           Util.Message
 import           Data.Either.Extra (fromEither, isLeft)
 import qualified Data.Map as Map
 import           System.FilePath
+import Data.List (intercalate)
 
 -- | Format internal error
 
@@ -57,6 +58,7 @@ data ErrorType =
   | ParseError Span String -- String should be Token (circular import)
   | NameModuleMismatch Span FilePath FilePath
   | ImportNotFound Span FilePath FilePath
+  | CyclicDependency Span [FilePath]
   | MissingModHeader Span FilePath
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
@@ -114,6 +116,7 @@ instance Located ErrorType where
   getSpan (ParseError p _                  ) = p
   getSpan (NameModuleMismatch p _ _        ) = p
   getSpan (ImportNotFound p _ _            ) = p
+  getSpan (CyclicDependency p _    ) = p
   getSpan (MissingModHeader p _            ) = p
   getSpan (MultipleFieldDecl p _ _         ) = p
   getSpan (RedundantPMatch   p _           ) = p
@@ -170,6 +173,9 @@ instance Message ErrorType where
   msg (ImportNotFound _ m f) sty tops _ =
     "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
     "\n  Locations searched:\n\t" ++ style red sty tops f 
+  msg (CyclicDependency _ ms@(m:_)) sty tops _ =
+    "Cyclic module dependency detected: "  ++ intercalate ", " (map (style red sty tops . showModuleWithDots) ms) ++
+                                     ", "  ++ style red sty tops m
   msg (NameModuleMismatch _ m f) sty tops _ =
     "File name does not match the module name.\n    Module name: " ++
     style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")

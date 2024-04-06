@@ -15,10 +15,7 @@ type TreeListChannel : 1S = +{
 
 -- ===== SENDING =====
 
-mutual { sendTree : forall a: 1S . Tree -> TreeChannel;a -> a
-       , sendTreeList : forall a: 1S . TreeList -> TreeListChannel;a -> a
-       }
-
+sendTree : forall a: 1S . Tree -> TreeChannel;a -> a
 sendTree tree c =
   case tree of {
     Empty ->
@@ -27,6 +24,7 @@ sendTree tree c =
       sendTreeList @a children $ send i $ select Node c
   }
 
+and sendTreeList : forall a: 1S . TreeList -> TreeListChannel;a -> a
 sendTreeList list c =
   case list of {
     Nil ->
@@ -37,10 +35,7 @@ sendTreeList list c =
 
 -- ===== RECEIVING =====
 
-mutual { receiveTree : forall a: 1S . dualof TreeChannel;a -> (Tree, a)
-       , receiveTreeList : forall a: 1S . dualof TreeListChannel;a -> (TreeList, a)
-       }
-
+receiveTree : forall a: 1S . dualof TreeChannel;a -> (Tree, a)
 receiveTree c =
   match c with {
     Empty c ->
@@ -51,6 +46,7 @@ receiveTree c =
       (Node i children, c)
   }
 
+and receiveTreeList : forall a: 1S . dualof TreeListChannel;a -> (TreeList, a)
 receiveTreeList c =
   match c with {
     Nil c ->

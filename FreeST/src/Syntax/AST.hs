@@ -48,6 +48,10 @@ addSignature f t ast = ast{signatures = Map.insert f t (signatures ast)}
 addEvalOrder :: [Variable] -> AST a -> AST a
 addEvalOrder xs ast = ast{evalOrder = evalOrder ast ++ [xs]} 
 
+addLastEvalOrder :: [Variable] -> AST a -> AST a
+addLastEvalOrder xs ast = ast{evalOrder = if null eo then [xs] else init eo ++ [last eo ++ xs]}
+  where eo = evalOrder ast  
+
 addType :: Variable -> K.Kind -> T.Type -> AST a -> AST a
 addType x k t ast = ast{types = Map.insert x (k,t) (types ast)}
 

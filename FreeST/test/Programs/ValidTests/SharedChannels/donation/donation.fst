@@ -10,10 +10,10 @@ type CreditCard = String
 
 -- type Promotion : *S = *?(String, CreditCard, Int)
 type Promotion  : *S = *?Promotion'
-type Promotion' : 1S = !String; !CreditCard; !Int; End 
+type Promotion' : 1S = !String; !CreditCard; !Int; Close 
 
-type Decision : 1S = &{ Accepted: ?Promotion; End
-                      , Denied  : ?String   ; End
+type Decision : 1S = &{ Accepted: ?Promotion; Wait
+                      , Denied  : ?String   ; Wait
                       }
 
 type DonationS : *S = *!Donation
@@ -22,6 +22,11 @@ type Donation : 1S = +{ SetTitle: !String; Donation
                       , Commit  : Decision
                       }
 
+donate : Promotion -> String -> CreditCard -> Int -> ()
+donate p donor ccard amount =
+    -- let _ = send (donor, ccard, amount) p in ()
+    let (p, _) = receive p in
+    send donor p |> send ccard |> send amount |> close
 
 -- 2. One possible client
 helpSavingTheWolf : dualof DonationS -> ()
@@ -33,19 +38,13 @@ helpSavingTheWolf donationServer =
     let p = select Commit p in                                  -- commit once happy
     match p with {                                              -- wait for the outcome
         Accepted p ->                                           -- if accepted, we have three benefactors
-            let d = receiveAndClose @Promotion p in 
+            let d = receiveAndWait @Promotion p in 
             fork (\_:()1-> donate d "Benefactor1" "2345" 5);
             fork (\_:()1-> donate d "Benefactor2" "1234" 20);
             donate d "Benefactor3" "1004" 10,
         Denied p ->                                             -- otherwise, print the reason
-            putStrLn $ receiveAndClose @String p
+            putStrLn $ receiveAndWait @String p
     }
-
-donate : Promotion -> String -> CreditCard -> Int -> ()
-donate p donor ccard amount =
-    -- let _ = send (donor, ccard, amount) p in ()
-    let (p, _) = receive p in
-    send donor p |> send ccard |> send amount |> close
 
 
 -- 3. The bank that charges credit cards
@@ -55,12 +54,6 @@ bank ccard amount =
 
 
 -- 4. The Online Donation Server
-donationServer : DonationS -> ()
-donationServer donationService =
-    let (p1, p2) = new @Donation () in                      -- create a channel for a new donation campaign
-    let donationService = send p1 donationService in    -- send one end; keep the other (p2)
-    fork (\_:() 1-> setup p2 "Help me" 2000);           -- call with default values
-    donationServer donationService                      -- serve another client
 
 promotion : dualof Promotion -> ()
 promotion p =
@@ -70,7 +63,7 @@ promotion p =
     --
     let (donor , p') = receive p' in
     let (ccard , p') = receive p' in
-    let amount       = receiveAndClose @Int p' in
+    let amount       = receiveAndWait @Int p' in
     bank ccard amount;
     promotion p
 
@@ -87,6 +80,13 @@ setup p title date =
                         select Accepted p |> send c |> close ;
                         promotion s
     }
+
+donationServer : DonationS -> ()
+donationServer donationService =
+    let (p1, p2) = new @Donation () in                      -- create a channel for a new donation campaign
+    let donationService = send p1 donationService in    -- send one end; keep the other (p2)
+    fork (\_:() 1-> setup p2 "Help me" 2000);           -- call with default values
+    donationServer donationService                      -- serve another client
 
 
 -- 5. Main

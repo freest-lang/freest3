@@ -1,5 +1,10 @@
 import List
 
+enumFrom1 : Int -> [Int]
+enumFrom1 x 
+    | x < 1     = []
+    | otherwise = enumFrom1 (x-1) ++ [x]
+
 main : Bool
 main =
     let list = [1, 2, 3, 4] in
@@ -33,7 +38,3 @@ main =
     -- minimum
     minimum list == 1
 
-enumFrom1 : Int -> [Int]
-enumFrom1 x 
-    | x < 1     = []
-    | otherwise = enumFrom1 (x-1) ++ [x]

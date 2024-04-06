@@ -13,28 +13,24 @@ type TreeListChannel : 1S = +{
   NilC : Skip }
 
 -- ===== SENDING =====
-mutual { sendTree : forall a:1S . Tree -> TreeChannel;a -> a
-       , sendTreeList : forall a:1S . TreeList -> TreeListChannel;a -> a
-       }
-
+sendTree : forall a:1S . Tree -> TreeChannel;a -> a
 sendTree Empty             c = select EmptyC c
 sendTree (Node i children) c = sendTreeList@a children $ send i $ select NodeC c
 
+and sendTreeList : forall a:1S . TreeList -> TreeListChannel;a -> a
 sendTreeList Nil              c = select NilC c
 sendTreeList (Cons tree rest) c = sendTreeList@a rest 
                                 $ sendTree@(TreeListChannel;a) tree $ select ConsC c
 
 -- ===== RECEIVING =====
-mutual { receiveTree : forall a:1S . dualof TreeChannel;a -> (Tree, a)
-       , receiveTreeList : forall a:1S . dualof TreeListChannel;a -> (TreeList, a)
-       }
-
+receiveTree : forall a:1S . dualof TreeChannel;a -> (Tree, a)
 receiveTree (EmptyC c) = (Empty,c)
 receiveTree (NodeC  c) = 
       let (i, c)        = receive c in
       let (children, c) = receiveTreeList@a c in
       (Node i children, c)
 
+and receiveTreeList : forall a:1S . dualof TreeListChannel;a -> (TreeList, a)
 receiveTreeList (NilC  c) = (Nil, c)
 receiveTreeList (ConsC c) = 
       let (tree, c) = receiveTree@(dualof TreeListChannel;a) c in

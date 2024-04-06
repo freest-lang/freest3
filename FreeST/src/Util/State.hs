@@ -78,6 +78,18 @@ getEvalOrder =  S.gets (evalOrder . ast)
 addToEvalOrder :: S.MonadState (FreestS a) m => [Variable] -> m ()
 addToEvalOrder xs = S.modify (\s -> s{ast = addEvalOrder xs (ast s)})
 
+addToLastEvalOrder :: S.MonadState (FreestS a) m => [Variable] -> m ()
+addToLastEvalOrder xs = S.modify (\s -> s{ast = addLastEvalOrder xs (ast s)})
+
+resetEO :: FreestS a -> FreestS a 
+resetEO s = s{ast=(ast s){evalOrder=[]}}
+
+appendEOs :: FreestS a -> FreestS a -> FreestS a 
+appendEOs s s' = s{ast=(ast s){evalOrder = evalOrder (ast s) ++ evalOrder (ast s')}}
+
+prependEOs :: FreestS a -> FreestS a -> FreestS a 
+prependEOs s s' = s{ast=(ast s){evalOrder = evalOrder (ast s') ++ evalOrder (ast s)}}
+
 getSignatures ::  S.MonadState (FreestS a) m => m Signatures
 getSignatures = S.gets (signatures . ast)
 

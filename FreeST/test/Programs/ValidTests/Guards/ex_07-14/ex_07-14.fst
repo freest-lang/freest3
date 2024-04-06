@@ -18,35 +18,9 @@ dimensionBool b | b = 4 | otherwise = 5 -- dimension of "True" and "False"
 
 data List = E | List Int List
 
-toStringList : List -> Str
-toStringList E             = Nil
-toStringList (List x rest) = concatStr (translateN x) (toStringList rest)
-
-dimensionList : List -> Int
-dimensionList E             = 0
-dimensionList (List _ rest) = 1 + (dimensionList rest)
-
 concatStr : Str -> Str -> Str
 concatStr Nil          s2 = s2
 concatStr (Str x rest) s2 = Str x (concatStr rest s2)
-
-translateN : Int -> Str
-translateN x 
-    | x == 0 = Str '0' Nil
-    | x <  0 = Str '-' (reverseStr (translateN' (-x))) 
-    | otherwise = reverseStr (translateN' x)
-
-translateN' : Int -> Str
-translateN' x
-    | x == 0    = Nil
-    | otherwise = Str (getNum (mod x 10)) (translateN' (div x 10))
-
-reverseStr : Str -> Str
-reverseStr str = reverseStr' str Nil
-
-reverseStr' : Str -> Str -> Str
-reverseStr' Nil          acc = acc
-reverseStr' (Str x rest) acc = reverseStr' rest (Str x acc)
 
 getNum : Int -> Char
 getNum x =
@@ -62,8 +36,42 @@ getNum x =
     if x == 9 then '9' else
     'N'
 
+translateN' : Int -> Str
+translateN' x
+    | x == 0    = Nil
+    | otherwise = Str (getNum (mod x 10)) (translateN' (div x 10))
+
+reverseStr' : Str -> Str -> Str
+reverseStr' Nil          acc = acc
+reverseStr' (Str x rest) acc = reverseStr' rest (Str x acc)
+
+reverseStr : Str -> Str
+reverseStr str = reverseStr' str Nil
+
+translateN : Int -> Str
+translateN x 
+    | x == 0 = Str '0' Nil
+    | x <  0 = Str '-' (reverseStr (translateN' (-x))) 
+    | otherwise = reverseStr (translateN' x)
+
+toStringList : List -> Str
+toStringList E             = Nil
+toStringList (List x rest) = concatStr (translateN x) (toStringList rest)
+
+dimensionList : List -> Int
+dimensionList E             = 0
+dimensionList (List _ rest) = 1 + (dimensionList rest)
+
 data Pair = Pair Int Int
 data Pairs = N | P Pair Pairs
+
+toStringPair : Pair -> Str
+toStringPair (Pair a b) = concatStr (Str '(' (translateN a)) (concatStr (Str ',' (translateN b)) (Str ')' Nil))
+
+toStringPairs' : Pairs -> Str
+toStringPairs' N             = Nil
+toStringPairs' (P pair N)    = concatStr (toStringPair pair) (Str '}' Nil)
+toStringPairs' (P pair rest) = concatStr (toStringPair pair) (Str ',' (toStringPairs' rest))
 
 toStringPairs : Pairs -> Str
 toStringPairs ps = Str '{' (toStringPairs' ps)
@@ -71,14 +79,6 @@ toStringPairs ps = Str '{' (toStringPairs' ps)
 dimensionPairs : Pairs -> Int
 dimensionPairs N          = 0
 dimensionPairs (P _ rest) = 1 + (dimensionPairs rest)
-
-toStringPairs' : Pairs -> Str
-toStringPairs' N             = Nil
-toStringPairs' (P pair N)    = concatStr (toStringPair pair) (Str '}' Nil)
-toStringPairs' (P pair rest) = concatStr (toStringPair pair) (Str ',' (toStringPairs' rest))
-
-toStringPair : Pair -> Str
-toStringPair (Pair a b) = concatStr (Str '(' (translateN a)) (concatStr (Str ',' (translateN b)) (Str ')' Nil))
 
 main : Str
 main = 

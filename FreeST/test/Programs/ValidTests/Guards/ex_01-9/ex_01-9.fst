@@ -2,14 +2,15 @@
 
 data IntList = Nil | List Int IntList
 
-sumPowList : Int -> IntList -> Int
-sumPowList e Nil = 0
-sumPowList e (List x rest) = pow e x + (sumPowList e rest)
-
 pow : Int -> Int -> Int
 pow e n 
     | e <= 0    = 1
     | otherwise = n * (pow (e-1) n)
+
+sumPowList : Int -> IntList -> Int
+sumPowList e Nil = 0
+sumPowList e (List x rest) = pow e x + (sumPowList e rest)
+
 -- only positive integers
 
 listTo : Int -> IntList -> IntList

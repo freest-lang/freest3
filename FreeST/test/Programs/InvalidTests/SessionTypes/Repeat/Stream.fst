@@ -14,7 +14,7 @@ type Stream = ∀ α:SL. μb: SL. α;b
 -}
 
 -- An arbitrary Stream consumer
-consumeStream : ∀ α: 1M .
+consumeStream : ∀ α: 1T .
   ((μb: 1S. ?α;b) -> (μb: 1S. ?α;b)) -> -- A function that consumes the head of a stream
   (μb: 1S. ?α;b) ->                    -- The stream
   ()
@@ -31,11 +31,11 @@ writeIntStream : OutIntStream -> ()
 writeIntStream = consumeStream @(!Int) writeInt @OutIntStream
 
 -- Read from an int stream
-readInt : forall β: 1S . ?Int; β -> β
-readInt c = let (v, c) = receive c in printInt v; c
+readInt' : forall β: 1S . ?Int; β -> β
+readInt' c = let (v, c) = receive c in printInt v; c
 
 readIntStream : dualof OutIntStream -> ()
-readIntStream = consumeStream @(?Int) readInt @(dualof OutIntStream)
+readIntStream = consumeStream @(?Int) readInt' @(dualof OutIntStream)
 
 -- Run an int stream
 mainIntStream : ()

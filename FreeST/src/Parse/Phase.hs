@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
-module Parse.Phase where
+module Parse.Phase where 
 
 import           Syntax.AST
 import           Syntax.Base hiding (moduleName)
@@ -14,7 +14,7 @@ import           Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-type Imports = Set.Set FilePath
+type Imports = [FilePath]
 type ModuleName = Maybe FilePath
 type ChoicesLabels = [Variable]
 
@@ -38,7 +38,7 @@ initialExtraParse :: Extra
 initialExtraParse = Extra { .. }
   where
     moduleName  = Nothing
-    imports     = Set.empty
+    imports     = [] 
     pEnvChoices = []
     runOpts     = defaultOpts
 
@@ -48,7 +48,7 @@ initialWithFile :: FilePath -> FreestS Parse
 initialWithFile runFilePath = initial Extra{..}
   where
     moduleName  = Nothing
-    imports     = Set.empty
+    imports     = []
     pEnvChoices = []
     runOpts     = defaultOpts{runFilePath}
 
@@ -65,7 +65,7 @@ getModuleName :: ParseState ModuleName
 getModuleName = gets (moduleName . extra)
 
 addImport :: FilePath -> ParseState ()
-addImport imp = modify (\s -> s{extra = (extra s){imports = Set.insert imp (imports $ extra s)}})
+addImport imp = modify (\s -> s{extra = (extra s){imports = imp : imports (extra s)}})
 -- addImport imp = modify (\s -> s{extra = second (Set.insert imp) (extra s)})
 
 getImports :: ParseState Imports

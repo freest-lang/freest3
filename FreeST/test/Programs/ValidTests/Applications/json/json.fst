@@ -9,14 +9,6 @@ The JSON format (ECMA-404 The JSON Data Interchange Standard), is  inherently co
 More info on json at https://www.json.org
 -}
 
-main : Object
-main =
-  let (w, r) = new @(ObjectChannel;Close) () in
-  fork (\_:() 1-> writeObject @Close json w |> close);
-  let (obj, r) = readObject @Wait r in
-  wait r;
-  obj
-
 -- A dataype for JSON
 data Value = StringVal String |
              IntVal    Int    |
@@ -69,7 +61,8 @@ writeValue v c =
     BoolVal   b -> select BoolVal   c |> send b,
     NullVal     -> select NullVal   c
   }
-writeObject : forall a: 1S . Object -> ObjectChannel;a -> a
+
+and writeObject : forall a: 1S . Object -> ObjectChannel;a -> a
 writeObject j c =
   case j of {
     ConsObject key val j1 ->
@@ -80,7 +73,8 @@ writeObject j c =
     EmptyObject ->
       select Empty c
   }
-writeArray : forall a: 1S . Array -> ArrayChannel;a -> a
+
+and writeArray : forall a: 1S . Array -> ArrayChannel;a -> a 
 writeArray l c =
   case l of {
     ConsArray j l1 ->
@@ -92,7 +86,7 @@ writeArray l c =
   }
 
 -- Reading a JSON value from a channel
-readValue : forall a : 1S . dualof ValueChannel;a -> (Value, a)
+readValue  : forall a : 1S . dualof ValueChannel;a -> (Value, a)
 readValue c =
   match c with {
     StringVal c -> let (s, c) = receive c in (StringVal s, c),
@@ -102,7 +96,8 @@ readValue c =
     BoolVal   c -> let (b, c) = receive c in (BoolVal b, c),
     NullVal   c -> (NullVal, c)
   }
-readObject : forall a: 1S . dualof ObjectChannel;a -> (Object, a)
+
+and readObject : forall a: 1S . dualof ObjectChannel;a -> (Object, a)
 readObject c =
   match c with {
     ConsObject c ->
@@ -113,7 +108,8 @@ readObject c =
     Empty c ->
       (EmptyObject, c)
   }
-readArray : forall a: 1S . dualof ArrayChannel;a -> (Array, a)
+
+and readArray  : forall a: 1S . dualof ArrayChannel;a -> (Array, a)
 readArray c =
   match c with {
     ConsObject c ->
@@ -123,3 +119,11 @@ readArray c =
     Empty c ->
       (EmptyArray, c)
   }
+
+main : Object 
+main =
+  let (w, r) = new @(ObjectChannel;Close) () in
+  fork (\_:() 1-> writeObject @Close json w |> close);
+  let (obj, r) = readObject @Wait r in
+  wait r;
+  obj
