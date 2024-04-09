@@ -18,6 +18,7 @@ module Typing.Typing
   ( typeCheck
   , synthetise -- for tests
   , checkAgainst -- for tests
+  , checkDefs
   )
 where
 
@@ -65,22 +66,22 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
+
+checkDefs :: Signatures -> [Variable] -> TypingState () 
+checkDefs sigs [ ] = return () 
+checkDefs sigs xs = do 
+  let xts = map (\x -> (x, sigs Map.! x)) xs
+  mapM_ (uncurry addToSignatures) xts 
+  mapM_ (checkDef xs) xts 
   where 
-    checkDefs :: Signatures -> [Variable] -> TypingState () 
-    checkDefs sigs [ ] = return () 
-    checkDefs sigs xs = do 
-      let xts = map (\x -> (x, sigs Map.! x)) xs
-      mapM_ (uncurry addToSignatures) xts 
-      mapM_ (checkDef xs) xts 
-    
     checkDef :: [Variable] -> (Variable, T.Type) -> TypingState ()
     checkDef xs (x,t) = do
       defs <- getDefs 
       case defs Map.!? x of  
         Nothing -> return () 
-        Just e  -> do when (length xs > 1 && not (isVal e)) 
-                        (addError (MutualDefNotValue (getSpan x) x e)) 
-                      checkAgainst Map.empty e t
+        Just e  -> when (length xs > 1 && not (isVal e)) 
+                     (addError (MutualDefNotValue (getSpan x) x e))
+                >> checkAgainst Map.empty e t
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.

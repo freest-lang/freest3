@@ -1,6 +1,8 @@
 {-# LANGUAGE BangPatterns, LambdaCase #-}
 module Interpreter.Eval
   ( evalAndPrint
+  , evaluate
+  , evalAndPrint'
   )
 where
 
@@ -50,6 +52,32 @@ evalAndPrint m s = do
         Just e -> do !v' <- eval x (getTypesS s) ctx recEnv e
                      return $ Map.insert x v' ctx
         Nothing -> return ctx 
+
+evaluate :: Ctx -> TypingS -> IO Ctx 
+evaluate ctx s = foldM evalDefs ctx (evalOrder $ ast s)
+  where
+    evalDefs :: Ctx -> [Variable] -> IO Ctx 
+    evalDefs ctx xs = 
+      let eenv = getDefsS s in 
+      let recEnv = Map.fromList $ map (\x -> (x,eenv Map.! x)) xs in 
+      foldM (evalDef recEnv) ctx xs
+    evalDef :: Defs -> Ctx -> Variable -> IO Ctx
+    evalDef recEnv ctx x = do
+      case getDefsS s Map.!? x of 
+        Just e -> do !v' <- eval x (getTypesS s) ctx recEnv e
+                     return $ Map.insert x v' ctx
+        Nothing -> return ctx 
+
+evalAndPrint' :: Variable -> Ctx -> TypingS -> IO (Value, Ctx) 
+evalAndPrint' x ctx s = do 
+  --putStrLn ("###############\nctx: "++show ctx++"\n############\nevalOrder: "++show (evalOrder (ast s)))
+  ctx' <- evaluate ctx s 
+  --putStrLn ("###############\nctx: "++show ctx')
+  hFlush stdout
+  hFlush stderr
+  case ctx' Map.! x of
+    res@(IOValue io) -> io >>= print >> return (res,ctx')
+    res              -> print res >> return (res,ctx')
 
 -- evalAndPrintVals :: Variable -> TypingS -> IO ()
 -- evalAndPrintVals m s = do

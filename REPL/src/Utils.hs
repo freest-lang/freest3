@@ -16,32 +16,41 @@ import           Data.Functor
 import           Data.List
 import           System.Console.Haskeline
 
--- import Syntax.Expression
+import Syntax.Expression
+import Interpreter.Value (Ctx)
+import Parse.Phase (ParseS)
 
--- data REPL
+data Repl
 
--- type instance XDef REPL = Exp
--- type instance S.XExtra REPL = S.RunOpts
+type instance XDef Repl = Exp
 
--- type ReplS = S.FreestS REPL
-type REPLState = StateT TypingS IO
+data Extra = Extra 
+  { runOpts :: S.RunOpts 
+  , ctx     :: Ctx
+  }
+
+type instance S.XExtra Repl = Extra
+
+type ReplS = S.FreestS Repl
+
+type ReplState = StateT ReplS IO
 
 interactiveRunOpts = S.defaultOpts{S.runFilePath="<interactive>"}
 
 
-setFilePath :: FilePath -> REPLState ()
+setFilePath :: FilePath -> ReplState ()
 setFilePath runFilePath =
-  modify (\s -> s {S.extra = (S.extra s){S.runFilePath}})
+  modify (\s@S.FreestS{S.extra=extra} -> s{S.extra = extra{runOpts=(runOpts extra){S.runFilePath}}})
 
-getFilePath :: REPLState FilePath
-getFilePath = gets $ S.runFilePath . S.extra
+getFilePath :: ReplState FilePath
+getFilePath = gets $ S.runFilePath . runOpts . S.extra
 --  modify (\s -> s {S.extra = (S.extra s){S.runFilePath}})
 
-getRunOpts :: REPLState S.RunOpts
-getRunOpts = gets S.extra
+getRunOpts :: ReplState S.RunOpts
+getRunOpts = gets (runOpts . S.extra)
 
 
-pretty :: Show a => String -> a -> REPLState ()
+pretty :: Show a => String -> a -> ReplState ()
 pretty prefix x = do
   s <- get
   if S.hasErrors s
@@ -49,50 +58,50 @@ pretty prefix x = do
   else liftIO $ putStrLn (prefix ++ " : " ++ show x)
        
 
-replErrors :: REPLState ()
+replErrors :: ReplState ()
 replErrors = do
   s <- get
   S.setErrors []
   setFilePath "<interactive>"
-  runOpts <- gets S.extra
+  runOpts <- gets (runOpts . S.extra)
   liftIO $ putStrLn (S.getErrors runOpts s)
 
 
 
 
--- liftS :: IO a -> InputT (StateT REPLS IO) a
-liftS :: IO a -> InputT REPLState a
+-- liftS :: IO a -> InputT (StateT ReplS IO) a
+liftS :: IO a -> InputT ReplState a
 liftS = lift . lift 
 
--- wrapExec :: S.FreestState a b ->  REPLState Bool
--- wrapExec :: S.State (S.FreestS a) b -> REPLState Bool
+-- wrapExec :: S.FreestState a b ->  ReplState Bool
+-- wrapExec :: S.State (S.FreestS a) b -> ReplState Bool
 -- wrapExec f = do
 --   s <- gets $ execState f
 --   if S.hasErrors s
 --     then lift (putStrLn $ S.getErrors runOpts s) $> True
 --     else put s $> False
 
--- wrapExec :: FreestState a b ->  REPLState Bool
+-- wrapExec :: FreestState a b ->  ReplState Bool
 -- wrapExec f = do
 --   s <- gets $ execState f
 --   if hasErrors s
 --     then lift (putStrLn $ getErrors s) $> True
 --     else put s $> False
 
--- wrapExec_ :: FreestState a ->  REPLState ()
+-- wrapExec_ :: FreestState a ->  ReplState ()
 -- wrapExec_  = void . wrapExec
 
--- wrapIO :: IO (S.FreestS a) -> REPLState () ->  REPLState Bool
+-- wrapIO :: IO (S.FreestS a) -> ReplState () ->  ReplState Bool
 -- wrapIO io cont = do
 --   s <- lift io
 --   if S.hasErrors s
 --     then lift (putStrLn $ S.getErrors interactiveRunOpts s) $> True
 --     else put s >> cont $> False
 
--- wrapIO_ :: IO FreestS -> REPLState () -> REPLState ()
+-- wrapIO_ :: IO FreestS -> ReplState () -> ReplState ()
 -- wrapIO_ io state = void $ wrapIO io state
 
--- wrapRun :: Show a => FreestState a ->  REPLState Bool
+-- wrapRun :: Show a => FreestState a ->  ReplState Bool
 -- wrapRun f = do
 --   (v,s) <- gets $ runState f
 --   if hasErrors s
@@ -125,3 +134,16 @@ splitOption = join (***) dropBothEnds . break isSpace
 -- stopPipeline = ifM (gets hasErrors) (return ())
     
 
+typingToRepl :: Ctx -> TypingS -> ReplS   
+typingToRepl ctx s = 
+  s{ S.ast   = (S.ast s){definitions=definitions (S.ast s)}
+   , S.extra = Extra{runOpts=S.extra s, ctx}
+   }
+
+replToTyping :: ReplS -> (TypingS, Ctx)   
+replToTyping s = 
+  ( s{ S.ast   = (S.ast s){definitions=definitions (S.ast s)}
+     , S.extra = runOpts(S.extra s)
+     }
+  , ctx (S.extra s)
+  )

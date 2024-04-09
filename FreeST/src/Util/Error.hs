@@ -225,7 +225,7 @@ instance Message ErrorType where
     "Cannot mix variables with pattern-matching channel choices." ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ": " ++ red sty (show v)
-  msg (TypeVarOutOfScope _ x) sty ts _ = "Type variable not in scope: " ++ style red sty ts x
+  msg (TypeVarOutOfScope _ x) sty ts _ = "Type variable out of scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts _ =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
   msg (WrongNumberOfArguments p fun exp got t) sty ts _ =
