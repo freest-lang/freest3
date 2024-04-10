@@ -16,7 +16,7 @@ Normalise a session type by
 - Turn message and choice types T into T;Skip
 
 in such a way that the resulting type
-- is T;U where T is !, ?, + or &,
+- is T;U where T is !, ?, + or &, TODO: forall
 - is never a recursive type (rec types are unfolded), or
 - is the original type
 

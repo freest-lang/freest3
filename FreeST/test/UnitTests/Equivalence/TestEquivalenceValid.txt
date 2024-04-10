@@ -105,6 +105,10 @@ Close;?Int
 !Int;Close;!Int
 
 []
+(rec a:1S . !Int;a);!Int
+rec a:1S . !Int;a
+
+[]
 (rec a:1S . +{A: !Int;a, B: Skip;Close;Skip});!Int
 rec a:1S . +{A: !Int;a, B: Close;a}
 
@@ -123,6 +127,26 @@ rec b:1S . !(rec a:1S . +{A: !Int;a, B: Close;a});Skip;?(b;Skip;!(Close);Close;b
 []
 !(!Int;Close)
 !(!Int;Skip;Close;?Int)
+
+[]
+∀ α: 1S . α
+∀ β: 1S . β;Skip
+
+[]
+∀ α: 1S . α;Close
+∀ β: 1S . (β;Skip);Close
+
+[]
+Close ; ∀ α: 1S . α
+∀ β: 1S . Close
+
+[]
+∀ α: 1S . Close;α
+∀ β: 1S . Close
+
+[]
+∀ α: 1S . Close;α;!Int
+∀ β: 1S . (Close;β)
 
 []
 ∀ α: 1S . Close;α;!Int
@@ -1243,3 +1267,13 @@ rec x:*S . &{A:x, B:x, C:x}
 []
 (rec a:1S . &{A: a})
 (rec a:*S . &{A: a})
+
+
+-- Passing types
+[]
+(forall a:1S . a)
+(forall a:1S . a)
+
+[]
+(forall a:1S . forall a:1S . a ; a)
+(forall a:1S . a ; forall a:1S . a)

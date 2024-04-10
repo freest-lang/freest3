@@ -177,5 +177,8 @@ rec x:*S . Skip ; x ; x ; x
 
 -- Passing types
 
-forall a : 1S . !a;Skip
-1T
+forall b:1S . a ; forall a:1S . b
+
+forall a:1S . forall a:1S . a ; a
+
+forall a:1S . forall a:1T . !a ; a
