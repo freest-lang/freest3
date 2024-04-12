@@ -63,8 +63,14 @@ typeCheck = do
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
 checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
-checkFunBody sigs f e =
-  forM_ (sigs Map.!? f) (checkAgainst Map.empty e)
+checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
+  where
+    checkBody t = do
+      sigs <- getSignatures
+      k <-  K.synthetise Map.empty t 
+      when (K.isLin k && Map.member f sigs) (removeFromSignatures f)
+      checkAgainst Map.empty e t      
+      when (Map.member f sigs) $ addToSignatures f t
 
 checkMainFunction :: TypingState ()
 checkMainFunction = do
