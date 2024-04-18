@@ -41,7 +41,7 @@ getTwo (Cons left (Cons right zs)) = (zs, (left, right))
 
 -- Streams
 
-type Stream : 1S = +{
+type Stream = +{
     NodeC: !Int; Stream,
     LeafC: Stream,
     EndOfStream: Skip

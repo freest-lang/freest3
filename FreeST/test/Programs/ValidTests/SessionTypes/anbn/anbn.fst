@@ -45,7 +45,7 @@ server c =
 server' : dualof S1; a -> a
 server' c =
   match c with {
-    A c ->     -- (rec x: 1S. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
+    A c ->     -- (rec x . &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
       (let c = server' @(&{B: Skip};a) c in  -- &{B: Skip}; a
        match c with {
          B c -> c

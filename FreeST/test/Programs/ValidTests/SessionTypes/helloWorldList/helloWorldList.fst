@@ -2,7 +2,7 @@ data List = Nil | Cons Char List
 type InCharStream = &{Done: Skip, More: ?Char;InCharStream}
 type OutCharStream = dualof InCharStream
 
--- server : forall α : 1S . InCharStream;α -> (List, α)
+-- server : forall α . InCharStream;α -> (List, α)
 server : InCharStream;α -> (List, α)
 server c =
   match c with {

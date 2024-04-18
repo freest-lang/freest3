@@ -4,7 +4,7 @@ type BitStream = IntStream
 type Random    = dualof IntStream
 
 -- Args -> *!SendType
-genericUnSender : a -> (rec b:*S . !a;b) -> ()
+genericUnSender : a -> (rec b . !a;b) -> ()
 genericUnSender x chan =
     genericUnSender @a x $ send x chan
 

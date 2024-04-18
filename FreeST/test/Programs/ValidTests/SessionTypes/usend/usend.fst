@@ -3,7 +3,7 @@ Unrestricted send.
 
 The type of send is
 
-  ∀a:1T . a *-> ∀b:1S . !a;b 1-> b
+  ∀a . a *-> ∀b . !a;b 1-> b
 
 Any value (linear or unrestricted) can be sent.
 
@@ -11,7 +11,6 @@ Using eta-conversion one can write a variant of send that accepts only
 unrestricted values. The partially evaluated function can then be reused, contrary to a partially evaluated send.
 -}
 
---send : ∀a:1T .     a *-> ∀b:1S .            !a;b 1-> b
 unsend : ∀a .     a *-> ∀b .     () *-> !a;b 1-> b
 unsend = Λa => λx:a *-> Λb => λ_:() *-> send @a x @b
 
