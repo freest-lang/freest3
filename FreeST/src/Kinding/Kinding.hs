@@ -96,8 +96,8 @@ synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   return $ K.Kind p m K.Top
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
-  Nothing -> -- addError (TypeVarNotInScope p a) $> omission p
-    return $ omission p
+  Nothing -> addError (TypeVarNotInScope p a) $> omission p
+--    return $ omission p
 -- Type operators
 synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
   case kEnv Map.!? a of
@@ -130,7 +130,6 @@ checkAgainstAbsorb :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kin
 checkAgainstAbsorb kEnv t = do
   ~k@(K.Kind _ _ p) <- synthetise kEnv t
   when (p /= K.Absorb) (addError $ UnendedSession (getSpan t) t k) $> k
---  return k
 
 -- Determine whether a given type is unrestricted
 un :: MonadState (FreestS a) m => T.Type -> m Bool

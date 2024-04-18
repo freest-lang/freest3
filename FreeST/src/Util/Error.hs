@@ -99,6 +99,8 @@ data ErrorType =
   | ErrorFunction Span String
   | UndefinedFunction Span
   | RuntimeError Span String
+  -- Kind Inference
+  | CantUnifyKind Span K.Kind K.Kind
   deriving Show
 
 instance Located ErrorType where
@@ -145,6 +147,7 @@ instance Located ErrorType where
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
+  getSpan (CantUnifyKind p _ _             ) = p
 
 
 instance Message ErrorType where
@@ -304,10 +307,13 @@ instance Message ErrorType where
   msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (RuntimeError _ e) _ _ = "Exception: " ++ e
-
+  -- Kind Inference
+  msg (CantUnifyKind _ k1 k2) sty ts =
+    "Can't unify kinds. Got " ++  style red sty ts k1 ++ " <: " ++ style red sty ts k2
+    ++ ", but " ++  style red sty ts k1 ++ " is not a subkind of " ++  style red sty ts k2
 
 
 declInTwoModules :: Span -> Span -> String
 declInTwoModules p p' =
-  "\n  Declared in modules:\n\t - " ++ showModule (moduleName p') p' ++
+  "\n  Declared in:\n\t - " ++ showModule (moduleName p') p' ++
   "\n\t - " ++ showModule (moduleName p) p

@@ -15,6 +15,7 @@ import           Parse.Parser ( parseProgram, parseAndImport )
 import           Parse.Phase
 import           PatternMatch.PatternMatch
 import           Syntax.AST
+import           Inference.Inference
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.MkName
@@ -64,30 +65,10 @@ checkAndRun runOpts = do
   let (defs, elabS) = elaboration (pkVariables $ extra s2) (mVariables $ extra s2) patternS
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
-  -- | Kind Inference
-  
-  let infS = execState (renameProgram >> infer) (elabToInf defs elabS) --  (pkVariables $ extra elabS) (mVariables $ extra elabS)
-  when (hasErrors infS) (die $ getErrors runOpts infS)
---  let (s,infS) = runState infer (elabToInf (pkVariables $ extra s2) (mVariables $ extra s2) defs elabS)
-
---  let var = mkVar defaultSpan "snd'"
-  
--- --  print $ (types $ ast elabS) Map.! var
---   -- print $ (signatures $ ast elabS) Map.! var
-  -- print $ (signatures $ ast infS) Map.! var
-  -- print $ (definitions $ ast infS) Map.! var
-  -- print $ IP.constraints $ extra infS
-  -- print $ IP.mVariables $ extra infS
-  -- print $ IP.pkVariables $ extra infS
---   print $ s
-  -- elabToInference 
-  
-
-  -- print $ types $ ast infS
-  -- print $ signatures $ ast infS
-  -- print $ definitions $ ast infS
-
-  -- | Rename & TypeCheck
+  -- | Kind Inference  
+  let infS = execState (renameProgram >> infer) (elabToInf defs elabS)
+--  when (hasErrors infS) (die $ getErrors runOpts infS)
+  -- | Typecheck
   let s4 = execState typeCheck (infToTyping runOpts infS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
   when (hasErrors s4) (die $ getErrors runOpts s4)
@@ -144,7 +125,7 @@ elabToInf defs s =  s {ast=newAst, extra = newExtra}
         
 
 infToTyping :: RunOpts -> IP.InferenceS -> TypingS
-infToTyping runOpts s = s {ast=newAst, extra = runOpts}
+infToTyping runOpts s = s {ast=newAst, extra = runOpts} -- , errors = []}
   where newAst = AST {types=types $ ast s,
                       signatures=signatures $ ast s,
                       definitions = definitions $ ast s}

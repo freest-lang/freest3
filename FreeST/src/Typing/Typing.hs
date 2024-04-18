@@ -48,11 +48,13 @@ import qualified Data.Map.Strict as Map
 
 typeCheck :: TypingState ()
 typeCheck = do
+  s0 <- get
+  setErrors []
   -- * Check the formation of all type decls
   mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTypes
   -- * Check the formation of all function signatures
   mapM_ (K.synthetise Map.empty) =<< getSignatures
-  -- Gets the state and only continues if there are no errors so far
+  -- Gets the state and only continues if there are no errors so far  
   s <- get
   unless (hasErrors s) $ do
     -- * Check function bodies
@@ -61,6 +63,12 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
+    
+  -- Get the state again to join the error messages
+  -- here, we continue with the errors from the previous state (kind inference) 
+  s <- get
+  setErrors (errors s ++ errors s0)
+  
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.

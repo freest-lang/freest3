@@ -26,6 +26,8 @@ module Syntax.Kind
   , isLin
   , isUn
   , isSession
+  , prekind
+  , mult
   )
 where
 
@@ -48,6 +50,13 @@ instance Located Kind where
 -- hierarchy
 instance Default Kind where
   omission _ = ut defaultSpan
+
+-- Get prekind and mult from a kind
+prekind :: Kind -> PreKind
+prekind (Kind _ _ v) = v
+
+mult :: Kind -> Multiplicity
+mult (Kind _ m _) = m
 
 -- Abbreviations for the six available kinds
 lt, ut, ls, us, la, ua :: Span -> Kind
