@@ -13,6 +13,7 @@ import qualified Typing.Extract as Extract
 import           Typing.Rename
 import           Typing.Typing
 import           Util.State
+import           Util.Error
 
 import           Control.Monad
 import           Control.Monad.State
@@ -58,13 +59,13 @@ ctyping kEnv (E.App _ (E.Var s x) e) | x == mkReceive s = do
   (t,u) <- ctyping kEnv e
   (t1, t2) <- Extract.input e t
   return (T.tuple s [t1, t2], u)
-ctyping kEnv e@(E.App s (E.App _ (E.Var _ x) e1) e2) | x == mkSend s = do
+ctyping kEnv (E.App s (E.App _ (E.Var _ x) e1) e2) | x == mkSend s = do
   (_, u1) <- ctyping kEnv e1
   (t2, u2) <- ctyping kEnv e2
   (_, t4) <- Extract.output e2 t2
   merge u1 u2 
   return (t4, u1 ∪ u2)
-ctyping kEnv e@(E.App _ e1 e2) = do
+ctyping kEnv (E.App _ e1 e2) = do
   (t,u1) <- ctyping kEnv e1
   (_, _, t2) <- Extract.function e1 t
   (_, u2) <- ctyping kEnv e2
@@ -72,10 +73,7 @@ ctyping kEnv e@(E.App _ e1 e2) = do
   return (t2, u1 ∪ u2)
 ctyping kEnv (E.Var p x) = getFromSignatures x >>= \case
   Just t -> constraintKinding kEnv t >>= \k -> return (t, Map.singleton x k)
-  Nothing ->
-    -- TODO: ERROR
-    -- traceM (show x ++ ":" ++ show (getSpan x) ++  " is not in Delta") $>
-    addToSignatures x (omission defaultSpan) $> (T.Int p, Map.empty)
+  Nothing -> addError (TypeVarNotInScope p x) $> (T.Int p, Map.empty)
 ctyping kEnv (E.Abs s m b) = do
   k <- constraintKinding kEnv (binder b)
   addToSignatures (var b) (binder b)

@@ -39,11 +39,8 @@ addConstraint c =
 getConstraints :: InfState [Constraint]
 getConstraints = gets (constraints . extra)
 
-emptyConstraints :: InfState ()
-emptyConstraints = modify (\s -> s{extra = (extra s){constraints = []}})
-
--- emptyVariables :: InfState ()
--- emptyVariables = modify (\s -> s{extra = (extra s){mVariables = Set.empty, pkVariables = Set.empty}})
+-- emptyConstraints :: InfState ()
+-- emptyConstraints = modify (\s -> s{extra = (extra s){constraints = []}})
 
 addMVariable :: Variable -> InfState ()
 addMVariable x =
@@ -57,8 +54,6 @@ getMVariables, getPKVariables :: InfState (Set.Set Variable)
 getMVariables = gets (mVariables . extra)
 getPKVariables = gets (pkVariables . extra)
 
-
--- TODO: Maybe join?
 freshMultVar :: Span -> InfState Variable
 freshMultVar s = do
   v <- mkVar s . ("φ" ++) . show <$> getNextIndex

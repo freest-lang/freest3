@@ -103,11 +103,15 @@ data ErrorType =
   | CantUnifyKind Span K.Kind K.Kind
   deriving Show
 
+-- | This is just for avoiding throwing equal error messages
+instance Eq ErrorType where
+  a == b = show a == show b
+
 instance Located ErrorType where
   getSpan (FileNotFound _                  ) = defaultSpan
   getSpan (WrongFileExtension _            ) = defaultSpan
   getSpan (LexicalError p _                ) = p
-  getSpan (PrematureEndOfFile p            ) = p
+  getSpan (PrematureEndOfFile p           ) = p
   getSpan (ParseError p _                  ) = p
   getSpan (NameModuleMismatch p _ _        ) = p
   getSpan (ImportNotFound p _ _            ) = p

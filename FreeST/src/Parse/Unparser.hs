@@ -94,11 +94,14 @@ showBind :: (Show a, Show b, Show c) => a -> b -> Bool -> String -> c -> String
 showBind var sort paren arrow term =
   showSortedVar var sort paren ++ spaced arrow ++ show term
 
+showBindNoKind :: (Show a, Show b) => a -> String -> b -> String
+showBindNoKind var arrow term = show var ++ spaced arrow ++ show term
+
 showBindType :: Bind K.Kind T.Type -> String
-showBindType (Bind _ a k t) = showBind a k False "." t -- ∀ a:k . t
+showBindType (Bind _ a _ t) = showBindNoKind a "." t -- ∀ a:k . t
 
 showBindExp :: Bind K.Kind E.Exp -> String
-showBindExp (Bind _ a k e) = showBind a k False "=>" e -- Λ a:k => e
+showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
