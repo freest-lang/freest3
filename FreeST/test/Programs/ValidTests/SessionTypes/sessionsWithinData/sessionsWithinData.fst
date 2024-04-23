@@ -1,4 +1,4 @@
-data T : 1T = One Wait | Two ?Int;Wait
+data T = One Wait | Two ?Int;Wait
 
 read : T -> Int
 read t =

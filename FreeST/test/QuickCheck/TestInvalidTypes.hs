@@ -3,13 +3,14 @@ module TestInvalidTypes
 ) where
 
 import           ArbitraryTypes
-import           Bisimulation.Bisimulation       ( bisimilar )
-import           Validation.Kinding
-import           Validation.Phase
+import           Bisimulation.Bisimulation   ( bisimilar )
+import           Kinding.Kinding
+import           Typing.Phase
 import           Syntax.Type
 import           Syntax.Kind              as K
 import           Syntax.Base
 import           Util.State
+
 import           Control.Monad.State
 import qualified Data.Map.Strict          as Map
 import           Test.QuickCheck

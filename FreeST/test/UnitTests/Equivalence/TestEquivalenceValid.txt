@@ -1027,7 +1027,7 @@ rec x:1S. !x
 (Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
--- This a current and well known bug
+-- Forall
 []
 !(forall a . a) ; Skip
 !(forall b . b)
@@ -1035,6 +1035,18 @@ rec x:1S. !x
 []
 !(∀a . a -> a) -> Skip
 !(∀b . b -> b) -> Skip ; Skip
+
+[]
+!(∀a . (rec b:1S . !Int ; b) -> a) -> Skip
+!(∀c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
+
+[]
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
+[]
+∀a:1S . ∀c:1S . c 1-> a
+∀a:1S . ∀c:1S . c 1-> Skip ; a
 
 -- Two alpha-equivalent types
 []
@@ -1086,132 +1098,148 @@ dualof (rec a:1S . !a                       ; Close)
 
 -- Terminated Recursive Types
 
--- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. Skip
--- Skip
+[]
+rec b:1S . Skip
+Skip
+
+[]
+rec b:1S . Skip
+rec b:1S . rec b:1S . Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- Skip
--- rec x:*S. Skip
+[]
+rec x:*S. Skip
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. (Skip; Skip)
--- Skip
+[]
+Skip
+rec x:*S. Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. rec y. Skip
--- Skip
+[]
+rec x:*S. (Skip; Skip)
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. (Skip; rec y. Skip)
--- Skip
-
--- Skip^omega
--- []
--- rec x:*S. Skip; x
--- rec y:*S. Skip; y
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- rec x:*S.( Skip; x)
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- rec x:*S.( Skip; x; Skip)
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x)
--- Skip
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- Skip
+[]
+rec x:*S. rec y. Skip
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- rec x. Skip
+[]
+rec x:*S. (Skip; rec y. Skip)
+Skip
+
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- Skip; rec x.Skip
+[]
+rec x.Skip
+rec x. Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- Skip
+[]
+rec x.Skip
+Skip; rec x.Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- rec x.Skip
+[]
+rec x.Skip
+Skip
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip
+[]
+rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
+rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- rec x.Skip
+[]
+Skip
+rec y:1S. (Skip ; y) ; ?Int
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip; rec x.Skip
+[]
+rec y:1S. (Skip ; y) ; ?Int
+Skip 
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip; rec x.Skip;x
+[]
+Skip
+(rec y:1S. Skip ; y) ; ?Int
 
 -- Skip^omega
--- []
--- rec x:*S. (((Skip ; x) ; x) ; x)
--- Skip
+[]
+rec y:1S. Skip ; y ; ?Int
+Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
 
--- Skip^omega
--- []
--- rec y:*S.(rec y:1S.Skip)
--- rec y:*S.(rec z:*S.(rec x:*S.(rec y1:1S.(rec y2:*S.Skip))))
+-- Star (unrestricted session) types
 
--- Ill-formed - TODO: should be well-formed
--- []
--- +{C: (rec x:*S.Skip)};(y;((rec x:1S.y);Skip))
--- +{C: (Skip;((y;(rec x:1S.(rec x:1S.y)));Skip))}
+[]
+*!Int
+rec a:*S . !Int ; a
 
--- Skip^omega
--- []
--- rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
--- rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
+[]
+forall a:1S . *!a
+forall a:1S . rec x:*S . !a ; x
 
--- Skip^omega
--- []
--- Skip
--- rec y:1S. (Skip ; y) ; ?Int
+[]
+*?Int
+rec x:*S . ?Int ; x
 
--- Skip^omega
--- []
--- rec y:1S. (Skip ; y) ; ?Int
--- Skip 
+[]
+forall a:1S . *?a
+forall a:1S . rec x:*S . ?a ; x
 
--- Skip^omega
--- []
--- Skip
--- (rec y:1S. Skip ; y) ; ?Int
+[]
+*+{A, B, C}
+rec x:*S . +{A:x, B:x, C:x}
 
--- Skip^omega
--- []
--- rec y:1S. Skip ; y ; ?Int
--- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
+[]
+*&{A, B, C}
+rec x:*S . &{A:x, B:x, C:x}
+
+[]
+*!Int ; !Int
+*!Int
+
+[]
+*!Int ; !Char
+*!Int
+
+[]
+*!Int ; ?Char
+*!Int
+
+[]
+*!(*?!Int)
+*!(*?(Skip;!Int))
+
+[]
+*!(*?*?Int)
+*!(*?(rec a:*S . ?Int ; a))
+
+[]
+*!(*?*+{A,B})
+*!(*?(*+{A,B};Skip))
+
+[]
+!Int ; *!Int
+*!Int
+
+-- Un vs. Lin types
+
+[]
+(rec a:1S . !Int ; a)
+(rec a:*S . !Int ; a)
+
+[]
+(rec a:1S . ?((rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close) ; a)
+(rec a:*S . ?((rec a:1S . +{A: !Char, B: a ; a}) ; ?Int ; Close) ; a)
+
+[]
+(rec a:1S . +{A: a})
+(rec a:*S . +{A: a})
+
+[]
+(rec a:1S . &{A: a})
+(rec a:*S . &{A: a})

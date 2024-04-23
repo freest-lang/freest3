@@ -1,4 +1,4 @@
-id' : forall a : 1T . a -> a
+id' : a -> a
 id' x = x
 
 f : Int 1-> Int

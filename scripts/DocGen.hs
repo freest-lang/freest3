@@ -151,7 +151,7 @@ isFunction s =
         Nothing -> False
     where
         -- HACK
-        isSpecial = not . (== '\\')
+        isSpecial = not . (`elem` "\\=()")
 
 isSection :: String -> Bool
 isSection = isPrefixOf "-- # "

@@ -24,11 +24,11 @@ instance DefaultTypeOp T.Type where
     lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
   getDefault m (T.Labelled p s cm) =
     lookupPos m p $ T.Labelled p s $ getDefault m cm
-  getDefault m (T.Semi p t u) =
-    lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
+  -- getDefault m (T.Semi p t u) =
+  --   lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
   getDefault m (T.Message p pol t) =
     lookupPos m p $ T.Message p pol $ getDefault m t
-  getDefault m (T.Forall p b) = lookupPos m p $ T.Forall p $ getDefault m b
+  -- getDefault m (T.Forall p b) = lookupPos m p $ T.Forall p $ getDefault m b
   getDefault m (T.Rec    p b) = lookupPos m p $ T.Rec p $ getDefault m b
   getDefault _ t              = t
 
@@ -40,8 +40,6 @@ instance DefaultTypeOp Exp where
   getDefault m (Case p e fm  ) = Case p (getDefault m e) (getDefault m fm)
   getDefault m (TypeAbs p b  ) = TypeAbs p $ getDefault m b
   getDefault m (TypeApp p e t) = TypeApp p (getDefault m e) (getDefault m t)
-  getDefault m (Cond p e1 e2 e3) =
-    Cond p (getDefault m e1) (getDefault m e2) (getDefault m e3)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
   getDefault _ e           = e

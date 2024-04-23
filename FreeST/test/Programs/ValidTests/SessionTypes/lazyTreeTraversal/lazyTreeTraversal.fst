@@ -20,10 +20,10 @@ with XploreNodeChan (adapted from the paper).
 
 data Tree = Leaf | Node Int Tree Tree
 
-type XploreTreeChan : 1S = +{LeafC: Skip,
+type XploreTreeChan = +{LeafC: Skip,
                        NodeC: XploreNodeChan}
 
-type XploreNodeChan : 1S = &{
+type XploreNodeChan = &{
    Value : !Int;XploreNodeChan ,
    Left : XploreTreeChan ; XploreNodeChan ,
    Right : XploreTreeChan ; XploreNodeChan ,
@@ -31,7 +31,7 @@ type XploreNodeChan : 1S = &{
  }
 
 -- The client. Send the tree as requested by the server.
-exploreTree : forall a: 1S . XploreTreeChan;a -> Tree 1-> a
+exploreTree : XploreTreeChan;a -> Tree 1-> a
 exploreTree c tree =
   case tree of {
     Leaf ->
@@ -40,7 +40,7 @@ exploreTree c tree =
       exploreNode @a (select NodeC c) x l r
     }
 
-exploreNode : forall a: 1S . XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
+exploreNode : XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
 exploreNode c x l r =
   match c with {
     Value c ->
@@ -57,7 +57,7 @@ exploreNode c x l r =
 
 -- The server. Compute the product of the values in a tree;
 -- explicitely request the values; stop as soon a zero is received
-server : forall a: 1S . dualof XploreTreeChan ;a -> Int 1-> (a, Int)
+server : dualof XploreTreeChan ;a -> Int 1-> (a, Int)
 server c1 n =
   match c1 with {
     LeafC c1 ->
@@ -66,7 +66,7 @@ server c1 n =
       serverNode @a c1 n
   }
 
-serverNode : forall a: 1S . dualof XploreNodeChan;a -> Int 1-> (a, Int)
+serverNode : dualof XploreNodeChan;a -> Int 1-> (a, Int)
 serverNode c n =
   let (m, c) = receive (select Value c) in
   if m == 0

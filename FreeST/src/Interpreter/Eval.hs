@@ -9,10 +9,10 @@ import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.MkName
-import           Syntax.Program hiding (Prog)
+import           Syntax.Program
 import           Util.Error
 import           Util.State hiding (void)
-import           Validation.Phase
+import           Typing.Phase
 import           Syntax.AST
 
 import           Control.Concurrent ( forkIO )
@@ -86,10 +86,12 @@ eval fun tys ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tys ctx eenv e1
   eval fun tys (Map.insert x v ctx) eenv e2
 eval fun tys ctx eenv (E.Case s e m) = eval fun tys ctx eenv e >>=  evalCase fun s tys ctx eenv m 
+eval fun _ _ _ _ = internalError "Interpreter.Eval.eval" fun
+
 
 evalCase :: Variable -> Span -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
-evalCase name _ tys ctx eenv m (Chan c) = do
-  (Label !v, !c) <- receive c
+evalCase name _ tys ctx eenv m (Chan c0) = do
+  (Label !v, !c) <- receive c0
   let (patterns : _, e) = m Map.! mkVar defaultSpan v
   let ctx'              = Map.insert patterns (Chan c) ctx
   eval name tys ctx' eenv e
@@ -97,7 +99,7 @@ evalCase name s tys ctx eenv m (Cons x xs) =
   case m Map.!? x of
     Nothing ->
       let msg = "Non-exhaustive patterns in function " ++ show name in
-      die $ showErrors True "" Map.empty (RuntimeError s msg)
+      die $ showError True (Right "") Map.empty (RuntimeError s msg)
     Just (patterns, e) -> 
       let lst            = zip patterns xs in
       let ctx1 = foldl (\acc (c, y : _) -> Map.insert c y acc) ctx lst in 
@@ -116,4 +118,4 @@ evalVar _ tEnv ctx eenv x
      return $ exception (UndefinedFunction (getSpan x))
   | otherwise                   = internalError "Interpreter.Eval.evalVar" x
   where
-    exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err
+    exception err = unsafePerformIO $ die $ showError False (Right "") Map.empty err

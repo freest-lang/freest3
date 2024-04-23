@@ -3,17 +3,17 @@ module Validation.TestTypesValidSpec
   )
 where
 
-import           Control.Monad.State ( runState )
-import qualified Data.Map.Strict as Map
-                                                ( empty )
-import           Elaboration.ResolveDuality as Dual
-import           SpecUtils
 import           Syntax.Kind ( Kind )
+import           Elaboration.ResolveDuality as Dual
+import           Elaboration.Phase
+import           Typing.Rename ( renameType )
+import           Kinding.Subkind ( (<:) )
+import           Kinding.Kinding ( synthetise )
 import           Util.State ( initialS, errors )
-import           Validation.Kinding ( synthetise )
-import           Validation.Rename ( renameType )
-import           Validation.Subkind ( (<:) )
-import  Elaboration.Phase
+import           SpecUtils
+
+import           Control.Monad.State ( runState )
+import qualified Data.Map.Strict as Map ( empty )
 
 spec :: Spec
 spec = describe "Valid type tests" $ do

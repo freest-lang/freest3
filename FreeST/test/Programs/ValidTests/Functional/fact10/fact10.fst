@@ -1,6 +1,6 @@
-type Choice : 1S = +{More: !Int;Choice, Enough: Skip}
+type Choice = +{More: !Int;Choice, Enough: Skip}
 
-sendInt : ∀ a:1S . Int -> Choice;a -> a
+sendInt : Int -> Choice;a -> a
 sendInt i c =
   if i == 0 then
     select Enough c
@@ -9,7 +9,7 @@ sendInt i c =
     let c = send i c in
     sendInt @a (i - 1) c
 
-rcvInt : ∀ a:1S . Int -> (dualof Choice);a -> (Int, a)
+rcvInt : Int -> (dualof Choice);a -> (Int, a)
 rcvInt acc c =
   match c with {
     Enough c -> (acc,c),

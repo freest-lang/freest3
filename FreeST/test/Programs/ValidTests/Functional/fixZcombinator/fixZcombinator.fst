@@ -8,7 +8,7 @@ used to calculate the factorial of 8
 
 -}
 
-fixZcomb : forall a . ((a -> a) -> (a -> a)) -> (a -> a)
+fixZcomb : ((a -> a) -> (a -> a)) -> (a -> a)
 fixZcomb f =
   (\x:(rec b.b -> (a -> a)) -> f(\z:a -> x x z))
   (\x:(rec b.b -> (a -> a)) -> f(\z:a -> x x z))

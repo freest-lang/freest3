@@ -1,4 +1,5 @@
 {
+{-# OPTIONS_GHC -Wno-all #-}
 module Parse.Lexer
 ( Token(..)
 , scanTokens
@@ -7,7 +8,7 @@ module Parse.Lexer
 
 
 import           Syntax.Base 
-import           Util.Error (ErrorType(..))
+import           Util.Error (ErrorType(..), internalError)
 }
 
 %wrapper "posn"
@@ -339,25 +340,26 @@ scanTokens :: String -> FilePath -> Either ErrorType [Token]
 scanTokens input filename =
     case go (alexStartPos,'\n',[],input) of
       Right x -> Right $ trim x
-      x -> x
+      left -> left
   where
     go inp@(pos,_,_,input) =
       case alexScan inp 0 of
         AlexEOF -> Right []
         AlexError _ ->
           let p = internalPos pos in
-          Left $ LexicalError (Span (startPos p) (endPos p) filename) (show $ head input)
-        AlexSkip  inp' len     -> go inp'
+          Left $ LexicalError (Span filename (startPos p) (endPos p)) (show $ head input)
+        AlexSkip  inp' _     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
             Right x -> Right $ act pos (take len input) : x
-            x -> x
+            tok -> tok
 
 getLineNum :: AlexPosn -> Int
-getLineNum (AlexPn offset lineNum colNum) = lineNum
+getLineNum (AlexPn _ lineNum _) = lineNum
 
+-- AlexPn offset lineNum colNum
 getColumnNum :: AlexPosn -> Int
-getColumnNum (AlexPn offset lineNum colNum) = colNum
+getColumnNum (AlexPn _ _ colNum) = colNum
 
 trim :: [Token] -> [Token]
 trim = reverse . trim' . reverse . trim'
@@ -370,7 +372,7 @@ trim = reverse . trim' . reverse . trim'
 -- POSITIONS
 
 internalPos :: AlexPosn -> Span
-internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
+internalPos (AlexPn _ l c) = let p = (l, c) in Span "<default>" p p
 
 -- TODO: proper spans?, proper filename
 instance Located Token where
@@ -469,5 +471,6 @@ getText :: Token -> String
 getText (TokenUpperId _ x) = x
 getText (TokenLowerId _ x) = x
 getText (TokenCmp _ x) = x
+getText tok = internalError "Parse.Lexer.getText" tok
 
 }

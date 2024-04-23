@@ -1,9 +1,9 @@
 data List = Cons Int List | Nil
 
-type ListOut : 1S = +{Nil : Skip, Cons: !Int;ListOut}
+type ListOut = +{Nil : Skip, Cons: !Int;ListOut}
 type ListIn = dualof ListOut
 
-rcvList : forall a : 1S . ListOut;a -> (List, a)
+rcvList : ListOut;a -> (List, a)
 rcvList c =
   match c with {
     Cons c ->
@@ -13,23 +13,23 @@ rcvList c =
     Nil c -> (Nil, c)
   }
 
-sendList : forall a : 1S . ListIn;a -> List -> a
+sendList : ListIn;a -> List -> a
 sendList c l =
   case l of {
     Cons x xs ->
-      let c = select c Cons in
-      let c = send c x in
+      let c = select Cons c in
+      let c = send x c in
       sendList @a c xs,
-    Nil       -> select c Nil
+    Nil       -> select Nil c
   }
 
 
 main : List
 main =
-  let (x, y) = new @ListOut;End () in
-  let _      = fork @() (\_:()-> sendList @End x aList |> close) in
-  let (list, y) = rcvList @End y in
-  close y; 
+  let (x, y) = new @(ListOut;Close) () in
+  let _      = fork @() (\_:() 1-> sendList @Close x aList |> close) in
+  let (list, y) = rcvList @Wait y in
+  wait y; 
   list
 
 aList : List

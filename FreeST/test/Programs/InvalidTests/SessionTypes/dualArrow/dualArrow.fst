@@ -1,4 +1,4 @@
-type RcvInt : 1S = ?Int
+type RcvInt = ?Int
 type Arrow = Int -> dualof RcvInt -> Int
 
 sendInt : Arrow

@@ -1,5 +1,5 @@
 {- |
-Module      :  Bisimulation.AlphaEquivalence
+Module      :  Equivalence.AlphaCongruence
 Description :  Alpha equivalence for types
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 Type equality up to bound variable renaming
 -}
 
-module Bisimulation.AlphaEquivalence
+module Equivalence.AlphaCongruence
   (
   )
 where

@@ -7,12 +7,12 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeChannel : 1S = +{
+type TreeChannel = +{
   LeafC : Skip,
   NodeC : !Int ; TreeChannel ; TreeChannel
  }
 
-write : forall a:1S . Tree -> TreeChannel; a -> a
+write : Tree -> TreeChannel; a -> a
 write Leaf         c = select LeafC c
 write (Node x l r) c =
   select NodeC c |>
@@ -20,7 +20,7 @@ write (Node x l r) c =
   write @(TreeChannel;a) l |>
   write@a r
 
-read : forall a:1S . dualof TreeChannel; a -> (Tree, a)
+read : dualof TreeChannel; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) = 
   let (x, c) = receive c in

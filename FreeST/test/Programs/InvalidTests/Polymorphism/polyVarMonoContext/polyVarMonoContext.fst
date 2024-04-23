@@ -1,4 +1,4 @@
-f : forall a : *T . a -> a
+f : a -> a
 f x = x
 
 main : Int

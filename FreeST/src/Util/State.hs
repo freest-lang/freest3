@@ -11,7 +11,7 @@ import           Util.Error
 import           Util.Warning
 
 import qualified Control.Monad.State as S
-import           Data.List ( intercalate )
+import           Data.List ( intercalate, nub )
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Traversable as Traversable
@@ -131,8 +131,8 @@ getNextIndex = do
 -- | ERRORS
 
 getErrors :: RunOpts -> FreestS a -> String
-getErrors runOpts s = (intercalate "\n" . map f . take 10 . reverse . errors) s
-  where f = showErrors (isStylable runOpts) (runFilePath runOpts) (typenames s)
+getErrors runOpts s = (intercalate "\n" . map f . take 10 . reverse . nub . errors) s
+  where f = showError (isStylable runOpts) (Left $ runFilePath runOpts) (typenames s)
 
 hasErrors :: FreestS a -> Bool
 hasErrors = not . null . errors
@@ -147,17 +147,13 @@ setErrors errors = S.modify (\s -> s { errors })
 
 getWarnings :: RunOpts -> FreestS a -> String
 getWarnings runOpts s = (intercalate "\n" . map f . take 10 . reverse . warnings) s
-  where f = showWarnings (runFilePath runOpts) (typenames s)
+  where f = showWarnings (isStylable runOpts) (runFilePath runOpts) (typenames s)
 
 hasWarnings :: FreestS a -> Bool
 hasWarnings = not . null . warnings
 
-addWarning :: WarningType -> FreestState a ()
+addWarning :: S.MonadState (FreestS a) m => WarningType -> m ()
 addWarning w = S.modify (\s -> s { warnings = w : warnings s })
-
--- | Fresh var
-freshTVar :: S.MonadState (FreestS a) m => String -> Span -> m Variable
-freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 
 -- | RUNOPTS, Move to other module ???

@@ -3,25 +3,24 @@ module Validation.TestExpressionValidSpec
   )
 where
 
+import           Syntax.Expression
+import           Syntax.Program (noConstructors)
+import           Typing.Phase
+import           Elaboration.Elaboration ( elaboration )
+import           Elaboration.ResolveDuality as Dual
+import           Elaboration.Phase
+import           Typing.Rename ( renameProgram, rename )
+import           Typing.Typing ( checkAgainst )
+import           Parse.Phase
+import           PatternMatch.PatternMatch
+import           Paths_FreeST ( getDataFileName )
+import           SpecUtils
+import           Util.State
+import           FreeST
+
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Elaboration.Elaboration ( elaboration )
-import           Elaboration.ResolveDuality as Dual
-import           Paths_FreeST ( getDataFileName )
-import           SpecUtils
-import           Syntax.Expression
-import           Syntax.Program (noConstructors)
-import           Util.State
-import           Validation.Rename
-import           Validation.Typing ( checkAgainst )
-
-import Parse.Phase
-import Validation.Phase
-import Elaboration.Phase
-import PatternMatch.PatternMatch
-import FreeST
-
 
 spec :: Spec
 spec = describe "Valid expressions" $ do
@@ -29,12 +28,12 @@ spec = describe "Valid expressions" $ do
   p <- runIO prelude
   mapM_ (matchValidExpressionSpec p) (chunksOf 2 t)
 
-matchValidExpressionSpec :: (Validation.Phase.Defs, ElabS) -> [String] -> Spec
+matchValidExpressionSpec :: (Typing.Phase.Defs, ElabS) -> [String] -> Spec
 matchValidExpressionSpec p [e, t] =
   it (e ++ " : " ++ t) $
     isExpr p (read e) (read t) `shouldBe` Left True
 
-isExpr :: (Validation.Phase.Defs, ElabS) -> Exp -> Type -> TestExpectation
+isExpr :: (Typing.Phase.Defs, ElabS) -> Exp -> Type -> TestExpectation
 isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = let ((t',e'), s') = runState resolveBoth prelude in
@@ -42,7 +41,7 @@ isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (error
 
   test t e s' = do
     setErrors (errors s')
-    renameState
+    renameProgram
     t' <- rename Map.empty Map.empty t
     e' <- rename Map.empty Map.empty e
     checkAgainst Map.empty e' t'

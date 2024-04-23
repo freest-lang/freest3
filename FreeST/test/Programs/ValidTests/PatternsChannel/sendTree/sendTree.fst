@@ -7,11 +7,11 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeChannel : 1S = +{ LeafC: Skip
-                         , NodeC: !Int; TreeChannel; TreeChannel
-                         }
+type TreeChannel = +{ LeafC: Skip
+                    , NodeC: !Int; TreeChannel; TreeChannel
+                    }
 
-sendTree : forall a:1S . Tree -> TreeChannel; a -> a
+sendTree : Tree -> TreeChannel; a -> a
 sendTree Leaf         c = select LeafC c
 sendTree (Node x l r) c =
   let c = select NodeC c in
@@ -19,7 +19,7 @@ sendTree (Node x l r) c =
   let c = sendTree@(TreeChannel;a) l c in
   sendTree@a r c
 
-receiveTree : forall a : 1S . dualof TreeChannel; a -> (Tree, a)
+receiveTree : dualof TreeChannel; a -> (Tree, a)
 receiveTree (LeafC c) = (Leaf, c)
 receiveTree (NodeC c) = 
   let (x, c) = receive c in
