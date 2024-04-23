@@ -27,7 +27,7 @@ import           Typing.Substitution ( subs )
 import           Typing.Normalisation ( normalise )
 
 
-import           Data.List (union)
+import           Data.List (union, delete)
 
 import qualified Data.Map.Strict     as Map
 import qualified Data.Set            as Set
@@ -65,26 +65,26 @@ minimal = minimalS cleanFresh
 
 minimalS :: [Int] -> Type -> Type
   -- Functional Types
-minimalS fresh (Arrow s m t u) = Arrow s m (minimalS fresh t) (minimalS fresh u)
-minimalS fresh (Labelled s k m) = Labelled s k (Map.map (minimalS fresh) m)
+minimalS f (Arrow s m t u) = Arrow s m (minimalS f t) (minimalS f u)
+minimalS f (Labelled s k m) = Labelled s k (Map.map (minimalS f) m)
 -- session types
-minimalS fresh (Message s p t) = Message s p (minimalS fresh t)
-minimalS fresh (Semi s t u) = Semi s (minimalS fresh' t) (minimalS fresh u)
-  where fresh' = fresh `union` freei u
+minimalS f (Message s p t) = Message s p (minimalS f t)
+minimalS f (Semi s t u) = Semi s (minimalS f' t) (minimalS f u)
+  where f' = filter (`notElem` freei u) f
   -- Polymorphism and recursive types
-minimalS fresh t@(Forall s1 (Bind s2 a k u)) =
-  Forall s1 (Bind s2 b k (minimalS fresh (subs vb a u)))
-    where ai = firstS fresh u
+minimalS f t@(Forall s1 (Bind s2 a k u)) =
+  Forall s1 (Bind s2 b k (minimalS f (subs vb a u)))
+    where ai = firstS f u
           b = mkNewVar ai a  -- to keep original var meta
           vb = Var (getSpan b) b
-minimalS fresh (Rec s1 (Bind s2 a k t))
-  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimalS fresh t))
+minimalS f (Rec s1 (Bind s2 a k t))
+  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimalS f t))
   -- Required by the current translation to grammar. Otherwise:
   -- uncaught exception: PatternMatchFail
   --  src/Bisimulation/TypeToGrammar.hs:130:3-39: Non-exhaustive patterns in z : zs  
-  | otherwise = minimalS fresh t
+  | otherwise = minimalS f t
   -- Type operators
-minimalS fresh (Dualof s t) = Dualof s (minimalS fresh t)
+minimalS f (Dualof s t) = Dualof s (minimalS f t)
   -- Int, Float, Char, String, Skip, End, Var
 minimalS _ t = t
 
