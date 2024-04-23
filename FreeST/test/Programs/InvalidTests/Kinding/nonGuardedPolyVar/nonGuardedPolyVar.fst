@@ -1,4 +1,4 @@
-f : ∀ α: 1S . (rec b: 1S . α ; b) -> ()
+f : (rec b . α ; b) -> ()
 f x = f @α x
 
 main : ()

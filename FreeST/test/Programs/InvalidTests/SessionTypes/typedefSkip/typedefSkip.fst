@@ -1,4 +1,4 @@
-type T : *S = End
+type T = Close
 
 main : (T, T)
 main = new @T ()

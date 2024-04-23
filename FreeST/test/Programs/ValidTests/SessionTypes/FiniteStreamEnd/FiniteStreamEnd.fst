@@ -1,12 +1,12 @@
-type FiniteStream : 1S = &{Done: Skip, More: ?Int;FiniteStream}
+type FiniteStream = &{Done: Skip, More: ?Int;FiniteStream}
 
-ints : ∀ c:1S . Int -> dualof FiniteStream;c -> c
+ints : Int -> dualof FiniteStream;c -> c
 ints n c = 
     if n < 0
     then select Done c
     else select More c |> send n |> ints @c (n - 1)
 
-type Fold : 1S = FiniteStream;!Int;Wait
+type Fold = FiniteStream;!Int;Wait
 
 foldClient : Int -> dualof Fold -> Int
 foldClient n w = ints @(?Int;Close) n w |> receiveAndClose @Int

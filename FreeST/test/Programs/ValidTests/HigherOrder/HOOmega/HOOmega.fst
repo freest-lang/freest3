@@ -1,4 +1,4 @@
-type Omega : 1S = !Omega;Close
+type Omega = !Omega;Close
 
 produce : Omega -> Diverge
 produce p =

@@ -1,4 +1,4 @@
-data T : 1T = One Skip | Two ?Int;Wait
+data T = One Skip | Two ?Int;Wait
 
 read : T -> Int
 read (One _) = 5

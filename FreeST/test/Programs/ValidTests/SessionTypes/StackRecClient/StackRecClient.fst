@@ -13,11 +13,11 @@ exactly the same, but in fact 'select Push' works on two distinct types: EStack
 and NEStack. They both feature a Push-labelled field.
 -}
 
-type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
-type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
+type  EStack = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
+type NEStack = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
 -- Stack server. The empty stack case
-eStack : forall a: 1S . EStack;a -> a
+eStack : EStack;a -> a
 eStack c =
   match c with {
     Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
@@ -25,7 +25,7 @@ eStack c =
   }
 
 -- Stack server. The non-empty stack case
-neStack : forall a: 1S . Int -> NEStack;a -> a
+neStack : Int -> NEStack;a -> a
 neStack x c =
   match c with {
     Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
@@ -33,15 +33,15 @@ neStack x c =
   }
 
 -- Stack operations. Push on an empty stack
-pushE : forall a: 1S . Int -> dualof EStack ; a -> dualof NEStack ; dualof EStack ; a
+pushE : Int -> dualof EStack ; a -> dualof NEStack ; dualof EStack ; a
 pushE n c = select Push c |> send n
 
 -- Stack operations. Push on a nonempty stack
-pushNE : forall a: 1S . Int -> dualof NEStack ; a -> dualof NEStack ; dualof NEStack ; a
+pushNE : Int -> dualof NEStack ; a -> dualof NEStack ; dualof NEStack ; a
 pushNE n c = select Push c |> send n
 
 -- Stack operations. Pop from a nonempty stack (and print the result)
-pop : forall a: 1S . dualof NEStack;a -> a
+pop : dualof NEStack;a -> a
 pop c = 
   let c = select Pop c in let (x, c) = receive c in
   putStr (show @Int x) ; putStr " " ; c
@@ -58,7 +58,7 @@ reverseThree c =
   |> select Stop
 
 -- A recursive client working on a nonempty stack
-reverseNE : forall a: 1S . Int -> dualof NEStack ; a -> dualof NEStack ; a
+reverseNE : Int -> dualof NEStack ; a -> dualof NEStack ; a
 reverseNE n c =
   if n == 0
   then c

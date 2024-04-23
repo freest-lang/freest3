@@ -26,6 +26,8 @@ module Syntax.Kind
   , isLin
   , isUn
   , isSession
+  , prekind
+  , mult
   )
 where
 
@@ -33,9 +35,9 @@ import           Syntax.Base -- hiding ( Multiplicity(..) )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-data PreKind = Session | Top | Absorb deriving (Ord, Eq)
+data PreKind = Session | Top | Absorb | PKVar Variable deriving (Ord, Eq)
 
-data Kind = Kind Span Multiplicity PreKind
+data Kind = Kind Span Multiplicity PreKind deriving Ord
 
 instance Eq Kind where
   (Kind _ m1 b1) == (Kind _ m2 b2) = m1 == m2 && b1 == b2
@@ -49,6 +51,13 @@ instance Located Kind where
 instance Default Kind where
   omission _ = ut defaultSpan
 
+-- Get prekind and mult from a kind
+prekind :: Kind -> PreKind
+prekind (Kind _ _ v) = v
+
+mult :: Kind -> Multiplicity
+mult (Kind _ m _) = m
+
 -- Abbreviations for the six available kinds
 lt, ut, ls, us, la, ua :: Span -> Kind
 lt p = Kind p Lin Top 
@@ -59,10 +68,12 @@ la p = Kind p Lin Absorb
 ua p = Kind p Un  Absorb
 
 isLin :: Kind -> Bool
+isLin (Kind _ MultVar{} _) = False
 isLin (Kind _ m _) = m == Lin
 
 isUn :: Kind -> Bool
-isUn = not . isLin
+isUn (Kind _ MultVar{} _) = False
+isUn k = not $ isLin k
 
 isSession :: Kind -> Bool
 isSession (Kind _ _ b) = b == Session

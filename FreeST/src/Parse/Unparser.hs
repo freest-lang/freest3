@@ -63,11 +63,13 @@ instance Show Variable where
 instance Show Multiplicity where
   show Un  = "*"
   show Lin = "1"
+  show (MultVar x) = show x
 
 -- Arrow multiplicity has a different textual representation
 showArrow :: Multiplicity -> String
 showArrow Un  = "->"
 showArrow Lin = "1->"
+showArrow _ = error "tmp"
 
 -- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
 -- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
@@ -81,6 +83,7 @@ instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
   show K.Absorb  = "A"
+  show (K.PKVar x) = show x
 
 instance Show K.Kind where
   show (K.Kind _ m p) = show m ++ show p
@@ -91,11 +94,14 @@ showBind :: (Show a, Show b, Show c) => a -> b -> Bool -> String -> c -> String
 showBind var sort paren arrow term =
   showSortedVar var sort paren ++ spaced arrow ++ show term
 
+showBindNoKind :: (Show a, Show b) => a -> String -> b -> String
+showBindNoKind var arrow term = show var ++ spaced arrow ++ show term
+
 showBindType :: Bind K.Kind T.Type -> String
-showBindType (Bind _ a k t) = showBind a k False "." t -- ∀ a:k . t
+showBindType (Bind _ a _ t) = showBindNoKind a "." t -- ∀ a:k . t
 
 showBindExp :: Bind K.Kind E.Exp -> String
-showBindExp (Bind _ a k e) = showBind a k False "=>" e -- Λ a:k => e
+showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String

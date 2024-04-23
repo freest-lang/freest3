@@ -14,7 +14,7 @@ This version uses the pipeline operator |>.
 
 -}
 
-type TermChannel : 1S  = +{
+type TermChannel  = +{
    Const: !Int,
    Add: TermChannel;TermChannel,
    Mult: TermChannel;TermChannel
@@ -30,7 +30,7 @@ computeService c =
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
 -- residual.
-receiveEval : forall a: 1S . dualof TermChannel;a -> (Int, a)
+receiveEval : dualof TermChannel;a -> (Int, a)
 receiveEval c =
   match c with {
     Const c ->

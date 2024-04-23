@@ -1,15 +1,15 @@
 data List = Nil | Cons Char List
-type InCharStream  : 1S = &{Done: Skip, More: ?Char;InCharStream}
-type OutCharStream : 1S = dualof InCharStream
+type InCharStream = &{Done: Skip, More: ?Char;InCharStream}
+type OutCharStream = dualof InCharStream
 
-server : forall α : 1S . InCharStream;α -> (List, α)
+server : InCharStream;α -> (List, α)
 server (Done c) = (Nil, c)
 server (More c) =
       let (h, c) = receive c in
       let (t, c) = server@α c in
       (Cons h t, c)
 
-client : forall α :1S . List -> OutCharStream;α -> α
+client : List -> OutCharStream;α -> α
 client Nil c = select Done c
 client (Cons h t) c =
 --      client@α l (send cons (select More c))

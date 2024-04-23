@@ -9,9 +9,9 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 
 -- The channel type, as seen from the producer side
 
-type TreeChannel : 1S = TreeC ; Close
+type TreeChannel = TreeC ; Close
 
-type TreeC : 1S = +{
+type TreeC = +{
   LeafC: Skip,
   NodeC: TreeC ; !(?Int ; Close); TreeC
  }
@@ -24,7 +24,7 @@ readTree r =
   wait r;
   tree
 -- where
-read : forall a:1S . dualof TreeC ; a -> (Tree, a)
+read : dualof TreeC ; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) =
   let (l, c) = read @(?(?Int ; Close) ; dualof TreeC ; a) c in
@@ -32,7 +32,7 @@ read (NodeC c) =
   let (r, c) = read @a c in
   (Node l x r, c)
 
-receiveCh : forall a:1S . ?(?Int; Close) ; a -> (Int, a)
+receiveCh : ?(?Int; Close) ; a -> (Int, a)
 receiveCh c =
   let (r, c) = receive c in
   let x = receiveAndClose @(Int) r in
@@ -46,7 +46,7 @@ writeTree : Tree -> TreeChannel -> ()
 writeTree tree writer =
   write @Close tree writer |> close
 -- where
-write : forall a:1S . Tree -> TreeC ; a -> a
+write : Tree -> TreeC ; a -> a
 write Leaf c = select LeafC c
 write (Node l x r) c = 
   c |> select NodeC
@@ -54,7 +54,7 @@ write (Node l x r) c =
     |> sendCh @(TreeC ; a) x
     |> write @a r
 
-sendCh : forall a:1S . Int -> !(?Int ; Close) ; a -> a
+sendCh : Int -> !(?Int ; Close) ; a -> a
 sendCh x c =
   let (r, w) = new @(?Int ; Close) () in
   let c = send r c in

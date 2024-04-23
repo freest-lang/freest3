@@ -1,4 +1,4 @@
-f : ∀a . a -> (a, a)
+f : a -> (a, a)
 f x =
   let (r, w) = new @(?a;Wait) () in
   fork (\_:()1-> send x w |> close);

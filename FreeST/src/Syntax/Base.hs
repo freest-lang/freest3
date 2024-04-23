@@ -53,7 +53,7 @@ class Located t where
 
 -- Multiplicity for types and expressions
 
-data Multiplicity = Un | Lin deriving Eq
+data Multiplicity = Un | Lin | MultVar Variable deriving (Ord, Eq)
 
 -- Variables for types and expressions
 
