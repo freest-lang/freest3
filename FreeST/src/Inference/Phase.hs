@@ -2,22 +2,20 @@
 module Inference.Phase where
 
 import           Syntax.AST
--- import           Syntax.Base
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
-import Syntax.Constraint
+import           Inference.Constraint
 import           Util.State
 import           Syntax.Base
 
 import qualified Data.Set as Set
-import Control.Monad.State
--- import           Data.Void
+import           Control.Monad.State
+
 
 data Inference
 
 type InferenceS = FreestS Inference
 
-type instance XDef Inference = E.Exp -- if it is in the end
+type instance XDef Inference = E.Exp -- if it is after elaboration
 type instance XExtra Inference = Extra
 
 data Extra = Extra
@@ -28,7 +26,6 @@ data Extra = Extra
   , pkVariables :: Set.Set Variable
   , constraints :: [Constraint] -- Set? kind is not ord... 
   }
-
 
 type InfState = FreestState Inference
 

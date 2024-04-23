@@ -1,10 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 module Inference.ConstraintTyping (constraintTyping) where
 
+import           Inference.Constraint
 import           Inference.ConstraintKinding
 import           Inference.Phase
 import           Syntax.Base
-import           Syntax.Constraint
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.MkName
@@ -12,8 +12,8 @@ import qualified Syntax.Type as T
 import qualified Typing.Extract as Extract
 import           Typing.Rename
 import           Typing.Typing
-import           Util.State
 import           Util.Error
+import           Util.State
 
 import           Control.Monad
 import           Control.Monad.State

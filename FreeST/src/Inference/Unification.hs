@@ -1,9 +1,9 @@
 module Inference.Unification where
 
+import           Inference.Constraint
 import           Inference.Phase
 import           Kinding.Subkind
 import           Syntax.Base
-import           Syntax.Constraint
 import qualified Syntax.Kind as K
 import           Util.Error
 import           Util.State

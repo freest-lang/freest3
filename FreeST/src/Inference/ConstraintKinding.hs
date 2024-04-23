@@ -1,10 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 module Inference.ConstraintKinding (constraintKinding) where
 
+import           Inference.Constraint
 import           Inference.Phase
 import           Kinding.Kinding
 import           Syntax.Base
-import           Syntax.Constraint
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error
