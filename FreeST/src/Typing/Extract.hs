@@ -55,7 +55,7 @@ pair e t =
   case normalise t of
     (T.Labelled _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
       return (m Map.! l0, m Map.! l1)
-    u -> let p = getSpan u in
+    u -> let p = getSpan e in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
   where l0 = head mkTupleLabels defaultSpan
         l1 = (mkTupleLabels !! 1) defaultSpan 
