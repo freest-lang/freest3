@@ -1,18 +1,18 @@
-{- |
-Module      :  Exchange a binary tree on a channel
-Description :  As in "Context-Free Session Types", ICFP'16
-Copyright   :  (c) LASIGE and University of Lisbon, Portugal
-Maintainer  :  balmeida@lasige.di.fc.ul.pt
--}
+-- {- |
+-- Module      :  Exchange a binary tree on a channel
+-- Description :  As in "Context-Free Session Types", ICFP'16
+-- Copyright   :  (c) LASIGE and University of Lisbon, Portugal
+-- Maintainer  :  balmeida@lasige.di.fc.ul.pt
+-- -}
 
 data Tree = Leaf | Node Tree Int Tree
 
 aTree : Tree
 aTree = Node (Node Leaf 5 Leaf) 7 (Node (Node Leaf 11 Leaf) 9 (Node Leaf 15 Leaf))
 
-type TreeChannel : 1S = TreeC ; Wait
+type TreeChannel = TreeC ; Wait
 
-type TreeC : 1S = &{
+type TreeC = &{
   LeafC: Skip,
   NodeC: TreeC ; ?Int ; TreeC
  }
@@ -23,7 +23,7 @@ readTree r =
   wait r;
   tree
 -- where
-read : forall a:1S . TreeC ; a -> (Tree, a)
+read : TreeC ; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) =
   let (l, c) = read @(?Int ; TreeC ; a) c in
@@ -35,7 +35,7 @@ writeTree : Tree -> dualof TreeChannel -> ()
 writeTree tree writer =
   write @Close tree writer |> close
 -- where
-write : forall a:1S . Tree -> dualof TreeC ; a -> a
+write : Tree -> dualof TreeC ; a -> a
 write Leaf c = select LeafC c
 write (Node l x r) c = 
   c |> select NodeC

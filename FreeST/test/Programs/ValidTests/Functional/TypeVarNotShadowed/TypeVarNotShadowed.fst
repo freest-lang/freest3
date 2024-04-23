@@ -1,7 +1,7 @@
 -- Type variables should not be shadowed by program variables.
 
 -- implicit type abstraction
-f : ∀ c . c -> Int
+f : c -> Int
 f c = f @c c
 
 -- explicit type abstraction

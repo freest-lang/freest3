@@ -9,18 +9,18 @@ Note that FreeST does not have refinement types
 type CreditCard = String
 
 -- type Promotion : *S = *?(String, CreditCard, Int)
-type Promotion  : *S = *?Promotion'
-type Promotion' : 1S = !String; !CreditCard; !Int; End 
+type Promotion  = *?Promotion'
+type Promotion' = !String; !CreditCard; !Int; Close 
 
-type Decision : 1S = &{ Accepted: ?Promotion; End
-                      , Denied  : ?String   ; End
-                      }
+type Decision = &{ Accepted: ?Promotion; Close
+                 , Denied  : ?String   ; Close
+                 }
 
-type DonationS : *S = *!Donation
-type Donation : 1S = +{ SetTitle: !String; Donation
-                      , SetDate : !Int   ; Donation
-                      , Commit  : Decision
-                      }
+type DonationS = *!Donation
+type Donation  = +{ SetTitle: !String; Donation
+                  , SetDate : !Int   ; Donation
+                  , Commit  : Decision
+                  }
 
 
 -- 2. One possible client
@@ -70,7 +70,7 @@ promotion p =
     --
     let (donor , p') = receive p' in
     let (ccard , p') = receive p' in
-    let amount       = receiveAndClose @Int p' in
+    let amount       = receiveAndWait @Int p' in
     bank ccard amount;
     promotion p
 
@@ -81,10 +81,10 @@ setup p title date =
         SetTitle p -> let (t, p) = receive p in setup p t     date,
         Commit   p -> if date < 2013
                       then 
-                        select Denied   p |> send "We can only accept 2013 donations\n" |> close
+                        select Denied p |> send "We can only accept 2013 donations\n" |> wait
                       else 
                         let (c, s) = new @Promotion () in
-                        select Accepted p |> send c |> close ;
+                        select Accepted p |> send c |> wait ;
                         promotion s
     }
 

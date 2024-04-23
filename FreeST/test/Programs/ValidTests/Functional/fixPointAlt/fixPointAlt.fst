@@ -13,7 +13,7 @@ used to calculate the factorial of 8
 -- fix' : forall a . ((a -> a) -> (a -> a)) -> (a -> a)
 -- fix' f = f (fix' @a f) 
 
-fix' : forall a . ((a -> a) -> (a -> a)) -> a -> a
+fix' : ((a -> a) -> (a -> a)) -> a -> a
 fix' f x = f (fix' @a f) x
 
 fact : Int -> Int

@@ -32,14 +32,15 @@ import qualified Syntax.Kind as K
 import           Syntax.Program ( noConstructors )
 import qualified Syntax.Type as T
 import qualified Typing.Substitution as Subs
-import           Typing.Phase
+-- import           Typing.Phase
+import           Inference.Phase
 import           Util.Error ( internalError )
 import           Util.State
 
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
 
-renameProgram :: TypingState ()
+renameProgram :: InfState ()
 renameProgram = do
   -- Types
   tys <- getTypes
@@ -50,7 +51,7 @@ renameProgram = do
   sigs <- getSignatures
   tMapWithKeyM_ renameFun (noConstructors tys sigs)
 
-renameFun :: Variable -> T.Type -> TypingState ()
+renameFun :: Variable -> T.Type -> InfState ()
 renameFun f t = do
   rename Map.empty Map.empty t >>= addToSignatures f
   getFromDefinitions f >>= \case

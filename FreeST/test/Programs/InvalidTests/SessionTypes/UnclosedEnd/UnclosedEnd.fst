@@ -1,21 +1,21 @@
-type FiniteStream : 1S = &{Done: Skip, More: ?Int;FiniteStream}
+type FiniteStream = &{Done: Skip, More: ?Int;FiniteStream}
 
-ints : ∀ c:1S . Int -> dualof FiniteStream;c -> c
+ints : Int -> dualof FiniteStream;c -> c
 ints n c = 
     if n < 0
     then select Done c
     else select More c |> send n |> ints @c (n - 1)
 
-type Fold : 1S  = FiniteStream;!Int;End
+type Fold = FiniteStream;!Int;Wait
 
 foldClient : Int -> dualof Fold -> Int
 foldClient n w =
-    let (x, w) = ints @(?Int;End) n w |> receive in x
+    let (x, w) = ints @(?Int;Close) n w |> receive in x
 
 foldServer : Int -> Fold -> ()
 foldServer sum c =
     match c with {
-        Done c -> send sum c |> close,
+        Done c -> send sum c |> wait,
         More c -> let (n, c) = receive c in
                   foldServer (sum + n) c
     }

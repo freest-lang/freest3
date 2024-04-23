@@ -20,6 +20,8 @@ module Kinding.Kinding
   , un
   , lin
   , checkAgainstAbsorb
+  , checkContractive
+  , unr
   )
 where
 
@@ -80,12 +82,13 @@ synthetise' s kEnv (T.Labelled _ T.Choice{} m) = do
              (snd $ Map.elemAt 0 ks) ks
 --  Map.foldl (flip meet) (K.ua p) <$> tMapM (checkAgainstSession' s kEnv) m
 -- Session or functional
-synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
+synthetise' s kEnv mu@(T.Rec _ (Bind _ a k t)) = do
 --   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
   checkContractive s a t
   k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
   unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
-  if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
+--  if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
+  if unr s kEnv mu
     then pure $ K.Kind p m K.Absorb
     else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
@@ -94,6 +97,7 @@ synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
+--    return $ omission p
 -- Type operators
 synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
   case kEnv Map.!? a of
@@ -126,7 +130,6 @@ checkAgainstAbsorb :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kin
 checkAgainstAbsorb kEnv t = do
   ~k@(K.Kind _ _ p) <- synthetise kEnv t
   when (p /= K.Absorb) (addError $ UnendedSession (getSpan t) t k) $> k
---  return k
 
 -- Determine whether a given type is unrestricted
 un :: MonadState (FreestS a) m => T.Type -> m Bool
@@ -143,9 +146,16 @@ mult m1 t = do
   return $ m2 == m1
 
 -- Unnormed lifted to types
-unr :: Set.Set Variable -> T.Type -> Bool
-unr s (T.Semi _ t u) = unr s t || unr s u
-unr s (T.Rec _ (Bind _ a _ t)) = unr (Set.insert a s) t
-unr s (T.Labelled _ (T.Choice _) m) = all (unr s) (Map.elems m)
-unr s (T.Var _ a) = Set.member a s
-unr _ _ = False
+-- unr :: Set.Set Variable -> T.Type -> Bool
+-- unr s (T.Semi _ t u) = unr s t || unr s u
+-- unr s (T.Rec _ (Bind _ a _ t)) = unr (Set.insert a s) t
+-- unr s (T.Labelled _ (T.Choice _) m) = all (unr s) (Map.elems m)
+-- unr s (T.Var _ a) = Set.member a s
+-- unr _ _ = False
+
+unr :: Set.Set Variable -> K.KindEnv -> T.Type -> Bool
+unr s kEnv (T.Semi _ t u) = unr s kEnv t || unr s kEnv u
+unr s kEnv (T.Rec _ (Bind _ a k t)) = unr s (Map.insert a k kEnv) t
+unr s kEnv (T.Labelled _ (T.Choice _) m) = all (unr s kEnv) (Map.elems m)
+unr s kEnv (T.Var _ a) = Set.notMember a s && Map.member a kEnv
+unr _ _ _ = False
