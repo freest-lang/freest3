@@ -374,3 +374,13 @@ forall a:1T . forall b:1S . !Int ; !a ; b
 
 forall a:1S . a ; forall b:1T . (dualof !b ; !b)
 1S
+
+(rec a:1S . !Int ; a) ; !Int
+1S
+
+(rec x:1S . forall a:1S . !a;x) ; ?Int
+1S
+
+forall a:1S . (rec x:1S . forall a:1S . !a;x) ; ?a
+1S
+

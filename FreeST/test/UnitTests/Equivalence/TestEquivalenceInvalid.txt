@@ -279,3 +279,12 @@ forall b:1S . forall a:1S . a ; b
 []
 forall a:1S . forall b:1S . a ; b
 forall a:1S . a ; forall b:1S . b
+
+[]
+forall a:1S . (rec x:1S . forall a:1S . !a;x) ; ?a
+(rec x:1S . forall a:1S . !a;x) ; forall a:1S . ?a
+-- order of recieving types in forall is different
+
+[]
+forall a:1S . (forall a:1S . ?a) ; !a
+forall a:1S . (forall a:1S . ?a ; !a)

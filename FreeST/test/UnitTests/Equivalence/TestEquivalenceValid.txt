@@ -1273,7 +1273,32 @@ rec x:*S . &{A:x, B:x, C:x}
 []
 forall a:1S . a
 forall b:1S . b
+-- alpha congruent. No renaming involved
 
 []
 !Int ; (forall a:1S . forall b:1S . a ; b)
 !Int ; (forall b:1S . forall a:1S . b ; a)
+
+[]
+(forall a:1S . a) ; (forall b:1S . b)
+(forall c:1S . c) ; (forall c:1S . c)
+
+[]
+(forall a:1S . a) ; (forall b:1S . b)
+forall c:1S . (c ; forall c:1S . c)
+
+[]
+forall a:1S . (rec x:1S . forall a:1S . !a;x) ; ?a
+forall a:1S . (rec x:1S . (forall a:1S . !a;x) ; ?a)
+
+[]
+(forall a:1S . !a) ; !Int
+forall a:1S . (!a ; !Int)
+
+[]
+forall b:1S . (forall a:1S . ?a) ; !b
+forall b:1S . (forall a:1S . ?a ; !b)
+
+[]
+forall a:1S . a ; Skip
+forall b:1S . b ; Skip
