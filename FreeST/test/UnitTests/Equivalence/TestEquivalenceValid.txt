@@ -137,10 +137,6 @@ rec b:1S . !(rec a:1S . +{A: !Int;a, B: Close;a});Skip;?(b;Skip;!(Close);Close;b
 ∀ β: 1S . (β;Skip);Close
 
 []
-Close ; ∀ α: 1S . α
-∀ β: 1S . Close
-
-[]
 ∀ α: 1S . Close;α
 ∀ β: 1S . Close
 

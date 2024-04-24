@@ -269,6 +269,10 @@ forall a:1S . *!Int ; a
 -- passing types
 
 []
+Close ; ∀ α: 1S . α
+∀ β: 1S . Close
+
+[]
 forall a:1S . forall b:1S . a ; b
 forall b:1S . forall a:1S . a ; b
 
