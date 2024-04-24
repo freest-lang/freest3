@@ -1275,5 +1275,9 @@ rec x:*S . &{A:x, B:x, C:x}
 (forall a:1S . a)
 
 []
-(forall a:1S . forall a:1S . a ; a)
-(forall a:1S . a ; forall a:1S . a)
+forall a:1S . a
+forall b:1S . b
+
+[]
+!Int ; (forall a:1S . forall b:1S . a ; b)
+!Int ; (forall b:1S . forall a:1S . b ; a)

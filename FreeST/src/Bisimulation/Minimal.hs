@@ -32,38 +32,12 @@ import           Data.List (union, delete)
 import qualified Data.Map.Strict     as Map
 import qualified Data.Set            as Set
 
---minimal :: Type -> Type
---  -- Functional Types
---minimal (Arrow s m t u) = Arrow s m (minimal t) (minimal u)
---minimal (Labelled s k m) = Labelled s k (Map.map minimal m)
---  -- Session Types
---minimal (Semi s (Forall sf (Bind sb a k t)) u) = Forall s (Bind sb a k (minimal (subs vb a (Semi s t u))))
---  where b = mkNewVar (first t) a
---        vb = Var (getSpan b) b
---minimal v@(Semi s t u)
---  | whnf v = Semi s (minimal t) (minimal u)
---  | otherwise = minimal (normalise v)
---  -- lint 
---minimal (Message s p t) = Message s p (minimal t)
---  -- Polymorphism and recursive types
---minimal t@(Forall s1 (Bind s2 a k u)) =
---  Forall s1 (Bind s2 b k (minimal (subs vb a u)))
---    where b = mkNewVar (first t) a
---          vb = Var (getSpan b) b
---minimal (Rec s1 (Bind s2 a k t))
---  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal t))
---  -- Required by the current translation to grammar. Otherwise:
---  -- uncaught exception: PatternMatchFail
---  --  src/Bisimulation/TypeToGrammar.hs:130:3-39: Non-exhaustive patterns in z : zs  
---  | otherwise = minimal t
---  -- Type operators
---minimal (Dualof s t) = Dualof s (minimal t)
---  -- Int, Float, Char, String, Skip, End, Var
---minimal t = t
+import           Debug.Trace
 
 minimal = minimalS cleanFresh
 
 minimalS :: [Int] -> Type -> Type
+-- f: set of available fresh variables
   -- Functional Types
 minimalS f (Arrow s m t u) = Arrow s m (minimalS f t) (minimalS f u)
 minimalS f (Labelled s k m) = Labelled s k (Map.map (minimalS f) m)
@@ -73,9 +47,11 @@ minimalS f (Semi s t u) = Semi s (minimalS f' t) (minimalS f u)
   where f' = filter (`notElem` freei u) f
   -- Polymorphism and recursive types
 minimalS f t@(Forall s1 (Bind s2 a k u)) =
+  --trace "# inside forall" (Forall s1 (Bind s2 b k (minimalS f (subs vb a u))))
   Forall s1 (Bind s2 b k (minimalS f (subs vb a u)))
     where ai = firstS f u
-          b = mkNewVar ai a  -- to keep original var meta
+          --b = mkNewVar ai a  -- to keep original var meta
+          b = Variable (getSpan a) ("#" ++ extern a) ai
           vb = Var (getSpan b) b
 minimalS f (Rec s1 (Bind s2 a k t))
   | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimalS f t))
@@ -99,16 +75,6 @@ minimalS _ t = t
 --whnf (Semi _ Rec{} _)      = False
 --whnf _                     = True
 
---first :: Type -> Int
---first t = first' 0 $ Set.toList $ Set.map (\(Variable _ _ n) -> n) (free t)
---  -- TODO: avoid converting to list
---  where
---    first' :: Int -> [Int] -> Int
---    first' n [] = n
---    first' n (m:ms)
---      | n < m     = n
---      | otherwise = first' (n + 1) ms
-
 
 
 -- OBS: fresh variables can't be implemented with sets, as Data.Set doesn't support infinite sets. It hangs.
@@ -128,9 +94,12 @@ first = firstS cleanFresh
 
 -- assumes list is ordered asc.
 firstS :: [Int] -> Type -> Int
-firstS fresh t = head $ filter (`notElem` freei t) fresh
+firstS fresh t = trace ("# Chosen var: " ++ show f ++ ". Type: \"" ++ show t ++ "\"") f
+  where f = head $ filter (`notElem` freei t) fresh
 
 freei :: Type -> [Int]
-freei t = Set.toList $ Set.map (\(Variable _ _ n) -> n) (free t)
+--freei t = trace ("# Free vars in \"" ++ show t ++ "\": " ++ show fv) fv
+freei t = fv
+  where fv = Set.toList $ Set.map (\(Variable _ _ n) -> n) $ Set.filter (\(Variable _ id _) -> head id == '#')(free t)
 
 
