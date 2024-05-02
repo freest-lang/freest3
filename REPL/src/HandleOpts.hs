@@ -21,6 +21,7 @@ import           Utils
 import qualified Kinding.Kinding as K
 import           Typing.Rename ( renameProgram )
 import           Typing.Typing ( typeCheck )
+import           Inference.Inference
 
 import           Control.Monad.State
 import           Data.Char (isUpper)
@@ -229,12 +230,24 @@ check s runFilePath successMsg = do
   let runOpts = interactiveRunOpts{runFilePath}
   let patternS = patternMatch s
   if hasErrors patternS
-    then liftIO $ putStrLn $ getErrors runOpts patternS
-    else let (defs, elabS) = elaboration patternS in
-      if hasErrors elabS
-      then liftIO $ putStrLn $ getErrors runOpts elabS
-      else            
-        let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts{runFilePath} defs elabS) in
-        if hasErrors s4 then liftIO $ putStrLn $ getErrors runOpts s4
-        else put s4 >>
-          maybe (return ()) (liftIO . putStrLn) successMsg
+  then liftIO $ putStrLn $ getErrors runOpts patternS
+  else
+    let (defs, elabS) = elaboration (pkVariables $ extra s) (mVariables $ extra s) patternS in
+    if hasErrors elabS then
+      liftIO $ putStrLn $ getErrors runOpts elabS
+    else
+      let infS = execState (renameProgram >> infer) (elabToInf defs elabS) in
+      let tCheckS = execState typeCheck (infToTyping runOpts infS) in
+      if hasErrors tCheckS then liftIO $ putStrLn $ getErrors runOpts tCheckS
+      else put tCheckS >> maybe (return ()) (liftIO . putStrLn) successMsg
+
+
+
+
+      -- if hasErrors elabS
+      -- then liftIO $ putStrLn $ getErrors runOpts elabS
+      -- else            
+      --   let s4 = execState (typeCheck) (elabToTyping runOpts{runFilePath} defs elabS) in
+      --   if hasErrors s4 then liftIO $ putStrLn $ getErrors runOpts s4
+      --   else put s4 >>
+      --     maybe (return ()) (liftIO . putStrLn) successMsg

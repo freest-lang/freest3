@@ -3,15 +3,17 @@ module REPL where
 import           Elaboration.Elaboration ( elaboration )
 import           FreeST hiding (main)
 import           HandleOpts
+import           Inference.Inference
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser
+import           Parse.Phase
 import           Paths_FreeST ( getDataFileName )
+import           PatternMatch.PatternMatch
 import           Syntax.Base
+import           Typing.Rename ( renameProgram )
+import qualified Typing.Typing as T
 import           Util.State
 import           Utils
-import qualified Typing.Typing as T
-import           Parse.Phase
-import           PatternMatch.PatternMatch
 
 import           Control.Monad.State
 import           Data.List
@@ -21,9 +23,9 @@ import           System.Directory
 import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
-import Debug.Trace (traceM)
+import           Debug.Trace (traceM)
 import qualified Syntax.Expression as E
-import Syntax.MkName
+import           Syntax.MkName
 
 
 main :: IO ()
@@ -38,8 +40,11 @@ main = do
   s2 <-  parseProgram s0
   -- | PatternMatch
   let patternS = patternMatch s2
-  let (defs, elabS) = elaboration patternS  
-  evalStateT (runInputT (replSettings home) (repl s2 args)) (elabToTyping defaultOpts{runFilePath="<interactive>"} defs elabS)
+  -- | Elaboration
+  let (defs, elabS) = elaboration (pkVariables $ extra s2) (mVariables $ extra s2) patternS
+  -- | Kind Inference  
+  let infS = execState (renameProgram >> infer) (elabToInf defs elabS)  
+  evalStateT (runInputT (replSettings home) (repl s2 args)) (infToTyping defaultOpts{runFilePath="<interactive>"} infS)
 
   -- s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
   -- let s2 = emptyPEnv $ execState elaboration s1

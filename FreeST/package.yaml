@@ -40,7 +40,6 @@ library:
     - Bisimulation.Bisimulation
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration
-#    - Equivalence.Equivalence
     - Syntax.Base
     - Syntax.AST
     - Syntax.Type
@@ -53,10 +52,8 @@ library:
     - Parse.Unparser
     - Util.Error
     - Util.Warning
-#    - Util.PrettyError
     - Util.State
     - Util.CmdLine
-#    - Util.PreludeLoader
     - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
@@ -76,6 +73,7 @@ library:
     - Elaboration.Phase
     - PatternMatch.PatternMatch
     - Equivalence.TypeEquivalence
+    - Inference.Inference
 
 executables:
   freest:

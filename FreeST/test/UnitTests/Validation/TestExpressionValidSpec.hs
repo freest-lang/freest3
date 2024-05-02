@@ -17,6 +17,7 @@ import           Paths_FreeST ( getDataFileName )
 import           SpecUtils
 import           Util.State
 import           FreeST
+import           Inference.Inference
 
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
@@ -33,15 +34,18 @@ matchValidExpressionSpec p [e, t] =
   it (e ++ " : " ++ t) $
     isExpr p (read e) (read t) `shouldBe` Left True
 
-isExpr :: (Typing.Phase.Defs, ElabS) -> Exp -> Type -> TestExpectation
+isExpr :: (Typing.Phase.Defs, ElabS)  -> Exp -> Type -> TestExpectation
 isExpr (defs, prelude) e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = let ((t',e'), s') = runState resolveBoth prelude in
-         execState (test t' e' s') (elabToTyping defaultOpts defs s')
+         let s'' = execState (renameProgram >> infer) (elabToInf defs s') in
+             execState (test t' e' s'') (infToTyping defaultOpts s'')
+
+--         (elabToTyping defaultOpts defs s')
 
   test t e s' = do
     setErrors (errors s')
-    renameProgram
+--    renameProgram
     t' <- rename Map.empty Map.empty t
     e' <- rename Map.empty Map.empty e
     checkAgainst Map.empty e' t'
@@ -55,4 +59,8 @@ prelude = do
   -- | PatternMatch
   let patternS = patternMatch s2
   -- | Elaboration
-  return $ elaboration patternS
+  return $ elaboration (Parse.Phase.pkVariables $ extra s2)
+                       (Parse.Phase.mVariables $ extra s2) patternS
+
+  -- let (defs, elabS) = elaboration patternS
+  -- return $ execState (renameProgram >> infer) (elabToInf defs elabS)
