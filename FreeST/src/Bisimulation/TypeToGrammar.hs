@@ -1,5 +1,5 @@
 {- |
-Module      :  Equivalence.TypeToGrammar
+Module      :  Bisimulation.TypeToGrammar
 Description :  Converting types to grammars
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -12,28 +12,27 @@ unreachable symbols
 
 {-# LANGUAGE FlexibleInstances #-}
 
-module Equivalence.TypeToGrammar
+module Bisimulation.TypeToGrammar
   ( convertToGrammar
   )
 where
 
-import           Bisimulation.Grammar
-import           Elaboration.Replace ( changePos )
-import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Type as T
-import qualified Syntax.Kind as K
+import           Bisimulation.Grammar
+import           Elaboration.Replace ( changePos )
+import           Typing.Normalisation ( normalise )
+import qualified Typing.Substitution as Substitution ( subsAll )
+import           Kinding.Terminated ( terminated )
+import           Parse.Unparser ( showArrow )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_)
-import qualified Validation.Substitution as Substitution ( subsAll )
-import           Validation.Terminated ( terminated )
 
 import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
-
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
@@ -48,24 +47,21 @@ typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
--- Syntactic equality
 toGrammar t = case fatTerminal t of
   Just t' ->  getLHS $ Map.singleton (FatTerm $ show t') []
   Nothing -> toGrammar' t
 
+-- Only non fat terminals
 toGrammar' :: T.Type -> TransState Word
 -- Functional Types
-toGrammar' (T.Arrow _ p t u) = do
+toGrammar' (T.Arrow _ m t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList $
-    [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | p == Lin]
-toGrammar' (T.Labelled _  T.Variant m) = do -- Can't test this type directly
+    [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | m == Lin]
+toGrammar' (T.Labelled _  s m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Labelled T.Variant) [bottom] $ Map.mapKeys (Label T.Variant) ms
-toGrammar' (T.Labelled _  T.Record m) = do -- Can't test this type directly
-  ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Labelled T.Record) [bottom] $ Map.mapKeys (Label T.Record) ms
+  getLHS $ Map.insert (Labelled s) [bottom] $ Map.mapKeys (Label s . intern) ms
 -- Session Types
 toGrammar' (T.Skip _)        = return []
 toGrammar' (T.End _ p)       = getLHS $ Map.singleton (End p) [bottom]
@@ -73,14 +69,12 @@ toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])]
-toGrammar' (T.Labelled _ c@(T.Choice v) m) = do
-  ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Labelled c) [bottom] $ Map.mapKeys (Label c) ms
 -- Polymorphism and recursive types
-toGrammar' (T.Forall _ (Bind _ _ k t)) = do
+-- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
+toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton (Forall k) xs
-toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
+  getLHS $  Map.singleton (Forall (intern a) k) xs
+toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ show a) []
 -- Type operators
 toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
@@ -91,53 +85,54 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 -- Returns a normalised type in case the type can become fat terminal
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
-fatTerminal t@T.Int{}         = Just t
-fatTerminal t@T.Float{}       = Just t
-fatTerminal t@T.Char{}        = Just t
-fatTerminal t@T.String{}      = Just t
+fatTerminal t@T.Int{} = Just t
+fatTerminal t@T.Float{} = Just t
+fatTerminal t@T.Char{} = Just t
+fatTerminal t@T.String{} = Just t
+-- This one would preclude multiplicity subtyping (apply when disabled?)
+-- fatTerminal (T.Arrow p m t u) =
+--   Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+-- These two would preclude width subtyping (apply when disabled?)
+-- fatTerminal (T.Labelled p T.Variant m) =
+--   Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
+-- fatTerminal (T.Labelled p T.Record m) =
+--   Just (T.Labelled p T.Record) <*> mapM fatTerminal m
 -- Session Types
-fatTerminal (T.Semi p t u) 
-  | terminated t              = changePos p <$> fatTerminal u
-  | terminated u              = changePos p <$> fatTerminal t
-fatTerminal (T.Message s p t) = Just (T.Message s p) <*> fatTerminal t
-fatTerminal _                     = Nothing
-
-{-
--- Can this type become a fat terminal?
-syntactic :: T.Type -> Bool
--- Functional Types
-syntactic t@T.Int{}             = True
-syntactic t@T.Char{}            = True
-syntactic t@T.String{}          = True
-syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
-syntactic (T.Pair _ t u)        = syntactic t && syntactic u
-syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
--- Session Types
-syntactic (T.Semi _ T.Skip{} t) = syntactic t
-syntactic (T.Semi _ t T.Skip{}) = syntactic t
-syntactic (T.Message _ _ t)     = syntactic t
+fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
+                           | terminated u = changePos p <$> fatTerminal t
+fatTerminal (T.Message p pol t) =
+  Just (T.Message p pol) <*> fatTerminal t
 -- These two would preclude distributivity:
--- syntactic (T.Semi p t u)      = 
--- syntactic (T.Choice p pol m)  = 
+-- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
+-- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
 -- Default
-syntactic _                     = False
--}
+fatTerminal _ = Nothing
+
+instance Show T.Sort where
+  show T.Record = "{}"
+  show T.Variant = "[]"
+  show (T.Choice v) = show v
+
+-- Collect productions
 
 type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
+  -- Functional Types
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
+  -- Session Types
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
--- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Labelled _ _ m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
-collect σ t@(T.Rec _ (Bind _ x _ u)) = do
-  let σ' = (t, x) : σ
+  -- Polymorphism and recursive types
+-- collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
+collect σ t@(T.Rec _ (Bind _ a _ u)) = do
+  let σ' = (t, a) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
   m         <- getTransitions z
-  addProductions x (Map.map (++ zs) m)
+  addProductions a (Map.map (++ zs) m)
   collect σ' u
-collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
 collect _ _ = return ()
 
 -- The state of the translation to grammar
@@ -171,10 +166,7 @@ getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
-  return $ makeFreshVar n
-
-makeFreshVar :: Int -> Variable
-makeFreshVar n = mkVar defaultSpan ("#X" ++ show n)
+  return $ mkVar defaultSpan ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
@@ -184,16 +176,12 @@ getTransitions x = do
   ps <- getProductions
   return $ ps Map.! x
 
-getSubstitution :: TransState Substitution
-getSubstitution = gets substitution
+-- getSubstitution :: TransState Substitution
+-- getSubstitution = gets substitution
 
 putProductions :: Variable -> Transitions -> TransState ()
 putProductions x m =
   modify $ \s -> s { productions = Map.insert x m (productions s) }
-
--- putProduction :: Variable -> Label -> Word -> TransState ()
--- putProduction x l w =
---   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
 putSubstitution :: Variable -> Variable -> TransState ()
 putSubstitution x y =

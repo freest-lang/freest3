@@ -1,5 +1,5 @@
-type MathServer : 1S = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};Wait
-type MathClient : 1S = +{Negate: !Int;?Int                     };Close
+type MathServer = &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};Wait
+type MathClient = +{Negate: !Int;?Int                     };Close
 
 mathServer : MathServer-> ()
 mathServer c =

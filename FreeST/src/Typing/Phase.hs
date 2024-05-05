@@ -1,6 +1,5 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
-module Validation.Phase where
+module Typing.Phase where
 
 import           Syntax.AST
 import qualified Syntax.Expression as E

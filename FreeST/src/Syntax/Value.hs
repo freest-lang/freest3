@@ -3,9 +3,8 @@ module Syntax.Value
   )
 where
 
-import           Syntax.Base
-import qualified Syntax.Expression             as E
-import Syntax.MkName (mkSelect, mkSend, mkReceive, mkClose, mkWait)
+import qualified Syntax.Expression as E
+import           Syntax.MkName (mkSelect, mkSend, mkReceive, mkClose, mkWait)
 
 isVal :: E.Exp -> Bool
 -- | x 

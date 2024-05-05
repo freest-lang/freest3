@@ -2,16 +2,16 @@ module UniversalSharedBlockingQueue where
 
 {-
 
-type Queue        : *S = *?QueueService
-type QueueService : 1S = +{Enqueue: !T, Dequeue: ?T};Close
+type Queue        = *?QueueService
+type QueueService = +{Enqueue: !T, Dequeue: ?T};Close
 
 -- A queue can be downgraded to a write-only queue
-type WriteOnlyQueue : *S = *?EnqueueService
-type EnqueueService : 1S = +{Enqueue : !T};Close
+type WriteOnlyQueue = *?EnqueueService
+type EnqueueService = +{Enqueue : !T};Close
 
 -- A queue can be downgraded to a read-only queue
-type ReadOnlyQueue  : *S = *?DequeueService
-type DequeueService : 1S = +{Dequeue : ?T};Close
+type ReadOnlyQueue  = *?DequeueService
+type DequeueService = +{Dequeue : ?T};Close
 
 -- In the subtype relation:
 --
@@ -24,7 +24,7 @@ type DequeueService : 1S = +{Dequeue : ?T};Close
 -- Inner workings 
 
 -- Manage state and communications
-queueHandle : forall a:*T . (*!a, *?a) -> &{Enqueue: ?a, Dequeue: !a};Wait 1-> (*!a, *?a) 
+queueHandle : (*!a, *?a) -> &{Enqueue: ?a, Dequeue: !a};Wait 1-> (*!a, *?a) 
 queueHandle sr qs =
   let (s, r) = sr in 
   match qs with {
@@ -35,7 +35,7 @@ queueHandle sr qs =
 -- Queue operations 
 
 -- | Create an empty shared queue.
-emptyQueue : forall a:*T . () -> *?(+{Enqueue: !a, Dequeue: ?a};Close)  
+emptyQueue : () -> *?(+{Enqueue: !a, Dequeue: ?a};Close)  
 emptyQueue _ = forkWith @(*?(+{Enqueue: !a, Dequeue: ?a};Close)) 
                         @Diverge 
                         (runServer @(+{Enqueue: !a, Dequeue: ?a};Close) 
@@ -45,7 +45,7 @@ emptyQueue _ = forkWith @(*?(+{Enqueue: !a, Dequeue: ?a};Close))
 
 -- | Add an element to the back of a queue. 
 --   Write permission is enough.
-enqueue : forall a:*T . a -> *?(+{Enqueue: !a};Close) -> ()
+enqueue : a -> *?(+{Enqueue: !a};Close) -> ()
 enqueue v q = q |> receive_ @(+{Enqueue: !a};Close) 
                 |> select Enqueue  
                 |> send v 
@@ -54,7 +54,7 @@ enqueue v q = q |> receive_ @(+{Enqueue: !a};Close)
 -- | Remove an element from the front of a queue. 
 --   If the queue is empty, block until an element is enqueued.
 --   Read permission is enough.
-dequeue : forall a:*T . *?(+{Dequeue: ?a};Close) -> a
+dequeue : *?(+{Dequeue: ?a};Close) -> a
 dequeue q = q |> receive_ @(+{Dequeue: ?a};Close) 
               |> select Dequeue
               |> receiveAndClose @a

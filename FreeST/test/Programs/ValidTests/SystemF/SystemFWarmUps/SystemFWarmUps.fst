@@ -8,6 +8,7 @@ five, seven, thirteen : Int
 
 five = id  @Int 5
 
+-- double, quadruple : (a -> a) -> a -> a
 double, quadruple : ∀ a . (a -> a) -> a -> a
 
 double = Λ a => λ f:(a->a) x:a -> f (f x)

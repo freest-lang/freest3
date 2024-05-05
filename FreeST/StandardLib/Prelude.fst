@@ -258,8 +258,8 @@ swap x = let (a, b) = x in (b, a)
 -- | Fixed-point Z combinator
 fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
 fix f =
-  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
-  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
 
 -- | Extracts the first element from a pair, discarding the second.
 fst : forall a:1T b:*T . (a, b) -> a
@@ -367,6 +367,16 @@ receiveAndClose c =
   close c;
   x
 
+-- | Sends a value on a given channel and then waits for the channel to be
+-- | closed. Returns ().
+sendAndWait : forall a:1T . a -> !a ; Wait 1-> ()
+sendAndWait x c = c |> send x |> wait
+
+-- | Sends a value on a given channel and then closes the channel.
+-- | Returns ().
+sendAndClose : forall a:1T . a -> !a ; Close 1-> ()
+sendAndClose x c = c |> send x |> close
+
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
 receive_ : forall a:1T . *?a -> a
 receive_ c = c |> receive |> fst @a @*?a
@@ -378,7 +388,7 @@ send_ x c = c |> send x |> sink @*!a
 -- | Session initiation. Accepts a request for a linear session on a shared
 -- | channel. The requester uses a conventional `receive` to obtain the channel
 -- | end.
-accept : forall a:1A . *!a -> dualof a
+accept : forall a : 1A . *!a -> dualof a
 accept c =
   let (x, y) = new @a () in
   send x c;
@@ -395,7 +405,7 @@ accept c =
 -- |   -- send the string to be printed
 -- |   c |> send "Hello!" |> wait
 -- | ```
-forkWith : forall a:1A b . (dualof a 1-> b) -> a
+forkWith : forall a:1A b:*T . (dualof a 1-> b) -> a
 forkWith f =
   let (x, y) = new @a () in
   fork (\_:() 1-> f y);
@@ -449,15 +459,15 @@ runServer handle state c =
 type OutStream : 1S = +{ PutChar : !Char ; OutStream
                        , PutStr  : !String ; OutStream
                        , PutStrLn: !String ; OutStream
-                       , SClose  : Close
+                       , SWait   : Wait
                        }
 
 -- | Unrestricted session type for the `OutStream` type.
-type OutStreamProvider : *S = *?OutStream
+type OutStreamProvider : *A = *?OutStream
 
 -- | Closes an `OutStream` channel endpoint. Behaves as a `close`.
 hCloseOut : OutStream -> ()
-hCloseOut c = c |> select SClose |> close
+hCloseOut c = c |> select SWait |> wait
 
 __hGenericPut : forall a:*T . (OutStream -> !a ; OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
@@ -483,7 +493,7 @@ hPutStrLn = __hGenericPut @String (\c:OutStream -> select PutStrLn c)
 hPrint : forall a:*T . a -> OutStream -> OutStream
 hPrint x = hPutStrLn (show @a x)
 
-__hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
+__hGenericPut_ : forall a : *T . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
 __hGenericPut_ putF x outProv = 
   hCloseOut $ putF x $ receive_ @OutStream outProv 
 
@@ -525,7 +535,7 @@ type InStream : 1S = +{ GetChar: ?Char   ; InStream
                       }
 
 -- | Unrestricted session type for the `OutStream` type.
-type InStreamProvider : *S = *?InStream
+type InStreamProvider : *A = *?InStream
 
 -- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
@@ -636,8 +646,8 @@ __runPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrOut printer |> __runPrinter ()
 __runPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter ()
-__runPrinter _ (SClose printer) =
-  wait printer
+__runPrinter _ (SWait printer) =
+  close printer
 
 -- Stderr
 
@@ -655,8 +665,8 @@ __runErrPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
 __runErrPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
-__runErrPrinter _ (SClose printer) =
-  wait printer
+__runErrPrinter _ (SWait printer) =
+  close printer
 
 -- Stdin
 

@@ -1,5 +1,5 @@
-type Ping : 1S = !Int ; Pong
-type Pong : 1S = ?Int ; Ping
+type Ping = !Int ; Pong
+type Pong = ?Int ; Ping
 
 ping : Int -> Ping -> Diverge
 ping n c = c |> send n |> pong

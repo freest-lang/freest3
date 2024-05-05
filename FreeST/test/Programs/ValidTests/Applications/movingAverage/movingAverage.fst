@@ -19,8 +19,8 @@ Structure:
 
 -}
 
-type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Close}
-type FiniteInStream:1S = dualof FiniteOutStream
+type FiniteOutStream = +{More: !Int;FiniteOutStream, Enough: Close}
+type FiniteInStream = dualof FiniteOutStream
 
 writeValues : !Int;!Int;FiniteOutStream;Close 1-> ()
 writeValues c = c |> send 1 |> send 2 |> writeAll 3

@@ -1,5 +1,5 @@
 {- |
-Module      :  Bisimulation.AlphaEquivalence
+Module      :  Equivalence.AlphaCongruence
 Description :  Alpha equivalence for types
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 Type equality up to bound variable renaming
 -}
 
-module Bisimulation.AlphaEquivalence
+module Equivalence.AlphaCongruence
   (
   )
 where
@@ -52,4 +52,4 @@ instance Equiv T.Type where
   equiv _ _ _ = False
 
 instance (Equiv t, Eq k) => Equiv (Bind k t) where
-  equiv v (Bind _ x1 k1 t1) (Bind _ x2 k2 t2) = k1 == k2 && equiv (Map.insert x1 x2 v) t1 t2
+  equiv v (Bind _ x1 _ t1) (Bind _ x2 _ t2) = equiv (Map.insert x1 x2 v) t1 t2

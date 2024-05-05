@@ -1,6 +1,6 @@
 f : Bool -> !Int -> !Int;?Bool 1-> Skip
 f cond c d =
-  let x = send @Int 5 in  -- x : ∀b: 1S . !Int;b 1-> b
+  let x = send @Int 5 in  -- x : ∀b . !Int;b 1-> b
     if cond
     then let _ = x  @Skip c            in consumeD d
     else let _ = receive (x  @(?Bool) d) in consumeC c

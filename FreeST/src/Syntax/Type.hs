@@ -19,16 +19,22 @@ module Syntax.Type
   , unit 
   , tuple 
 --  , Multiplicity(..)
+  , free
+  , isFreeIn
   )
 where
 
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
+import           Syntax.MkName (mkTupleLabels)
 import qualified Data.Map.Strict               as Map
-import Syntax.MkName (mkTupleLabels)
+import qualified Data.Set as Set
 
-data Polarity = Out      | In      deriving  (Eq, Ord)
-data View     = External | Internal deriving (Eq, Ord)
+data Polarity = Out | In deriving (Eq, Ord)
+
+data View = External | Internal deriving (Eq, Ord)
+
+data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 data Type =
   -- Functional Types
@@ -55,17 +61,15 @@ data Type =
 
 type TypeMap = Map.Map Variable Type
 
-data Sort = Record | Variant | Choice View deriving (Eq, Ord)
-
 instance Default Type where
   omission = Int
 
 instance Located Type where
-  getSpan (Int  p       ) = p
-  getSpan (Float p      ) = p
-  getSpan (Char p       ) = p
-  getSpan (String p     ) = p
-  getSpan (Arrow p _ _ _) = p
+  getSpan (Int  p        ) = p
+  getSpan (Float p       ) = p
+  getSpan (Char p        ) = p
+  getSpan (String p      ) = p
+  getSpan (Arrow p _ _ _ ) = p
   getSpan (Labelled p _ _) = p
   getSpan (Skip p        ) = p
   getSpan (End p _       ) = p
@@ -74,13 +78,54 @@ instance Located Type where
   getSpan (Forall p _    ) = p
   getSpan (Rec p _       ) = p
   getSpan (Var p _       ) = p
-  getSpan (Dualof p _   ) = p
+  getSpan (Dualof p _    ) = p
 
 -- Derived forms
-unit :: Span -> Type 
-unit s = Labelled s Record Map.empty 
-
 tuple :: Span -> [Type] -> Type
-tuple s ts = Labelled s Record (tupleTypeMap ts)
-  where tupleTypeMap :: [Type] -> TypeMap
-        tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
+tuple s ts = Labelled s Record tupleTypeMap
+  where tupleTypeMap =
+          Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
+
+unit :: Span -> Type 
+unit s = tuple s []
+
+-- The set of free type variables in a type
+free :: Type -> Set.Set Variable
+  -- Functional Types
+free (Arrow _ _ t u) = free t `Set.union` free u
+free (Labelled _ _ m) =
+  Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
+  -- Session Types
+free (Semi _ t u) = free t `Set.union` free u
+free (Message _ _ t) = free t 
+  -- Polymorphism and recursive types
+free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Var _ x) = Set.singleton x
+  -- Type operators
+free (Dualof _ t) = free t
+  --Int, Float, Char, String, Skip, End
+free _ = Set.empty 
+
+isFreeIn :: Variable -> Type -> Bool
+isFreeIn a t = a `Set.member` free t
+
+-- Does a given type variable x occur free in a type t?
+-- If not, then rec x.t can be renamed to t alone.
+-- isFreeIn :: Variable -> T.Type -> Bool
+--   -- Labelled
+-- isFreeIn x (T.Labelled _ _ m) =
+--   Map.foldr' (\t b -> x `isFreeIn` t || b) False m
+--     -- Functional types
+-- isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+--     -- Session types
+-- isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
+-- isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
+--   -- Polymorphism
+-- isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
+--   -- Functional or session 
+-- isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
+-- isFreeIn x (T.Var    _ y               ) = x == y
+--   -- Type operators
+-- isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
+-- isFreeIn _ _                             = False

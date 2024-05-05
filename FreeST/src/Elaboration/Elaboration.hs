@@ -1,38 +1,39 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, BlockArguments , TypeFamilies #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Elaboration.Elaboration (elaboration) where
 
--- import qualified Elaboration.Match as Match
-import           Elaboration.Replace
-import           Elaboration.ResolveDuality as Dual
-import           Elaboration.ResolveEquations
-import           Equivalence.Normalisation ( normalise )
+import qualified Syntax.Base as T
 import           Syntax.AST
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
-import           Syntax.Program ( isDatatypeContructor )
 import qualified Syntax.Type as T
+import qualified Elaboration.Phase as EP
+import           Elaboration.Replace
+import           Elaboration.ResolveDuality as Dual
+import           Elaboration.ResolveEquations
+import           Elaboration.Phase
+import           Typing.Normalisation ( normalise )
+import qualified Typing.Phase as VP
+import qualified PatternMatch.Phase as PMP
 import           Util.Error
 import           Util.State
-import           Validation.Kinding (synthetise)
-import qualified Validation.Subkind as SK (join)
-import qualified PatternMatch.Phase as PMP
-import           Elaboration.Phase
-import qualified Validation.Phase as VP
 
-import           Control.Monad.State hiding (void)
+import           Control.Monad
+import qualified Control.Monad.State as S
 import           Data.Char (isLower)
 import           Data.Functor hiding (void)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set as Set
-import qualified Syntax.Base as T
-import           Validation.Substitution (free)
 
-elaboration :: PMP.PatternS -> (VP.Defs, ElabS)
-elaboration patternS = runState elaboration' (patternToElab patternS)
 
+elaboration :: Set.Set Variable -> Set.Set Variable -> PMP.PatternS -> (VP.Defs, ElabS)
+elaboration pkvs mvs patternS = S.runState elaboration' (patternToElab patternS)
+  where
+    patternToElab :: PMP.PatternS -> ElabS
+    patternToElab s = s {ast = (ast s){definitions = definitions (ast s)}
+                        , extra = EP.Extra{EP.mVariables=mvs, EP.pkVariables=pkvs} }
+    
 -- | 1. Solve the equations' system.
 -- |    From this point, there are no type names on the function signatures
 --      and on the function bodies. 
@@ -50,48 +51,22 @@ elaboration patternS = runState elaboration' (patternToElab patternS)
 --      build a lambda expression: f = \x : T -> E
 elaboration' :: ElabState VP.Defs
 elaboration'  = do
-  fixConsTypes
+  getSignatures >>= quantifyPoly
   solveEquations
   getTypes >>= Dual.resolve >>= setTypes
   getSignatures >>= replaceSignatures
   getDefs >>= replaceDefinitions
   getSignatures >>= Dual.resolve >>= setSignatures
   getDefs >>= Dual.resolve >>= setDefs
-  getDefs >>= buildDefs
-  -- debugM . ("Program " ++) <$> show =<< getProg
+  getDefs >>= buildDefs  
+  -- debugM . ("Program " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getProg
   -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
-
-
-patternToElab :: PMP.PatternS -> ElabS
-patternToElab s = s {ast = (ast s){definitions = definitions (ast s)}, extra = void}
-
--- | Fix the multiplicity of the data constructor types
-fixConsTypes :: ElabState ()
-fixConsTypes = do
-  tys <- getTypes
-  -- if this is the first step in the elaboration, there are still type names in signatures,
-  -- so we need a non-empty kind environment. Empty env otherwise.
-  let kEnv = Map.map fst tys
-  getSignatures >>= tMapWithKeyM_ \k v -> when (isDatatypeContructor k tys)
-    (fixConsType kEnv K.Un v >>= addToSignatures k)
-  where
-    fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> ElabState T.Type
-    fixConsType kEnv m (T.Arrow s _ t u) = do
-      (K.Kind _ m' _) <- synthetise kEnv t
-      T.Arrow s (kindToTypeMult m) t <$> fixConsType kEnv (SK.join m m') u
-      where kindToTypeMult K.Un = Un
-            kindToTypeMult K.Lin = Lin
-    fixConsType _ _ t = pure t
+  -- return defs
 
 -- | Elaboration over environments (Signatures & Definitions)
 
 replaceSignatures :: Signatures -> ElabState ()
-replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv . quantifyLowerFreeVars =<< replace t)
-  where quantifyLowerFreeVars t = 
-          foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t))
-                t
-                (Set.filter (isLower.head.show) $ free t)
-          where p = getSpan t
+replaceSignatures = tMapWithKeyM_ (\pv t -> addToSignatures pv =<< replace t)
 
 replaceDefinitions :: Defs -> ElabState ()
 replaceDefinitions = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps =<< replace e)
@@ -121,3 +96,11 @@ buildFunBody f as e = getFromSignatures f >>= \case
     addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
 
 
+-- | Quantify polymorphic variables
+quantifyPoly :: Signatures -> ElabState ()
+quantifyPoly = tMapWithKeyM_ (\v t -> quantifyLowerFreeVars t >>= addToSignatures v)
+  where
+    quantifyLowerFreeVars t = 
+      foldM (\t v -> freshKVar p >>= \k -> pure $ T.Forall p (T.Bind p v k t)) t
+                (reverse $ Set.toList $ Set.filter (isLower . head . show) $ T.free t)
+      where p = getSpan t

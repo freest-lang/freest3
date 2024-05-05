@@ -58,13 +58,13 @@ data Label = FatTerm String
            | ArrowR
            | Arrow1
            | End T.Polarity
-           | Label T.Sort Variable
+           | Label T.Sort String
            | Labelled T.Sort 
            | MessageP T.Polarity
            | MessageC T.Polarity  
            | Pair1
            | Pair2
-           | Forall K.Kind 
+           | Forall String K.Kind 
            | Var String    
   deriving (Eq, Ord)
 
@@ -144,7 +144,7 @@ instance Show Label where
   show (MessageC p) = show p ++ "c"
   show Pair1 = "π1" 
   show Pair2 = "π2" 
-  show (Forall k) = "∀" ++ show k
+  show (Forall a k) = "∀"++a++":"++show k
   show (Var a) = a
 
 instance Show Grammar where

@@ -1,5 +1,5 @@
 {
-{-# LANGUAGE TupleSections, NamedFieldPuns #-}
+{-# LANGUAGE TupleSections, NamedFieldPuns, MultiWayIf #-}
 module Parse.Parser
 where
 
@@ -12,7 +12,7 @@ import           Syntax.MkName
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
-import           Parse.Phase
+import           Parse.Phase hiding (moduleName)
 import           Util.State
 import           Syntax.AST
   
@@ -387,13 +387,15 @@ Type :: { T.Type }
   | '*' Polarity Type %prec MSG 
     {% do
         p <- mkSpan $1
-        tVar <- freshTVar "a" p
+        tVar <- freshTVar p
+        -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
         return (T.Rec p $ Bind p tVar (K.us p) $
           T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
         p <- mkSpan $1
-        tVar <- freshTVar "a" p
+        tVar <- freshTVar p
+        -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
         let tMap = Map.map ($ (T.Var p tVar)) $4
         return (T.Rec p $ Bind p tVar (K.us p) $
             T.Labelled (fst $2) (T.Choice (snd $2)) tMap) }
@@ -499,11 +501,14 @@ TypeName :: { Variable }
 
 KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
-  | TypeVar          { ($1, omission (getSpan $1)) }
+--  | TypeVar          { ($1, omission (getSpan $1)) }
+  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
+  
 
 KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, omission (getSpan $1)) }
+--  | TypeName          {($1, omission (getSpan $1)) }
+  | TypeName          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
 
 {
 
@@ -552,7 +557,7 @@ parseDefs s filename input =
 parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
   let filename = getFName initial  
---  s <- parseProgram (initial {moduleName = Nothing})   
+--  s <- parseProgram (initial {B.moduleName = Nothing})   
   s <- parseProgram (setModule initial Nothing)
   let baseName = takeBaseName (getFName s)
   case getModule s of
@@ -563,43 +568,27 @@ parseAndImport initial = do
   where
     doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
     doImports _ _ [] s = return s
-    doImports defModule imported (curImport:toImport) s
-      | curImport `Set.member` imported = doImports defModule imported toImport s
+    doImports moduleName imported (curImport:toImport) s
+      | curImport `Set.member` imported = doImports moduleName imported toImport s
       | otherwise = do
-          let fileToImport = replaceBaseName defModule curImport -<.> "fst"
-          exists <- doesFileExist fileToImport
-          if exists then
-            importModule s fileToImport curImport defModule imported toImport
-          else do
-            fileToImport <- getDataFileName $ curImport -<.> "fst"
-            isStdLib <- doesFileExist fileToImport
-            if isStdLib then
-              importModule s fileToImport curImport defModule imported toImport                
-            else 
-              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
+         let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
+         exists <- doesFileExist fileToImport
+         stdLib <- getDataFileName (curImport -<.> "fst")
+         isStdLib <- doesFileExist stdLib         
+         if | exists -> importModule s fileToImport curImport moduleName imported toImport
+            | isStdLib -> importModule s stdLib curImport moduleName imported toImport
+            | otherwise ->
+               pure $ s {errors = errors s ++
+                        [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}
 
     importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
-    importModule s fileToImport curImport defModule imported toImport = do
+    importModule s fileToImport curImport moduleName imported toImport = do
       s' <- parseProgram (setModule s Nothing & setFName fileToImport)
       let modName = fromJust $ getModule s'
       if curImport /= modName then
-        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
+        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
       else
-        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
-
-
--- TODO: test MissingModHeader
-
-{-      case moduleName s' of
-        Just modName -> 
-          if curImport /= modName then
-            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
-          else
-            doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
-        Nothing ->
-            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
--}   
-
+        doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
           
 -- Error Handling
 parseError :: [Token] -> ParseState a

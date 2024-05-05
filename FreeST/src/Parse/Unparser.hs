@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -21,8 +20,8 @@ module Parse.Unparser
   , showBindType
   , showBindExp
   , showBindTerm
-  , showModuleName
   , showModuleWithDots
+  , showArrow
   ) where
 
 import           Syntax.AST
@@ -32,66 +31,51 @@ import qualified Syntax.Kind as K
 import           Syntax.MkName ( mkTrue, mkFalse )
 import qualified Syntax.Type as T
 
-import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Prelude                 hiding ( Left
-                                                , Right
-                                                ) -- needed for Associativity
+import           Prelude hiding ( Left, Right ) -- needed for Associativity
+import           System.FilePath
+
 
 instance Show Span where
-  show (Span sp fp _)
-    | sp == fp  = showPos sp
-    | otherwise = showPos sp ++ "-" ++ showPos fp
+  show (Span _ p1 p2)
+    | p1 == p2  = showPos p1
+    | fst p1 == fst p2 = showPos p1 ++ "-" ++ show (snd p2)
+    | otherwise = showPos p1 ++ "-" ++ showPos p2
     where
       showPos (l,c) = show l ++ ":" ++ show c
-
-showModuleName :: Span -> String
-showModuleName s = showModuleWithDots (defModule s)
-
+  
 showModuleWithDots :: String -> String
-showModuleWithDots = map (\x -> if x == '/' then '.' else x )
-
--- Multiplicities
-
--- Kind
-instance Show K.Multiplicity where
-  show K.Un  = "*"
-  show K.Lin = "1"
-
--- Type & Expression (Syntax.Base)
-instance Show Multiplicity where
-  show Un  = "->"
-  show Lin = "1->"
-
--- Choice view
+showModuleWithDots = map (\x -> if isPathSeparator x then '.' else x )
 
 instance Show T.View where
   show T.External = "&"
   show T.Internal = "+"
 
--- Message Polarity
 instance Show T.Polarity where
   show T.In  = "?"
   show T.Out = "!"
 
--- Program and Type Variables
-
--- Note: show should be aligned with the creation of new variables;
--- see Syntax.Variables
-
 instance Show Variable where
-  show = showVar
+  show = extern
 
-showVar :: Variable -> String
-showVar = dropWhile (\c -> isDigit c || c == '#') . intern
--- showVar = intern -- for testing purposes
+instance Show Multiplicity where
+  show Un  = "*"
+  show Lin = "1"
+  show (MultVar x) = show x
 
--- Sorted variable. Either a:k or x:t (just to get the spacing right)
+-- Arrow multiplicity has a different textual representation
+showArrow :: Multiplicity -> String
+showArrow Un  = "->"
+showArrow Lin = "1->"
+showArrow _ = error "tmp"
 
-showSortedVar :: (Show a, Show b) => a -> b -> String
-showSortedVar x t = show x ++ ":" ++ show t
+-- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
+-- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
+showSortedVar :: (Show a, Show b) => a -> b -> Bool -> String
+showSortedVar x t False = show x ++ ":" ++ show t
+showSortedVar x t True = show x ++ ":(" ++ show t ++ ")"
 
 -- Kind
 
@@ -99,35 +83,37 @@ instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
   show K.Absorb  = "A"
+  show (K.PKVar x) = show x
 
 instance Show K.Kind where
-  show (K.Kind _ p m) = show p ++ show m
+  show (K.Kind _ m p) = show m ++ show p
 
 -- Binds
 
-showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
-showKind var sort arrow term =
-  showSortedVar var sort ++ spaced arrow ++ show term
+showBind :: (Show a, Show b, Show c) => a -> b -> Bool -> String -> c -> String
+showBind var sort paren arrow term =
+  showSortedVar var sort paren ++ spaced arrow ++ show term
 
--- instance Show t => Show (K.Bind t) where
---   show (K.Bind _ a k t) = showKind a k "=>" t
+showBindNoKind :: (Show a, Show b) => a -> String -> b -> String
+showBindNoKind var arrow term = show var ++ spaced arrow ++ show term
 
 showBindType :: Bind K.Kind T.Type -> String
-showBindType (Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
+showBindType (Bind _ a _ t) = showBindNoKind a "." t -- ∀ a:k . t
 
 showBindExp :: Bind K.Kind E.Exp -> String
-showBindExp (Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
+showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
-showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
+showBindTerm (Bind _ x t@T.Arrow{} e) m = showBind x t True (showArrow m) e -- λ x:(t) -> e
+showBindTerm (Bind _ x t e) m = showBind x t False (showArrow m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
 data Precedence =
     PMin
   | PIn      -- in, else, match, case (expressions)
-  | PNew     -- new T
+--  | PNew     -- new T
   | PDisj    -- ||
   | PConj    -- &&
   | PAppend  -- ++, ^^
@@ -150,10 +136,11 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
+-- newRator,
+minRator, inRator, disjRator, conjRator, appendRator, cmpRator, addRator, multRator, powerRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
   :: Rator
 inRator = (PIn, Right)
-newRator = (PNew, NonAssoc)
+-- newRator = (PNew, NonAssoc)
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
@@ -197,18 +184,18 @@ instance Unparse T.Type where
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (showArrow m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
-    where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Labelled _ T.Variant m) = (maxRator, "<" ++ showChoice m ++ ">") -- For testing (no concrete syntax)
-  unparse (T.Labelled _ T.Record m) 
-    | Map.null m = (maxRator, "()")
-    | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
-    | otherwise = (maxRator, "{" ++ showChoice m ++ "}") -- For testing (no concrete syntax)
-  unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
+  unparse (T.Labelled _ T.Variant m) | isBool  = (maxRator, "Bool")
+    where isBool = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
+  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Record m) = -- Currently all our Records are tuples
+    (maxRator, "(" ++ showTupleType m ++ ")")
+    -- | Map.null m = (maxRator, "()")
+    -- | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
+  unparse (T.Semi _ t u) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
@@ -232,8 +219,8 @@ showDatatype m = intercalate " | "
   showAsSequence :: T.Type -> String
   showAsSequence (T.Labelled _ _ t) = 
     let fs = unwords (map (show . snd) $ Map.toList t) in
-    if fs == "" then "" else " "++fs
-  showAsSequence _               = ""
+    if null fs then fs else " " ++ fs
+  showAsSequence _ = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
@@ -381,7 +368,7 @@ instance {-# OVERLAPPING #-} Show Signatures where
   show sigs = "[" ++ intercalate "\n\t\t   ," (sigsToList sigs) ++ "]"
 
 sigsToList :: Signatures -> [String]
-sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
+sigsToList = Map.foldrWithKey (\k v acc -> showSortedVar k v False : acc) []
 
 joinList :: E.Exp -> [E.Exp]
 joinList (E.Var _ x) | show x == "[]"   = []

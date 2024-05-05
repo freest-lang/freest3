@@ -1,14 +1,14 @@
 module Equivalence.SingleTestSpec where
 
-import           Bisimulation.Bisimulation (bisimilar)
-import           Validation.Rename
-import           SpecUtils
+import Equivalence.TypeEquivalence ( equivalent )
+import Typing.Rename
+import SpecUtils
 
 matchSpec :: [String] -> Spec
 matchSpec [t, u, r] =
   it (t ++ " ~ " ++  u) (
       {-# SCC "BISIM_TEST_CALL" #-}
-      bisimilar t' u' `shouldBe` read r)
+      equivalent t' u' `shouldBe` read r)
     where
       [t', u'] = renameTypes [read t, read u]
       -- readKenv :: String -> KindEnv

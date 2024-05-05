@@ -12,9 +12,9 @@ order to use in quicksort and returns the ordered list.
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingServer  : 1S = &{Vals: ?Int;OrderingServer;!Int, Asc: Skip, Desc: Skip}
-type DescClient  : 1S = +{Vals: !Int;DescClient;?Int, Desc: Skip}
-type AscClient   : 1S = +{Vals: !Int;AscClient;?Int , Asc : Skip}
+type OrderingServer = &{Vals: ?Int;OrderingServer;!Int, Asc: Skip, Desc: Skip}
+type DescClient = +{Vals: !Int;DescClient;?Int, Desc: Skip}
+type AscClient  = +{Vals: !Int;AscClient;?Int , Asc : Skip}
 
 -- ==================== Server ====================
 
@@ -25,7 +25,7 @@ initOrderedServer c =
 
 -- Server function
 --   This server sends the list reversed
-orderedServer : forall a:1S . OrderingServer;a -> IntList 1-> (IntList, a)
+orderedServer : OrderingServer;a -> IntList 1-> (IntList, a)
 orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
 orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
 orderedServer (Vals c) list = 
@@ -96,7 +96,7 @@ descClient c =
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
-orderAsc : forall a:1S . AscClient;a -> IntList 1-> (a, IntList)
+orderAsc : AscClient;a -> IntList 1-> (a, IntList)
 orderAsc c Nil         = (select Asc c , Nil)
 orderAsc c (Cons x xs) = let c          = select Vals c in
                          let c          = send x c in
@@ -104,7 +104,7 @@ orderAsc c (Cons x xs) = let c          = select Vals c in
                          let (y, c)     = receive c in
                          (c, Cons y rList)
 
-orderDesc : forall a:1S . DescClient;a -> IntList 1-> (a, IntList)
+orderDesc : DescClient;a -> IntList 1-> (a, IntList)
 orderDesc c Nil         = (select Desc c , Nil)
 orderDesc c (Cons x xs) = let c          = select Vals c in
                           let c          = send x c in

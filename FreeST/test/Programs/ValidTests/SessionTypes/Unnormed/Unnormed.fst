@@ -24,7 +24,7 @@ whether two context-free session types are equivalent.
 
 -}
 
-type T : 1S = !Int;T;?Int
+type T = !Int;T;?Int
 
 writer : Int -> T -> ()
 writer i c =

@@ -4,15 +4,15 @@ module Validation.TestExpressionInvalidSpec
 where
 
 import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
-import           Elaboration.ResolveDuality    as Dual
+import qualified Data.Map.Strict            as Map
+import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
 import           Syntax.Expression
-import           Validation.Typing              ( synthetise )
+import           Typing.Typing              ( synthetise )
 import           Util.State
 import qualified Elaboration.Phase as EP
-import qualified Validation.Phase as VP
-import FreeST
+import qualified Typing.Phase as VP
+import           FreeST
 
 spec :: Spec
 spec = describe "Invalid expression tests" $ do
@@ -21,13 +21,13 @@ spec = describe "Invalid expression tests" $ do
   mapM_ matchInvalidExpSpec e
 
 matchInvalidExpSpec :: String -> Spec
-matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
+matchInvalidExpSpec e = it e $ isExpr (read e) >>= (`shouldBe` False)
 
-isExpr :: Exp -> Bool
-isExpr e = null (errors s)
+isExpr :: Exp -> IO Bool
+isExpr e = null . errors <$> s
  where
   (e',s0) = runState (Dual.resolve e) EP.initialElab
-  s = execState (synthetise Map.empty e') (VP.initialTyp defaultOpts){errors=errors s0}
+  s = execStateT (synthetise Map.empty e') (VP.initialTyp defaultOpts){errors=errors s0}
 
 main :: IO ()
 main = hspec spec

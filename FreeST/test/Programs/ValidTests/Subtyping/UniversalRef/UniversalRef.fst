@@ -13,7 +13,7 @@ type SinkService a = +{Assign : !a};Close
 -}
 
 -- Constructor
-ref : forall a:*T . a -> *?(+{Assign: !a, Deref: ?a};Close) 
+ref : a -> *?(+{Assign: !a, Deref: ?a};Close) 
 ref n = forkWith @(*?(+{Assign: !a, Deref: ?a};Close)) 
                  @Diverge 
                  (runServer @(+{Assign: !a, Deref: ?a};Close) 
@@ -22,7 +22,7 @@ ref n = forkWith @(*?(+{Assign: !a, Deref: ?a};Close))
                             n)
 
 -- Manages state
-refHandle : forall a:*T . a -> dualof (+{Assign: !a, Deref: ?a};Close) 1-> a 
+refHandle : a -> dualof (+{Assign: !a, Deref: ?a};Close) 1-> a 
 refHandle v r  = match r with 
                  { Assign c -> let (v,c) = receive c in wait c; v
                  , Deref  c -> c |> send v |> wait; v
@@ -30,7 +30,7 @@ refHandle v r  = match r with
 
 -- | Stores a value (:=).
 -- Notice the type. A Ref can be safely downgraded to a Sink.
-assign : forall a:*T . a -> *?(+{Assign: !a};Close) -> ()
+assign : a -> *?(+{Assign: !a};Close) -> ()
 assign v r = r |> receive_ @(+{Assign: !a};Close) 
                |> select Assign 
                |> send v 
@@ -38,7 +38,7 @@ assign v r = r |> receive_ @(+{Assign: !a};Close)
 
 -- | Reads the stored value (!).
 -- Notice the type. A Ref can be safely downgraded to a Source.
-deref : forall a:*T . *?(+{Deref: ?a};Close)  -> a -- Source
+deref : *?(+{Deref: ?a};Close)  -> a -- Source
 deref r = let (v,c) = r |> receive_ @(+{Deref: ?a};Close)
                         |> select Deref
                         |> receive in 

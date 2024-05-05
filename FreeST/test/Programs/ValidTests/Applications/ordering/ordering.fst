@@ -12,7 +12,7 @@ order to use in quicksort and returns the ordered list.
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingChannel : 1S = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
+type OrderingChannel = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
 
 -- ==================== Server ====================
 
@@ -24,7 +24,7 @@ initOrderedServer c =
 
 -- Server function
 --   This server sends the list reversed
-orderedServer : forall a: 1S . dualof OrderingChannel;a -> IntList 1-> (IntList, a)
+orderedServer : dualof OrderingChannel;a -> IntList 1-> (IntList, a)
 orderedServer c list =
   match c with {
     Vals c ->
@@ -109,7 +109,7 @@ descClient c =
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
-order : forall a: 1S . OrderingChannel; a -> IntList 1-> Bool 1-> (a, IntList)
+order : OrderingChannel; a -> IntList 1-> Bool 1-> (a, IntList)
 order c sList direction =
   case sList of {
     Nil -> if direction

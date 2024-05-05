@@ -47,7 +47,7 @@ Terminal :: { String }
   | SYM UPPER_ID    { getText $1 ++ getText $2 }
     
 NonTerminal :: { Variable }
-  : UPPER_ID  { mkVar defaultPos (getText $1) }
+  : UPPER_ID  { mkVar defaultSpan (getText $1) }
 
 {
 parseGrammar :: String -> IO Grammar

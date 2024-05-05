@@ -6,7 +6,6 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
-import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
 import           Data.Map.Strict as Map
@@ -60,7 +59,7 @@ cleanUnusedRecs = getTypes >>= setTypes . Map.map (\(k, t) -> (k, ) $ clean t)
 
 clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))
-  | y `isFreeIn` t = T.Rec p $ Bind p' y k (clean t)
+  | y `T.isFreeIn` t = T.Rec p $ Bind p' y k (clean t)
   | otherwise      = clean t
 clean (T.Labelled p s tm) = T.Labelled p s $ Map.map clean tm
 clean (T.Arrow p m t1 t2) = T.Arrow p m (clean t1) (clean t2)

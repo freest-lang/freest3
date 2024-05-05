@@ -2,16 +2,16 @@ module SharedBlockingQueue where
 
 type T = Int 
 
-type Queue        : *S = *?QueueSession
-type QueueSession : 1S = +{Enqueue: !T, Dequeue: ?T};Close
+type Queue        = *?QueueSession
+type QueueSession = +{Enqueue: !T, Dequeue: ?T};Close
 
 -- A queue can be downgraded to a write-only queue
-type WriteOnlyQueue : *S = *?EnqueueSession
-type EnqueueSession : 1S = +{Enqueue : !T};Close
+type WriteOnlyQueue = *?EnqueueSession
+type EnqueueSession = +{Enqueue : !T};Close
 
 -- A queue can be downgraded to a read-only queue
-type ReadOnlyQueue  : *S = *?DequeueSession
-type DequeueSession : 1S = +{Dequeue : ?T};Close
+type ReadOnlyQueue  = *?DequeueSession
+type DequeueSession = +{Dequeue : ?T};Close
 
 -- In the subtype relation:
 --

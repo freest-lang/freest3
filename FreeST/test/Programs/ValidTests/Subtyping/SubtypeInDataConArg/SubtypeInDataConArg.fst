@@ -1,12 +1,12 @@
-data List : 1T = Nil () | Cons (Int 1-> Int) List 
+data List = Nil () | Cons (Int 1-> Int) List 
 
-type SendList : 1S = +{More: !(Int 1-> Int);SendList, Stop: Skip}
+type SendList = +{More: !(Int 1-> Int);SendList, Stop: Skip}
 
-sendList : forall a:1S . List -> SendList;a 1-> a 
+sendList : List -> SendList;a 1-> a 
 sendList (Nil _    ) c = c |> select Stop 
 sendList (Cons f fs) c = sendList @a fs (c |> select More |> send f)
 
-recvList : forall a:1S . dualof SendList;a -> (List, a) 
+recvList : dualof SendList;a -> (List, a) 
 recvList (Stop c) = (Nil(), c)
 recvList (More c) = let (f , c) = receive c  in 
                     let (fs, c) = recvList @a c in 

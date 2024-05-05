@@ -1,18 +1,19 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
 import           Elaboration.Elaboration ( elaboration )
 import           FreeST hiding (main)
 import           HandleOpts
+import           Inference.Inference
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser
+import           Parse.Phase
 import           Paths_FreeST ( getDataFileName )
+import           PatternMatch.PatternMatch
 import           Syntax.Base
+import           Typing.Rename ( renameProgram )
+import qualified Typing.Typing as T
 import           Util.State
 import           Utils
-import           Validation.Rename ( renameState )
-import           Validation.TypeChecking ( typeCheck )
-import qualified Validation.Typing as T
 
 import           Control.Monad.State
 import           Data.List
@@ -22,12 +23,9 @@ import           System.Directory
 import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
-
-
-import           Parse.Phase
-import           Validation.Phase
-import           Elaboration.Phase
-import           PatternMatch.PatternMatch
+import           Debug.Trace (traceM)
+import qualified Syntax.Expression as E
+import           Syntax.MkName
 
 
 main :: IO ()
@@ -42,8 +40,11 @@ main = do
   s2 <-  parseProgram s0
   -- | PatternMatch
   let patternS = patternMatch s2
-  let (defs, elabS) = elaboration patternS  
-  evalStateT (runInputT (replSettings home) (repl s2 args)) (elabToTyping defaultOpts{runFilePath="<interactive>"} defs elabS)
+  -- | Elaboration
+  let (defs, elabS) = elaboration (pkVariables $ extra s2) (mVariables $ extra s2) patternS
+  -- | Kind Inference  
+  let infS = execState (renameProgram >> infer) (elabToInf defs elabS)  
+  evalStateT (runInputT (replSettings home) (repl s2 args)) (infToTyping defaultOpts{runFilePath="<interactive>"} infS)
 
   -- s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
   -- let s2 = emptyPEnv $ execState elaboration s1
@@ -132,13 +133,24 @@ parseOpt s (Just xs)
       case parseExpr "<interactive>" xs of
         Left err -> lift (setErrors err >> get) >>= \s0 -> liftIO (putStrLn $ getErrors runOpts s0)
         Right e       -> do
-          let s1 = execState (T.synthetise Map.empty e) st
+          s1 <- liftIO $ execStateT (T.synthetise Map.empty e) st
           if hasErrors s1
             then liftS $ putStrLn $ getErrors runOpts s1
-            else liftS $ evalAndPrint (mkVar defaultSpan "main") st e
+            else liftS $ evalAndPrint (mkVar defaultSpan "main") st $
+                  forkHandlers 
+                    [ ("__runStdout", "__stdout")
+                    , ("__runStderr", "__stderr")
+                    , ("__runStdin", "__stdin")] 
+                    e
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
 
-
-
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkWild s)
+        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan

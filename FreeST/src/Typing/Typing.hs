@@ -1,6 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-|
-Module      :  Validation.Typing
-Description :  Checking the good formation of expressions
+
+Module      :  Typing.Typing
+Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -8,41 +10,101 @@ Maintainer  :  <email>
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-A bidirectional type system.
+<module description starting at first column>
 -}
 
 {-# LANGUAGE LambdaCase #-}
 
-module Validation.Typing
-  ( synthetise
-  , checkAgainst
+module Typing.Typing
+  ( typeCheck
+  , synthetise -- for tests
+  , checkAgainst -- for tests
+  , buildMap
   )
 where
 
-
-import Control.Monad.State
-import Control.Exception ( evaluate )
-import Data.Functor
-import qualified Data.Map.Strict as Map
-import Util.Error
-import Util.State hiding (void)
-import Util.Warning
-
-import Bisimulation.Bisimulation ( bisimilar )
-import Bisimulation.Subtyping ( subtypeOf )
-import Parse.Unparser () -- debug
-import Syntax.Base
-import Syntax.AST
-import Syntax.MkName
+import           Syntax.AST
+import           Syntax.Base
 import qualified Syntax.Expression as E
-import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
-import Syntax.Value
-import Validation.Phase
-import qualified Validation.Extract as Extract
-import qualified Validation.Kinding as K -- K Again?
-import qualified Validation.Rename as Rename ( subs )
-import System.Timeout (timeout)
+import           Syntax.MkName
+import qualified Syntax.Type as T
+import           Syntax.Value
+import           Equivalence.TypeEquivalence (equivalent)
+import           Equivalence.Subtyping (subtype)
+import qualified Typing.Extract as Extract
+import qualified Typing.Rename as Rename ( subs )
+import           Typing.Phase hiding (Typing)
+import qualified Kinding.Kinding as K
+import           Util.Error
+import           Util.State hiding (void)
+import           Util.Warning
+import           Parse.Unparser () -- debug
+
+import           Control.Exception (evaluate)
+import           Control.Monad
+import           Control.Monad.State ( evalState, MonadState (get), evalStateT, liftIO)
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import           System.Timeout (timeout)
+
+
+typeCheck :: TypingState ()
+typeCheck = do
+  s0 <- get
+  setErrors []
+  -- * Check the formation of all type decls
+  mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTypes
+  -- * Check the formation of all function signatures
+  mapM_ (K.synthetise Map.empty) =<< getSignatures
+  -- Gets the state and only continues if there are no errors so far  
+  s <- get
+  unless (hasErrors s) $ do
+    -- * Check function bodies
+    tMapWithKeyM_ (checkFunBody (signatures $ ast s)) =<< getDefs
+    -- * Check the main function
+    checkMainFunction
+    -- * Checking final environment for linearity
+    checkLinearity
+    
+  -- Get the state again to join the error messages
+  -- here, we continue with the errors from the previous state (kind inference) 
+  s <- get
+  setErrors (errors s ++ errors s0)
+  
+
+-- Check a given function body against its type; make sure all linear
+-- variables are used.
+checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
+checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
+  where
+    checkBody t = do
+      sigs <- getSignatures
+      k <-  K.synthetise Map.empty t 
+      when (K.isLin k && Map.member f sigs) (removeFromSignatures f)
+      checkAgainst Map.empty e t      
+      when (Map.member f sigs) $ addToSignatures f t
+
+checkMainFunction :: TypingState ()
+checkMainFunction = do
+  runOpts <- getRunOpts
+  sigs <- getSignatures
+  let main = getMain runOpts
+  if main `Map.member` sigs
+    then do
+      let t = sigs Map.! main
+      k <- K.synthetise Map.empty t
+      when (K.isLin k) $
+        let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main sigs) sigs in
+        addError (UnrestrictedMainFun sp main t k)
+    else when (isMainFlagSet runOpts) $
+      addError (MainNotDefined (defaultSpan {moduleName = runFilePath runOpts}) main)
+
+checkLinearity :: TypingState ()
+checkLinearity = do
+  sigs <- getSignatures
+  m <- filterM (K.lin . snd) (Map.toList sigs)
+  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
@@ -52,7 +114,7 @@ synthetise _ (E.Float p _ ) = return $ T.Float p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv e@(E.Var p x) =
+synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -113,12 +175,12 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   s <- get
   u <- liftIO $ evalStateT (synthetise kEnv e) s
-  (_, t) <- Extract.function e u
+  (_, _, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
-  (u1, u2) <- Extract.function e1 t
+  (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
@@ -221,7 +283,7 @@ compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState ()
 compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
   timeout_ms   <- subTimeout_ms <$> getRunOpts
-  let cmp = if sub then subtypeOf else bisimilar 
+  let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 
     Just checks -> unless checks 
@@ -230,22 +292,23 @@ compareTypes e t u = do
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
-checkEquivEnvs p error exp kEnv sigs1 sigs2 =
+checkEquivEnvs p error exp _ sigs1 sigs2 =
   -- unless (equivalent kEnv sigs1 sigs2) $
   unless (Map.keysSet sigs1 == Map.keysSet sigs2) $
     addError (error p (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)
 
 -- Build abstractions for each case element
 
-buildMap :: Span -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
+buildMap :: MonadState (FreestS a) m => Span -> E.FieldMap -> T.TypeMap -> m E.FieldMap
 buildMap p fm tm = do
   when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
   where tmS = Map.size tm
         fmS = Map.size fm
 
-buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
-                 -> TypingState ([Variable], E.Exp)
+
+buildAbstraction :: MonadState (FreestS a) m => T.TypeMap -> Variable -> ([Variable], E.Exp)
+                 -> m ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
     if n /= length xs
@@ -260,39 +323,3 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' (x : xs, e) (t:ts) =
     E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
 
-
-  numberOfArgs :: T.Type -> Int
-  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  numberOfArgs _                 = 0
-
-  numberOfFields :: T.Type -> Int
-  numberOfFields (T.Labelled _ _  tm) = Map.size tm
-
-
-
--- -- Check whether a type is brought to an End
--- broughtToEnd :: T.Type -> Bool
--- broughtToEnd = wellEnded Set.empty
-
--- wellEnded :: Set.Set Variable -> T.Type -> Bool
--- wellEnded _ T.Skip{} = False
--- wellEnded _ T.End{} = True
--- wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
--- wellEnded _ T.Message{} = False
--- wellEnded s (T.Labelled _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
--- wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
--- wellEnded s (T.Dualof _ t) = wellEnded s t
-
--- -- Alternative 1 _ Only recursion variables are well ended (False negatives)
--- -- There are non well-formed functions in the Prelude (e.g., forkWith)
--- -- 327 examples, 213 failures, 12 pending
-
--- -- wellEnded s (T.Var _ var) = var `Set.member` s
--- -- wellEnded s (T.CoVar _ var) = var `Set.member` s -- ???
-
--- -- Alternative 2 _ All type variables are well ended (False positives)
--- -- Allows false positives: forkWith @Skip @Skip (id @Skip)
--- -- 327 examples, 43 failures, 12 pending
-
--- wellEnded _ (T.Var _ _) = True
--- -- wellEnded s (T.CoVar _ _) = True

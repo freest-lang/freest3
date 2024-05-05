@@ -1,4 +1,16 @@
-module Bisimulation.Subtyping ( subtypeOf ) where
+{- |
+Module      :  Bisimulation.SubtypingSimulation
+Description :  Simulation-based subtyping, adapted from https://doi.org/10.4230/LIPIcs.CONCUR.2023.11
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  gsilva@lasige.di.fc.ul.pt
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+-}
+
+module Bisimulation.SubtypingSimulation ( subtypeSimilar ) where
 
 
 import qualified Data.Map as Map
@@ -8,25 +20,25 @@ import Data.Tuple (swap)
 
 import Bisimulation.Bisimulation
 import Bisimulation.Grammar
+import Bisimulation.Minimal ( minimal )
 import Bisimulation.Norm (allNormed)
-import Equivalence.TypeToGrammar ( convertToGrammar )
+import Bisimulation.TypeToGrammar ( convertToGrammar )
+import Equivalence.AlphaCongruence ()
 import qualified Syntax.Type as T 
 
 
-subtypeOf :: T.Type -> T.Type -> Bool
-subtypeOf t u = 
-  t == u || -- Alpha-equivalence
-  subG (convertToGrammar [t, u])
+subtypeSimilar :: T.Type -> T.Type -> Bool
+subtypeSimilar t u = subtypeGrammar (convertToGrammar [minimal t, minimal u])
 
 -- | Assumes a grammar without unreachable symbols
-subG :: Grammar -> Bool
-subG g@(Grammar [xs, ys] ps) = expand expandPairSub queue rules ps
+subtypeGrammar :: Grammar -> Bool
+subtypeGrammar g@(Grammar [xs, ys] ps) = expand expandPairSub queue rules ps
  where rules | allNormed ps = [reflex, headCongruence, bpa2]
              | otherwise    = [reflex, headCongruence, bpa1, bpa2]
        queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
--- XYZW-expansion at the level of pairs of words. 
--- Based on https://doi.org/10.4230/LIPIcs.CONCUR.2023.11, Definition 17.
+-- XYZW-expansion at the level of pairs of words 
+-- https://doi.org/10.4230/LIPIcs.CONCUR.2023.11, Definition 17.
 expandPairSub :: PairExpander
 expandPairSub ps (xs, ys) =
   -- extract transitions
