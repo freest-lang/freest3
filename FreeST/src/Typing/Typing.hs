@@ -276,8 +276,13 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e t = do 
-  u   <- synthetise kEnv e
-  compareTypes e t u 
+  sub <- subtyping <$> getRunOpts
+  case t of 
+    t@(T.Arrow _ Lin t1 t2) | not sub -> do 
+      (_, u1, u2) <- Extract.function e =<< synthetise kEnv e 
+      compareTypes e u1 t1 
+      compareTypes e u2 t2 
+    _ -> compareTypes e t =<< synthetise kEnv e
 
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
 compareTypes e t u = do 
