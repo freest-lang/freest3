@@ -1288,8 +1288,8 @@ forall b:1S . b
 forall c:1S . (c ; forall c:1S . c)
 
 []
-forall a:1S . (rec x:1S . forall a:1S . !a;x) ; ?a
-forall a:1S . (rec x:1S . (forall a:1S . !a;x) ; ?a)
+forall a:1S . (rec x:1S . forall a:1S . (!a);x) ; ?a
+forall a:1S . (rec x:1S . (forall a:1S . (!a);x) ; ?a)
 
 []
 (forall a:1S . !a) ; !Int
