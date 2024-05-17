@@ -48,7 +48,7 @@ basisUpdating bq track bpa2Mark = do
       
        {-(ws@(x, y), ancestors@(ancestor,_))-}
       visited <- gets visitedPairs
-      if ws `elem` visited || x == y -- 4.1 e 4.2
+      if ws `elem` visited || (y,x) `elem` visited || x == y -- 4.1 e 4.2
         then do
           addLog ("ws visitado ou ==")
           basisUpdating rest track bpa2Mark
@@ -69,8 +69,9 @@ basisUpdating bq track bpa2Mark = do
             else checkIfInBasis node rest bq track bpa2Mark
 
 pruneNode :: Grammar -> Node -> Node
-pruneNode g node@(Node { nodeValue = ws@(x,y), parentNode = ancestor }) = do
-  let xNorm = norm g x
+pruneNode g node@(Node { nodeValue = ws@(x',y'), parentNode = ancestor }) = do
+  let (x,y) = ((pruneWord g x'),(pruneWord g y'))
+      xNorm = norm g x
       yNorm = norm g y
   case (xNorm, yNorm) of
     (Nothing,Nothing) -> (Node { nodeValue = (pruneWord g x, pruneWord g y), parentNode = ancestor })
@@ -200,12 +201,17 @@ addMatchingTransitions node@(Node { nodeValue = nodeValue@(x,y), parentNode = an
       children = if bpa1Word == []
         then getChildren g node  
         else modifyNode g [] (bpa1Word) (getChildren g node)  
-      newBQ = children >< rest
+      newBQ = (fmap (orderNode g) children) >< rest
   addLog("OOOOOOOOOOOOOOOO " ++ show newBQ ++ " OOOOOOOOOO " ++ show rest)
   -- addLog ("children of "  ++ show ws ++ " are " ++ show (getChildren g ws))
 
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
+
+orderNode:: Grammar -> Node -> Node
+orderNode g node@(Node { nodeValue = nodeValue, parentNode = ancestor' }) = (Node { nodeValue = orderPairsByNorm g nodeValue, parentNode = ancestor' })
+
+
 
 addPairBpa1ToBasis :: Node -> BranchQueue -> Word -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancestor' }) rest bpa1Word track bpa2Mark = do
@@ -215,8 +221,7 @@ addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   let newB = Map.insert (head x, head y) (Bpa1 bpa1Word) b
       newTrack = (head x, head y) : track
       children = getChildren g node
-
-      bq' = addBetaToPair bpa1Word children >< rest
+      bq' = (fmap (orderNode g) (addBetaToPair bpa1Word g children)) >< rest
       bpa1Children = map (orderPairsByNorm g) (applyRules newB nodeValue)
       newBQ = foldl (\rest tuple -> enqueue (pruneNode g (Node {nodeValue = tuple, parentNode = Just node })) rest) bq' bpa1Children
   --addLog ("basis antes " ++show b ++ " basis depois " ++ show newB )
@@ -224,8 +229,8 @@ addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   basisUpdating newBQ newTrack bpa2Mark
 
 
-addBetaToPair:: Word -> BranchQueue ->BranchQueue
-addBetaToPair x = fmap (addToSecond x)
+addBetaToPair:: Word -> Grammar -> BranchQueue ->BranchQueue
+addBetaToPair x g bq = fmap (\node -> pruneNode g (addToSecond x node)) bq
 
 addToSecond :: Word -> Node -> Node
 addToSecond x node = Node
@@ -265,7 +270,7 @@ getChildren g@(Grammar _ prods) node@(Node {nodeValue = nodeValue@(x:xs,y:ys), p
     transitions2 = transitions y prods
     commonLabels = Map.keysSet transitions1
     commonWords = Data.List.sortBy (comparing fst) [(label, (Map.findWithDefault [] label transitions1, Map.findWithDefault [] label transitions2)) | label <- Set.toList commonLabels]
-    updatedQueue = foldl (\acc (_, pair) -> enqueue (pruneNode g (Node {nodeValue = orderPairsByNorm g pair, parentNode = Just node })) acc) Seq.empty commonWords
+    updatedQueue = foldl (\acc (_, pair) -> enqueue (pruneNode g (Node {nodeValue = pair, parentNode = Just node })) acc) Seq.empty commonWords
     
 
 modifyNode :: Grammar -> Word -> Word -> BranchQueue -> BranchQueue

@@ -1243,3 +1243,7 @@ rec x:*S . &{A:x, B:x, C:x}
 []
 (rec a:1S . &{A: a})
 (rec a:*S . &{A: a})
+
+[]
+&{A: c ; c ; a, C: Skip ; Close ; Skip} ; !Char
+(&{A: ((c ; c) ; a) ; !Char, C: ((Skip ; Close) ; Skip) ; !Char})
