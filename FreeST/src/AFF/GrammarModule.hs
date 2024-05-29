@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module AFF.GrammarModule where
+module AFF.GrammarModule (isNormed, norm, normUsingMap, nonterminals, reducesNorm) where
 
 import Control.Applicative
 import Control.Monad.State

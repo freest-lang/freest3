@@ -10,7 +10,6 @@ import Bisimulation.Grammar
 import           Syntax.Base
 -----------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------
--- Types created by me
 -- Type used in norm
 -- data IntOrInf = Infinite | Finite Int
 type IOF = Maybe Int
@@ -33,7 +32,6 @@ type Basis = Map.Map (Variable, Variable) Bpa
 data Bpa = Bpa1 Word | Bpa2 (Word, Word)
 
 -------------------------------------------------------------------------
--- Operations created by me
 
 type GlobalState = State GlobalStateData
 

@@ -1,4 +1,4 @@
-module AFF.CongruenceModule where
+module AFF.CongruenceModule (applyRules) where
 
 import Control.Monad.State (State, evalState, gets, modify)
 import Data.List (isPrefixOf, nub)

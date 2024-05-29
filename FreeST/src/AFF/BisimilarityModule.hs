@@ -1,8 +1,9 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module AFF.BisimilarityModule where
+module AFF.BisimilarityModule 
+ ( isBisimilar
+  )where
 
 -- import Bisimilarity.BisimilarityPresets ()
-import AFF.CongruenceModule (applyRules)
+import AFF.CongruenceModule 
 import Control.Monad.State (State, evalState, gets, modify, runState, foldM)
 import Data.Foldable ()
 import Data.Function (on)
