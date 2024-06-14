@@ -36,7 +36,7 @@ getTwo (Cons left Nil) = print @String "Error: Empty stack on left subtree" ; (N
 
 -- Streams
 
-type Stream : 1S = +{
+type Stream = +{
     NodeC: !Int ; Stream
   , LeafC: Stream
   , EndOfStreamC: Close

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 
 Module      :  Typing.Typing
@@ -19,6 +20,7 @@ module Typing.Typing
   , synthetise -- for tests
   , checkAgainst -- for tests
   , checkDefs
+  , buildMap
   )
 where
 
@@ -40,20 +42,20 @@ import           Util.Warning
 import           Parse.Unparser () -- debug
 
 import           Control.Monad
-import           Control.Monad.State ( when, get
-                                     , unless, evalState, MonadState (get)
-                                     )
+import           Control.Monad.State ( evalState, MonadState (get))
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
+
 
 typeCheck :: TypingState ()
 typeCheck = do
+  s0 <- get
+  setErrors []
   -- * Check the formation of all type decls
   mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTypes
   -- * Check the formation of all function signatures
   mapM_ (K.synthetise Map.empty) =<< getSignatures
-  -- Gets the state and only continues if there are no errors so far
+  -- Gets the state and only continues if there are no errors so far  
   s <- get
   unless (hasErrors s) $ do
     -- * Remove signatures with definitions
@@ -66,6 +68,12 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
+    
+  -- Get the state again to join the error messages
+  -- here, we continue with the errors from the previous state (kind inference) 
+  s <- get
+  setErrors (errors s ++ errors s0)
+  
 
 checkDefs :: Signatures -> [Variable] -> TypingState () 
 checkDefs sigs [ ] = return () 
@@ -86,8 +94,14 @@ checkDefs sigs xs = do
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
 checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
-checkFunBody sigs f e =
-  forM_ (sigs Map.!? f) (checkAgainst Map.empty e)
+checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
+  where
+    checkBody t = do
+      sigs <- getSignatures
+      k <-  K.synthetise Map.empty t 
+      when (K.isLin k && Map.member f sigs) (removeFromSignatures f)
+      checkAgainst Map.empty e t      
+      when (Map.member f sigs) $ addToSignatures f t
 
 checkMainFunction :: TypingState ()
 checkMainFunction = do
@@ -110,32 +124,6 @@ checkLinearity = do
   m <- filterM (K.lin . snd) (Map.toList sigs)
   unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m)
 
-buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
-                 -> TypingState ([Variable], E.Exp)
-buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
-    if n /= length xs
-      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
-      else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
-  Just t -> internalError "variant not a record type" t
-  Nothing -> -- Data constructor not in scope
-    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
- where
-  buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
-  buildAbstraction' ([], e) _ = e
-  buildAbstraction' (x : xs, e) (t:ts) =
-    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
-
-
-  numberOfArgs :: T.Type -> Int
-  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  numberOfArgs _                 = 0
-
-  numberOfFields :: T.Type -> Int
-  numberOfFields (T.Labelled _ _  tm) = Map.size tm
-
---
-
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type
 -- Basic expressions
@@ -144,7 +132,7 @@ synthetise _ (E.Float p _ ) = return $ T.Float p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv e@(E.Var p x) =
+synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -203,12 +191,12 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   return u2
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  (_,_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
-  (u1, u2) <- Extract.function e1 t
+  (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
@@ -304,7 +292,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do
-  (t', u') <- Extract.function e =<< synthetise kEnv e
+  (_, t', u') <- Extract.function e =<< synthetise kEnv e
   checkEquivTypes e t' t
   checkEquivTypes e u' u
 checkAgainst kEnv e t = checkEquivTypes e t =<< synthetise kEnv e
@@ -317,16 +305,34 @@ checkEquivTypes exp expected actual =
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
-checkEquivEnvs p error exp kEnv sigs1 sigs2 =
+checkEquivEnvs p error exp _ sigs1 sigs2 =
   -- unless (equivalent kEnv sigs1 sigs2) $
   unless (Map.keysSet sigs1 == Map.keysSet sigs2) $
     addError (error p (sigs1 Map.\\ sigs2) (sigs2 Map.\\ sigs1) exp)
 
 -- Build abstractions for each case element
 
-buildMap :: Span -> E.FieldMap -> T.TypeMap -> TypingState E.FieldMap
+buildMap :: MonadState (FreestS a) m => Span -> E.FieldMap -> T.TypeMap -> m E.FieldMap
 buildMap p fm tm = do
   when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
   where tmS = Map.size tm
         fmS = Map.size fm
+
+
+buildAbstraction :: MonadState (FreestS a) m => T.TypeMap -> Variable -> ([Variable], E.Exp)
+                 -> m ([Variable], E.Exp)
+buildAbstraction tm x (xs, e) = case tm Map.!? x of
+  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
+    if n /= length xs
+      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
+      else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
+  Just t -> internalError "variant not a record type" t
+  Nothing -> -- Data constructor not in scope
+    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
+ where
+  buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
+  buildAbstraction' ([], e) _ = e
+  buildAbstraction' (x : xs, e) (t:ts) =
+    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
+

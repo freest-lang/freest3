@@ -35,14 +35,14 @@ stackSize (Value _ ts) = 1 + stackSize ts
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
-type TreeC : 1S = +{
+type TreeC = +{
   ValueC: !Int; TreeC,
   LeafC : TreeC,
   DoneC   : Skip }
 
 
 -- Sends a tree through a TreeC
-sendTree : forall a:1S . Tree -> TreeC;a -> TreeC;a
+sendTree : Tree -> TreeC;a -> TreeC;a
 sendTree Leaf           c = select LeafC c
 sendTree (Node i lt rt) c = c
                          |> sendTree @a rt
@@ -59,7 +59,7 @@ errorWhen b s =
 
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
-receiveTree_ : forall a:1S . TreeStack -> dualof TreeC;a -> (Tree, a)
+receiveTree_ : TreeStack -> dualof TreeC;a -> (Tree, a)
 receiveTree_ ts (ValueC c) =
       let (i, c)   = receive c in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
@@ -76,11 +76,11 @@ receiveTree_ ts (DoneC  c) =
       (snd@TreeStack@Tree $ stackPop ts, c)
 
 -- Facade function to receive a Tree through a channel
-receiveTree : forall a:1S . dualof TreeC;a -> (Tree, a)
+receiveTree : dualof TreeC;a -> (Tree, a)
 receiveTree c = receiveTree_ @a Empty c
 
 -- Simple treeClient that sends a Tree through a TreeC
-treeClient : forall a:1S . TreeC;a -> a
+treeClient : TreeC;a -> a
 treeClient c =
   select DoneC $ sendTree @a aTree c
 
@@ -94,13 +94,13 @@ badClientPrematureEnd c =
   ()
 
 -- This bad client send an extra Value -1
-badClientSendExtraValue : forall a:1S . TreeC;a -> a
+badClientSendExtraValue : TreeC;a -> a
 badClientSendExtraValue c =
   select DoneC $ send (-1) $ select ValueC $ sendTree @a aTree c
   -- Bad Code ===========================
 
 -- This bad client send an extra Leaf
-badClientSendExtraLeaf : forall a:1S . TreeC;a -> a
+badClientSendExtraLeaf : TreeC;a -> a
 badClientSendExtraLeaf c =
   select DoneC $ select LeafC $ sendTree @a aTree c
   -- Bad  Code =============

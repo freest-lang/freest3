@@ -1,8 +1,8 @@
 -- TEST ERROR MESSAGES
 
 type Value = Int
-type Triple : 1T = (!Int, (Value, Value))
-type Pair : 1T = (!Int, Value)
+type Triple = (!Int;Close, (Value, Value))
+type Pair = (!Int;Close, Value)
 
 pairToValue : Pair -> Value
 pairToValue p =
@@ -11,8 +11,8 @@ pairToValue p =
 sendValue : Triple -> ()
 sendValue t =
   let (c, pair) = t in
-  let _ = send c (pairToValue pair) in
-  ()
+  send c (pairToValue pair) |> close
+  
 
 rcvValue : ?Int -> Value
 rcvValue c = let (v, c) = receive c in v
@@ -20,7 +20,7 @@ rcvValue c = let (v, c) = receive c in v
  
 main : Value
 main =
-  let (x, y) = new @!Int () in   
+  let (x, y) = new @(!Int;Close) () in   
   let aTriple = (x, (2, 3)) in
   let _ = fork @() (\_:() 1-> sendValue aTriple) in
-  let (x, _) = receive y in x     
+  let (x, c) = receive y in wait c; x     

@@ -9,6 +9,8 @@ import           Syntax.Program (TypeOpsEnv) -- TODO: remove on merge to keep-so
 import qualified Syntax.Type as T
 import           Util.GetTOps
 
+import qualified Data.Map.Strict as Map
+
 
 -- | Stylable error messages
 
@@ -18,14 +20,14 @@ type Stylable = Bool
 
 class Message a where
   title :: a -> Stylable -> Span -> FilePath -> String
-  msg   :: a -> Stylable -> TypeOpsEnv -> Either String String -> String
+  msg   :: a -> Stylable -> TypeOpsEnv -> String
   
 
 class Show a => Style a where
   style :: (Stylable -> String -> String) -> Stylable -> TypeOpsEnv -> a -> String 
 
 instance Style T.Type where
-  style f sty tops  = f sty . show . getDefault tops
+  style f sty tops  = f sty . show . canonical . getDefault tops
   
 instance Style E.Exp where
   style f sty tops  = f sty . show . getDefault tops
@@ -80,3 +82,16 @@ yellow :: Stylable -> String -> String
 yellow sty str
   | sty       = "\ESC[33m" ++ str ++ "\ESC[0m"
   | otherwise = str
+
+
+canonical :: T.Type -> T.Type
+canonical (T.Semi _ T.Skip{} u) = canonical u
+canonical (T.Semi _ t T.Skip{}) = canonical t 
+canonical (T.Semi s t u) = T.Semi s (canonical t) (canonical u)
+canonical (T.Arrow s m t u) = T.Arrow s m (canonical t) (canonical u)
+canonical (T.Labelled s sort tm) = T.Labelled s sort (Map.map canonical tm)    
+canonical (T.Message s p t) = T.Message s p (canonical t)
+canonical (T.Forall s (Bind s1 a k t)) = T.Forall s (Bind s1 a k (canonical t))
+canonical (T.Rec s (Bind s1 a k t)) = T.Rec s (Bind s1 a k (canonical t))
+canonical (T.Dualof s t) = T.Dualof s (canonical t)
+canonical t = t

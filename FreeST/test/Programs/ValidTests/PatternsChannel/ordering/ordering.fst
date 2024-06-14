@@ -12,7 +12,7 @@ order to use in quicksort and returns the ordered list.
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingChannel : 1S = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
+type OrderingChannel = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
 
 -- ==================== QUICKSORT ====================
 
@@ -56,7 +56,7 @@ quicksort (Cons x xs) direction =
 
 -- Server function
 --   This server sends the list reversed
-orderedServer : forall a:1S . dualof OrderingChannel;a -> IntList 1-> (IntList, a)
+orderedServer : dualof OrderingChannel;a -> IntList 1-> (IntList, a)
 orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
 orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
 orderedServer (Vals c) list = 
@@ -70,7 +70,7 @@ orderedServer (Vals c) list =
   }
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : forall a:1S . dualof OrderingChannel;a -> a
+initOrderedServer : dualof OrderingChannel;a -> a
 initOrderedServer c = 
   let (_, c) = orderedServer @a c Nil in
   c
@@ -83,7 +83,7 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
-order : forall a:1S . OrderingChannel; a -> IntList 1-> Bool 1-> (a, IntList)
+order : OrderingChannel; a -> IntList 1-> Bool 1-> (a, IntList)
 order c Nil direction = if direction
                         then (select Asc c , Nil)
                         else (select Desc c, Nil)

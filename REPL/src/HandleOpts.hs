@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,6 +22,7 @@ import           Utils
 import qualified Kinding.Kinding as K
 import           Typing.Rename ( renameProgram )
 import           Typing.Typing ( typeCheck )
+import           Inference.Inference
 
 import           Control.Monad.State
 import           Data.Char (isUpper)
@@ -65,7 +65,7 @@ freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
 --          (lift $ putStrLn msg)
 
 freestError :: ErrorType -> ReplState ()
-freestError = lift . putStrLn . showError True "<FreeST>" Map.empty
+freestError = lift . putStrLn . showError True (Right "<FreeST>") Map.empty
 
 -- | -------------------------------------------------------
 -- | Reloads the previously loaded file
@@ -114,7 +114,7 @@ kindOf :: String -> ReplState ()
 kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
 kindOf ts = do
   case parseType "<interactive>" ts of
-    Left errors -> return () -- showErrors
+    Left _ -> return () -- showErrors
     Right a@(T.Var _ x) -> getFromTypes x >>= synthVariable a x
     Right t -> K.synthetise Map.empty t >>= pretty ts
   where
@@ -190,22 +190,26 @@ handleProgram input = do
   let ss = Map.union (signatures (ast s1)) (signatures (ast s))
       ts = Map.union (types (ast s1)) (types (ast s))
   runOpts <- lift Utils.getRunOpts
-  let s2 = patternMatch s1{ast=(ast s1){signatures=ss,types=ts}}
+  let s1' = s1{ast=(ast s1){signatures=ss,types=ts}}
+  let s2 = patternMatch s1'
   if hasErrors s2
   then liftIO (putStrLn $ getErrors runOpts s2)
-  else let (defs,s3) = elaboration s2 in
+  else let (defs,s3) = elaboration (pkVariables $ extra s1') (mVariables $ extra s1') s2 in
     if hasErrors s3
     then liftIO (putStrLn $ getErrors runOpts s3)
-    else let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts defs s3) in
+    else let s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
       if hasErrors s4 then liftIO (putStrLn $ getErrors runOpts s4)
-      else do c <- ctx . extra <$> lift get
-              c' <- liftS $ evaluate c s4
-              lift (put s{ast=(ast s){signatures=signatures (ast s4)
-                                     ,types=types (ast s4)
-                                     }
-                         ,extra=(extra s){ctx=c'}
-                         }
-                   )
+      else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+        if hasErrors s5 then liftIO (putStrLn $ getErrors runOpts s5)
+        else do 
+          c <- ctx . extra <$> lift get
+          c' <- liftS $ evaluate c s5
+          lift (put s{ast=(ast s){signatures=signatures (ast s5)
+                                 ,types=types (ast s5)
+                                 }
+                     ,extra=(extra s){ctx=c'}
+                     }
+               )
 
 readLoop :: String -> InputT IO String
 readLoop s = getInputLine "freesti| " >>= \case
@@ -252,14 +256,18 @@ checkWithoutPrelude prelude runFilePath successMsg = do
   else let s2 = patternMatch s1 in
     if hasErrors s2
     then liftIO (putStrLn $ getErrors interactiveRunOpts s2)
-    else let (defs,s3) = elaboration s2 in
+    else let (defs,s3) = elaboration (pkVariables $ extra s1) (mVariables $ extra s1) s2 in
       if hasErrors s3
       then liftIO (putStrLn $ getErrors interactiveRunOpts s3)
       else let runOpts = interactiveRunOpts{runFilePath}
-               s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts defs s3) in
+               s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
         if hasErrors s4
         then liftIO (putStrLn $ getErrors interactiveRunOpts s4)
-        else do c <- gets (ctx . extra)
-                c' <- lift $ evaluate c s4
-                put $ typingToRepl c' s4
+        else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+          if hasErrors s5
+          then liftIO (putStrLn $ getErrors interactiveRunOpts s5)
+          else do 
+            c <- gets (ctx . extra)
+            c' <- lift $ evaluate c s5
+            put $ typingToRepl c' s5
 

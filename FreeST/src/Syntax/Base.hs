@@ -25,7 +25,6 @@ module Syntax.Base
   , mkNewVar
   , isWild
 ) where
-import Data.Char (isDigit)
 
 -- Default value for the various syntactic categories
 
@@ -54,7 +53,7 @@ class Located t where
 
 -- Multiplicity for types and expressions
 
-data Multiplicity = Un | Lin deriving Eq
+data Multiplicity = Un | Lin | MultVar Variable deriving (Ord, Eq)
 
 -- Variables for types and expressions
 

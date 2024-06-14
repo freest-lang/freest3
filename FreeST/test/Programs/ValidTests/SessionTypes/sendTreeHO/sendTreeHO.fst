@@ -9,22 +9,22 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 
 -- The channel type, as seen from the producer side
 
-type TreeChannel : 1S = TreeC ; Close
+type TreeChannel = TreeC ; Close
 
-type TreeC : 1S = +{
+type TreeC = +{
   LeafC: Skip,
   NodeC: TreeC ; !(?Int ; Close); TreeC
  }
 
 -- Reading a channel end: consuming dualof TreeChannel
 
-receiveCh : forall a:1S . ?(?Int; Close) ; a -> (Int, a)
+receiveCh : ?(?Int; Close) ; a -> (Int, a)
 receiveCh c =
   let (r, c) = receive c in
   let x = receiveAndClose @(Int) r in
   (x, c)
 
-read : forall a:1S . dualof TreeC ; a -> (Tree, a)
+read : dualof TreeC ; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) =
   let (l, c) = read @(?(?Int ; Close) ; dualof TreeC ; a) c in
@@ -43,14 +43,14 @@ readTree r =
 
 data Tree = Leaf | Node Tree Int Tree
 
-sendCh : forall a:1S . Int -> !(?Int ; Close) ; a -> a
+sendCh : Int -> !(?Int ; Close) ; a -> a
 sendCh x c =
   let (r, w) = new @(?Int ; Close) () in
   let c = send r c in
   sendAndWait @(Int) x w ;
   c
 
-write : forall a:1S . Tree -> TreeC ; a -> a
+write : Tree -> TreeC ; a -> a
 write Leaf c = select LeafC c
 write (Node l x r) c = 
   c |> select NodeC

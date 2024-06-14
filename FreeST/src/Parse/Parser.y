@@ -1,5 +1,5 @@
 {
-{-# LANGUAGE TupleSections, NamedFieldPuns #-}
+{-# LANGUAGE TupleSections, NamedFieldPuns, MultiWayIf #-}
 module Parse.Parser
 where
 
@@ -533,11 +533,14 @@ TypeName :: { Variable }
 
 KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
-  | TypeVar          { ($1, omission (getSpan $1)) }
+--  | TypeVar          { ($1, omission (getSpan $1)) }
+  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
+  
 
 KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, omission (getSpan $1)) }
+--  | TypeName          {($1, omission (getSpan $1)) }
+  | TypeName          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
 
 {
 

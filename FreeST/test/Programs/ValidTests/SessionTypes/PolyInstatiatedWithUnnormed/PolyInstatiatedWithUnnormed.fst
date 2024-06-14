@@ -1,9 +1,9 @@
 
 
-f : forall a:1S . !Char;a -> a
+f : !Char;a -> a
 f c = let c = send 'a' c in c
 
-g : forall a:1S . ?Char;a -> a
+g : ?Char;a -> a
 g c = let (_,c) = receive c in c
 
 

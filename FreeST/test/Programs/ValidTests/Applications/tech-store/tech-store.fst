@@ -1,6 +1,6 @@
 ---------------------------------- SharedCounter ----------------------------------
 
-type Counter : *S = *?Int
+type Counter = *?Int
 
 runCounter : Int -> dualof Counter -> ()
 runCounter i counter =
@@ -18,11 +18,11 @@ initCounter =
 -- type Head : *S = {- Dequeue -} *?Int
 -- type Tail : *S = {- Enqueue -} dualof Head
 
--- type Internal : 1S = ?Int; ?Internal
+-- type Internal = ?Int; ?Internal
 
 {- nodes -}
 
-runHeadNode : forall a:1T . (rec x:1S . ?a; ?x; Wait) -> dualof *?a 1-> ()
+runHeadNode : (rec x . ?a; ?x; Wait) -> dualof *?a 1-> ()
 runHeadNode prev head = 
     -- receive value |> next node endpoint
     let (i, prev) = receive prev in
@@ -33,7 +33,7 @@ runHeadNode prev head =
     -- run node with new endpoint
     runHeadNode @a prev' head
 
-runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x; Wait) -> dualof *!a 1-> ()
+runTailNode : dualof (rec x . ?a; ?x; Wait) -> dualof *!a 1-> ()
 runTailNode next tail =
     let i = receive_ @a tail in
     let next' = 
@@ -42,20 +42,20 @@ runTailNode next tail =
         in
     runTailNode @a next' tail 
 
-{- queue -}
+{- queue -}     
 
-initQueue : forall a:1T . () -> (*?a, *!a)
+initQueue : () -> (*?a, *!a)
 initQueue _ =
-    let (internalC, internalS) = new @(rec x:1S . ?a; ?x; Wait) () in
+    let (internalC, internalS) = new @(rec x . ?a; ?x; Wait) () in
     ( forkWith @*?a @() (runHeadNode @a internalC)
     , forkWith @*!a @() (runTailNode @a internalS)
     )
 
-enqueue : forall a:1T . a -> (*?a, *!a) 1-> ()
+enqueue : a -> (*?a, *!a) 1-> ()
 enqueue i queue = 
     send_ @a i $ snd @*?a @*!a queue
 
-dequeue : forall a:1T . (*?a, *!a) -> a
+dequeue : (*?a, *!a) -> a
 dequeue queue = 
     receive_ @a $ fst @*?a @*!a queue
 
@@ -68,8 +68,8 @@ data List = Nil
 
 {- channel types -}
 
-type SharedList : *S = *?ListC
-type ListC : 1S = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
+type SharedList = *?ListC
+type ListC = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
                    , Stop: Close  
                    }
 
@@ -185,17 +185,17 @@ fromJustOrDefault default maybeVal =
 
 {- channel types -}
 
-type SharedMap : *S = *?MapC
-type MapC : 1S = +{ Put: !ProductName; ValueC     ; MapC
-                  , Get: !ProductName; MaybeValueC; MapC
-                  , Stop: Close
-                  }
+type SharedMap = *?MapC
+type MapC = +{ Put: !ProductName; ValueC     ; MapC
+             , Get: !ProductName; MaybeValueC; MapC
+             , Stop: Close
+             }
 
-type ValueC : 1S = !Amount; !Price
+type ValueC = !Amount; !Price
 
-type MaybeValueC : 1S = &{ JustVal: dualof ValueC
-                         , NothingVal: Skip
-                         }
+type MaybeValueC = &{ JustVal: dualof ValueC
+                    , NothingVal: Skip
+                    }
 
 {- map server -}
 
@@ -258,16 +258,16 @@ getLin pName ch =
 
 {- channel types -}
 
-type Bank : *S = *?BankService
-type BankService : 1S = {- CreatePayment: -} !Price; ?PaymentC; Close 
+type Bank = *?BankService
+type BankService = {- CreatePayment: -} !Price; ?PaymentC; Close 
 
-type PaymentC : 1S = !CCNumber; !CCCode; Close 
+type PaymentC = !CCNumber; !CCCode; Close 
 
 {- bank worker -}
 
 -- TODO: Expand this function
 -- | Executes a function
-runWith : forall a:1A . (dualof a 1-> ()) -> a
+runWith : (dualof a 1-> ()) -> a
 runWith f =
     let (c, s) = new @a () in
     f s;
@@ -328,21 +328,21 @@ type CCCode = Int
 
 {- channel types -}
 
-type TechStore   : *S = *?TechService
-type TechService : 1S = +{ Buy: ?BuyC
-                         , Rma: ?RmaC
-                         };Close 
+type TechStore   = *?TechService
+type TechService = +{ Buy: ?BuyC
+                    , Rma: ?RmaC
+                    };Close 
 
-type BuyC : 1S = !ProductName; AvailabilityC
-type RmaC : 1S = !ProductId; !Issue; ?RmaNumber; Close  
+type BuyC = !ProductName; AvailabilityC
+type RmaC = !ProductId; !Issue; ?RmaNumber; Close  
 
-type AvailabilityC : 1S = &{ Available : ?Price; CheckoutC
-                           , OutOfStock: Wait 
-                           }
+type AvailabilityC = &{ Available : ?Price; CheckoutC
+                      , OutOfStock: Wait 
+                      }
 
-type CheckoutC : 1S = +{ Confirm: ?PaymentC; Close 
-                       , Cancel : Close
-                       }
+type CheckoutC = +{ Confirm: ?PaymentC; Close 
+                  , Cancel : Close
+                  }
 
 
 {- store front -}

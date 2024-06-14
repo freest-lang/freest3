@@ -1,5 +1,5 @@
-type SyncServer  : *S = *?SyncService
-type SyncService : 1S = ?Int;Wait
+type SyncServer  = *?SyncService
+type SyncService = ?Int;Wait
 
 syncServerOnce : Int -> dualof SyncServer -> ()
 syncServerOnce limit ch = 

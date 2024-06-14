@@ -1098,135 +1098,79 @@ dualof (rec a:1S . !a                       ; Close)
 
 -- Terminated Recursive Types
 
--- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. Skip
--- Skip
+[]
+rec b:1S . Skip
+Skip
+
+[]
+rec b:1S . Skip
+rec b:1S . rec b:1S . Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- Skip
--- rec x:*S. Skip
+[]
+rec x:*S. Skip
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. (Skip; Skip)
--- Skip
+[]
+Skip
+rec x:*S. Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. rec y. Skip
--- Skip
+[]
+rec x:*S. (Skip; Skip)
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x:*S. (Skip; rec y. Skip)
--- Skip
-
--- Skip^omega
--- []
--- rec x:*S. Skip; x
--- rec y:*S. Skip; y
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- rec x:*S.( Skip; x)
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- rec x:*S.( Skip; x; Skip)
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x)
--- Skip
-
--- Skip^omega
--- []
--- rec x:*S.( Skip; x; Skip)
--- Skip
+[]
+rec x:*S. rec y. Skip
+Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- rec x. Skip
+[]
+rec x:*S. (Skip; rec y. Skip)
+Skip
+
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- Skip; rec x.Skip
+[]
+rec x.Skip
+rec x. Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- Skip
+[]
+rec x.Skip
+Skip; rec x.Skip
 
 -- Ill-formed - TODO: should be well-formed
--- []
--- rec x.Skip
--- rec x.Skip
+[]
+rec x.Skip
+Skip
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip
+[]
+rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
+rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- rec x.Skip
+[]
+Skip
+rec y:1S. (Skip ; y) ; ?Int
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip; rec x.Skip
+[]
+rec y:1S. (Skip ; y) ; ?Int
+Skip 
 
 -- Skip^omega
--- []
--- rec x.Skip;x
--- Skip; rec x.Skip;x
+[]
+Skip
+(rec y:1S. Skip ; y) ; ?Int
 
 -- Skip^omega
--- []
--- rec x:*S. (((Skip ; x) ; x) ; x)
--- Skip
-
--- Skip^omega
--- []
--- rec y:*S.(rec y:1S.Skip)
--- rec y:*S.(rec z:*S.(rec x:*S.(rec y1:1S.(rec y2:*S.Skip))))
-
--- Ill-formed - TODO: should be well-formed
--- []
--- +{C: (rec x:*S.Skip)};(y;((rec x:1S.y);Skip))
--- +{C: (Skip;((y;(rec x:1S.(rec x:1S.y)));Skip))}
-
--- Skip^omega
--- []
--- rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
--- rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
-
--- Skip^omega
--- []
--- Skip
--- rec y:1S. (Skip ; y) ; ?Int
-
--- Skip^omega
--- []
--- rec y:1S. (Skip ; y) ; ?Int
--- Skip 
-
--- Skip^omega
--- []
--- Skip
--- (rec y:1S. Skip ; y) ; ?Int
-
--- Skip^omega
--- []
--- rec y:1S. Skip ; y ; ?Int
--- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
+[]
+rec y:1S. Skip ; y ; ?Int
+Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
 
 -- Star (unrestricted session) types
 

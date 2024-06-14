@@ -7,6 +7,7 @@ module Parse.Phase where
 import           Syntax.AST
 import           Syntax.Base hiding (moduleName)
 import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Util.Error
 import           Util.State
 
@@ -26,12 +27,14 @@ type instance XExtra Parse = Extra
 type ParseS = FreestS Parse
 type ParseState = StateT ParseS (Either ErrorType)
 type Defs = Definitions Parse
-  
+   
 data Extra = Extra
   { moduleName  :: ModuleName
   , imports     :: Imports
   , pEnvChoices :: ChoicesLabels
   , runOpts     :: RunOpts
+  , mVariables  :: Set.Set Variable
+  , pkVariables  :: Set.Set Variable
   }
 
 initialExtraParse :: Extra
@@ -41,6 +44,9 @@ initialExtraParse = Extra { .. }
     imports     = [] 
     pEnvChoices = []
     runOpts     = defaultOpts
+    mVariables  = Set.empty
+    pkVariables  = Set.empty
+
 
 -- | State with file name
 
@@ -51,6 +57,8 @@ initialWithFile runFilePath = initial Extra{..}
     imports     = []
     pEnvChoices = []
     runOpts     = defaultOpts{runFilePath}
+    mVariables  = Set.empty
+    pkVariables  = Set.empty
 
 setModuleName :: ModuleName -> ParseState ()
 setModuleName moduleName = modify (\s -> s{extra = (extra s){moduleName}})
@@ -100,3 +108,22 @@ setFName runFilePath s = s{extra = (extra s){runOpts = (runOpts $ extra s){runFi
 --   , pEnvChoices :: ParseEnvChoices
 --   , runOpts     :: RunOpts
 --   }
+
+-- | KIND VARIABLES
+
+addPKVariable :: Variable ->  ParseState ()
+addPKVariable var = modify (\s -> s{extra = (extra s) {pkVariables = Set.insert var (pkVariables $ extra s)}})
+
+addMVariable :: Variable ->  ParseState ()
+addMVariable var = modify (\s -> s{extra = (extra s) {mVariables = Set.insert var (mVariables $ extra s)}})
+
+
+-- freshKVar :: MonadState (FreestS a) m => Span -> m K.Kind
+freshKVar :: Span -> ParseState K.Kind
+freshKVar s = do
+  mv <- mkVar s . ("φ" ++) . show <$> getNextIndex
+  pk <- mkVar s . ("ψ" ++) . show <$> getNextIndex
+  addPKVariable pk
+  addMVariable mv
+  return $ K.Kind s (MultVar mv) (K.PKVar pk)
+    

@@ -65,13 +65,13 @@ snd' p = p @b (λf:a-> λs:b-> s)
 
 -- Function tail takes the tail of a non-empty list.
 tail' : ∀ a . (∀ b . (a -> b -> b) -> b -> b) -> (∀ b . (a -> b -> b) -> b -> b)
-tail' l = (fst' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) (
-            l @(∀c:*T . ((∀b:*T . (a -> b -> b) -> b -> b) -> (∀b:*T . (a -> b -> b) -> b -> b) -> c) -> c)
+tail' l = (fst' @(∀b . (a -> b -> b) -> b -> b) @(∀b . (a -> b -> b) -> b -> b) (
+            l @(∀c . ((∀b . (a -> b -> b) -> b -> b) -> (∀b . (a -> b -> b) -> b -> b) -> c) -> c)
               (λh:a-> λt:(∀c.((∀b.(a->b->b)->b->b)->(∀b.(a->b->b)->b->b)->c)->c)->
-                pair @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b)
-                  (snd' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) t)
-                  (cons @a h (snd' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) t)))
-              (pair @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) (nil @a) (nil @a))))
+                pair @(∀b . (a -> b -> b) -> b -> b) @(∀b . (a -> b -> b) -> b -> b)
+                  (snd' @(∀b . (a -> b -> b) -> b -> b) @(∀b . (a -> b -> b) -> b -> b) t)
+                  (cons @a h (snd' @(∀b . (a -> b -> b) -> b -> b) @(∀b . (a -> b -> b) -> b -> b) t)))
+              (pair @(∀b . (a -> b -> b) -> b -> b) @(∀b . (a -> b -> b) -> b -> b) (nil @a) (nil @a))))
 
 mainTail : Char
 mainTail = head'  @Char $ tail'  @Char twoChars
@@ -96,7 +96,7 @@ four s z = s $ s $ s $ s z
 
 -- replicate n x is a list of length n with x the value of every element
 replicate : ∀ x . Nat -> x -> (∀ r . (x -> r -> r) -> r -> r)
-replicate n val = n @(∀r:*T . (x -> r -> r) -> r -> r) (cons @x val) (nil @x)
+replicate n val = n @(∀r . (x -> r -> r) -> r -> r) (cons @x val) (nil @x)
 
 main : Int
 main = length'  @Char $ replicate  @Char four 'a'

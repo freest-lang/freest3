@@ -1,5 +1,5 @@
 -- | The client view of a linear interaction with a bag (multiset) of integer values
-type Bag:1S = +{Put: !Int, Get: ?Int};Close 
+type Bag = +{Put: !Int, Get: ?Int};Close 
   
 -- | The client view of a shared interaction with a bag
 type SharedBag = *?Bag

@@ -28,14 +28,14 @@ tabuadaSimples i = tabuadaAte i 10
 
 -- Tipo do canal (os parentesis fazem diferenca)
 
-type TabuadaServer : 1S = &{ TabuadaSimples: ?Int ;             TabuadaServer
+type TabuadaServer = &{ TabuadaSimples: ?Int ;             TabuadaServer
                            , TabuadaAte    : ?Int ; ?Int;       TabuadaServer
                            , MultiplosEntre: ?Int ; ?Int; ?Int; TabuadaServer
                            , Solucao       : !Bool; !Int;       TabuadaServer
                            , Fim           : Wait
                            }
 
-type TabuadaClient : 1S = dualof TabuadaServer
+type TabuadaClient = dualof TabuadaServer
 
 tabuadaServer : TabuadaServer -> IntList 1-> ()
 tabuadaServer c result =

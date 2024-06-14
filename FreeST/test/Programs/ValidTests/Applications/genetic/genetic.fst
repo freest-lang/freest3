@@ -221,19 +221,19 @@ geneticAlg seed populationSize iterations =
 -- ===== PARALLEL GENETIC ALGORITHM - MASTER ISLANDS =====
 
 -- Channel to communicate to islands
-type IslandChannel : 1S = +{
+type IslandChannel = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
   Done:       Close }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
-type ResultChannel : 1S = ?Int;Wait    -- Compute result and return it
+type ResultChannel = ?Int;Wait    -- Compute result and return it
 
 
 -- Structure that represents a list of IslandChannels
 --   Used by the master to hold all channels to the islands
-data ListIslandChannel : 1T = Nil () | Cons IslandChannel ListIslandChannel
+data ListIslandChannel = Nil () | Cons IslandChannel ListIslandChannel
 
 -- Fold function over a list of IslandChannels
 foldIslands : forall a . (a -> IslandChannel -> (a, IslandChannel)) -> a -> ListIslandChannel -> (a, ListIslandChannel)

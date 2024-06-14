@@ -4,18 +4,18 @@ data Tree = Empty | Node Int TreeList
 -- List of Trees
 data TreeList = Nil | Cons Tree TreeList
 
-type TreeChannel : 1S = +{
+type TreeChannel = +{
   Node : !Int; TreeListChannel,
   Empty: Skip }
 
-type TreeListChannel : 1S = +{
+type TreeListChannel = +{
   Cons: TreeChannel; TreeListChannel,
   Nil : Skip }
 
 
 -- ===== SENDING =====
 
-sendTree : forall a: 1S . Tree -> TreeChannel;a -> a
+sendTree : Tree -> TreeChannel;a -> a
 sendTree tree c =
   case tree of {
     Empty ->
@@ -24,7 +24,7 @@ sendTree tree c =
       sendTreeList @a children $ send i $ select Node c
   }
 
-and sendTreeList : forall a: 1S . TreeList -> TreeListChannel;a -> a
+and sendTreeList : TreeList -> TreeListChannel;a -> a
 sendTreeList list c =
   case list of {
     Nil ->
@@ -35,7 +35,7 @@ sendTreeList list c =
 
 -- ===== RECEIVING =====
 
-receiveTree : forall a: 1S . dualof TreeChannel;a -> (Tree, a)
+receiveTree : dualof TreeChannel;a -> (Tree, a)
 receiveTree c =
   match c with {
     Empty c ->
@@ -46,7 +46,7 @@ receiveTree c =
       (Node i children, c)
   }
 
-and receiveTreeList : forall a: 1S . dualof TreeListChannel;a -> (TreeList, a)
+and receiveTreeList : dualof TreeListChannel;a -> (TreeList, a)
 receiveTreeList c =
   match c with {
     Nil c ->

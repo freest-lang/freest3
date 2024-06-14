@@ -10,7 +10,7 @@ import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
 import           Data.Bifunctor (Bifunctor(bimap))
-import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
+-- import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
 import GHC.Float
 
 ------------------------------------------------------------
@@ -53,7 +53,7 @@ initialCtx = Map.fromList
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "wait", PrimitiveFun wait)
-  , (var "close", PrimitiveFun (\c -> IOValue $ close c))
+  , (var "close", PrimitiveFun (IOValue . close))
   -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
@@ -148,17 +148,18 @@ initialCtx = Map.fromList
       PrimitiveFun (\(String s) ->
       PrimitiveFun (\(Cons (Variable _ mode _) _) -> IOValue $
         case mode of
-          "ReadMode"   -> openFile s ReadMode   >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
-          "WriteMode"  -> openFile s WriteMode  >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
-          "AppendMode" -> openFile s AppendMode >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "ReadMode"   -> openFile s ReadMode <&> Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "WriteMode"  -> openFile s WriteMode  <&> Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "AppendMode" -> openFile s AppendMode <&> Cons (var "FileHandle") . (: []) . (: []) . Handle
+          xs -> error $ "Interpreter.Builtin.initialCtx " ++ show xs
     )))
   , (var "__putFileStr",
       PrimitiveFun (\(Cons _ [[Handle fh]]) -> PrimitiveFun (\(String s) ->
         IOValue $ hPutStr fh s $> Unit
     )))
-  , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh >>= return . Character))
-  , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh >>= return . String))
-  , (var "__isEOF"       , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh >>= return . boolean))
+  , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh <&> Character))
+  , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh <&> String))
+  , (var "__isEOF"       , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh <&> boolean))
   , (var "__closeFile"   , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
@@ -171,5 +172,6 @@ initialCtx = Map.fromList
  where
   var :: String -> Variable
   var = mkVar defaultSpan
+  
   boolean :: Bool -> Value
   boolean b = Cons (mkVar defaultSpan (show b)) []

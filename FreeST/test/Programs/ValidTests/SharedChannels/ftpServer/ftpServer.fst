@@ -23,7 +23,7 @@ writeTo file state =
 -- |Connects clients to the server
 type FTP = *?FTPSession
 -- | An FTP session seen from the side of the client
-type FTPSession : 1S = +
+type FTPSession = +
   { Get: ?File ; FTPSession
   , Put: !File ; FTPSession
   , Bye: Close

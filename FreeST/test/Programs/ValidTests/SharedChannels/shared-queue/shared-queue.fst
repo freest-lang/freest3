@@ -1,9 +1,9 @@
 -- channel types
 
-type Head : *S = {- Dequeue -} *?Int
-type Tail : *S = {- Enqueue -} *!Int
+type Head = {- Dequeue -} *?Int
+type Tail = {- Enqueue -} *!Int
 
-type Internal : 1S = ?Int; ?Internal; Wait 
+type Internal = ?Int; ?Internal; Close 
 
 -- nodes
 
@@ -17,7 +17,7 @@ runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =
     let i = receive_ @Int tail in
     let (prev', next') = new @Internal () in
-    fork (\_:()1-> send i next |> send prev' |> close);
+    fork (\_:()1-> send i next |> send prev' |> wait);
     runTailNode next' tail
     -- Internal error at Validation.Rename.rename: dualof
     -- runTailNode (fork_ [Internal] (λ c:dualof Internal -> send c (send i next))) tail
@@ -42,7 +42,7 @@ dequeue queue =
 
 -- counter
 
-type Counter : *S = *?Int
+type Counter = *?Int
 
 runCounter : Int -> dualof Counter -> ()
 runCounter i counter =

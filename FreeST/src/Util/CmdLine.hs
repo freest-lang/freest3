@@ -57,8 +57,8 @@ handleFlags fg@(RunOpts f _ _ sty _) = do
   unless ("fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
-    fileDoNotExist = showError sty "FreeST" Map.empty (FileNotFound f)
-    wrongFileExtension = showError sty "FreeST" Map.empty (WrongFileExtension f)
+    fileDoNotExist = showError sty (Right "FreeST") Map.empty (FileNotFound f)
+    wrongFileExtension = showError sty (Right "FreeST") Map.empty (WrongFileExtension f)
 
 flags :: Bool -> IO RunOpts
 flags b = handleFlags =<< execParser opts
@@ -66,7 +66,7 @@ flags b = handleFlags =<< execParser opts
     opts = info (versionParser v <*> runOptsParser <**> helper) desc
     desc = fullDesc
      <> progDesc "Run FreeST"
-     <> header v
+     <> header (v ++ ", https://freest-lang.github.io") 
     
     v = "FreeST, Version " ++ showVersion version ++ if b then "-dev" else ""
 

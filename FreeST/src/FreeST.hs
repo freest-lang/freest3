@@ -3,28 +3,32 @@ module FreeST
   ( main
   , checkAndRun
   , isDev
-  , elabToTyping
+  , infToTyping
+  , elabToInf
+--  , elabToTyping
   )
 where
 
 import           Elaboration.Elaboration -- ( elaboration )
-import           Elaboration.Phase
+import qualified Elaboration.Phase as EP
+import qualified Inference.Phase as IP
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Parse.Phase
+import           PatternMatch.PatternMatch
 import           Syntax.AST
+import           Inference.Inference
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.MkName
 import           Syntax.Program (noConstructors)
+import           Typing.Phase
+import           Typing.Rename ( renameProgram )
+import           Typing.Typing ( typeCheck )
 import           Util.CmdLine
 import           Util.Error
 import           Util.State
 import           Util.Warning
-import           Typing.Phase
-import           Typing.Rename ( renameProgram )
-import           Typing.Typing ( typeCheck )
-import           PatternMatch.PatternMatch
 
 import           Control.Monad.State hiding (void)
 import qualified Data.Map.Strict as Map
@@ -56,11 +60,14 @@ checkAndRun runOpts = do
   when (hasErrors patternS) (die $ getErrors runOpts patternS)
 
   -- | Elaboration
-  let (defs, elabS) = elaboration patternS
+  let (defs, elabS) = elaboration (pkVariables $ extra s2) (mVariables $ extra s2) patternS
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
-  -- | Rename & TypeCheck
-  let s4 = execState (renameProgram >> typeCheck) (elabToTyping runOpts defs elabS)
+  -- | Kind Inference  
+  let infS = execState (renameProgram >> infer) (elabToInf defs elabS)
+--  when (hasErrors infS) (die $ getErrors runOpts infS)
+  -- | Typecheck
+  let s4 = execState typeCheck (infToTyping runOpts infS)
   when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings runOpts s4)
   when (hasErrors s4) (die $ getErrors runOpts s4)
   
@@ -79,13 +86,41 @@ checkAndRun runOpts = do
       
     preludeHasErrors :: FilePath -> ParseS -> ParseS -> ParseS
     preludeHasErrors f s0 s1
-      | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }
+      | hasErrors s1 = error $ show $ errors s1
+          -- s0 { warnings = NoPrelude f : warnings s0 }
       | otherwise    = s1
 
-elabToTyping :: RunOpts -> Typing.Phase.Defs -> ElabS -> TypingS
-elabToTyping runOpts defs s = s {ast=newAst, extra = runOpts}
-  where newAst = AST { types=types $ ast s
-                     , signatures=signatures $ ast s
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkWild s)
+        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan
+
+-- Change to FromInf
+-- elabToTyping :: RunOpts -> Typing.Phase.Defs -> ElabS -> TypingS
+-- elabToTyping runOpts defs s = s {ast=newAst, extra = runOpts}
+--   where newAst = AST {types=types $ ast s, signatures=signatures $ ast s, definitions = defs}
+
+
+elabToInf :: Typing.Phase.Defs -> EP.ElabS -> IP.InferenceS
+elabToInf defs s =  s {ast = newAst, extra = newExtra}
+  where newAst = AST { types       = types      $ ast s
+                     , signatures  = signatures $ ast s
                      , definitions = defs
-                     , evalOrder = evalOrder $ ast s
+                     , evalOrder   = evalOrder  $ ast s
+                     }
+        newExtra = IP.Extra { IP.mVariables  = EP.mVariables (extra s)
+                            , IP.pkVariables = EP.pkVariables (extra s)
+                            , IP.constraints = []
+                            }
+
+infToTyping :: RunOpts -> IP.InferenceS -> TypingS
+infToTyping runOpts s = s {ast=newAst, extra = runOpts} -- , errors = []}
+  where newAst = AST { types       = types       $ ast s
+                     , signatures  = signatures  $ ast s
+                     , definitions = definitions $ ast s
+                     , evalOrder   = evalOrder   $ ast s
                      }

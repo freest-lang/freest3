@@ -1,4 +1,4 @@
-f : forall a: 1S . a -> (Int, a)
+f : a -> (Int, a)
 f x = (7, x)
 
 main : Int

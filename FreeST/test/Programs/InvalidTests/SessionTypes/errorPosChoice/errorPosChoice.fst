@@ -8,10 +8,10 @@ f1 c = match c with { B c -> receive c }
 
 main : Bool
 main =
-  let (w, r) = new @&{B: !Bool;Close} () in
-  fork @() (\_:()-> f w);
+  let (w, r) = new @(&{B: !Bool};Close) () in
+  fork @() (\_:() 1-> f w);
   let (x, c) = f1 r in
-  close c;
+  wait c;
   x
 
 

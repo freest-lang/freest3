@@ -1,5 +1,5 @@
-type MathServer  : *S = *?MathService
-type MathService : 1S = +{ Plus   : !Int; !Int; ?Int; MathService
+type MathServer  = *?MathService
+type MathService = +{ Plus   : !Int; !Int; ?Int; MathService
                          , Greater: !Int; !Int; ?Bool; MathService
                          , Neg    : !Int; ?Int; MathService
                          , End    : Close 

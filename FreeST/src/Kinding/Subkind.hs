@@ -37,12 +37,13 @@ instance Subsort K.Multiplicity where
   _     <: _    = True
 
 instance Subsort K.PreKind where
-  K.Top <: K.Session = False
-  K.Session <: K.Absorb = False
-  _     <: _         = True
+  K.Top     <: K.Session = False
+  K.Top     <: K.Absorb  = False
+  K.Session <: K.Absorb  = False
+  _         <: _         = True
 
 instance Subsort K.Kind where
-  K.Kind _ b1 m1 <: K.Kind _ b2 m2 = b1 <: b2 && m1 <: m2
+  K.Kind _ m1 b1 <: K.Kind _ m2 b2 = m1 <: m2 && b1 <: b2
 
 -- The least upper bound of two kinds
 
@@ -62,6 +63,8 @@ instance Join K.PreKind where
 
 instance Join K.Kind where
   join (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (join b1 b2)
+
+-- The greatest lower bound of two kinds
 
 class Meet t where
   meet :: t -> t -> t

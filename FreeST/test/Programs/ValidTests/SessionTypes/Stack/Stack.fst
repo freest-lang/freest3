@@ -8,18 +8,18 @@ Based on an example in
   ACM Trans. Program. Lang. Syst., 41(2):9:1–9:37, 2019.
 -}
 
-type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
+type  EStack = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 
-type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
+type NEStack = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
-neStack : ∀ a: 1S . Int -> NEStack;a -> a
+neStack : Int -> NEStack;a -> a
 neStack x c =
   match c with {
     Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
     Pop  c -> send x c
   }
 
-eStack : ∀ a: 1S . EStack;a -> a
+eStack : EStack;a -> a
 eStack c =
   match c with {
     Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),

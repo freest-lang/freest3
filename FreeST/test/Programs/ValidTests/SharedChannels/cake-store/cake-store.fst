@@ -5,10 +5,10 @@ Based on the 'Ami and Boe' example from
 
 -}
 
-type CakeStore   : *S = *?CakeService
-type CakeService : 1S = &{ Cake: Wait
-                         , Disappointment: Wait 
-                         }
+type CakeStore   = *?CakeService
+type CakeService = &{ Cake: Wait
+                    , Disappointment: Wait 
+                    }
 
 runCakeStore : dualof CakeStore -> Bool -> ()
 runCakeStore cakeStore gotCake = 

@@ -31,11 +31,10 @@ import qualified Data.Map.Strict            as Map
 import qualified Data.Set                   as Set
 import qualified Data.Sequence              as Queue
 import           Data.Bifunctor
-import           Data.List                  ( isPrefixOf, union, stripPrefix )
+import           Data.List                  ( union, stripPrefix )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                    hiding ( Word )
 import           Data.Bitraversable         ( bisequence )
-import           Debug.Trace
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
@@ -194,7 +193,7 @@ bpa2 :: NodeTransformation
 bpa2 = applyBpa bpa2'
 
 bpa2' :: Productions -> Ancestors -> (Word, Word) -> Set.Set Node
-bpa2' p a (x : xs, y : ys)
+bpa2' p _ (x : xs, y : ys)
   | not (normed p x && normed p y) = Set.empty
   | otherwise = case gammaBPA2 p x y of
     Nothing    -> Set.empty
@@ -239,7 +238,7 @@ throughPath p (l : ls) xs | not (Map.member l ts) = Nothing
  where
   ts  = transitions xs p
   xs' = ts Map.! l
-throughPath p _ xs = Just xs
+throughPath _ _ xs = Just xs
 
 -- Pruning nodes (Warning: pruneWord is duplicated from Bisimulation.Norm)
 

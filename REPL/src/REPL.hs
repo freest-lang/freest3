@@ -1,21 +1,25 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
 import           Elaboration.Elaboration ( elaboration )
+import           Elaboration.Replace (Replace(replace))
 import           FreeST hiding (main)
 import           Interpreter.Builtin (initialCtx)
-import           Interpreter.Eval ( evalAndPrint, evaluate, evalAndPrint' )
 import           HandleOpts
+import           Inference.Inference
+import           Interpreter.Eval ( evalAndPrint, evalAndPrint', evaluate )
 import           Parse.Parser
+import           Parse.Phase
 import           Paths_FreeST ( getDataFileName )
-import           Syntax.Base
+import           PatternMatch.PatternMatch
 import           Syntax.AST
-import Syntax.Expression(Pattern)
+import           Syntax.Base
+import qualified Syntax.Expression as E
+import           Syntax.MkName
+import           Typing.Rename (Rename(rename), renameProgram )
+import qualified Typing.Typing as T
 import           Util.State
 import           Utils
-import qualified Typing.Typing as T
-import           Parse.Phase
-import           PatternMatch.PatternMatch
+
 
 import           Control.Monad.State
 import           Data.List
@@ -25,8 +29,7 @@ import           System.Directory
 import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
-import Elaboration.Replace (Replace(replace))
-import Typing.Rename (Rename(rename), renameProgram)
+import           Debug.Trace (traceM)
 
 
 main :: IO ()
@@ -41,15 +44,11 @@ main = do
   s2 <-  parseProgram s0
   -- | PatternMatch
   let patternS = patternMatch s2
-  let (defs, elabS) = elaboration patternS
-  let typingS = elabToTyping defaultOpts{runFilePath="<interactive>"} defs elabS
+  let (defs, elabS) = elaboration (pkVariables $ extra s2) (mVariables $ extra s2) patternS
+  let infS = execState (renameProgram >> infer) (elabToInf defs elabS) 
+  let typingS = infToTyping defaultOpts{runFilePath="<interactive>"} infS
   c <- evaluate initialCtx typingS
   evalStateT (runInputT (replSettings home) (repl s2 args)) (typingToRepl c typingS)
-
-  -- s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  -- let s2 = emptyPEnv $ execState elaboration s1
-  -- evalStateT (runInputT (replSettings home) (repl s1 args))
-  --   s2{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 ------------------------------------------------------------
 -- AUTOCOMPLETE & HISTORY
@@ -130,30 +129,39 @@ parseOpt s (Just xs)
         Right e  -> do 
           (st,ctx) <- replToTyping <$> lift get 
           let it' = mkVar defaultSpan "#it"
-              s0 = patternMatch st{ast=(ast st){signatures=Map.insert it' (omission defaultSpan) (signatures $ ast st)
+              s0 = st{ast=(ast st){signatures=Map.insert it' (omission defaultSpan) (signatures $ ast st)
                                                  ,definitions=Map.singleton it' [([],e)]}
                                   ,extra=extra s}
-          if hasErrors s0
-          then liftIO (putStrLn $ getErrors runOpts s0)
-          else let (defs,s1) = elaboration s0 in 
-            if hasErrors s1
-            then liftIO (putStrLn $ getErrors runOpts s1)
-            else let s1' = execState renameProgram (elabToTyping runOpts defs s1)
-                     e'  = definitions (ast s1') Map.! it'
-                     (t,s2) = runState (T.synthetise Map.empty e') st in 
-              if hasErrors s2 
-              then liftIO (putStrLn $ getErrors runOpts s2)
-              else do 
-                let st'=st{ast=(ast st){ evalOrder   = [[it']]
+              s1 = patternMatch s0
+          if hasErrors s1
+          then liftIO (putStrLn $ getErrors runOpts s1)
+          else let (defs,s2) = elaboration (pkVariables $ extra s0) (mVariables $ extra s0) s1 in 
+            if hasErrors s2
+            then liftIO (putStrLn $ getErrors runOpts s2)
+            else let s2' = execState (renameProgram >> infer) (elabToInf defs s2) in 
+              if hasErrors s2'
+              then liftIO (putStrLn $ getErrors runOpts s2')
+              else let e'     = definitions (ast s2') Map.! it'
+                       (t,s3) = runState (T.synthetise Map.empty e') st in 
+                if hasErrors s3 
+                then liftIO (putStrLn $ getErrors runOpts s3)
+                else do 
+                  let st'=st{ast=(ast st){ evalOrder   = [[it']]
                                        , definitions = Map.insert it' e' (definitions (ast st))
                                        }
                           }
-                (v,ctx') <- liftS $ evalAndPrint' it' ctx st'
-                let it = mkVar defaultSpan "it"
-                lift $ put (typingToRepl (Map.insert it v ctx') st{ast=addSignature it t(ast st)})
+                  (v,ctx') <- liftS $ evalAndPrint' it' ctx st'
+                  let it = mkVar defaultSpan "it"
+                  lift $ put (typingToRepl (Map.insert it v ctx') st{ast=addSignature it t(ast st)})
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
 
-
-
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkWild s)
+        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan

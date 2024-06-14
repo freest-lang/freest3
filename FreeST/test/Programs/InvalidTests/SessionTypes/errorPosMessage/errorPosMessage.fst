@@ -9,7 +9,7 @@ f1 c = receive c
 main : Int
 main =
   let (w, r) = new @(!Bool;Close) () in
-  fork @() (\_:()-> f w);
+  fork @() (\_:() 1-> f w);
   let (x, c) = f1 r in
-  close c;
+  wait c;
   x

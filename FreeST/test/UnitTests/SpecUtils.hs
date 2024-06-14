@@ -75,7 +75,7 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
 
 showTestErrors :: Errors -> String
 showTestErrors = intercalate "\n" . map f . take 2 . reverse
-  where f = showError True "" Map.empty
+  where f = showError True (Right "") Map.empty
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs

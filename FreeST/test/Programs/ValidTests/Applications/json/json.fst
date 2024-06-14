@@ -33,7 +33,7 @@ json = ConsObject "name" (StringVal "James") $
        EmptyObject
 
 -- Channels for sending JSON objects
-type ValueChannel : 1S = +{
+type ValueChannel = +{
     StringVal : !String,
     IntVal    : !Int,
     ObjectVal : ObjectChannel,
@@ -41,17 +41,17 @@ type ValueChannel : 1S = +{
     BoolVal   : !Bool,
     NullVal   : Skip
   }
-type ObjectChannel : 1S = +{
+type ObjectChannel = +{
     ConsObject : !String; ValueChannel; ObjectChannel,
     Empty      : Skip
   }
-type ArrayChannel : 1S = +{
+type ArrayChannel = +{
     ConsObject : ValueChannel; ArrayChannel,
     Empty      : Skip
   }
 
 -- Writing a JSON value on a channel
-writeValue : forall a : 1S . Value -> ValueChannel;a -> a
+writeValue : Value -> ValueChannel;a -> a
 writeValue v c =
   case v of {
     StringVal s -> select StringVal c |> send s,
@@ -62,7 +62,8 @@ writeValue v c =
     NullVal     -> select NullVal   c
   }
 
-and writeObject : forall a: 1S . Object -> ObjectChannel;a -> a
+and 
+writeObject : Object -> ObjectChannel;a -> a
 writeObject j c =
   case j of {
     ConsObject key val j1 ->
@@ -73,8 +74,9 @@ writeObject j c =
     EmptyObject ->
       select Empty c
   }
-
-and writeArray : forall a: 1S . Array -> ArrayChannel;a -> a 
+  
+and 
+writeArray : Array -> ArrayChannel;a -> a
 writeArray l c =
   case l of {
     ConsArray j l1 ->
@@ -86,7 +88,7 @@ writeArray l c =
   }
 
 -- Reading a JSON value from a channel
-readValue  : forall a : 1S . dualof ValueChannel;a -> (Value, a)
+readValue : dualof ValueChannel;a -> (Value, a)
 readValue c =
   match c with {
     StringVal c -> let (s, c) = receive c in (StringVal s, c),
@@ -97,7 +99,8 @@ readValue c =
     NullVal   c -> (NullVal, c)
   }
 
-and readObject : forall a: 1S . dualof ObjectChannel;a -> (Object, a)
+and
+readObject : dualof ObjectChannel;a -> (Object, a)
 readObject c =
   match c with {
     ConsObject c ->
@@ -109,7 +112,8 @@ readObject c =
       (EmptyObject, c)
   }
 
-and readArray  : forall a: 1S . dualof ArrayChannel;a -> (Array, a)
+and 
+readArray : dualof ArrayChannel;a -> (Array, a)
 readArray c =
   match c with {
     ConsObject c ->

@@ -5,7 +5,7 @@ Copyright   :  (c) Diogo Barros
 
 -}
 
-type OrderingChannel : 1S = +{
+type OrderingChannel = +{
   Value: !Int ; OrderingChannel ; ?Int,
   Ascending: Skip,
   Descending: Skip}
@@ -54,7 +54,7 @@ data IntList = Nil | Cons Int IntList
 
 -- Receive a series of integer values; return them in ascending or
 -- descending order
-sortingServer : forall a:1S . IntList -> dualof OrderingChannel;a -> (IntList, a)
+sortingServer : IntList -> dualof OrderingChannel;a -> (IntList, a)
 sortingServer xs (Ascending  c) = (quicksort (\x:Int -> (\y:Int -> x < y)) xs, c)
 sortingServer xs (Descending c) = (quicksort (\x:Int -> (\y:Int -> x > y)) xs, c)
 sortingServer xs (Value      c) =

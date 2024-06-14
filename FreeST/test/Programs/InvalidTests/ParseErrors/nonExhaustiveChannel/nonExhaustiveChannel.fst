@@ -1,5 +1,5 @@
 
-type C : 1S = &{A: Skip, B: Skip};Wait
+type C = &{A: Skip, B: Skip};Wait
 
 f : C 1-> Int
 f (A c) = wait c; 0

@@ -1,4 +1,4 @@
-type T : 1S = +{More: !Int;T, Stop: Close}
+type T = +{More: !Int;T, Stop: Close}
 
 g : dualof T -> Int
 g r =

@@ -1,9 +1,9 @@
-type BoolServer : 1S = &{ And: Skip; ?Bool; ?Bool; !Bool; Skip
-                        , Or : Skip; ?Bool; ?Bool; !Bool; Skip
-                        , Not: Skip; ?Bool; !Bool; Skip
-                        }
-                        ; Wait
-type BoolClient : 1S = dualof BoolServer
+type BoolServer = &{ And: Skip; ?Bool; ?Bool; !Bool; Skip
+                   , Or : Skip; ?Bool; ?Bool; !Bool; Skip
+                   , Not: Skip; ?Bool; !Bool; Skip
+                   }
+                   ; Wait
+type BoolClient = dualof BoolServer
 
 boolServer :  BoolServer -> ()
 boolServer c =

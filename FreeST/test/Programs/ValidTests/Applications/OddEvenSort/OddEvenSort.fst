@@ -1,4 +1,4 @@
-type Sorter : 1S = +{Done: Close, More: !Int ; ?Int; Sorter}
+type Sorter = +{Done: Close, More: !Int ; ?Int; Sorter}
 
 -- Exchange a value with a right node; return the min and the channel.
 exchangeRight : Int -> Sorter -> (Int, Sorter)

@@ -18,12 +18,12 @@ tabuadaSimples i = tabuadaAte i 10
 
 -- ==================== Servidor ====================
 
-type TabuadaC : 1S = +{ TabuadaSimples: !Int; TabuadaC
-                      , TabuadaAte: !Int; !Int; TabuadaC
-                      , MultiplosEntre: !Int; !Int; !Int; TabuadaC
-                      , Solucao: ?Bool; ?Int; TabuadaC
-                      , Fim: Close
-                      }
+type TabuadaC = +{ TabuadaSimples: !Int; TabuadaC
+                 , TabuadaAte: !Int; !Int; TabuadaC
+                 , MultiplosEntre: !Int; !Int; !Int; TabuadaC
+                 , Solucao: ?Bool; ?Int; TabuadaC
+                 , Fim: Close
+                 }
 
 -- Este canal tem 3 servicos: TabuadaSimples, TabuadaAte e MultiplosEntre
 -- Os resultados sao sempre armazenados e perpetuados com chamadas recursivas

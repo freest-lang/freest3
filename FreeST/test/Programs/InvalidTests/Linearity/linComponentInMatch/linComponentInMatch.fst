@@ -1,4 +1,4 @@
-type Server : 1S = &{A: !Int};Wait
+type Server = &{A: !Int};Wait
 
 server : Server -> () 1-> ()
 server s _ =

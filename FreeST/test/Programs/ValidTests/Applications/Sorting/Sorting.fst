@@ -7,7 +7,7 @@ The server builds a list of integer values in memory before sorting them. Uses q
 Copyright   :  (c) Diogo Barros
 -}
 
-type OrderingChannel : 1S = +{
+type OrderingChannel = +{
   Value: !Int ; OrderingChannel ; ?Int,
   Ascending: Skip,
   Descending: Skip}
@@ -65,7 +65,7 @@ quicksort cmp xs =
 
 -- Receive a series of integer values; return them in ascending or
 -- descending order
-sortingServer : forall a: 1S . IntList -> dualof OrderingChannel;a -> (IntList, a)
+sortingServer : IntList -> dualof OrderingChannel;a -> (IntList, a)
 sortingServer xs c =
   match c with {
     Value c ->
