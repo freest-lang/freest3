@@ -59,7 +59,6 @@ data ErrorType =
   | NameModuleMismatch Span FilePath FilePath
   | ImportNotFound Span FilePath FilePath
   | CyclicDependency Span [FilePath]
-  | MissingModHeader Span FilePath
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
   | RedundantPMatch Span Variable
@@ -116,8 +115,7 @@ instance Located ErrorType where
   getSpan (ParseError p _                  ) = p
   getSpan (NameModuleMismatch p _ _        ) = p
   getSpan (ImportNotFound p _ _            ) = p
-  getSpan (CyclicDependency p _    ) = p
-  getSpan (MissingModHeader p _            ) = p
+  getSpan (CyclicDependency p _            ) = p
   getSpan (MultipleFieldDecl p _ _         ) = p
   getSpan (RedundantPMatch   p _           ) = p
   getSpan (DuplicateVar p _ _ _            ) = p
@@ -179,8 +177,6 @@ instance Message ErrorType where
   msg (NameModuleMismatch _ m f) sty tops _ =
     "File name does not match the module name.\n    Module name: " ++
     style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
-  msg (MissingModHeader _ f) sty tops _ =
-    "File " ++ style red sty tops (f -<.> "fst") ++ " is missing the module header."
   msg (MultipleFieldDecl sp1 sp2 x) sty ts _ =
     "Multiple declarations of field " ++ style red sty ts x ++
     " in a choice type.\n\t Declared at " ++ show sp1 ++ " and " ++ show sp2

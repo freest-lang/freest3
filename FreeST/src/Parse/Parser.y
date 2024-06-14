@@ -635,26 +635,14 @@ parseAndImport initial = do
       s' <- parseProgram (setModule s{extra=(extra s){imports=[]}} Nothing 
                          & setFName fileToImport 
                          & resetEO)
-      let modName = fromJust $ getModule s'
-      if curImport /= modName then
-        return (s'{errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}, imported)
-      else do
-        (s'',imported') <- doImports moduleName (curImport:pathToRoot) (Set.insert curImport imported) (getImps s') (resetEO s')
-        return (appendEOs s'' s', imported')
-
-
--- TODO: test MissingModHeader
-
-{-      case B.moduleName s' of
-        Just modName -> 
+      case getModule s' of 
+        Just modName ->
           if curImport /= modName then
-            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
-          else
-            doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
-        Nothing ->
-            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{moduleName} curImport]}
--}   
-
+            return (s'{errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}, imported)
+          else do
+            (s'',imported') <- doImports moduleName (curImport:pathToRoot) (Set.insert curImport imported) (getImps s') (resetEO s')
+            return (appendEOs s'' s', imported')
+        Nothing -> return (s'{errors = errors s ++ [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}, imported)
           
 -- Error Handling
 parseError :: [Token] -> ParseState a
