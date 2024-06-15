@@ -34,14 +34,6 @@ type FTPThread = *?(dualof FTPSession)
 
 -- 3 _ The FTP server
 
--- |Initialise the server: create n FTP threads and launch the demon
-init : Int -> dualof FTP -> Diverge
-init n pid =
-  let (r, w) = new @(dualof FTPThread) () in
-  let state = new @*?File () in
-  parallel @() n (\ _:() -> ftpThread state w);
-  ftpd pid r
-
 -- |FTP demon: wait for a client, wait for a thread;
 -- |pass the client to the thread
 ftpd : dualof FTP -> dualof FTPThread -> Diverge
@@ -58,7 +50,7 @@ ftpThread state b =
 
 -- |A linear interaction with the client;
 -- |once done become an FTP thread
-actions : State -> dualof FTPSession -> FTPThread 1-> Diverge
+and actions : State -> dualof FTPSession -> FTPThread 1-> Diverge
 actions state s b =
   match s with
     { Get s ->
@@ -72,6 +64,14 @@ actions state s b =
         actions state s b
     , Bye s -> wait s; ftpThread state b
     }
+
+-- |Initialise the server: create n FTP threads and launch the demon
+init : Int -> dualof FTP -> Diverge
+init n pid =
+  let (r, w) = new @(dualof FTPThread) () in
+  let state = new @*?File () in
+  parallel @() n (\ _:() -> ftpThread state w);
+  ftpd pid r
 
 -- Sample clients
 

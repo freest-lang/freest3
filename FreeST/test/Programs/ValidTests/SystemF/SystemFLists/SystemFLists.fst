@@ -27,17 +27,6 @@ singleton' = cons  @Char 'a' empty'
 
 twoChars = cons  @Char 'b' singleton'
 
-mainChars : Char
-mainChars = head'  @Char twoChars -- null'  @Char (nil  @Char)
-
--- The null predicate: is the list empty?
-null' : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
-null' l = l  @Bool (λhd:a tl:Bool -> False) True
--- null = Λa => λl:(∀r . (a -> r -> r) -> r -> r) -> l [Bool] (λhd:a tl:Bool -> False) True -- extended version
-
-mainNull : Bool
-mainNull = null'  @Char twoChars
-
 diverge' : ∀a . () -> a
 diverge' x = diverge' @a x
 
@@ -47,8 +36,19 @@ head' l = (l  @(() -> a) (λhd:a tl:(()->a) _:() -> hd) (diverge' @a)) ()
 -- head = Λa => λl:(∀r . (a -> r -> r) -> r -> r) ->
 --   (l [()->a] (λhd:a tl:(()->a) _:() -> hd) (diverge [a])) () -- extended version
 
+-- The null predicate: is the list empty?
+null' : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
+null' l = l  @Bool (λhd:a tl:Bool -> False) True
+-- null = Λa => λl:(∀r . (a -> r -> r) -> r -> r) -> l [Bool] (λhd:a tl:Bool -> False) True -- extended version
+
+mainNull : Bool
+mainNull = null'  @Char twoChars
+
 mainHead : Char
 mainHead = head'  @Char twoChars
+
+mainChars : Char
+mainChars = head'  @Char twoChars -- null'  @Char (nil  @Char)
 
 -- Pairs in preparation for the tail function
 

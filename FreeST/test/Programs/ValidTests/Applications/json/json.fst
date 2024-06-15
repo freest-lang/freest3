@@ -9,14 +9,6 @@ The JSON format (ECMA-404 The JSON Data Interchange Standard), is  inherently co
 More info on json at https://www.json.org
 -}
 
-main : Object
-main =
-  let (w, r) = new @(ObjectChannel;Close) () in
-  fork (\_:() 1-> writeObject @Close json w |> close);
-  let (obj, r) = readObject @Wait r in
-  wait r;
-  obj
-
 -- A dataype for JSON
 data Value = StringVal String |
              IntVal    Int    |
@@ -69,6 +61,8 @@ writeValue v c =
     BoolVal   b -> select BoolVal   c |> send b,
     NullVal     -> select NullVal   c
   }
+
+and 
 writeObject : Object -> ObjectChannel;a -> a
 writeObject j c =
   case j of {
@@ -80,6 +74,8 @@ writeObject j c =
     EmptyObject ->
       select Empty c
   }
+  
+and 
 writeArray : Array -> ArrayChannel;a -> a
 writeArray l c =
   case l of {
@@ -102,6 +98,8 @@ readValue c =
     BoolVal   c -> let (b, c) = receive c in (BoolVal b, c),
     NullVal   c -> (NullVal, c)
   }
+
+and
 readObject : dualof ObjectChannel;a -> (Object, a)
 readObject c =
   match c with {
@@ -113,6 +111,8 @@ readObject c =
     Empty c ->
       (EmptyObject, c)
   }
+
+and 
 readArray : dualof ArrayChannel;a -> (Array, a)
 readArray c =
   match c with {
@@ -123,3 +123,11 @@ readArray c =
     Empty c ->
       (EmptyArray, c)
   }
+
+main : Object 
+main =
+  let (w, r) = new @(ObjectChannel;Close) () in
+  fork (\_:() 1-> writeObject @Close json w |> close);
+  let (obj, r) = readObject @Wait r in
+  wait r;
+  obj

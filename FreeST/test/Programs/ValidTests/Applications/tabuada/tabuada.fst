@@ -5,16 +5,16 @@ data IntList = Empty | Node Int IntList
 
 -- ==================== Servicos ====================
 
-tabuadaSimples : Int -> IntList
-tabuadaSimples i = tabuadaAte i 10
-
-tabuadaAte : Int -> Int -> IntList
-tabuadaAte i n = multiplosEntre i 1 n
-
 multiplosEntre : Int -> Int -> Int -> IntList
 multiplosEntre i x n = if x == n
                        then Node (i * x) Empty
                        else Node (i * x) (multiplosEntre i (x + 1) n)
+
+tabuadaAte : Int -> Int -> IntList
+tabuadaAte i n = multiplosEntre i 1 n
+
+tabuadaSimples : Int -> IntList
+tabuadaSimples i = tabuadaAte i 10
 
 -- ==================== Servidor ====================
 
@@ -36,9 +36,6 @@ type TabuadaServer = &{ TabuadaSimples: ?Int ;             TabuadaServer
                            }
 
 type TabuadaClient = dualof TabuadaServer
-
-initTabuadaServer : TabuadaServer 1-> ()
-initTabuadaServer c = tabuadaServer c Empty
 
 tabuadaServer : TabuadaServer -> IntList 1-> ()
 tabuadaServer c result =
@@ -81,9 +78,17 @@ tabuadaServer c result =
     Fim c -> wait c
   }
 
--- Funcao de "entrada" para a "verdadeira" funcao
-receiveList : TabuadaClient -> (IntList, TabuadaClient)
-receiveList c = receiveListAux Empty c
+initTabuadaServer : TabuadaServer 1-> ()
+initTabuadaServer c = tabuadaServer c Empty
+
+-- Funcao auxiliar para iterar a lista e adicionar um elemento no fim
+addToList : Int -> IntList -> IntList
+addToList i l =
+  case l of {
+    Empty -> Node i Empty,
+    Node n l -> Node n (addToList i l)
+  }
+
 
 -- Funcao para receber uma lista pelo canal (devolve o canal no fim)
 receiveListAux : IntList -> TabuadaClient -> (IntList, TabuadaClient)
@@ -95,13 +100,10 @@ receiveListAux l c =
   then receiveListAux (addToList x l) c
   else (l, c)
 
--- Funcao auxiliar para iterar a lista e adicionar um elemento no fim
-addToList : Int -> IntList -> IntList
-addToList i l =
-  case l of {
-    Empty -> Node i Empty,
-    Node n l -> Node n (addToList i l)
-  }
+
+-- Funcao de "entrada" para a "verdadeira" funcao
+receiveList : TabuadaClient -> (IntList, TabuadaClient)
+receiveList c = receiveListAux Empty c
 
 
 -- MAIN

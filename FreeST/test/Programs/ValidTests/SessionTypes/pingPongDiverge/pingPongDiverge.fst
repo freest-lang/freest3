@@ -4,7 +4,7 @@ type Pong = ?Int ; Ping
 ping : Int -> Ping -> Diverge
 ping n c = c |> send n |> pong
 
-pong : Pong -> Diverge
+and pong : Pong -> Diverge
 pong c =
   let (n, c) = receive c in
   print @Int n;

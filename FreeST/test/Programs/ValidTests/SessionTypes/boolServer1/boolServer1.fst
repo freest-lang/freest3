@@ -21,17 +21,18 @@ boolServer c =
       c2 |> send (not n1) |> wait
   }
 
-main : Bool
-main =
-  let (w,r) = new @BoolClient () in
-  let x = fork @() (\_:()1-> boolServer r) in
-  client1 w
-
 client1 : BoolClient -> Bool
 client1 w = w |> select Or
               |> send True
               |> send False
               |> receiveAndClose @Bool 
+
+
+main : Bool
+main =
+  let (w,r) = new @BoolClient () in
+  let x = fork @() (\_:()1-> boolServer r) in
+  client1 w
 
 -- remove skips from the end
 -- Type check : environment checks only the linear part (filter)

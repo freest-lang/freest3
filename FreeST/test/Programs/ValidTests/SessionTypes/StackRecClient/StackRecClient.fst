@@ -16,20 +16,20 @@ and NEStack. They both feature a Push-labelled field.
 type  EStack = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 type NEStack = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
--- Stack server. The empty stack case
-eStack : EStack;a -> a
-eStack c =
-  match c with {
-    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
-    Stop  c -> c
-  }
-
 -- Stack server. The non-empty stack case
 neStack : Int -> NEStack;a -> a
 neStack x c =
   match c with {
     Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
     Pop  c -> send x c
+  }
+
+-- Stack server. The empty stack case
+eStack : EStack;a -> a
+eStack c =
+  match c with {
+    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
+    Stop  c -> c
   }
 
 -- Stack operations. Push on an empty stack

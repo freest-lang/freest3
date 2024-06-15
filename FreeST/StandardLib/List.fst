@@ -37,6 +37,16 @@ length : [Int] -> Int
 length []      = 0
 length (_::xs) = 1 + length xs
 
+-- Reducing lists (folds)
+
+foldl : forall a:*T . (a -> Int -> a) -> a -> [Int] -> a
+foldl f z []      = z                  
+foldl f z (x::xs) = foldl @a f (f z x) xs
+
+foldr : forall a:*T . (Int -> a -> a) -> a -> [Int] -> a
+foldr f z []      = z 
+foldr f z (x::xs) = f x (foldr @a f z xs) 
+
 
 -- List transformations
 
@@ -59,18 +69,6 @@ intersperse v (x::xs) = x :: v :: intersperse v xs
 -- subsequences : forall a:*T . [a] -> [[a]]
 
 -- permutations : forall a:*T . [a] -> [[a]]
-
-
--- Reducing lists (folds)
-
-foldl : forall a:*T . (a -> Int -> a) -> a -> [Int] -> a
-foldl f z []      = z                  
-foldl f z (x::xs) = foldl @a f (f z x) xs
-
-foldr : forall a:*T . (Int -> a -> a) -> a -> [Int] -> a
-foldr f z []      = z 
-foldr f z (x::xs) = f x (foldr @a f z xs) 
-
 
 -- Special folds
 

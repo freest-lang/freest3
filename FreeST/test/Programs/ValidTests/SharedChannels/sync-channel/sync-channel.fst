@@ -1,10 +1,5 @@
 type SyncServer  = *?SyncService
-type SyncService = ?Int;End
-
-syncServer : Int -> dualof SyncServer -> ()
-syncServer limit ch =
-    syncServerOnce limit ch;
-    syncServer limit ch
+type SyncService = ?Int;Wait
 
 syncServerOnce : Int -> dualof SyncServer -> ()
 syncServerOnce limit ch = 
@@ -20,13 +15,17 @@ syncServerOnce limit ch =
         -- sync client
         send 0 s |> close
 
+syncServer : Int -> dualof SyncServer -> ()
+syncServer limit ch =
+    syncServerOnce limit ch;
+    syncServer limit ch
 
 sync : SyncServer -> ()
 sync ch =
     -- receive linear sync channel
     let (c, _) = receive ch in
     -- wait for sync
-    receiveAndClose @Int c; ()
+    receiveAndWait @Int c; ()
 
 client : Int -> SyncServer -> ()
 client id ch =

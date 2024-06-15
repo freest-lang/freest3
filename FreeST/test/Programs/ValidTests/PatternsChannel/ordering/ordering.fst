@@ -14,13 +14,45 @@ data IntList = Nil | Cons Int IntList
 
 type OrderingChannel = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
 
--- ==================== Server ====================
+-- ==================== QUICKSORT ====================
 
--- Facade function to initialize server with an empty list
-initOrderedServer : dualof OrderingChannel;a -> a
-initOrderedServer c = 
-  let (_, c) = orderedServer @a c Nil in
-  c
+-- quicksort option to sort by ascending
+asc : Int -> Int -> Bool
+asc x i = x < i
+
+-- quicksort option to sort by descending
+desc : Int -> Int -> Bool
+desc x i = not (asc x i)
+
+-- Divides a list into lesser and greater or equal,given a pivot
+quicksortDivide' : Int -> IntList -> (IntList, IntList) -> (Int -> Int -> Bool) -> (IntList, IntList)
+quicksortDivide' i Nil d direction         = d
+quicksortDivide' i (Cons x xs) d direction = 
+  let (smaller, greater) = d in
+  if direction x i
+    then quicksortDivide' i xs (Cons x smaller, greater) direction
+    else quicksortDivide' i xs (smaller, Cons x greater) direction
+
+-- Facade function to quicksortDivide
+quicksortDivide : Int -> IntList -> (Int -> Int -> Bool) -> (IntList, IntList)
+quicksortDivide i list direction = quicksortDivide' i list (Nil, Nil) direction
+
+-- Appends two lists
+listAppend : IntList -> IntList -> IntList
+listAppend Nil         ll = ll
+listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
+
+
+-- Translated from Haskell code at learnyouahaskell.com/recursion
+--   The function it receives determines which order it sorts,
+--   ascending or descending
+quicksort : IntList -> (Int -> Int -> Bool) -> IntList
+quicksort Nil         direction = Nil
+quicksort (Cons x xs) direction = 
+  let (smaller, greater) = quicksortDivide x xs direction in
+  listAppend (quicksort smaller direction) (Cons x (quicksort greater direction))
+
+-- ==================== Server ====================
 
 -- Server function
 --   This server sends the list reversed
@@ -37,61 +69,16 @@ orderedServer (Vals c) list =
     -- Nil is never reached
   }
 
--- ==================== QUICKSORT ====================
-
--- Translated from Haskell code at learnyouahaskell.com/recursion
---   The function it receives determines which order it sorts,
---   ascending or descending
-quicksort : IntList -> (Int -> Int -> Bool) -> IntList
-quicksort Nil         direction = Nil
-quicksort (Cons x xs) direction = 
-  let (smaller, greater) = quicksortDivide x xs direction in
-  listAppend (quicksort smaller direction) (Cons x (quicksort greater direction))
-
--- quicksort option to sort by ascending
-asc : Int -> Int -> Bool
-asc x i = x < i
-
--- quicksort option to sort by descending
-desc : Int -> Int -> Bool
-desc x i = not (asc x i)
-
--- Facade function to quicksortDivide
-quicksortDivide : Int -> IntList -> (Int -> Int -> Bool) -> (IntList, IntList)
-quicksortDivide i list direction = quicksortDivide' i list (Nil, Nil) direction
-
--- Divides a list into lesser and greater or equal,given a pivot
-quicksortDivide' : Int -> IntList -> (IntList, IntList) -> (Int -> Int -> Bool) -> (IntList, IntList)
-quicksortDivide' i Nil d direction         = d
-quicksortDivide' i (Cons x xs) d direction = 
-  let (smaller, greater) = d in
-  if direction x i
-    then quicksortDivide' i xs (Cons x smaller, greater) direction
-    else quicksortDivide' i xs (smaller, Cons x greater) direction
-
--- Appends two lists
-listAppend : IntList -> IntList -> IntList
-listAppend Nil         ll = ll
-listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
+-- Facade function to initialize server with an empty list
+initOrderedServer : dualof OrderingChannel;a -> a
+initOrderedServer c = 
+  let (_, c) = orderedServer @a c Nil in
+  c
 
 -- ==================== Client ====================
 
--- Simple client using Asc option
-ascClient : OrderingChannel;Close -> IntList
-ascClient c =
-  let (c, rList) = order @Close c aList True in
-  close c;
-  rList
-
--- Simple client using Desc option
-descClient : OrderingChannel;Close -> IntList
-descClient c =
-  let (c, rList) = order @Close c aList False in
-  close c;
-  rList
-
-
--- ==================== Client Aux Functions ====================
+aList : IntList
+aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
@@ -108,11 +95,19 @@ order c (Cons x xs) direction =
                         (c, Cons y rList)
 
 
--- ==================== Mock List ====================
+-- Simple client using Asc option
+ascClient : OrderingChannel;Close -> IntList
+ascClient c =
+  let (c, rList) = order @Close c aList True in
+  close c;
+  rList
 
-aList : IntList
-aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
-
+-- Simple client using Desc option
+descClient : OrderingChannel;Close -> IntList
+descClient c =
+  let (c, rList) = order @Close c aList False in
+  close c;
+  rList
 
 -- ==================== Main ====================
 

@@ -1,5 +1,5 @@
 f : ?Int -> Skip
-f c = send c 5
+f c = send 5 c
 
 main : Int
 main = 5

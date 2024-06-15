@@ -2,15 +2,15 @@
 
 data IntList = Nil | List Int IntList
 
-getPows : Int -> Int -> IntList
-getPows p n 
-  | n == 0    = Nil
-  | otherwise = List (exp' p n) (getPows p (n-1))
-
 exp' : Int -> Int -> Int
 exp' p n 
   | n == 0    = 1
   | otherwise = p * (exp' p (n-1))
+
+getPows : Int -> Int -> IntList
+getPows p n 
+  | n == 0    = Nil
+  | otherwise = List (exp' p n) (getPows p (n-1))
 
 main : IntList
 main = getPows 2 50

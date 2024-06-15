@@ -7,7 +7,7 @@ produce p =
     putStrLn "Producing";
     consume' c'
 
-consume' : dualof Omega -> Diverge
+and consume' : dualof Omega -> Diverge
 consume' c = 
     putStrLn "Consuming";
     produce (receiveAndWait @Omega c)

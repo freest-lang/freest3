@@ -5,16 +5,16 @@ data IntList = Empty | Node Int IntList
 
 -- ==================== Servicos ====================
 
-tabuadaSimples : Int -> IntList
-tabuadaSimples i = tabuadaAte i 10
-
-tabuadaAte : Int -> Int -> IntList
-tabuadaAte i n = multiplosEntre i 1 n
-
 multiplosEntre : Int -> Int -> Int -> IntList
 multiplosEntre i x n = if x == n
                        then Node (i * x) Empty
                        else Node (i * x) (multiplosEntre i (x + 1) n)
+
+tabuadaAte : Int -> Int -> IntList
+tabuadaAte i n = multiplosEntre i 1 n
+
+tabuadaSimples : Int -> IntList
+tabuadaSimples i = tabuadaAte i 10
 
 -- ==================== Servidor ====================
 
@@ -32,9 +32,6 @@ type TabuadaC = +{ TabuadaSimples: !Int; TabuadaC
 --     True  -> tem um Node da lista
 --     False -> tem Empty e nao existe mais resultado
 -- (No fundo a Solucao apenas disponibiliza o acesso ao resultado)
-
-initTabuadaServer : dualof TabuadaC -> ()
-initTabuadaServer c = tabuadaServer c Empty
 
 tabuadaServer : dualof TabuadaC -> IntList 1-> ()
 tabuadaServer (Fim            c) result = wait c
@@ -65,9 +62,13 @@ tabuadaServer (Solucao        c) (Node x l) =
   tabuadaServer c l
 --
 
--- Funcao de "entrada" para a "verdadeira" funcao
-receiveList : TabuadaC -> (IntList, TabuadaC)
-receiveList c = receiveListAux Empty c
+initTabuadaServer : dualof TabuadaC -> ()
+initTabuadaServer c = tabuadaServer c Empty
+
+-- Funcao auxiliar para iterar a lista e adicionar um elemento no fim
+addToList : Int -> IntList -> IntList
+addToList i Empty      = Node i Empty
+addToList i (Node n l) = Node n (addToList i l)
 
 -- Funcao para receber uma lista pelo canal (devolve o canal no fim)
 receiveListAux : IntList -> TabuadaC -> (IntList, TabuadaC)
@@ -79,10 +80,9 @@ receiveListAux l c =
   then receiveListAux (addToList x l) c
   else (l, c)
 
--- Funcao auxiliar para iterar a lista e adicionar um elemento no fim
-addToList : Int -> IntList -> IntList
-addToList i Empty      = Node i Empty
-addToList i (Node n l) = Node n (addToList i l)
+-- Funcao de "entrada" para a "verdadeira" funcao
+receiveList : TabuadaC -> (IntList, TabuadaC)
+receiveList c = receiveListAux Empty c
 
 -- MAIN
 main : IntList

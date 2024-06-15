@@ -17,6 +17,7 @@ import           Util.Message
 import qualified Data.Map as Map
 import           Data.Either.Extra
 import           System.FilePath
+import Data.List (intercalate)
 
 -- | Format internal error
 
@@ -55,6 +56,7 @@ data ErrorType =
   | ParseError Span String -- String should be Token (circular import)
   | NameModuleMismatch Span FilePath FilePath
   | ImportNotFound Span FilePath FilePath
+  | CyclicDependency Span [FilePath]
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
   | RedundantPMatch Span Variable
@@ -100,6 +102,7 @@ data ErrorType =
   | ErrorFunction Span String
   | UndefinedFunction Span
   | RuntimeError Span String
+  | MutualDefNotValue Span Variable E.Exp
   -- Kind Inference
   | CantUnifyKind Span K.Kind K.Kind
   deriving Show
@@ -116,6 +119,7 @@ instance Located ErrorType where
   getSpan (ParseError p _                  ) = p
   getSpan (NameModuleMismatch p _ _        ) = p
   getSpan (ImportNotFound p _ _            ) = p
+  getSpan (CyclicDependency p _            ) = p
   getSpan (MultipleFieldDecl p _ _         ) = p
   getSpan (RedundantPMatch   p _           ) = p
   getSpan (DuplicateVar p _ _ _            ) = p
@@ -153,6 +157,7 @@ instance Located ErrorType where
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
+  getSpan (MutualDefNotValue p _ _         ) = p
   getSpan (CantUnifyKind p _ _             ) = p
 
 
@@ -170,6 +175,9 @@ instance Message ErrorType where
   msg (ImportNotFound _ m locs) sty tops =
     "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
     "\n  Locations searched:\n\t" ++ style red sty tops locs
+  msg (CyclicDependency _ ms) sty tops =
+    "Cyclic module dependency detected: "  ++ intercalate ", " (map (style red sty tops . showModuleWithDots) ms) ++
+                                     ", "  ++ style red sty tops (head ms)
   msg (NameModuleMismatch _ m f) sty tops =
     "File name does not match the module name.\n    Module name: " ++
     style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
@@ -206,7 +214,7 @@ instance Message ErrorType where
   msg (InvalidVariablePatternChan p v) sty _ = 
     "Cannot mix variables with pattern-matching channel choices." ++
     "\n  Declared in " ++ showModule (moduleName p) p ++ ": " ++ red sty (show v)    
-  msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
+  msg (TypeVarOutOfScope _ x) sty ts = "Type variable out of scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
   msg (WrongNumberOfArguments p fun e got t) sty ts =
@@ -274,12 +282,12 @@ instance Message ErrorType where
       "Linear variable " ++ style red sty ts var1 ++ " was consumed in the body of an unrestricted function" ++
       "\n\tvariable " ++ style red sty ts var1 ++ " is of type " ++ style red sty ts type1 ++
       "\n\t  and the function is " ++ style red sty ts e ++
-      "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
+      "\n\t(This risks duplicating or discarding the variable! Consider using a linear function instead.)"
     | otherwise = 
       "Linear variable " ++ style red sty ts var2 ++ " was created in the body of an unrestricted function" ++
       "\n\tvariable " ++ style red sty ts var2 ++ " is of type " ++ style red sty ts type2 ++
       "\n\t  and the function is " ++ style red sty ts e ++
-      "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
+      "\n\t(This risks duplicating or discarding the variable! Consider using a linear function instead.)"
       where diff = sigs2 Map.\\ sigs1
             var1 = head $ Map.keys $ sigs1 Map.\\ sigs2
             type1 = sigs1 Map.! var1
@@ -321,6 +329,7 @@ instance Message ErrorType where
     e ++ "\n  error, called at module" ++ moduleName s ++ ":" ++ show (startPos s)
   msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ moduleName s ++ ":" ++ show (startPos s)
+  msg (MutualDefNotValue _ x e) sty ts = "The body of mutual definition " ++ style red sty ts x ++ " is not a value."
   msg (RuntimeError _ e) _ _ = "Exception: " ++ e
   -- Kind Inference
   msg (CantUnifyKind _ k1 k2) sty ts =

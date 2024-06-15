@@ -35,6 +35,7 @@ exploreTree : XploreTreeChan;a -> Tree 1-> a
 exploreTree c Leaf         = select LeafC c
 exploreTree c (Node x l r) = exploreNode@a (select NodeC c) x l r
 
+and 
 exploreNode : XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
 exploreNode (Value c) x l r = exploreNode@a (send x c) x l r
 exploreNode (Left  c) x l r = let c = exploreTree@(XploreNodeChan;a) c l in
@@ -49,6 +50,7 @@ server : dualof XploreTreeChan ;a -> Int 1-> (a, Int)
 server (LeafC c1) n = (c1, n)
 server (NodeC c1) n = serverNode@a c1 n
 
+and 
 serverNode : dualof XploreNodeChan;a -> Int 1-> (a, Int)
 serverNode c n =
   let (m, c) = receive (select Value c) in

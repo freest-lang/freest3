@@ -33,13 +33,13 @@ send v c = do
   C.writeChan (snd c) v
   return c
 
-wait :: Value -> Value 
+wait :: Value -> Value
 wait (Chan c) =
   IOValue $ C.readChan (fst c)
 
-close :: Value -> IO Value 
-close (Chan c) = do 
-  C.writeChan (snd c) Unit 
+close :: Value -> IO Value
+close (Chan c) = do
+  C.writeChan (snd c) Unit
   return Unit
 
 ------------------------------------------------------------  
@@ -140,8 +140,9 @@ initialCtx = Map.fromList
   -- Print to stderr
   , (var "__putStrErr", PrimitiveFun (\v -> IOValue $ hPutStr stderr (show v) $> Unit))
   -- Read from stdin
-  , (var "__getChar", PrimitiveFun (\_ -> IOValue $ getChar <&> Character))
-  , (var "__getLine", PrimitiveFun (\_ -> IOValue $ getLine <&> String))
+  , (var "__getChar"    , PrimitiveFun (\_ -> IOValue $ getChar     <&> Character))
+  , (var "__getLine"    , PrimitiveFun (\_ -> IOValue $ getLine     <&> String   ))
+  , (var "__getContents", PrimitiveFun (\_ -> IOValue $ getContents <&> String   ))
   -- Files
   , (var "__openFile",
       PrimitiveFun (\(String s) ->

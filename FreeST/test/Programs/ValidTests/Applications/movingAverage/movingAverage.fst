@@ -22,9 +22,6 @@ Structure:
 type FiniteOutStream = +{More: !Int;FiniteOutStream, Enough: Close}
 type FiniteInStream = dualof FiniteOutStream
 
-writeValues : !Int;!Int;FiniteOutStream;Close 1-> ()
-writeValues c = c |> send 1 |> send 2 |> writeAll 3
-
 writeAll : Int -> FiniteOutStream -> ()
 writeAll i c =
   if i <= 40 then
@@ -33,11 +30,11 @@ writeAll i c =
      writeAll (i + 1)
   else c |> select Enough |> close
 
-readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> ()
-readValues from to =
-  let (x, from) = receive from in
-  let (y, from) = receive from in
-  readAll x y from to
+writeValues : !Int;!Int;FiniteOutStream;Close 1-> ()
+writeValues c = c |> send 1 |> send 2 |> writeAll 3
+
+average3 : Int -> Int -> Int -> Int
+average3 x y z = (x + y + z) / 3
 
 readAll : Int -> Int -> FiniteInStream -> FiniteOutStream 1-> ()
 readAll x y from to =
@@ -50,6 +47,12 @@ readAll x y from to =
     Enough from -> from |> wait ; to |> select Enough |> close
   }
 
+readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> ()
+readValues from to =
+  let (x, from) = receive from in
+  let (y, from) = receive from in
+  readAll x y from to
+
 collectValues : FiniteInStream -> ()
 collectValues c =
   match c with {
@@ -59,9 +62,6 @@ collectValues c =
        collectValues c,
      Enough c -> c |> wait
   }
-
-average3 : Int -> Int -> Int -> Int
-average3 x y z = (x + y + z) / 3
 
 main : ()
 main =

@@ -2,9 +2,6 @@
 
 data TripleList = Nil | List Int Int Int TripleList
 
-listPits : Int -> TripleList
-listPits x = listPits' 1 1 1 x
-
 listPits' : Int -> Int -> Int -> Int -> TripleList
 listPits' a b c max 
     | c > max = Nil
@@ -13,15 +10,18 @@ listPits' a b c max
     | (a*a) + (b*b) == (c*c) = List b a c (listPits' (a+1) b c max)   -- list b a instead of a b for ascending purposes
     | otherwise = listPits' (a+1) b c max
 
-removeDups : TripleList -> TripleList
-removeDups Nil               = Nil 
-removeDups (List x y z rest) = List x y z (removeDups (removeDup x y rest))
+listPits : Int -> TripleList
+listPits x = listPits' 1 1 1 x
 
 removeDup : Int -> Int -> TripleList -> TripleList
 removeDup x y Nil = Nil
 removeDup x y (List a b c rest) 
     | (x == b) && (y == a) = removeDup x y rest
     |otherwise = List a b c (removeDup x y rest)
+
+removeDups : TripleList -> TripleList
+removeDups Nil               = Nil 
+removeDups (List x y z rest) = List x y z (removeDups (removeDup x y rest))     
 
 main : TripleList
 main = removeDups (listPits 20)

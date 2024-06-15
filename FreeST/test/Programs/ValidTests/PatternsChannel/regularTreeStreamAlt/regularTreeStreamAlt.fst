@@ -1,19 +1,3 @@
--- ==== MAIN ====
--- This main acts as the server that receives the Tree sent by a client
-main : Tree
-main =
-  let (w, r) = new @(TreeC;Close) () in
-  fork (\_:() 1-> treeClient @Close w |> close);
-  --fork@() $ badClientPrematureEnd w;
-  --fork@() $ badClientSendExtraValue w;
-  --fork@() $ badClientSendExtraLeaf w;
-  --fork@() $ badClientForgotRight w;
-  --fork@() $ badClientSendOnlyValue w;
-  let (tree, r) = receiveTree @Wait r in
-  wait r;
-  tree
-
-
 -- Represents a classical binary tree (Node LeftTree RightTree)
 data Tree = Leaf | Node Int Tree Tree
 
@@ -66,9 +50,12 @@ sendTree (Node i lt rt) c = c
                          |> select ValueC
                          |> send i
 
--- Facade function to receive a Tree through a channel
-receiveTree : dualof TreeC;a -> (Tree, a)
-receiveTree c = receiveTree_ @a Empty c
+-- Generates an error with a given message if a given boolean is true
+errorWhen : Bool -> String -> ()
+errorWhen b s =
+  if b
+  then error@() s
+  else ()
 
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
@@ -88,18 +75,14 @@ receiveTree_ ts (DoneC  c) =
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       (snd@TreeStack@Tree $ stackPop ts, c)
 
--- Generates an error with a given message if a given boolean is true
-errorWhen : Bool -> String -> ()
-errorWhen b s =
-  if b
-  then error@() s
-  else ()
+-- Facade function to receive a Tree through a channel
+receiveTree : dualof TreeC;a -> (Tree, a)
+receiveTree c = receiveTree_ @a Empty c
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC;a -> a
 treeClient c =
   select DoneC $ sendTree @a aTree c
-
 
 -- ==== BAD CLIENTS ===
 -- These are bad client implementations to test error situations
@@ -123,6 +106,13 @@ badClientSendExtraLeaf c =
   -- Bad  Code =============
 
 -- This client does not send the right subtree
+
+-- Sends a tree through a TreeC
+-- !!! But forgets to send right subtree
+badSendTree : Tree -> TreeC -> TreeC
+badSendTree Leaf           c = select LeafC c
+badSendTree (Node i lt rt) c = send i $ select ValueC $ badSendTree lt c -- $ badSendTree rt c
+
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
   let _ = select DoneC $ badSendTree aTree c in
@@ -136,9 +126,17 @@ badClientSendOnlyValue c =
   -- Bad code          ========================
   ()
 
-
--- Sends a tree through a TreeC
--- !!! But forgets to send right subtree
-badSendTree : Tree -> TreeC -> TreeC
-badSendTree Leaf           c = select LeafC c
-badSendTree (Node i lt rt) c = send i $ select ValueC $ badSendTree lt c -- $ badSendTree rt c
+-- ==== MAIN ====
+-- This main acts as the server that receives the Tree sent by a client
+main : Tree
+main =
+  let (w, r) = new @(TreeC;Close) () in
+  fork (\_:() 1-> treeClient @Close w |> close);
+  --fork@() $ badClientPrematureEnd w;
+  --fork@() $ badClientSendExtraValue w;
+  --fork@() $ badClientSendExtraLeaf w;
+  --fork@() $ badClientForgotRight w;
+  --fork@() $ badClientSendOnlyValue w;
+  let (tree, r) = receiveTree @Wait r in
+  wait r;
+  tree

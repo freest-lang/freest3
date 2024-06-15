@@ -5,4 +5,5 @@ main : Int
 main =
   let (s, r) = new @(!Char;Close) () in
   let _ = fork @(Int, ?Char;Wait) (\_:() 1-> f  @(?Char;Wait) r) in
-  send 'a' s |> close ; 5
+  s |> send 'a' |> close; 
+  5

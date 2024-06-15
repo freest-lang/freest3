@@ -6,14 +6,14 @@ sumList : IntList -> Int
 sumList Nil           = 0
 sumList (List x rest) = x + sumList rest
 
-getFacts : Int -> IntList
-getFacts x = getFacts' x (div x 2)
-
 getFacts' : Int -> Int -> IntList
 getFacts' x d 
     | d <= 0       = Nil 
     | mod x d == 0 = List d (getFacts' x (d-1))
     | otherwise    = (getFacts' x (d-1))
+
+getFacts : Int -> IntList
+getFacts x = getFacts' x (div x 2)
 
 isPerfect: Int -> Bool
 isPerfect x = sumList (getFacts x) == x

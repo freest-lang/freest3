@@ -41,7 +41,7 @@ deserializeJson (SendJBool   c) = let (b, c) = receive c in (JBool   b, c)
 deserializeJson (SendJNull   c) = (JNull, c)
 -- | where... 
 -- | Deserializes a JSON object, returning the object and the continuation of the channel.
-deserializeJObject : JObjectReceiver;a -> (JObject, a)
+and deserializeJObject : JObjectReceiver;a -> (JObject, a)
 deserializeJObject (SendJOCons c) = let (s , c) = receive c in 
                                     let (j , c) = deserializeJson @(JObjectReceiver;a) c in 
                                     let (js, c) = deserializeJObject @a c in
@@ -49,7 +49,7 @@ deserializeJObject (SendJOCons c) = let (s , c) = receive c in
 deserializeJObject (SendJONil  c) = (JONil, c) 
 -- | where...
 -- | Deserializes a JSON array, returning the array and the continuation of the channel.
-deserializeJArray : JArrayReceiver;a -> (JArray, a)
+and deserializeJArray : JArrayReceiver;a -> (JArray, a)
 deserializeJArray (SendJACons c) = let (j , c) = deserializeJson @(JArrayReceiver;a) c in 
                                    let (js, c) = deserializeJArray @a c in 
                                    (JACons j js, c)
@@ -64,10 +64,6 @@ type NumberArraySender' = +{ SendJACons : NumberSender;NumberArraySender'
                            , SendJANil  : Skip 
                            }
 
--- | Serializes a list of integers as a JSON number array
-serializeIntList : [Int] -> NumberArraySender;a -> a
-serializeIntList l c = c |> select SendJArray |> sendNumberArray @a l
--- where...
 -- | Traverses the list, serializing each integer in order
 sendNumberArray : [Int] -> NumberArraySender';a -> a
 sendNumberArray []      c = c |> select SendJANil
@@ -75,6 +71,10 @@ sendNumberArray (n::ns) c = c |> select SendJACons
                               |> select SendJNumber 
                               |> send n 
                               |> sendNumberArray @a ns
+
+-- | Serializes a list of integers as a JSON number array
+serializeIntList : [Int] -> NumberArraySender;a -> a
+serializeIntList l c = c |> select SendJArray |> sendNumberArray @a l
 
 -- | Serializes a list of integers as a JSON value.
 -- | Notice that we create a JsonSender;a channel capable of serializing any JSON value, 

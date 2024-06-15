@@ -2,18 +2,18 @@
 
 data IntList = Nil | List Int IntList
 
---foldr' : (x -> acc -> acc) -> xs -> acc -> acc 
-foldr' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
-foldr' f list acc = foldl' f (reverseIntList list Nil) acc
+--foldl' : (x -> acc -> acc) -> xs -> acc -> acc 
+foldl' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
+foldl' f Nil           acc = acc
+foldl' f (List x rest) acc = foldl' f rest (f x acc)
 
 reverseIntList : IntList -> IntList -> IntList
 reverseIntList Nil           acc = acc
 reverseIntList (List x rest) acc = reverseIntList rest (List x acc)
 
---foldl' : (x -> acc -> acc) -> xs -> acc -> acc 
-foldl' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
-foldl' f Nil           acc = acc
-foldl' f (List x rest) acc = foldl' f rest (f x acc)
+--foldr' : (x -> acc -> acc) -> xs -> acc -> acc 
+foldr' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
+foldr' f list acc = foldl' f (reverseIntList list Nil) acc
 
 function : Int -> IntList -> IntList
 function x s 

@@ -5,10 +5,9 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
+id' : Int -> Int
+id' x = x
 
 main : Int
 main = id' 23
-
-id' : Int -> Int
-id' x = x
 

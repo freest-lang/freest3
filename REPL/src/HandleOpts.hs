@@ -5,8 +5,9 @@ module HandleOpts where
 
 import           Elaboration.Elaboration ( elaboration )
 import           FreeST
+import           Interpreter.Value (Ctx)
 import           Parse.Parser
-import           Parse.Phase
+import           Parse.Phase as PPh
 import           Paths_FreeST (version)
 import           PatternMatch.PatternMatch
 import qualified Syntax.Base as B
@@ -16,7 +17,7 @@ import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.GetTOps
-import           Util.State hiding (void)
+import           Util.State as S
 import           Utils
 import qualified Kinding.Kinding as K
 import           Typing.Rename ( renameProgram )
@@ -30,26 +31,32 @@ import           Data.Version ( showVersion )
 import           System.Console.Haskeline
 import           System.Directory
 import           System.FilePath
+import Syntax.AST
+import Typing.Phase (TypingS)
+import Elaboration.Phase ( ElabS )
+import PatternMatch.Phase (PatternS, Defs)
+import qualified Typing.Phase as VP
+import Interpreter.Eval (evaluate)
 
 -- | -------------------------------------------------------
 -- | Loads a file into the REPL
 -- | Usage: `:l` or `:load`
 -- | Details:
--- |   - It looses all the definitions made so far
+-- |   - It loses all the definitions made so far
 -- |   - Deals with ~ in path
 -- |   - Deals with FileNotFound & WrongFileExtension
 -- | -------------------------------------------------------
-load :: ParseS -> String -> String -> REPLState ()
+load :: ParseS -> String -> String -> ReplState ()
 load s ('~':'/':f) msg = do
   home <- lift getHomeDirectory
   setFilePath (home </> f)
   load' s (home </> f) msg
 load s f msg = setFilePath f >> load' s f msg
 
-load' :: ParseS -> String -> String -> REPLState ()
+load' :: ParseS -> String -> String -> ReplState ()
 load' s f msg = freestLoadAndRun s f msg ("fst" `isExtensionOf` f) =<< lift (doesFileExist f)
-  
-freestLoadAndRun :: ParseS -> String -> String -> Bool -> Bool -> REPLState ()
+
+freestLoadAndRun :: ParseS -> String -> String -> Bool -> Bool -> ReplState ()
 freestLoadAndRun  _ f _ _ False = freestError $ FileNotFound f
 freestLoadAndRun _ f _ False _ = freestError $ WrongFileExtension f
 freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
@@ -57,7 +64,7 @@ freestLoadAndRun s f msg _ _ = checkWithoutPrelude s f msg
 --     $ unlessM (wrapExec $ elaboration >> stopPipeline (renameProgram >> typeCheck))
 --          (lift $ putStrLn msg)
 
-freestError :: ErrorType -> REPLState ()
+freestError :: ErrorType -> ReplState ()
 freestError = lift . putStrLn . showError True (Right "<FreeST>") Map.empty
 
 -- | -------------------------------------------------------
@@ -67,7 +74,7 @@ freestError = lift . putStrLn . showError True (Right "<FreeST>") Map.empty
 -- |   - It looses all the definitions made so far
 -- | -------------------------------------------------------
 
-reload ::  ParseS -> REPLState ()
+reload ::  ParseS -> ReplState ()
 reload s = do
   fp <- getFilePath
   if fp /= "<interactive>"
@@ -85,7 +92,7 @@ reload s = do
 -- | -------------------------------------------------------
 
 -- TODO: :t (\x:Int -> x * x)
-typeOf :: String -> REPLState ()
+typeOf :: String -> ReplState ()
 typeOf [] = lift $ putStrLn "syntax: ':t <expression-to-synthetise-type>'"
 typeOf q = do
   let query = B.mkVar B.defaultSpan q
@@ -103,22 +110,22 @@ typeOf q = do
 -- | -------------------------------------------------------
 
 -- TODO: elaborate after parsing?
-kindOf :: String -> REPLState ()
+kindOf :: String -> ReplState ()
 kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
-kindOf ts = do  
+kindOf ts = do
   case parseType "<interactive>" ts of
     Left _ -> return () -- showErrors
     Right a@(T.Var _ x) -> getFromTypes x >>= synthVariable a x
     Right t -> K.synthetise Map.empty t >>= pretty ts
   where
-    synthVariable :: T.Type -> B.Variable -> Maybe (K.Kind, T.Type) -> REPLState ()
+    synthVariable :: T.Type -> B.Variable -> Maybe (K.Kind, T.Type) -> ReplState ()
     synthVariable _ x (Just (k,t)) =
       K.synthetise (Map.singleton x k) t >>= pretty ts
     synthVariable a x Nothing  =
       getFromSignatures x >>= \case
         Just t -> K.synthetise Map.empty t >>= pretty ts
         Nothing -> K.synthetise Map.empty a >>= pretty ts
-      
+
 -- | ----------------------------------------------------------
 -- | Displays the available information for the given name.
 -- | Usage: `:i <name>` or :info `<name>` 
@@ -127,13 +134,13 @@ kindOf ts = do
 -- | ----------------------------------------------------------
 
 
-info :: String -> REPLState ()
+info :: String -> ReplState ()
 info [] = lift $ putStrLn "syntax: ':i <info-about>'"
 info f@(x:_)
   | isUpper x = showInfo True ((ignoreFst <$>) . getFromTypes) (B.mkVar B.defaultSpan f)
   | otherwise = showInfo False getFromSignatures (B.mkVar B.defaultSpan f)
 
-showInfo :: Bool -> (B.Variable -> REPLState (Maybe T.Type)) -> B.Variable -> REPLState ()
+showInfo :: Bool -> (B.Variable -> ReplState (Maybe T.Type)) -> B.Variable -> ReplState ()
 showInfo b f var = f var >>= \case
   Nothing -> lift $ putStrLn $ "Variable " ++ show var ++ " is not in scope"
   Just t
@@ -158,9 +165,9 @@ infoData x t = (if isDatatype t then "\ndata " else "\ntype ")
     showData x (T.Rec _ b)
       | x == B.var b = " : " ++ show (B.binder b) ++ " = " ++ showData x (B.body b)
     showData _ t = show t
-    
+
 infoFun :: B.Variable -> T.Type -> Maybe E.Exp -> TypeOpsEnv -> String
-infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++ 
+infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++
       maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show (getDefault tn e)) mbe
 
 -- | -------------------------------------------------------
@@ -169,20 +176,43 @@ infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++
 -- | It is usually used to define functions, datatypes, or type abbreviations
 -- | -------------------------------------------------------
 -- {extra = (extra s){runOpts=interactiveRunOpts{runFilePath="<interactive>"}}}
-multilineCmd :: ParseS -> String -> InputT REPLState ()
-multilineCmd s xs' = do
+multilineCmd :: ParseS -> String -> InputT ReplState ()
+multilineCmd _ xs' = do
   input <- liftS $ runInputT defaultSettings (readLoop (drop 2 xs'))
-  let s0 = s{extra = (extra s){runOpts=(runOpts $ extra s){runFilePath="<interactive>"}, moduleName=Nothing}}
-  let s1 = parseDefs s0 "<interactive>" input
-  lift $ check s1 "<interactive>" Nothing
-  s2 <- lift get
+  -- let s0 = s{extra = (extra s){PPh.runOpts=(PPh.runOpts $ extra s){runFilePath="<interactive>"}, moduleName=Nothing}}
+  handleProgram input
+
+handleProgram :: String -> InputT ReplState ()
+handleProgram input = do
+  s <- lift get
+  let s1 = parseDefs (initial initialExtraParse) "<interactive>" input
+  -- liftS $ putStrLn (show (signatures (ast s1)))
+  let ss = Map.union (signatures (ast s1)) (signatures (ast s))
+      ts = Map.union (types (ast s1)) (types (ast s))
   runOpts <- lift Utils.getRunOpts
+  let s1' = s1{ast=(ast s1){signatures=ss,types=ts}}
+  let s2 = patternMatch s1'
   if hasErrors s2
-    then liftS $ putStrLn $ getErrors runOpts s2
-    else lift $ put s2
+  then liftIO (putStrLn $ getErrors runOpts s2)
+  else let (defs,s3) = elaboration (pkVariables $ extra s1') (mVariables $ extra s1') s2 in
+    if hasErrors s3
+    then liftIO (putStrLn $ getErrors runOpts s3)
+    else let s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
+      if hasErrors s4 then liftIO (putStrLn $ getErrors runOpts s4)
+      else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+        if hasErrors s5 then liftIO (putStrLn $ getErrors runOpts s5)
+        else do 
+          c <- ctx . extra <$> lift get
+          c' <- liftS $ evaluate c s5
+          lift (put s{ast=(ast s){signatures=signatures (ast s5)
+                                 ,types=types (ast s5)
+                                 }
+                     ,extra=(extra s){ctx=c'}
+                     }
+               )
 
 readLoop :: String -> InputT IO String
-readLoop s = getInputLine " |λ> " >>= \case
+readLoop s = getInputLine "freesti| " >>= \case
   Just ":}" -> pure s
   Just str -> readLoop (s ++ "\n" ++ str)
   Nothing -> readLoop s
@@ -217,37 +247,27 @@ replVersion :: String
 replVersion = "FreeSTi, version " ++ showVersion version ++ if isDev then "-dev" else ""
 
 
-checkWithoutPrelude :: ParseS -> String -> String -> REPLState ()
+checkWithoutPrelude :: ParseS -> String -> String -> ReplState ()
 checkWithoutPrelude prelude runFilePath successMsg = do
   -- | Parse
-  s <- liftIO $ parseAndImport prelude{extra = (extra prelude){runOpts=interactiveRunOpts{runFilePath}}}
-  if hasErrors s
-    then liftIO $ putStrLn $ getErrors interactiveRunOpts s
-    else check s runFilePath (Just successMsg)
+  s1 <- liftIO $ parseAndImport prelude{extra = (extra prelude){PPh.runOpts=interactiveRunOpts{runFilePath}}}
+  if hasErrors s1
+  then liftIO $ putStrLn $ getErrors interactiveRunOpts s1
+  else let s2 = patternMatch s1 in
+    if hasErrors s2
+    then liftIO (putStrLn $ getErrors interactiveRunOpts s2)
+    else let (defs,s3) = elaboration (pkVariables $ extra s1) (mVariables $ extra s1) s2 in
+      if hasErrors s3
+      then liftIO (putStrLn $ getErrors interactiveRunOpts s3)
+      else let runOpts = interactiveRunOpts{runFilePath}
+               s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
+        if hasErrors s4
+        then liftIO (putStrLn $ getErrors interactiveRunOpts s4)
+        else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+          if hasErrors s5
+          then liftIO (putStrLn $ getErrors interactiveRunOpts s5)
+          else do 
+            c <- gets (ctx . extra)
+            c' <- lift $ evaluate c s5
+            put $ typingToRepl c' s5
 
-check :: ParseS -> String -> Maybe String -> REPLState () 
-check s runFilePath successMsg = do
-  let runOpts = interactiveRunOpts{runFilePath}
-  let patternS = patternMatch s
-  if hasErrors patternS
-  then liftIO $ putStrLn $ getErrors runOpts patternS
-  else
-    let (defs, elabS) = elaboration (pkVariables $ extra s) (mVariables $ extra s) patternS in
-    if hasErrors elabS then
-      liftIO $ putStrLn $ getErrors runOpts elabS
-    else do 
-      let infS = execState (renameProgram >> infer) (elabToInf defs elabS)
-      tCheckS <- liftIO $ execStateT typeCheck (infToTyping runOpts infS)
-      if hasErrors tCheckS then liftIO $ putStrLn $ getErrors runOpts tCheckS
-      else put tCheckS >> maybe (return ()) (liftIO . putStrLn) successMsg
-
-
-
-
-      -- if hasErrors elabS
-      -- then liftIO $ putStrLn $ getErrors runOpts elabS
-      -- else            
-      --   let s4 = execState (typeCheck) (elabToTyping runOpts{runFilePath} defs elabS) in
-      --   if hasErrors s4 then liftIO $ putStrLn $ getErrors runOpts s4
-      --   else put s4 >>
-      --     maybe (return ()) (liftIO . putStrLn) successMsg

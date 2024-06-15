@@ -33,6 +33,36 @@ client c =
 
 data IntList = Nil | Cons Int IntList
 
+-- Quicksort 
+split : (Int -> Int -> Bool) -> Int -> IntList -> (IntList, IntList) -> (IntList, IntList)
+split cmp y xs pair  =
+  let (smaller, greater) = pair in
+  case xs of {
+    Nil -> pair,
+    Cons x xs' ->
+      split cmp y xs' (if cmp x y
+                       then (Cons x smaller, greater)
+                       else (smaller, Cons x greater))
+  }
+
+append : IntList -> IntList -> IntList
+append xs ys =
+  case xs of {
+    Nil -> ys,
+    Cons x xs' -> Cons x (append xs' ys)
+  }
+
+-- The integer sorting function is a parameter.
+quicksort : (Int -> Int -> Bool) -> IntList -> IntList
+quicksort cmp xs =
+  case xs of {
+    Nil -> Nil,
+    Cons x xs' ->
+      let (smaller, greater) = split cmp x xs' (Nil, Nil) in
+      append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
+  }
+
+
 -- Receive a series of integer values; return them in ascending or
 -- descending order
 sortingServer : IntList -> dualof OrderingChannel;a -> (IntList, a)
@@ -58,33 +88,3 @@ main =
   let (w, r) = new @(OrderingChannel;Wait) () in
   fork @() (\_:()1-> sortingServer @Close Nil r |> snd @IntList @Close |> close);
   client w
-
--- Some list operations below
-
--- The integer sorting function is a parameter.
-quicksort : (Int -> Int -> Bool) -> IntList -> IntList
-quicksort cmp xs =
-  case xs of {
-    Nil -> Nil,
-    Cons x xs' ->
-      let (smaller, greater) = split cmp x xs' (Nil, Nil) in
-      append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
-  }
-
-split : (Int -> Int -> Bool) -> Int -> IntList -> (IntList, IntList) -> (IntList, IntList)
-split cmp y xs pair  =
-  let (smaller, greater) = pair in
-  case xs of {
-    Nil -> pair,
-    Cons x xs' ->
-      split cmp y xs' (if cmp x y
-                       then (Cons x smaller, greater)
-                       else (smaller, Cons x greater))
-  }
-
-append : IntList -> IntList -> IntList
-append xs ys =
-  case xs of {
-    Nil -> ys,
-    Cons x xs' -> Cons x (append xs' ys)
-  }

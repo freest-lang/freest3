@@ -1,11 +1,11 @@
 
-type C = &{A: Skip, B: Skip}
+type C = &{A: Skip, B: Skip};Wait
 
-f : C;Close 1-> Int
-f (A c) = close c ; 0
+f : C 1-> Int
+f (A c) = wait c; 0
 
 main : Int
 main = 
-  let (w,r) = new @(C;Close) () in
-  fork (\_:() 1-> select B r |> wait);
+  let (w,r) = new @C () in
+  r |> select B |> close;
   f w

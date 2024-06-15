@@ -12,6 +12,13 @@ type Sink        a = *?(SinkService a)
 type SinkService a = +{Assign : !a};Close
 -}
 
+-- Manage state
+refHandle : a -> dualof (+{Assign: !a, Deref: ?a};Close) 1-> a 
+refHandle v r  = match r with 
+                 { Assign c -> let (v,c) = receive c in wait c; v
+                 , Deref  c -> c |> send v |> wait; v
+                 }
+
 -- Constructor
 ref : a -> *?(+{Assign: !a, Deref: ?a};Close) 
 ref n = forkWith @(*?(+{Assign: !a, Deref: ?a};Close)) 
@@ -20,13 +27,6 @@ ref n = forkWith @(*?(+{Assign: !a, Deref: ?a};Close))
                             @a 
                             (refHandle @a)
                             n)
-
--- Manages state
-refHandle : a -> dualof (+{Assign: !a, Deref: ?a};Close) 1-> a 
-refHandle v r  = match r with 
-                 { Assign c -> let (v,c) = receive c in wait c; v
-                 , Deref  c -> c |> send v |> wait; v
-                 }
 
 -- | Stores a value (:=).
 -- Notice the type. A Ref can be safely downgraded to a Sink.

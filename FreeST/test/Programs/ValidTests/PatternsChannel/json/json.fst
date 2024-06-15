@@ -9,14 +9,6 @@ The JSON format (ECMA-404 The JSON Data Interchange Standard), is  inherently co
 More info on json at https://www.json.org
 -}
 
-main : Object
-main =
-  let (w, r) = new @(ObjectChannel;Close) () in
-  fork (\_:() 1-> writeObject @Close json w |> close);
-  let (obj, r) = readObject @Wait r in
-  wait r;
-  obj
-
 -- A dataype for JSON
 data Value = StringVal String |
              IntVal    Int    |
@@ -26,19 +18,6 @@ data Value = StringVal String |
              NullVal
 data Object = ConsObject String Value Object | EmptyObject
 data Array  = ConsArray Value Array | EmptyArray
-
--- A JSON value
-json : Object
-json = ConsObject "name" (StringVal "James") $
-       ConsObject "age" (IntVal 30) $
-       ConsObject "car" NullVal $
-       ConsObject "children" (ArrayVal $
-         ConsArray (ObjectVal $
-           ConsObject "name" (StringVal "Jonah") EmptyObject) $
-         ConsArray (ObjectVal $
-           ConsObject "name" (StringVal "Johanson") EmptyObject) $
-         EmptyArray) $
-       EmptyObject
 
 -- Channels for sending JSON objects
 type ValueChannel = +{
@@ -67,6 +46,7 @@ writeValue (ArrayVal  l) c = select ArrayValC  c |> writeArray @a l
 writeValue (BoolVal   b) c = select BoolValC   c |> send b
 writeValue NullVal       c = select NullValC   c
 
+and 
 writeObject : Object -> ObjectChannel;a -> a
 writeObject EmptyObject             c = select EmptyC c
 writeObject (ConsObject key val j1) c =
@@ -75,6 +55,7 @@ writeObject (ConsObject key val j1) c =
       writeValue @(ObjectChannel;a) val |>
       writeObject @a j1
 
+and 
 writeArray : Array -> ArrayChannel;a -> a
 writeArray EmptyArray c       = select EmptyC c
 writeArray (ConsArray j l1) c =
@@ -91,6 +72,8 @@ readValue (ArrayValC  c) = let (l, c) = readArray  @a c in (ArrayVal l, c)
 readValue (BoolValC   c) = let (b, c) = receive c in (BoolVal b, c)
 readValue (NullValC   c) = (NullVal, c)
 
+
+and 
 readObject : dualof ObjectChannel;a -> (Object, a)
 readObject (EmptyC c)      = (EmptyObject, c)
 readObject (ConsObjectC c) =
@@ -99,9 +82,32 @@ readObject (ConsObjectC c) =
       let (next, c)  = readObject @a c in
       (ConsObject key value next, c)
 
+and 
 readArray : dualof ArrayChannel;a -> (Array, a)
 readArray (EmptyC c)      = (EmptyArray, c)
 readArray (ConsObjectC c) =
       let (j, c) = readValue @(dualof ArrayChannel;a) c in
       let (l, c) = readArray @a c in
       (ConsArray j l, c)
+
+-- A JSON value
+json : Object
+json = ConsObject "name" (StringVal "James") $
+       ConsObject "age" (IntVal 30) $
+       ConsObject "car" NullVal $
+       ConsObject "children" (ArrayVal $
+         ConsArray (ObjectVal $
+           ConsObject "name" (StringVal "Jonah") EmptyObject) $
+         ConsArray (ObjectVal $
+           ConsObject "name" (StringVal "Johanson") EmptyObject) $
+         EmptyArray) $
+       EmptyObject
+
+
+main : Object
+main =
+  let (w, r) = new @(ObjectChannel;Close) () in
+  fork (\_:() 1-> writeObject @Close json w |> close);
+  let (obj, r) = readObject @Wait r in
+  wait r;
+  obj

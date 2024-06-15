@@ -11,7 +11,7 @@ runHeadNode : Internal -> dualof Head 1-> ()
 runHeadNode prev head = 
     let (i, prev) = receive prev in
     send_ @Int i head;
-    runHeadNode (receiveAndClose @Internal prev) head
+    runHeadNode (receiveAndWait @Internal prev) head
 
 runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =
@@ -44,16 +44,16 @@ dequeue queue =
 
 type Counter = *?Int
 
+runCounter : Int -> dualof Counter -> ()
+runCounter i counter =
+    send_ @Int i counter;
+    runCounter (i+1) counter
+
 initCounter : Counter
 initCounter = 
     let (counterC, counterS) = new @Counter () in
     fork (\_:() 1-> runCounter 0 counterS);
     counterC
-
-runCounter : Int -> dualof Counter -> ()
-runCounter i counter =
-    send_ @Int i counter;
-    runCounter (i+1) counter
 
 -- main
 

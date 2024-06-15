@@ -26,9 +26,6 @@ boolServer c =
       |> wait
   }
 
-main : Bool
-main = startClient client1
-
 client1 : BoolClient -> Bool
 client1 w = w |> select And
               |> send True  
@@ -42,6 +39,8 @@ startClient client =
   let x = fork @() (\_:()1-> boolServer r) in
   client w
 
+main : Bool
+main = startClient client1
 
 -- remove skips from the end
 -- Type check : environment checks only the linear part (filter)

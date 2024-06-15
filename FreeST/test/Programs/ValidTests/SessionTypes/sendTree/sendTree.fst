@@ -17,12 +17,6 @@ type TreeC = &{
   NodeC: TreeC ; ?Int ; TreeC
  }
 
-readTree : TreeChannel -> Tree
-readTree r = 
-  let (tree, r) = read @Wait r in 
-  wait r;
-  tree
--- where
 read : TreeC ; a -> (Tree, a)
 read (LeafC c) = (Leaf, c)
 read (NodeC c) =
@@ -31,10 +25,12 @@ read (NodeC c) =
   let (r, c) = read @a c in
   (Node l x r, c)
 
-writeTree : Tree -> dualof TreeChannel -> ()
-writeTree tree writer =
-  write @Close tree writer |> close
--- where
+readTree : TreeChannel -> Tree
+readTree r = 
+  let (tree, r) = read @Wait r in 
+  wait r;
+  tree
+
 write : Tree -> dualof TreeC ; a -> a
 write Leaf c = select LeafC c
 write (Node l x r) c = 
@@ -42,6 +38,10 @@ write (Node l x r) c =
     |> write @(!Int;dualof TreeC;a) l
     |> send x
     |> write @a r
+
+writeTree : Tree -> dualof TreeChannel -> ()
+writeTree tree writer =
+  write @Close tree writer |> close
 
 main : Tree
 main =

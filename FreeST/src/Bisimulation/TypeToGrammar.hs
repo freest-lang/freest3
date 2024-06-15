@@ -75,7 +75,7 @@ toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
   getLHS $  Map.singleton (Forall (intern a) k) xs
 toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
-toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ show a) []
+toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ intern a) []
 -- Type operators
 toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
 -- toGrammar' t@T.Dualof{} =

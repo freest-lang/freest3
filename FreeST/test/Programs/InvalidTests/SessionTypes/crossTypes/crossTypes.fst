@@ -22,6 +22,8 @@ sendList c l =
     Nil       -> select Nil c
   }
 
+aList : List
+aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
 
 main : List
 main =
@@ -31,5 +33,3 @@ main =
   wait x;
   list
 
-aList : List
-aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))

@@ -1,5 +1,11 @@
 type Sorter = +{Done: Close, More: !Int ; ?Int; Sorter}
 
+-- Exchange a value with a right node; return the min and the channel.
+exchangeRight : Int -> Sorter -> (Int, Sorter)
+exchangeRight x right =
+  let (y, right) = receive (send x (select More right)) in
+  (min x y, right)
+
 -- first accepts the number of phases, the value in the node, the
 -- channel to the right and the channel where to announce the result
 -- once done. First is an odd process, hence it controls when sorting
@@ -11,46 +17,6 @@ first n x right collect' =
        send x collect' |> close
   else let (min, right) = exchangeRight x right in
        first (n - 1) min right collect'
-
--- evenProcess accepts the number of phases, the value in the node,
--- the channel to the left, the channel to the right and the channel
--- where to announce the result once complete. evenProcess receives
--- from the left the announcement that sorting is completed (Done).
-evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;Close 1-> ()
-evenProcess n x left right collect' =
-  match left with {
-    Done left -> wait left; select Done right |> close ; send x collect' |> close,
-    More left -> let (max, left) = exchangeLeft x left in
-                 oddProcess (n - 1) max left right collect'
-  }
-
--- oddProcess accepts the number of phases, the value in the node, the
--- channel to the left, the channel to the right and the channel where
--- to announce the result once done. oddProcess is an odd process,
--- hence it controls when sorting is complete.
-oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;Close 1-> ()
-oddProcess n x left right collect' =
-  if n == 0
-  then select Done right |> close ; consume' left ; send x collect' |> close
-  else let (min, right) = exchangeRight x right in
-       evenProcess (n - 1) min left right collect'
-
--- last accepts the value in the node, the channel to the left and the
--- channel where to announce the result once done. last receives from
--- the left the announcement that sorting is completed (Done).
-last : Int -> dualof Sorter -> !Int;Close 1-> ()
-last x left collect' =
-  match left with {
-    Done left -> wait left; send x collect' |> close,
-    More left -> let (max, left) = exchangeLeft x left in
-                 last max left collect'
-  }
-
--- Exchange a value with a right node; return the min and the channel.
-exchangeRight : Int -> Sorter -> (Int, Sorter)
-exchangeRight x right =
-  let (y, right) = receive (send x (select More right)) in
-  (min x y, right)
 
 -- Exchange a value with a right node; return the max and the channel.
 exchangeLeft : Int -> ?Int;!Int;dualof Sorter -> (Int, dualof Sorter)
@@ -67,6 +33,41 @@ consume' c =
     More c -> -- Should not happen
       let (_, c) = receive c in
       consume' (send (-99) c)
+  }
+
+-- oddProcess accepts the number of phases, the value in the node, the
+-- channel to the left, the channel to the right and the channel where
+-- to announce the result once done. oddProcess is an odd process,
+-- hence it controls when sorting is complete.
+
+-- evenProcess accepts the number of phases, the value in the node,
+-- the channel to the left, the channel to the right and the channel
+-- where to announce the result once complete. evenProcess receives
+-- from the left the announcement that sorting is completed (Done).
+
+oddProcess and evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int;Close 1-> ()
+oddProcess n x left right collect' =
+  if n == 0
+  then select Done right |> close ; consume' left ; send x collect' |> close
+  else let (min, right) = exchangeRight x right in
+       evenProcess (n - 1) min left right collect'
+
+evenProcess n x left right collect' =
+  match left with {
+    Done left -> wait left; select Done right |> close ; send x collect' |> close,
+    More left -> let (max, left) = exchangeLeft x left in
+                 oddProcess (n - 1) max left right collect'
+  }
+
+-- last accepts the value in the node, the channel to the left and the
+-- channel where to announce the result once done. last receives from
+-- the left the announcement that sorting is completed (Done).
+last : Int -> dualof Sorter -> !Int;Close 1-> ()
+last x left collect' =
+  match left with {
+    Done left -> wait left; send x collect' |> close,
+    More left -> let (max, left) = exchangeLeft x left in
+                 last max left collect'
   }
 
 main : ()

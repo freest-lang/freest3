@@ -5,9 +5,9 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
+precedence : Int
+precedence = 2 + 3 * 4 + 5
 
 main : Int
 main = precedence
 
-precedence : Int
-precedence = 2 + 3 * 4 + 5

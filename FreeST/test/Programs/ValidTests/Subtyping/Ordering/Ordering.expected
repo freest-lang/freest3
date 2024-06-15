@@ -1,1 +1,1 @@
-Cons 4 (Cons 3 (Cons 2 (Cons 1 Nil)))
+[4,3,2,1]

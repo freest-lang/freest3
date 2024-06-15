@@ -2,10 +2,6 @@
 
 data IntList = Nil | List Int IntList
 
---foldr' : (x -> acc -> acc) -> xs -> acc -> acc 
-foldr' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
-foldr' f list acc = foldl' f (reverseIntList list Nil) acc
-
 reverseIntList : IntList -> IntList -> IntList
 reverseIntList Nil           acc = acc
 reverseIntList (List x rest) acc = reverseIntList rest (List x acc)
@@ -15,19 +11,23 @@ foldl' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
 foldl' f Nil           acc = acc
 foldl' f (List x rest) acc = foldl' f rest (f x acc)
 
-map' : (Int -> Int) -> IntList -> IntList
-map' f list = foldr' (mapper f) list Nil
+--foldr' : (x -> acc -> acc) -> xs -> acc -> acc 
+foldr' : (Int -> IntList -> IntList) -> IntList -> IntList -> IntList
+foldr' f list acc = foldl' f (reverseIntList list Nil) acc
 
 mapper : (Int -> Int) -> Int -> IntList -> IntList
 mapper f x acc = List (f x) acc
 
-filter' : (Int -> Bool) -> IntList -> IntList
-filter' f list = foldr' (filtering f) list Nil
+map' : (Int -> Int) -> IntList -> IntList
+map' f list = foldr' (mapper f) list Nil
 
 filtering : (Int -> Bool) -> Int -> IntList -> IntList
 filtering f x acc 
     | f x       = List x acc
     | otherwise = acc
+
+filter' : (Int -> Bool) -> IntList -> IntList
+filter' f list = foldr' (filtering f) list Nil
 
 isPositive : Int -> Bool
 isPositive x = x > 0

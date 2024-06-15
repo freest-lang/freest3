@@ -18,7 +18,7 @@ consumeStream : -- ∀ α .
   ((μb . ?α;b) -> (μb . ?α;b)) -> -- A function that consumes the head of a stream
   (μb . ?α;b) ->                    -- The stream
   ()
-consumeStream f c = consume Stream @α f (f c)
+consumeStream f c = consumeStream @α f (f c)
 
 -- 1 _ Stream of integer values
 type OutIntStream = !Int; OutIntStream

@@ -6,9 +6,9 @@ Based on the 'Ami and Boe' example from
 -}
 
 type CakeStore   = *?CakeService
-type CakeService = &{ Cake: End
-                         , Disappointment: End 
-                         }
+type CakeService = &{ Cake: Wait
+                    , Disappointment: Wait 
+                    }
 
 runCakeStore : dualof CakeStore -> Bool -> ()
 runCakeStore cakeStore gotCake = 
@@ -16,26 +16,26 @@ runCakeStore cakeStore gotCake =
     let cakeStore = send c cakeStore in
     if gotCake
     then 
-        select Cake s |> close;
+        s |> select Cake |> close;
         runCakeStore cakeStore False
     else 
-        select Disappointment s |> close;
+        s |> select Disappointment |> close;
         runCakeStore cakeStore False
 
 ami : CakeStore -> ()
 ami cakeStore = 
     let cakeService = fst @CakeService @CakeStore $ receive cakeStore in
     match cakeService with {
-        Cake           c -> close c; putStrLn "Ami got cake!",
-        Disappointment c -> close c; putStrLn "Ami got disappointment"
+        Cake           c -> wait c; putStrLn "Ami got cake!",
+        Disappointment c -> wait c; putStrLn "Ami got disappointment"
     }
 
 boe : CakeStore -> ()
 boe cakeStore =
     let cakeService = fst @CakeService @CakeStore $ receive cakeStore in
     match cakeService with {
-        Cake           c -> close c; putStrLn "Boe got cake!",
-        Disappointment c -> close c; putStrLn "Boe got disappointment"
+        Cake           c -> wait c; putStrLn "Boe got cake!",
+        Disappointment c -> wait c; putStrLn "Boe got disappointment"
     }
 
 main : ()

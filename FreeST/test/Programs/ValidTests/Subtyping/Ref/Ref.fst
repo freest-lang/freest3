@@ -10,16 +10,16 @@ type Source = *?(SourceService)
 type SinkService = +{Assign : !T};Close
 type Sink = *?(+{Assign: !T};Close)
 
--- Constructor
-ref : T -> Ref 
-ref n = forkWith @Ref @Diverge (runServer @RefService @T refHandle n)
-
--- Manages state and communication
+-- Manage state and communication
 refHandle : T -> dualof RefService 1-> T 
 refHandle v r  = match r with {
                   Assign c -> let (v,c) = receive c in wait c; v,
                   Deref  c -> c |> send v |> wait; v
                 }
+
+-- Constructor
+ref : T -> Ref 
+ref n = forkWith @Ref @Diverge (runServer @RefService @T refHandle n)
 
 -- | Stores a value (:=)
 -- Notice the type. A Ref can be safely downgraded to a Sink.

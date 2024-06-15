@@ -18,6 +18,15 @@ iListR c =
               (Cons x xs, c)
   }
 
+iFold : a -> (Int -> a -> a) 1-> (dualof IListW);b 1-> (a, b)
+iFold n f c =
+  match c with {
+    NilC c -> (n, c),
+    ConsC c -> let (m, c) = receive c in
+              let (n, c) = iFold  @a @b n f c in
+              (f m n, c)
+  }
+
 iListR' : (dualof IListW);a -> (IList, a)
 iListR' c = iFold @IList @a Nil Cons c
 
@@ -33,14 +42,6 @@ iLength c =
 iLength' : (dualof IListW);a -> (Int, a)
 iLength' x = iFold @Int @a 0 (+) x
 
-iFold : a -> (Int -> a -> a) 1-> (dualof IListW);b 1-> (a, b)
-iFold n f c =
-  match c with {
-    NilC c -> (n, c),
-    ConsC c -> let (m, c) = receive c in
-              let (n, c) = iFold  @a @b n f c in
-              (f m n, c)
-  }
 
 aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))

@@ -1,10 +1,10 @@
-type Server : 1S = &{A: !Int}
+type Server = &{A: !Int};Wait
 
-server : Server;Close 1-> ()
-server s =
+server : Server -> () 1-> ()
+server s _ =
   match s with { A s -> () } -- here
 
 main : Int
-main = let (s, c) = new @(Server;Close) () in
-       fork (\_:() 1-> server s);
-       let (n, c) = select A c |> receive in wait c ; n
+main = let (s, c) = new @Server () in
+       fork (server s);
+       c |> select A |> receiveAndClose @Int

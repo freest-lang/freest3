@@ -6,10 +6,10 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
+half : Int -> Int
+half x = div x 2
 
 main : Int
 main = half (2+2*3)
 
-half : Int -> Int
-half x = div x 2
 

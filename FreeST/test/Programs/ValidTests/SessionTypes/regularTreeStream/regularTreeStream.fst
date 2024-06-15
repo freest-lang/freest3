@@ -44,18 +44,15 @@ type Stream = +{
 
 -- Writing trees on channels
 
-sendTree : Tree -> Stream -> ()
-sendTree t c = c |> streamTree t |> select EndOfStreamC |> close
-
 streamTree : Tree -> Stream -> Stream
 streamTree Leaf c = select LeafC c
 streamTree (Node x l r) c = send x $ select NodeC $ streamTree r $ streamTree l c
 streamTree Error c = select LeafC c
 
--- Reading trees from channels
+sendTree : Tree -> Stream -> ()
+sendTree t c = c |> streamTree t |> select EndOfStreamC |> close
 
-receiveTree : dualof Stream -> Tree
-receiveTree = recTree Nil
+-- Reading trees from channels
 
 recTree : List -> dualof Stream -> Tree
 recTree xs (NodeC c) =
@@ -67,6 +64,9 @@ recTree xs (LeafC c) =
   recTree (Cons Leaf xs) c
 recTree xs (EndOfStreamC c) =
   wait c ; getFromSingleton xs
+
+receiveTree : dualof Stream -> Tree
+receiveTree = recTree Nil
 
 -- Babdly behaving writers
 

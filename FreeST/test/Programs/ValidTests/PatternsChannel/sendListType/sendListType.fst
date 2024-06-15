@@ -16,6 +16,9 @@ sendList c (Cons x xs) =
   let c = send x c in
   sendList @a c xs
 
+aList : List
+aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
+
 main : List
 main =
   let (x, y) = new @(ListOut;Close) () in
@@ -24,5 +27,3 @@ main =
   wait y;
   list
 
-aList : List
-aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))

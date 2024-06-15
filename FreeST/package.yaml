@@ -69,9 +69,11 @@ library:
     - Kinding.Kinding
     - Interpreter.Builtin
     - Interpreter.Eval
+    - Interpreter.Value 
     - Parse.Phase
     - PatternMatch.Phase
     - Elaboration.Phase
+    - Elaboration.Replace
     - PatternMatch.PatternMatch
     - Equivalence.TypeEquivalence
     - Equivalence.Subtyping

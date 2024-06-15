@@ -40,7 +40,7 @@ exploreTree c tree =
       exploreNode @a (select NodeC c) x l r
     }
 
-exploreNode : XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
+and exploreNode : XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
 exploreNode c x l r =
   match c with {
     Value c ->
@@ -66,7 +66,7 @@ server c1 n =
       serverNode @a c1 n
   }
 
-serverNode : dualof XploreNodeChan;a -> Int 1-> (a, Int)
+and serverNode : dualof XploreNodeChan;a -> Int 1-> (a, Int)
 serverNode c n =
   let (m, c) = receive (select Value c) in
   if m == 0

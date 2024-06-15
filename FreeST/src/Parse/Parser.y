@@ -42,6 +42,7 @@ import           Paths_FreeST ( getDataFileName )
   where    {TokenWhere _}
   module   {TokenModule _}  
   import   {TokenImport _}  
+  and      {TokenAnd _}
   Int      {TokenIntT _}
   Float    {TokenFloatT _}
   Char     {TokenCharT _}
@@ -170,18 +171,48 @@ QualifiedUpperId :: { FilePath }
 -------------
 
 Prog :: { () }
+  : NonSigDecl         {}
+  | NonSigDecl NL Prog {}
+  | Sig NL Prog1       {}
+
+Prog1 :: { () }
   : Decl         {}
-  | Decl NL Prog {}
+  | Decl NL Prog1 {}
 
 NL :: { () }
   : nl NL {}
   | nl    {}
 
+MaybeNL :: { () }
+  :    {}
+  | NL {}
+
+Sig :: { () }
+  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3 >> addToEvalOrder [x]) }
+  | ProgVar and ProgVarAndList ':' Type {% forM_ ($1 : $3) (\x -> checkDupProgVarDecl x >> addToSignatures x $5) >> addToEvalOrder ($1 : $3)}
+
+NonSigDecl :: { () }
+  -- Function signature
+  : Sig {}
+  | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
+  | Pattern Op Pattern GuardsFun {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $4}
+  -- Type abbreviation
+  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTypes $2 $3 }
+  -- Datatype declaration
+  | data KindedTVar '=' DataCons {% do
+      let a = fst $2
+      checkDupTypeDecl a
+      mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
+      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
+    }
+
 Decl :: { () }
   -- Function signature
-  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToSignatures x $3) }
-  -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
-  -- Function declaration
+  : Sig {}
+  | and MaybeNL ProgVarAndList ':' Type {% do 
+      forM_ $3 (\x -> checkDupProgVarDecl x >> addToSignatures x $5)
+      addToLastEvalOrder $3
+    }
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
   | Pattern Op Pattern '=' Exp   {% addToPEnvPat (mkVar (getSpan $2) $ intern $2) [$1,$3] $5}
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
@@ -199,6 +230,10 @@ Decl :: { () }
 ProgVarList :: { [Variable] }
   : ProgVar                 { [$1] }
   | ProgVar ',' ProgVarList { $1 : $3}
+
+ProgVarAndList :: { [Variable] }
+  : ProgVar                 { [$1] }
+  | ProgVar and ProgVarAndList { $1 : $3}
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
@@ -558,37 +593,62 @@ parseAndImport :: FreestS Parse -> IO (FreestS Parse)
 parseAndImport initial = do
   let filename = getFName initial  
 --  s <- parseProgram (initial {B.moduleName = Nothing})   
-  s <- parseProgram (setModule initial Nothing)
+  s <- parseProgram (resetEO $ setModule initial Nothing)
   let baseName = takeBaseName (getFName s)
   case getModule s of
     Just name
-      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (getImps s)) s
+      | name == baseName -> (`appendEOs` s) <$> fst <$> doImports filename [name] (Set.singleton name) (getImps s) s
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
-    Nothing   -> doImports filename Set.empty (Set.toList (getImps s)) s
+    Nothing   -> (`appendEOs` s) <$> fst <$> doImports filename [] Set.empty (getImps s) s
   where
-    doImports :: FilePath -> Imports -> [FilePath] -> FreestS Parse -> IO (FreestS Parse)
-    doImports _ _ [] s = return s
-    doImports moduleName imported (curImport:toImport) s
-      | curImport `Set.member` imported = doImports moduleName imported toImport s
+    doImports :: FilePath 
+              -> [FilePath]
+              -> Set.Set FilePath 
+              -> [FilePath] 
+              -> FreestS Parse 
+              -> IO (FreestS Parse, Set.Set FilePath)
+    doImports _ _ imported [] s = return (resetEO s, imported)
+    doImports moduleName pathToRoot imported (curImport:toImport) s
+      | curImport `elem` pathToRoot = 
+          let err = CyclicDependency defaultSpan{moduleName} (curImport : reverse (takeWhile (/= curImport) pathToRoot)) in 
+          return (s{errors = errors s ++ [err]},imported)
+      | curImport `Set.member` imported = doImports moduleName pathToRoot imported toImport s
       | otherwise = do
-         let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
-         exists <- doesFileExist fileToImport
-         stdLib <- getDataFileName (curImport -<.> "fst")
-         isStdLib <- doesFileExist stdLib         
-         if | exists -> importModule s fileToImport curImport moduleName imported toImport
-            | isStdLib -> importModule s stdLib curImport moduleName imported toImport
-            | otherwise ->
-               pure $ s {errors = errors s ++
-                        [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}
+          let fileToImport = replaceBaseName moduleName curImport -<.> "fst"
+          exists <- doesFileExist fileToImport
+          if exists then
+            do (s' , imported' ) <- importModule s fileToImport curImport moduleName pathToRoot imported
+               (s'', imported'') <- doImports moduleName pathToRoot imported' toImport (resetEO s')
+               return (prependEOs s'' s', imported'')
+          else do
+            fileToImport <- getDataFileName $ curImport -<.> "fst"
+            isStdLib <- doesFileExist fileToImport
+            if isStdLib then
+              do (s' , imported' ) <- importModule s fileToImport curImport moduleName pathToRoot imported
+                 (s'', imported'') <- doImports moduleName pathToRoot imported' toImport (resetEO s')
+                 return (prependEOs s'' s', imported'')        
+            else 
+              return (s{errors = errors s ++ [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}, imported)
 
-    importModule :: FreestS Parse -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO (FreestS Parse)
-    importModule s fileToImport curImport moduleName imported toImport = do
-      s' <- parseProgram (setModule s Nothing & setFName fileToImport)
-      let modName = fromJust $ getModule s'
-      if curImport /= modName then
-        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}
-      else
-        doImports moduleName (Set.insert curImport imported) (toImport ++ Set.toList (getImps s')) s'
+    importModule :: FreestS Parse 
+                 -> FilePath 
+                 -> FilePath 
+                 -> FilePath 
+                 -> [FilePath]
+                 -> Set.Set FilePath 
+                 -> IO (FreestS Parse, Set.Set FilePath)
+    importModule s fileToImport curImport moduleName pathToRoot imported = do
+      s' <- parseProgram (setModule s{extra=(extra s){imports=[]}} Nothing 
+                         & setFName fileToImport 
+                         & resetEO)
+      case getModule s' of 
+        Just modName ->
+          if curImport /= modName then
+            return (s'{errors = errors s ++ [NameModuleMismatch defaultSpan{moduleName} modName curImport]}, imported)
+          else do
+            (s'',imported') <- doImports moduleName (curImport:pathToRoot) (Set.insert curImport imported) (getImps s') (resetEO s')
+            return (appendEOs s'' s', imported')
+        Nothing -> return (s'{errors = errors s ++ [ImportNotFound defaultSpan{moduleName} curImport fileToImport]}, imported)
           
 -- Error Handling
 parseError :: [Token] -> ParseState a

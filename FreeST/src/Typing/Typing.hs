@@ -19,6 +19,7 @@ module Typing.Typing
   ( typeCheck
   , synthetise -- for tests
   , checkAgainst -- for tests
+  , checkDefs
   , buildMap
   )
 where
@@ -60,8 +61,12 @@ typeCheck = do
   -- Gets the state and only continues if there are no errors so far  
   s <- get
   unless (hasErrors s) $ do
-    -- * Check function bodies
-    tMapWithKeyM_ (checkFunBody (signatures $ ast s)) =<< getDefs
+    -- * Remove signatures with definitions
+    defs <- getDefs
+    sigs <- getSignatures
+    setSignatures $ Map.filterWithKey (\k _ -> Map.notMember k defs) sigs
+    -- * Check definitions in evaluation order
+    mapM_ (checkDefs sigs) =<< getEvalOrder
     -- * Check the main function
     checkMainFunction
     -- * Checking final environment for linearity
@@ -73,8 +78,28 @@ typeCheck = do
   setErrors (errors s ++ errors s0)
   
 
+checkDefs :: Signatures -> [Variable] -> TypingState () 
+checkDefs sigs [ ] = return () 
+checkDefs sigs xs = do 
+  let xts = map (\x -> (x, sigs Map.! x)) xs
+  mapM_ (uncurry addToSignatures) xts 
+  mapM_ (checkDef xs) xts 
+  where 
+    checkDef :: [Variable] -> (Variable, T.Type) -> TypingState ()
+    checkDef xs (x,t) = do
+      defs <- getDefs 
+      case defs Map.!? x of  
+        Nothing -> return () 
+        Just e  -> do 
+          when (length xs > 1 && not (isVal e)) 
+            (addError (MutualDefNotValue (getSpan x) x e))
+          k <-  K.synthetise Map.empty t 
+          when (K.isLin k && Map.member x sigs) $ removeFromSignatures x
+          checkAgainst Map.empty e t      
+          when (Map.member x sigs) $ addToSignatures x t
+
 -- Check a given function body against its type; make sure all linear
--- variables are used.
+-- variables are used. Deprecated (see function checkDefs above).
 checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
 checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
   where
@@ -104,7 +129,7 @@ checkLinearity :: TypingState ()
 checkLinearity = do
   sigs <- getSignatures
   m <- filterM (K.lin . snd) (Map.toList sigs)
-  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
+  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m)
 
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState T.Type

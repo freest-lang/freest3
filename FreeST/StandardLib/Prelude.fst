@@ -55,6 +55,7 @@ odd : Int -> Bool
 (>) : Int -> Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
+
 -- Float
 (+.) : Float -> Float -> Float
 (-.) : Float -> Float -> Float
@@ -97,29 +98,36 @@ fromInteger: Int -> Float
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
+
 -- Char
 ord : Char -> Int
 chr : Int -> Char
-  -- String
+
+-- String
 (^^) : String -> String -> String
 show : forall a:*T . a -> String
 -- read : ∀ a . String -> a
 readBool : String -> Bool
 readInt : String -> Int
 readChar : String -> Char
-  -- Internal Prints
+
+-- Internal Prints
 __putStrOut : String -> ()
 __putStrErr : String -> ()
-  -- Internal Gets
+
+-- Internal Gets
 __getChar : () -> Char
 __getLine : () -> String
 __getContents : () -> String
-  -- Fork
+
+-- Fork
 fork : forall a:*T. (() 1-> a) -> ()
-  -- Error & Undefined
+
+-- Error & Undefined
 error : forall a:*T . String -> a
 undefined : forall a:*T . a
-  -- Session ops
+
+-- Session operations
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () -> (a, dualof a)
 -- | Sends a value on a channel. Returns the continuation channel
@@ -131,7 +139,14 @@ receive : forall a:1T b:1S . ?a ; b -> (a, b)
 close : Close -> ()
 -- | Waits for a channel to be closed.
 wait : Wait -> ()
-  -- Internal Files
+
+-- Files 
+-- | File paths
+type FilePath = String
+-- Internal file handles
+data FileHandle = FileHandle ()
+-- Internal IOMode for opening files
+data IOMode = ReadMode | WriteMode | AppendMode
 __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()
 __readFileChar : FileHandle -> Char
@@ -159,6 +174,14 @@ data Bool = True | False
 not : Bool -> Bool 
 not True  = False 
 not False = True 
+
+-- | Extracts the first element from a pair, discarding the second.
+fst : forall a:1T b:*T . (a, b) -> a
+fst p = let (x,_) = p in x
+
+-- | Extracts the second element from a pair, discarding the first.
+snd : forall a:*T b:1T . (a, b) -> b
+snd p = let (_,y) = p in y
 
 -- | The identity function. Will return the exact same value.
 -- | ```
@@ -260,14 +283,6 @@ fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
 fix f =
   (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
   (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
-
--- | Extracts the first element from a pair, discarding the second.
-fst : forall a:1T b:*T . (a, b) -> a
-fst p = let (x,_) = p in x
-
--- | Extracts the second element from a pair, discarding the first.
-snd : forall a:*T b:1T . (a, b) -> b
-snd p = let (_,y) = p in y
 
 --  $$$$$$\  
 -- $$ ___$$\ 
@@ -612,7 +627,14 @@ hGetContent_ inp =
 -- Stdout
 
 -- | Standard output stream. Prints to the console.
+__stdoutChan : (OutStreamProvider, dualof OutStreamProvider)
+__stdoutChan = new @OutStreamProvider () 
+
 stdout : OutStreamProvider
+stdout = let (o,_) = __stdoutChan in o
+
+__stdout : dualof OutStreamProvider
+__stdout = let (_,i) = __stdoutChan in i
 
 -- | Prints a character to `stdout`. Behaves the same as `hPutChar_ c stdout`, where `c`
 -- | is the character to be printed.
@@ -636,9 +658,6 @@ print : forall a:*T . a -> ()
 print x = putStrLn $ show @a x
 
 -- Internal stdout functions
-__runStdout  : dualof OutStreamProvider -> ()
-__runStdout = runServer @OutStream @() __runPrinter ()
-
 __runPrinter : () -> dualof OutStream 1-> ()
 __runPrinter _ (PutChar printer) =
   readApply @Char @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter ()
@@ -649,15 +668,22 @@ __runPrinter _ (PutStrLn printer) =
 __runPrinter _ (SWait printer) =
   close printer
 
+__runStdout  : ()
+__runStdout = fork (\_:() -> runServer @OutStream @() __runPrinter () __stdout)
+
 -- Stderr
 
 -- | Standard error stream. Prints to the console.
+__stderrChan : (OutStreamProvider, dualof OutStreamProvider)
+__stderrChan = new @OutStreamProvider () 
+
 stderr : OutStreamProvider
+stderr = let (o,_) = __stderrChan in o
+
+__stderr : dualof OutStreamProvider
+__stderr = let (_,i) = __stderrChan in i
 
 -- Internal stderr functions
-__runStderr : dualof OutStreamProvider -> ()
-__runStderr = runServer @OutStream @() __runErrPrinter ()
-
 __runErrPrinter : () -> dualof OutStream 1-> ()
 __runErrPrinter _ (PutChar  printer) =
   readApply @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter ()
@@ -668,23 +694,31 @@ __runErrPrinter _ (PutStrLn printer) =
 __runErrPrinter _ (SWait printer) =
   close printer
 
+__runStderr : ()
+__runStderr = fork (\_:() -> runServer @OutStream @() __runErrPrinter () __stderr)
+
 -- Stdin
 
 -- | Standard input stream. Reads from the console.
+-- | Standard output stream. Prints to the console.
+__stdinChan : (InStreamProvider, dualof InStreamProvider)
+__stdinChan = new @InStreamProvider () 
+
 stdin : InStreamProvider
+stdin = let (i,_) = __stdinChan in i
+
+__stdin : dualof InStreamProvider
+__stdin = let (_,o) = __stdinChan in o
 
 -- | Reads a single character from `stdin`.
-getChar : Char
-getChar = hGetChar_ stdin
+getChar : () -> Char
+getChar _ = hGetChar_ stdin
 
 -- | Reads a single line from `stdin`. 
-getLine : String
-getLine = hGetLine_ stdin
+getLine : () -> String
+getLine _ = hGetLine_ stdin
 
 -- Internal stdin functions
-__runStdin : dualof InStreamProvider -> ()
-__runStdin = runServer @InStream @() __runReader ()
-
 __runReader : () -> dualof InStream 1-> ()
 __runReader _ (GetChar reader) =
   __runReader () $ send (__getChar ()) reader
@@ -695,23 +729,5 @@ __runReader _ (IsEOF reader) =
 __runReader _ (SWait reader) =
   close reader
 
-
---  $$$$$$\  
--- $$  __$$\ 
--- $$ /  \__|
--- $$$$$$$\  
--- $$  __$$\ 
--- $$ /  $$ |
---  $$$$$$  |
---  \______/ 
-
--- # File types
-
--- | File paths.
-type FilePath = String
-
--- Internal file handles
-data FileHandle = FileHandle ()
-
--- Internal IOMode for opening files
-data IOMode = ReadMode | WriteMode | AppendMode
+__runStdin : ()
+__runStdin = fork (\_:() -> runServer @InStream @() __runReader () __stdin)
