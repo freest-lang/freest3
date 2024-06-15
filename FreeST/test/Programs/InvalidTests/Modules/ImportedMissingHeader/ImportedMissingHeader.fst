@@ -1,6 +1,6 @@
 module ImportedMissingHeader where
 
-import IHaveNoHeader
+import NoHeader
 
 main : Int
 main = double 2

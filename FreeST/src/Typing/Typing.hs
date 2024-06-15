@@ -87,12 +87,16 @@ checkDefs sigs xs = do
       defs <- getDefs 
       case defs Map.!? x of  
         Nothing -> return () 
-        Just e  -> when (length xs > 1 && not (isVal e)) 
-                     (addError (MutualDefNotValue (getSpan x) x e))
-                >> checkAgainst Map.empty e t
+        Just e  -> do 
+          when (length xs > 1 && not (isVal e)) 
+            (addError (MutualDefNotValue (getSpan x) x e))
+          k <-  K.synthetise Map.empty t 
+          when (K.isLin k && Map.member x sigs) $ removeFromSignatures x
+          checkAgainst Map.empty e t      
+          when (Map.member x sigs) $ addToSignatures x t
 
 -- Check a given function body against its type; make sure all linear
--- variables are used.
+-- variables are used. Deprecated (see function checkDefs above).
 checkFunBody :: Signatures -> Variable -> E.Exp -> TypingState ()
 checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
   where
