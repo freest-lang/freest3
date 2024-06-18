@@ -27,7 +27,7 @@ upper=100
 
 while mapfile -t -n 2 ary && ((${#ary[@]})); do
     for (( i = 0; i < 16; i++ )); do
-      stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i True >> run_negatives_$i.log &
+      stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i False >> run_negatives_$i.log &
     done
     wait
     ((j++))

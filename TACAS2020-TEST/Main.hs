@@ -1,3 +1,6 @@
+import qualified OldBisim as OB
+import qualified NewBisim as NB
+
 import qualified Bisimulation0 as B0
 -- B1
 import qualified Bisimulation2 as B2
@@ -17,6 +20,7 @@ import qualified Bisimulation1234 as B1234
 
 import qualified TypeToGrammar as TG
 import qualified TypeToGrammar1 as TG1
+import qualified TypeToGrammar3 as TG3
 
 import Parse.Parser
 
@@ -59,22 +63,8 @@ timeoutInMicro = 2 * 60 * 1000000
 -- Bisim functions combinations
 -- bisimCombs :: [(String, TypeEnv -> Type -> Type -> Bool)]
 bisimCombs = -- Map.fromList
-  [ ("B0", B0.bisimilar, TG.convertToGrammar)
-  , ("B1", B0.bisimilar, TG1.convertToGrammar)
-  , ("B2", B2.bisimilar, TG.convertToGrammar)
-  , ("B3", B3.bisimilar, TG.convertToGrammar)
-  , ("B4", B4.bisimilar, TG.convertToGrammar)
-  , ("B12", B2.bisimilar, TG1.convertToGrammar)
-  , ("B13", B3.bisimilar, TG1.convertToGrammar)
-  , ("B14", B4.bisimilar, TG1.convertToGrammar)
-  , ("B23", B23.bisimilar, TG.convertToGrammar)
-  , ("B24", B23.bisimilar, TG.convertToGrammar)
-  , ("B34", B34.bisimilar, TG.convertToGrammar)  
-  , ("B123", B23.bisimilar, TG1.convertToGrammar)
-  , ("B124", B24.bisimilar, TG1.convertToGrammar)
-  , ("B134", B34.bisimilar, TG1.convertToGrammar)
-  , ("B234", B234.bisimilar, TG.convertToGrammar)
-  , ("B1234", B1234.bisimilar, TG1.convertToGrammar)
+  [ ("OB", OB.bisimilarGrm, TG3.convertToGrammar)
+  , ("NB", NB.isBisimilar, TG3.convertToGrammar)
   ]
 
 -- Get exectime of a computation
