@@ -29,7 +29,7 @@ isBisimilar (Grammar [[],ys] _) = False
 isBisimilar (Grammar [xs,[]] _) = False
 isBisimilar g@(Grammar [xs,ys] _) = do evalState (basisUpdating tree [] Set.empty) initState
   where
-    node = orderPairsByNorm g (xs, ys)
+    node = (xs, ys)
     root = Node {nodeValue = node, parentNode = Nothing }
     tree = Seq.fromList [root]
     b = createBasisForVariables g
@@ -44,9 +44,10 @@ basisUpdating bq track bpa2Mark = do
     Seq.EmptyL -> return True -- caso base, toda a branchQueue percorrida
     node'@(Node { nodeValue = ws'@(x',y'), parentNode = ancestor' }) Seq.:< rest -> do
       node@(Node { nodeValue = ws@(x,y), parentNode = ancestor }) <- case ancestor' of
-                                                                          Nothing -> pruneNode node'
+                                                                          Nothing -> do
+                                                                            node'' <- pruneNode node'
+                                                                            (orderNode node'')
                                                                           _ -> return node'
-
        {-(ws@(x, y), ancestors@(ancestor,_))-}
       visited <- gets visitedPairs
       if ws `elem` visited || (y,x) `elem` visited || x == y -- 4.1 e 4.2
@@ -189,7 +190,8 @@ addChildrenToBranchQueue :: Node -> BranchQueue -> [(Variable, Variable)] -> Set
 addChildrenToBranchQueue node@(Node { nodeValue = nodeValue@(x',y'), parentNode = ancestor' }) rest  track bpa2Mark = do
   g <- gets grammar
   b <- gets basis
-  let children = map (orderPairsByNorm g) (applyRules b nodeValue)
+  let nodes = applyRules b nodeValue
+  children <- mapM (orderPairsByNorm ) nodes
   newBQ <- foldM (enqueuePrunedNode  node) rest children
   basisUpdating newBQ track bpa2Mark
 
@@ -204,13 +206,16 @@ addMatchingTransitions node@(Node { nodeValue = nodeValue@(x,y), parentNode = an
     else do
         childs <- getChildren  node
         modifyNode [] (bpa1Word) childs
-  let newBQ = (fmap (orderNode g) children) >< rest
+  orderedChildren <- mapM orderNode children
+  let newBQ = orderedChildren >< rest
 
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
 
-orderNode:: Grammar -> Node -> Node
-orderNode g node@(Node { nodeValue = nodeValue, parentNode = ancestor' }) = (Node { nodeValue = orderPairsByNorm g nodeValue, parentNode = ancestor' })
+orderNode:: Node -> GlobalState Node
+orderNode node@(Node { nodeValue = nodeValue, parentNode = ancestor' }) = do
+  nodeValue2 <- orderPairsByNorm nodeValue
+  return (Node { nodeValue = nodeValue2 , parentNode = ancestor' })
 
 
 
@@ -222,8 +227,10 @@ addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
       newTrack = (head x, head y) : track
   children <- getChildren  node
   bq'' <- addBetaToPair bpa1Word g (children)
-  let bq' = (fmap (orderNode g) bq'') >< rest
-      bpa1Children = map (orderPairsByNorm g) (applyRules newB nodeValue)
+  orderedBq'' <- mapM orderNode bq''
+  let bq' = orderedBq'' >< rest
+      nodes = applyRules newB nodeValue
+  bpa1Children <- mapM (orderPairsByNorm ) nodes
   newBQ <- foldM (enqueuePrunedNode  node) bq' bpa1Children
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
@@ -250,19 +257,21 @@ addPairBpa2ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
 
-orderPairsByNorm :: Grammar -> (Word, Word) -> (Word, Word)
-orderPairsByNorm g ([], ys) = (ys, [])
-orderPairsByNorm g (xs, []) = (xs, [])
-orderPairsByNorm g (v1@(x : xs), v2@(y : ys))
-  | isNothing norm_v1 = (v1, v2)
-  | isNothing norm_v2 = (v2, v1)
-  | norm_v1 > norm_v2 = (v1, v2)
-  | norm_v2 > norm_v1 = (v2, v1)
-  | norm_v2 == norm_v1 && x <= y = (v1, v2)
-  | otherwise = (v2, v1)
-  where
-    norm_v1 = norm g x
-    norm_v2 = norm g y
+orderPairsByNorm :: (Word, Word) -> GlobalState (Word, Word)
+orderPairsByNorm  ([], ys) = return (ys, [])
+orderPairsByNorm  (xs, []) = return (xs, [])
+orderPairsByNorm  (v1@(x : xs), v2@(y : ys)) = do
+  norm_v1 <- normUsingMap Set.empty [x]
+  norm_v2 <- normUsingMap Set.empty [y]
+  return $ case (norm_v1,norm_v2) of
+    (Nothing, _) -> (v1, v2)
+    (_, Nothing) -> (v2, v1)
+    (Just n1, Just n2)
+      | n1 > n2 -> (v1, v2)
+      | n2 > n1 -> (v2, v1)
+      | x <= y -> (v1, v2)
+      | otherwise -> (v2, v1)
+    
 
 getChildren :: Node ->GlobalState BranchQueue
 getChildren  node@(Node {nodeValue = nodeValue@(x:xs,y:ys), parentNode = _}) = do
@@ -282,12 +291,12 @@ modifyNode  xs ys =  mapM modifyAndPrune
     modifyAndPrune :: Node -> GlobalState Node
     modifyAndPrune node@(Node { nodeValue = nodeValue, parentNode = ancestor }) = do
       g <- gets grammar
-      let newValue = modifySet g xs ys nodeValue
+      newValue <- modifySet g xs ys nodeValue
       pruneNode  (Node { nodeValue = newValue, parentNode = ancestor })
   --fmap (\node@(Node {nodeValue = nodeValue, parentNode = ancestor}) -> pruneNode g (Node {nodeValue =   modifySet g xs ys nodeValue, parentNode = ancestor}))
 
-modifySet :: Grammar -> Word -> Word -> (Word,Word) -> (Word,Word)
-modifySet g xs' ys' (w1, w2) = orderPairsByNorm g (w1 ++ xs', w2 ++ ys')
+modifySet :: Grammar -> Word -> Word -> (Word,Word) -> GlobalState (Word,Word)
+modifySet g xs' ys' (w1, w2) = orderPairsByNorm (w1 ++ xs', w2 ++ ys')
 
 enqueue :: Branch -> BranchQueue -> BranchQueue
 enqueue element queue
