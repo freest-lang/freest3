@@ -199,7 +199,8 @@ handleProgram input = do
     then liftIO (putStrLn $ getErrors runOpts s3)
     else let s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
       if hasErrors s4 then liftIO (putStrLn $ getErrors runOpts s4)
-      else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+      else do 
+        s5 <- liftIO $ execStateT typeCheck (infToTyping runOpts s4)
         if hasErrors s5 then liftIO (putStrLn $ getErrors runOpts s5)
         else do 
           c <- ctx . extra <$> lift get
@@ -263,7 +264,8 @@ checkWithoutPrelude prelude runFilePath successMsg = do
                s4 = execState (renameProgram >> infer) (elabToInf defs s3) in
         if hasErrors s4
         then liftIO (putStrLn $ getErrors interactiveRunOpts s4)
-        else let s5 = execState typeCheck (infToTyping runOpts s4) in 
+        else do 
+          s5 <- liftIO $ execStateT typeCheck (infToTyping runOpts s4)
           if hasErrors s5
           then liftIO (putStrLn $ getErrors interactiveRunOpts s5)
           else do 

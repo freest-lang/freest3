@@ -141,8 +141,9 @@ parseOpt s (Just xs)
             else let s2' = execState (renameProgram >> infer) (elabToInf defs s2) in 
               if hasErrors s2'
               then liftIO (putStrLn $ getErrors runOpts s2')
-              else let e'     = definitions (ast s2') Map.! it'
-                       (t,s3) = runState (T.synthetise Map.empty e') st in 
+              else do
+                let e' = definitions (ast s2') Map.! it'
+                (t,s3) <- liftIO $ runStateT (T.synthetise Map.empty e') st
                 if hasErrors s3 
                 then liftIO (putStrLn $ getErrors runOpts s3)
                 else do 
