@@ -37,7 +37,8 @@ import qualified Data.Set            as Set
 import           Debug.Trace
 
 minimal :: Type -> Type
-minimal t = trace ("# N[" ++ show t ++ "] => " ++ show t') t'
+minimal t = -- trace ("# N[" ++ show t ++ "] => " ++ show t')
+  t'
   where t' = minimalF cleanFresh t
 
 minimalF :: [Int] -> Type -> Type
