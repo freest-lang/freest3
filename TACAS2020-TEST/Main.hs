@@ -1,28 +1,13 @@
 import qualified OldBisim as OB
 import qualified NewBisim as NB
 
-import qualified Bisimulation0 as B0
--- B1
-import qualified Bisimulation2 as B2
-import qualified Bisimulation3 as B3
-import qualified Bisimulation4 as B4
- -- B12
- -- B13
- -- B14
-import qualified Bisimulation23 as B23
-import qualified Bisimulation24 as B24
-import qualified Bisimulation34 as B34
--- B123
--- B124
--- B134
-import qualified Bisimulation234 as B234
-import qualified Bisimulation1234 as B1234
 
-import qualified TypeToGrammar as TG
-import qualified TypeToGrammar1 as TG1
+--import qualified TypeToGrammar as TG
+--import qualified TypeToGrammar1 as TG1
 import qualified TypeToGrammar3 as TG3
 
 import Parse.Parser
+import Parse.Read
 
 import Criterion.Main
 import Test.QuickCheck
@@ -33,16 +18,16 @@ import qualified Data.Map.Strict as Map
 
 
 -- Freest
-import           Validation.Kinding
-import           Syntax.Types
-import           Syntax.Schemes
-import           Syntax.Kinds
-import           Syntax.TypeVariables
+import           Kinding.Kinding
+import           Syntax.Type
+--import           Syntax.Schemes
+--import           Syntax.Kinds
+--import           Syntax.TypeVariables
 import           Syntax.Base
-import           Validation.Duality
-import           Utils.FreestState
+import           Elaboration.Duality
+--import           Utils.FreestState
 import           Control.Monad.State
-import           Validation.Rename
+import           Typing.Rename
 import           Debug.Trace
 
 
@@ -55,8 +40,9 @@ import           Formatting
 import           Formatting.Clock
 
 import           Control.Exception
+import Syntax.Base (defaultSpan)
 
-type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
+--type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
 -- 1m
 timeoutInMicro = 2 * 60 * 1000000
 
@@ -84,7 +70,7 @@ parseTestArgs (t:u:version:positive:_) =
     [t',u'] = renameTypes [read t, read u]
 
 defaultType :: Type
-defaultType = Skip defaultPos
+defaultType = Skip defaultSpan
   
 runEach pair (name, f, g) pos = do
   v <-  timeout timeoutInMicro $ runTestVersion pair f g
@@ -99,30 +85,30 @@ runEach pair (name, f, g) pos = do
 
 -- runTestVersion :: BisimPair -> String -> IO (String, Bool)
 runTestVersion (BisimPair t u) f g = do
-    res <- clockSomething (f $ g Map.empty [t, u])
+    res <- clockSomething (f $ g [t, u])
     return res
 
 
 -- QuickCheck
 
-pos :: Pos
-pos = defaultPos
+--pos :: Pos
+--pos = defaultPos
 
 nodes :: Type -> Int
 nodes (Semi _ t u)   = 1 + nodes t + nodes u
-nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (Rec _ _ t)    = 1 + nodes t
+nodes (Labelled _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (Rec _ (Bind _ _ _ t))  = 1 + nodes t
 nodes _              = 1 -- Skip, Message, TypeVar
 
 nodesOf :: BisimPair -> (String, String)
 nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
 
-kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+--kindEnv :: KindEnv
+--kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
 
-kinded :: Type -> Bool
-kinded t = null (errors s)
-  where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
+--kinded :: Type -> Bool
+--kinded t = null (errors s)
+--  where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
 
 
 parseGenArgs :: [String] -> (Int,Int,Int,Bool)
@@ -130,18 +116,18 @@ parseGenArgs [] = (0,0,0,True)
 parseGenArgs (sizeLower:sizeUpper:depth:pos:_) = (read sizeLower, read sizeUpper, read depth, read pos)   
 
 -- Gen positive types
-mkPairPositive ::  Int -> Int -> IO BisimPair
-mkPairPositive sizeLower sizeUpper = do
-    (BisimPair t1 t2) <- generate (arbitrary :: Gen BisimPair) -- generator depth
+--mkPairPositive ::  Int -> Int -> IO BisimPair
+--mkPairPositive sizeLower sizeUpper = do
+--    (BisimPair t1 t2) <- generate (arbitrary :: Gen BisimPair) -- generator depth
 
-    let n1 = nodes t1
-    let n2 = nodes t2
+--    let n1 = nodes t1
+--    let n2 = nodes t2
     
-    if (n1 > sizeLower && n1 <= sizeUpper) || (n2 > sizeLower && n2 <= sizeUpper) then
+--    if (n1 > sizeLower && n1 <= sizeUpper) || (n2 > sizeLower && n2 <= sizeUpper) then
 --      if kinded t1 && kinded t2 then
-        return (BisimPair t1 t2)
+--        return (BisimPair t1 t2)
 --      else mkPairPositive sizeLower sizeUpper depth
-    else mkPairPositive sizeLower sizeUpper
+--    else mkPairPositive sizeLower sizeUpper
 
 -- mkPairNegative ::  Int -> Int -> IO NonBisimPair
 -- mkPairNegative sizeLower sizeUpper = do
@@ -156,13 +142,13 @@ mkPairPositive sizeLower sizeUpper = do
 --       | otherwise                         =
 --           mkPairNegative sizeLower sizeUpper
 
-mkPairNegative ::  Int -> Int -> IO NonBisimPair
-mkPairNegative sizeLower sizeUpper = do
-    (NonBisimPair t1 t2) <- generate (arbitrary :: Gen NonBisimPair)
-    if (inInterval t1 || inInterval t2) && not (testBisim t1 t2)
+--mkPairNegative ::  Int -> Int -> IO NonBisimPair
+--mkPairNegative sizeLower sizeUpper = do
+--    (NonBisimPair t1 t2) <- generate (arbitrary :: Gen NonBisimPair)
+--    if (inInterval t1 || inInterval t2) && not (testBisim t1 t2)
 --        (kinded t1 && kinded t2) && 
-      then return (NonBisimPair t1 t2)
-      else mkPairNegative sizeLower sizeUpper 
+--      then return (NonBisimPair t1 t2)
+--      else mkPairNegative sizeLower sizeUpper 
     -- if (inInterval t1 || inInterval t2) && (kinded t1 && kinded t2)
     --   then do
     --     b <- timeout (3 * 60 * 1000000) $ testBisim t1 t2
@@ -174,11 +160,11 @@ mkPairNegative sizeLower sizeUpper = do
     --         else mkPairNegative sizeLower sizeUpper
     --   else mkPairNegative sizeLower sizeUpper
       
-  where
-    testBisim t1 t2 = -- return $ 
-      B4.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2] -- B14
+--  where
+--    testBisim t1 t2 = -- return $ 
+--      B4.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2] -- B14
 
-    inInterval t = nodes t > sizeLower && nodes t <= sizeUpper
+--    inInterval t = nodes t > sizeLower && nodes t <= sizeUpper
 
    
 
@@ -206,9 +192,8 @@ mkPairNegative sizeLower sizeUpper = do
 main :: IO ()
 main = do
   (a:args) <- getArgs
-  if read a
-    then testBisim args
-    else generateTypes args
+  testBisim args
+   -- else generateTypes args
 
 
 testBisim :: [String] -> IO ()
@@ -216,26 +201,26 @@ testBisim args = do
   let (pair, version, pos) = parseTestArgs args
   runEach pair (bisimCombs !! version) pos
 
-generateTypes :: [String] -> IO ()
-generateTypes args = do
-  let (sizeLower, sizeUpper, _, pos) = parseGenArgs args
-  if pos then do
-    pair <- mkPairPositive sizeLower sizeUpper
-    printBisimPairs pair
-  else do 
-    pair <- mkPairNegative sizeLower sizeUpper
-    printNonBisimPairs pair
+--generateTypes :: [String] -> IO ()
+--generateTypes args = do
+--  let (sizeLower, sizeUpper, _, pos) = parseGenArgs args
+--  if pos then do
+--    pair <- mkPairPositive sizeLower sizeUpper
+--    printBisimPairs pair
+--  else do 
+--    pair <- mkPairNegative sizeLower sizeUpper
+--    printNonBisimPairs pair
 
-  where
-    printBisimPairs :: BisimPair -> IO ()
-    printBisimPairs (BisimPair t1 t2) = do
-      putStrLn $ show t1
-      putStrLn $ show t2
+--  where
+--    printBisimPairs :: BisimPair -> IO ()
+--    printBisimPairs (BisimPair t1 t2) = do
+--      putStrLn $ show t1
+ --     putStrLn $ show t2
 
-    printNonBisimPairs :: NonBisimPair -> IO ()
-    printNonBisimPairs (NonBisimPair t1 t2) = do
-      putStrLn $ show t1
-      putStrLn $ show t2
+ --   printNonBisimPairs :: NonBisimPair -> IO ()
+  --  printNonBisimPairs (NonBisimPair t1 t2) = do
+   --   putStrLn $ show t1
+    --  putStrLn $ show t2
 
 
 

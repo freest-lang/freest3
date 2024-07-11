@@ -37,7 +37,7 @@ packages:
 - FreeST
 - REPL
 #- TACAS2020
-#- TACAS2020-TEST
+- TACAS2020-TEST
 #- SGBisim
 #- CFSTEquiv
 

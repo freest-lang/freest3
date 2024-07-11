@@ -35,12 +35,10 @@ import           Data.List                  ( union, stripPrefix )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                    hiding ( Word )
 import           Data.Bitraversable         ( bisequence )
-import           AFF.BisimilarityModule     ( isBisimilar )
 import Debug.Trace (trace)
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = --bisimilarGrm (convertToGrammar [minimal t, minimal u])
-    isBisimilar (convertToGrammar [minimal t, minimal u])
+bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
   --(trace (show (convertToGrammar [minimal t, minimal u])) $ bisimilarGrm (convertToGrammar [minimal t, minimal u]))
 
 -- | Assumes a grammar without unreachable symbols

@@ -36,8 +36,16 @@ library:
   exposed-modules:
     - FreeST
     - Paths_FreeST
+    - AFF.CongruenceModule
+    - AFF.GrammarModule
+    - AFF.State
+    - Elaboration.Replace
+    - Bisimulation.TypeToGrammar
+    - Bisimulation.Norm
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
+    - Bisimulation.Minimal
+    - Elaboration.Duality
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration
     - Syntax.Base

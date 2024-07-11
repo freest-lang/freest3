@@ -17,7 +17,10 @@ module Equivalence.TypeEquivalence
 where
 
 import Equivalence.AlphaCongruence()
-import Bisimulation.Bisimulation
+--import Bisimulation.Bisimulation
+
+import AFF.Bisimilarity
+
 import qualified Syntax.Type                   as T
 
 equivalent :: T.Type -> T.Type -> Bool

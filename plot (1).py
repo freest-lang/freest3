@@ -29,7 +29,7 @@ def uniform_time(v):
 columns_in_csv = ['Version', 'Nodes T1', 'Nodes T2',"Bisimilarity", "Bisimilarity2", 'Time']
 
 def load_dataframe():
-    df = pd.read_csv("run.log", sep=";")
+    df = pd.read_csv("run_utf8.log", sep=";")
     df.columns = columns_in_csv
     return df
     

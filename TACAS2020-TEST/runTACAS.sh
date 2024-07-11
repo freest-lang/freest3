@@ -9,24 +9,24 @@ j=0
 lower=90
 upper=100
 
-# while mapfile -t -n 2 ary && ((${#ary[@]})); do
-#     for (( i = 0; i < 16; i++ )); do
+while mapfile -t -n 2 ary && ((${#ary[@]})); do
+     for (( i = 0; i < 2; i++ )); do
 #      # printf '%s\n' "${ary[0]}"
 #      # printf -- '------\n'
 #      # printf '%s\n' "${ary[1]}"
-#       stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i True >> run_positives_$i.log &
+       stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i True >> run_positives_$i.log &
 #      # printf -- '--- SNIP ---\n'
-#     done
-#     wait
-#     ((j++))
-#     echo -en "\r$j"    
+     done
+     wait
+     ((j++))
+     echo -en "\r$j"    
 # done < positives.txt
-# # done < positive_tests_$lower-$upper.log
+ done < positive_tests_$lower-$upper.log
 
-# echo ""
+ echo "DONE"
 
 while mapfile -t -n 2 ary && ((${#ary[@]})); do
-    for (( i = 0; i < 16; i++ )); do
+    for (( i = 0; i < 2; i++ )); do
       stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i False >> run_negatives_$i.log &
     done
     wait

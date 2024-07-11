@@ -104,7 +104,7 @@ seminorm g w = evalState (seminormUsingMap Set.empty w) initState
 seminormUsingMap :: Set.Set Variable -> Word -> GlobalState Int
 seminormUsingMap _ [] = return 0
 seminormUsingMap visitedVars (x : xs) = do
-  result <- normUsingMap visitedVars [x] -- TODO ver se visitedVars é necessario em baixo
+  result <- normUsingMap visitedVars [x]
   case result of
     Nothing -> return 0
     Just y -> do

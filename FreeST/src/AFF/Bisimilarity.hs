@@ -1,5 +1,7 @@
-module AFF.BisimilarityModule 
- ( isBisimilar
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+module AFF.Bisimilarity 
+ ( bisimilar,
+  bisimilarGrm
   )where
 
 -- import Bisimilarity.BisimilarityPresets ()
@@ -18,16 +20,23 @@ import AFF.GrammarModule
 import AFF.State
 import Prelude hiding (Word, log)
 import Bisimulation.Grammar
+import qualified Syntax.Type                as T
+import           Bisimulation.TypeToGrammar ( convertToGrammar )
+import           Bisimulation.Minimal
 
 import           Syntax.Base
 --------------------------------------------------------------------------------------------------------------------------------------
+bisimilar :: T.Type -> T.Type -> Bool
+bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
+
+
 -- Main Function
 -- Function that verifies if two words are bisimilar
-isBisimilar :: Grammar -> Bool
-isBisimilar (Grammar [[],[]] _) = True
-isBisimilar (Grammar [[],ys] _) = False
-isBisimilar (Grammar [xs,[]] _) = False
-isBisimilar g@(Grammar [xs,ys] _) = do evalState (basisUpdating tree [] Set.empty) initState
+bisimilarGrm :: Grammar -> Bool
+bisimilarGrm (Grammar [[],[]] _) = True
+bisimilarGrm (Grammar [[],ys] _) = False
+bisimilarGrm (Grammar [xs,[]] _) = False
+bisimilarGrm g@(Grammar [xs,ys] _) = do evalState (basisUpdating tree [] Set.empty) initState
   where
     node = (xs, ys)
     root = Node {nodeValue = node, parentNode = Nothing }
@@ -36,6 +45,13 @@ isBisimilar g@(Grammar [xs,ys] _) = do evalState (basisUpdating tree [] Set.empt
     initState = TState {basis = b, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
 
 -- Basis updating algorithm, used as a auxiliary function of isBidimilar
+--TODO basisupdate
+-- trocar caso 1 com 2
+-- comecar com a base vazia
+-- novo grafico
+-- reta de regressao
+-- analizar outliers
+-- histograma quickcheck
 basisUpdating :: BranchQueue -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 basisUpdating bq track bpa2Mark = do
   b <- gets basis
@@ -94,14 +110,10 @@ partialFail node@(Node { nodeValue = ws@(x,y), parentNode = ancestor }) track re
         then do
           nA1 <- normUsingMap Set.empty (x')
           nA2 <- normUsingMap Set.empty (y')
-          addLog ( "merda " ++ show x' ++ " " ++ show y')
-          addLog ( "merda " ++ show nA1 ++ " " ++ show nA2)
           case (nA1,nA2) of
             (Nothing, Nothing) -> do
-              addLog ("partfail")
               updateBpa2Pair node track rest bpa2Mark -- partial failure
             _ -> do
-              addLog ("Entrei")
               b <- gets basis
               let newB = Map.insert (head (x'), head (y')) (Bpa2 (tail (x'), tail (y'))) b
               replaceBasis newB
@@ -120,11 +132,9 @@ isBPA1Guess  (x,y) b =
 checkIfInBasis :: Branch -> BranchQueue -> BranchQueue -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 checkIfInBasis node@(Node { nodeValue = nodeValue@(x',y'), parentNode = ancestor' }) rest bq track bpa2Mark = do
   b <- gets basis
-
   case Map.lookup (head x', head y') b of -- caso Variaveis na basis
     Just (Bpa1 w) -> do
       -- 4.4
-
       addChildrenToBranchQueue node rest  track bpa2Mark
     Just (Bpa2 (w1, w2)) -> do
       -- 4.5
@@ -137,23 +147,21 @@ checkChildren node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancestor' }
   g <- gets grammar
   if matchTransitions g (head x) (head y)
     then do
-
       let xNorm = norm g (head x)
           yNorm = norm g (head y)
       case (xNorm, yNorm) of
         (Nothing, Nothing) -> do
           -- 4.7
           addMatchingTransitions node rest [] track bpa2Mark
-        (Nothing, Just _) -> do
+        (Nothing, Just _) -> do --EXPERIMENTAR A POR ESTE CASO NO FIMM COM O E TIRAR O PATTERN
           -- 4.8
           if isNormed g (tail y)
             then do
-              updateBpa2Pair node track bq bpa2Mark -- ver bq or rest
+              updateBpa2Pair node track bq bpa2Mark 
             else do
               addMatchingTransitions node rest (tail y) track bpa2Mark
         (Just nx, Just ny) -> do
           -- 4.9
-
           handleBpaMarks node rest bq track bpa2Mark
     else return False -- total failure 4.6
 

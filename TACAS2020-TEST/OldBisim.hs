@@ -1,6 +1,7 @@
 
 
 
+{-# LANGUAGE TupleSections #-}
 
 module OldBisim
 (bisimilarGrm
