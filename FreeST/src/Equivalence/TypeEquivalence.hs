@@ -13,7 +13,7 @@ Try first alpha equivalence; if it fails try bisimulation
 
 module Equivalence.TypeEquivalence
   ( equivalent
-  , Equivalence.TypeEquivalence.bisimilar -- for testing purposes
+  , bisimilar -- for testing purposes
   )
 where
 
@@ -25,7 +25,7 @@ import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
 import qualified AFF.Bisimulation            as G ( bisimilar )
 
 equivalent :: T.Type -> T.Type -> Bool
-equivalent t u = t == u || Equivalence.TypeEquivalence.bisimilar t u
+equivalent t u = t == u || bisimilar t u
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u = G.bisimilar (convertToGrammar [minimal t, minimal u])
