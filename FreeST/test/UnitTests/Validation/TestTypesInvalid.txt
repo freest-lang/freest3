@@ -179,13 +179,24 @@ rec x:*S . Skip ; x ; x ; x
 
 forall b:1S . a ; forall a:1S . b
 
-forall a:1S . forall a:1S . a ; a
-
 forall a:1S . forall a:1T . a ; a
 
-forall a:1T . forall a:1S . a ; a
+forall a . Skip ; b
 
-forall a:1T . forall a:1T . a ; a
+rec x . +{Done: forall a . Skip, Send: a;x}
 
--- in first forall, a is bound in T. NOT FREE
+forall a:1T . rec x . rec y . +{Done: End, Send: (forall a:1S . a);a;y} ; x
+
+forall a:1T . rec x . rec y . +{Done: End, Send: a;(forall a:1S . a);y} ; x
+
+forall a:1S . !a ; a ; (a -> a) ; Skip 
+
+a ; forall a:1S . a
+
+(forall a:1S . !Int) ; a
+
+(forall a:1S . !Int) ; rec x . !Int ; ?Int ; a ; x
+
+(forall a:1S . !Int) ; rec x . !Int ; ?Int ; x ; a
+
 

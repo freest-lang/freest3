@@ -1288,6 +1288,11 @@ forall b:1S . b
 forall c:1S . (c ; forall c:1S . c)
 
 []
+forall a:1S . (rec x:1S . forall b:1S . (!b);x) ; ?a
+forall a:1S . (rec x:1S . (forall b:1S . (!b);x) ; ?a)
+
+[]
+-- recursion is infinite, so they're equivalent
 forall a:1S . (rec x:1S . forall a:1S . (!a);x) ; ?a
 forall a:1S . (rec x:1S . (forall a:1S . (!a);x) ; ?a)
 
@@ -1302,3 +1307,56 @@ forall b:1S . (forall a:1S . ?a ; !b)
 []
 forall a:1S . a ; Skip
 forall b:1S . b ; Skip
+
+[]
+rec x:1S . Skip ; forall a:1S . ?a ; x
+rec x:1S . forall a:1S . ?a ; x
+
+[]
+forall c:1S . +{Ignore: Skip, Send: !Int} ; c
+forall c:1S . +{Ignore: c, Send: !Int;c}
+
+[]
+forall c:1S . +{Ignore: Skip, Send: forall b:*T . !b} ; c
+forall c:1S . +{Ignore: c, Send: forall b:*T . !b;c}
+
+[]
+rec a:1S . +{Done: Skip, More: ?Int;a} ; !Int
+rec a:1S . +{Done: Skip;!Int, More: ?Int;a;!Int}
+
+[]
+rec a:1S . +{Done: Skip, More: forall b:*T . !b;a} ; !Int
+rec a:1S . +{Done: Skip;!Int, More: forall b:*T . !b;a;!Int}
+
+[]
+forall c:1S . rec a:1S . +{Done: Skip, More: forall b:*T . !b;a} ; c
+forall c:1S . rec a:1S . (+{Done: Skip, More: forall b:*T . !b;a} ; c)
+
+[]
+forall c:1S . rec a:1S . +{Done: Skip, More: forall b:*T . !b;a} ; c
+forall c:1S . rec a:1S . +{Done: c, More: forall b:*T . !b;a;c}
+
+
+[]
+forall b . (forall a . a);b
+forall b . forall a . (a;b)
+
+[]
+forall b . (forall a . a);b
+forall b . (forall c . c);b
+
+[]
+forall b . (forall a . a);b
+forall b . forall c . (c;b)
+
+[]
+forall a:1S . (forall a:1S . (forall a:1S . (forall a:1S . a) ; a) ; a) ; a
+forall d:1S . forall c:1S . forall b:1S . forall a:1S . a;b;c;d
+
+[]
+(rec x . !Int ; x) ; !Int
+!Int ; (rec x . !Int ; x) ; !Int
+
+[]
+forall a:1S . (rec x:1S . a ; x) ; a
+forall a:1S . a ; (rec x:1S . a ; x); a
