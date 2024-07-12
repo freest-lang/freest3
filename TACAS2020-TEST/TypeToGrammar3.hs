@@ -19,7 +19,7 @@ where
 
 import           Syntax.Base
 import qualified Syntax.Type as T
-import           Bisimulation.Grammar
+import           SimpleGrammar.Grammar
 import           Elaboration.Replace ( changePos )
 import           Typing.Normalisation ( normalise )
 import qualified Typing.Substitution as Substitution ( subsAll )

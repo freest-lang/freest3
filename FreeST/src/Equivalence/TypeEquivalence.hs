@@ -13,17 +13,20 @@ Try first alpha equivalence; if it fails try bisimulation
 
 module Equivalence.TypeEquivalence
   ( equivalent
+  , Equivalence.TypeEquivalence.bisimilar -- for testing purposes
   )
 where
 
-import Equivalence.AlphaCongruence()
---import Bisimulation.Bisimulation
-
-import AFF.Bisimilarity
-
-import qualified Syntax.Type                   as T
+import qualified Syntax.Type                 as T
+import           Equivalence.AlphaCongruence
+import           SimpleGrammar.Minimal
+import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
+-- import qualified Bisimulation.Bisimulation   as G ( bisimilar )
+import qualified AFF.Bisimulation            as G ( bisimilar )
 
 equivalent :: T.Type -> T.Type -> Bool
-equivalent t u =
-  t == u || -- Alpha-congruence, 30% speed up in :program tests
-  bisimilar t u
+equivalent t u = t == u || Equivalence.TypeEquivalence.bisimilar t u
+
+bisimilar :: T.Type -> T.Type -> Bool
+bisimilar t u = G.bisimilar (convertToGrammar [minimal t, minimal u])
+  -- (trace (show (convertToGrammar [minimal t, minimal u])) $ G.bisimilar (convertToGrammar [minimal t, minimal u]))

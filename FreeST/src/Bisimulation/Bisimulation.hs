@@ -16,16 +16,15 @@ reflexive, congruence, and BPA rules.
 
 module Bisimulation.Bisimulation
   ( bisimilar
-  , bisimilarGrm -- For SGBisim
   )
 where
 
 import           Syntax.Base                ( Variable ) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                as T
-import           Bisimulation.TypeToGrammar ( convertToGrammar )
-import           Bisimulation.Grammar
+import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
+import           SimpleGrammar.Grammar
+import           SimpleGrammar.Minimal
 import           Bisimulation.Norm
-import           Bisimulation.Minimal
 
 import qualified Data.Map.Strict            as Map
 import qualified Data.Set                   as Set
@@ -37,13 +36,9 @@ import           Prelude                    hiding ( Word )
 import           Data.Bitraversable         ( bisequence )
 import Debug.Trace (trace)
 
-bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm (convertToGrammar [minimal t, minimal u])
-  --(trace (show (convertToGrammar [minimal t, minimal u])) $ bisimilarGrm (convertToGrammar [minimal t, minimal u]))
-
 -- | Assumes a grammar without unreachable symbols
-bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
+bisimilar :: Grammar -> Bool
+bisimilar (Grammar [xs, ys] ps) = expand queue rules ps
  where
   rules | allNormed ps = [reflex, headCongruence, bpa2,       filtering]
         | otherwise    = [reflex, headCongruence, bpa1, bpa2, filtering]

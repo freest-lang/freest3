@@ -10,10 +10,10 @@ module OldBisim
 
 import           Syntax.Base                ( Variable ) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                as T
-import           Bisimulation.TypeToGrammar ( convertToGrammar )
-import           Bisimulation.Grammar
+import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
+import           SimpleGrammar.Grammar
 import           Bisimulation.Norm
-import           Bisimulation.Minimal
+import           SimpleGrammar.Minimal
 
 import qualified Data.Map.Strict            as Map
 import qualified Data.Set                   as Set

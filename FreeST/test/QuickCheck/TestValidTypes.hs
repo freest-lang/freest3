@@ -12,7 +12,7 @@ import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
 import           Kinding.Kinding
 import           Typing.Phase
-import           Bisimulation.Bisimulation    ( bisimilar )
+import           Equivalence.TypeEquivalence ( bisimilar )
 import           Util.State
 
 import           Control.Monad.State
@@ -47,7 +47,7 @@ kinded t =
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar p@(BisimPair t u) =
-  kinded t && kinded u ==>
+   kinded t && kinded u ==>
     -- trace ("Check:\n" ++ show p) -- trace at TypeToGrammar instead
     t `bisimilar` u
 

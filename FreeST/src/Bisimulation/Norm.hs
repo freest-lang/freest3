@@ -11,15 +11,15 @@ terminal symbols are Variables.
 -}
 
 module Bisimulation.Norm
-( normed
-, norm
-, allNormed
-, equallyNormed
--- , prune
-) where
+  ( normed
+  , norm
+  , allNormed
+  , equallyNormed
+  -- , prune
+  ) where
 
 import           Syntax.Base          (Variable)
-import           Bisimulation.Grammar (Word, Productions, Label, transitions)
+import           SimpleGrammar.Grammar (Word, Productions, Label, transitions)
 import           Data.Maybe           (isJust, fromJust)
 import           Data.List            (isSubsequenceOf)
 import qualified Data.Map.Strict      as Map

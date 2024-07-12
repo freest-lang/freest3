@@ -5,11 +5,9 @@ import Data.Map.Strict  as Map
 import Data.Sequence  as Seq
 import Data.Set  as Set
 import Prelude hiding (Word, log)
-import Bisimulation.Grammar
+import SimpleGrammar.Grammar
+import Syntax.Base
 
-import           Syntax.Base
------------------------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------------
 -- Type used in norm
 -- data IntOrInf = Infinite | Finite Int
 type IOF = Maybe Int

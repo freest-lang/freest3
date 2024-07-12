@@ -3,7 +3,7 @@ module TestInvalidTypes
 ) where
 
 import           ArbitraryTypes
-import           Bisimulation.Bisimulation   ( bisimilar )
+import           Equivalence.TypeEquivalence   ( bisimilar )
 import           Kinding.Kinding
 import           Typing.Phase
 import           Syntax.Type
