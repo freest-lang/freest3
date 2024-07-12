@@ -120,6 +120,7 @@ bisimPair K.Session cVars n =
         , messagePair cVars n
         , choicePair  (bisimPair K.Session) cVars n
         , recPair     (bisimPair K.Session) cVars n
+        , forallPair  (bisimPair K.Session) cVars n
           -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
         , skipT       cVars n
         , tSkip       cVars n
@@ -205,6 +206,15 @@ pairPair cVars n = do
   (t, u) <- bisimPair K.Top cVars (n `div` 8)
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.tuple pos [t,v], T.tuple pos [u,w])
+
+-- Forall
+
+forallPair :: PairGen -> PairGen
+forallPair pairGen cVars n = do
+  a      <- arbitrary
+  k      <- arbitrary
+  (t, u) <- pairGen (S.insert a cVars) n
+  return (T.Forall pos (Bind pos a k t), T.Forall pos (Bind pos a k u))
 
 -- Recursion
 
