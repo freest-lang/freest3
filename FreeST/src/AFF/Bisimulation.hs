@@ -12,7 +12,7 @@ import Data.Maybe (isNothing)
 import Data.Ord (comparing)
 import Data.Sequence ((><))
 import qualified Data.Sequence as Seq
-import Data.Set as Set (empty, Set, insert, toList, filter)
+import Data.Set as Set (empty, Set, insert, toList, filter, foldr)
 import AFF.Norm
 import AFF.State
 import AFF.Congruence 
@@ -38,15 +38,15 @@ bisimilar g@(Grammar [xs, ys] _) = evalState (basisUpdating queue [] Set.empty) 
       }
 
 -- Basis updating algorithm, used as a auxiliary function of isBidimilar
---TODO basisupdate
+--TODO 
 -- trocar caso 1 com 2
 -- comecar com a base vazia
 -- novo grafico
 -- reta de regressao
 -- analizar outliers
 -- histograma quickcheck
-basisUpdating :: BranchQueue -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
-basisUpdating bq track bpa2Mark = do
+basisUpdate :: BranchQueue -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
+basisUpdate bq track bpa2Mark = do
   b <- gets basis
   g <- gets grammar
   case Seq.viewl bq of
@@ -61,7 +61,7 @@ basisUpdating bq track bpa2Mark = do
       visited <- gets visitedPairs
       if ws `elem` visited || (y,x) `elem` visited || x == y -- 4.1 e 4.2
         then do
-          basisUpdating rest track bpa2Mark
+          basisUpdate rest track bpa2Mark
         else do
           let newVisitedPairs = Set.insert ws visited
           replaceVisitedPairs newVisitedPairs
@@ -191,7 +191,7 @@ addChildrenToBranchQueue node@(Node { nodeValue = nodeValue@(x',y'), parentNode 
   let nodes = applyRules b nodeValue
   children <- mapM (orderPairsByNorm ) nodes
   newBQ <- foldM (enqueuePrunedNode  node) rest children
-  basisUpdating newBQ track bpa2Mark
+  basisUpdate newBQ track bpa2Mark
 
 addMatchingTransitions :: Node -> BranchQueue -> Word -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 addMatchingTransitions node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancestor }) rest bpa1Word track bpa2Mark = do
@@ -208,7 +208,7 @@ addMatchingTransitions node@(Node { nodeValue = nodeValue@(x,y), parentNode = an
   let newBQ = orderedChildren >< rest
 
   replaceBasis newB
-  basisUpdating newBQ newTrack bpa2Mark
+  basisUpdate newBQ newTrack bpa2Mark
 
 orderNode:: Node -> GlobalState Node
 orderNode node@(Node { nodeValue = nodeValue, parentNode = ancestor' }) = do
@@ -231,7 +231,7 @@ addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   bpa1Children <- mapM (orderPairsByNorm ) nodes
   newBQ <- foldM (enqueuePrunedNode  node) bq' bpa1Children
   replaceBasis newB
-  basisUpdating newBQ newTrack bpa2Mark
+  basisUpdate newBQ newTrack bpa2Mark
 
 
 addBetaToPair:: Word -> Grammar -> BranchQueue ->GlobalState BranchQueue
@@ -253,7 +253,7 @@ addPairBpa2ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
       newBQ' = children >< rest
   newBQ <-  modifyNode  (tail x) (tail y) newBQ'
   replaceBasis newB
-  basisUpdating newBQ newTrack bpa2Mark
+  basisUpdate newBQ newTrack bpa2Mark
 
 orderPairsByNorm :: (Word, Word) -> GlobalState (Word, Word)
 orderPairsByNorm  ([], ys) = return (ys, [])
@@ -311,7 +311,7 @@ updateBpa2Pair node@(Node {nodeValue = _, parentNode = Just ancestor@(Node {node
       bq' = filterBranchQueue node bq
   newBQ <- modifyNode  xs ys (children >< bq')
   updateBasis nodeValue newTrack
-  basisUpdating newBQ newTrack bpa2Mark
+  basisUpdate newBQ newTrack bpa2Mark
 
 filterBranchQueue :: Node -> BranchQueue -> BranchQueue
 filterBranchQueue x = Seq.filter (\node -> maybeNotEqual (parentNode node) (parentNode x))
@@ -369,8 +369,14 @@ matchTransitions (Grammar _ productions) var1 var2 =
       transitions2 = transitions var2 productions
    in compareTransitions transitions1 transitions2
 
-createBasisForVariables :: Grammar -> Basis
+{-createBasisForVariables :: Grammar -> Basis
 createBasisForVariables g = Map.fromList $ map (\v -> ((v, v), Bpa1 [])) (Set.toList $ nonterminals g)
+-}
+
+createBasisForVariables :: Grammar -> Basis
+createBasisForVariables g =
+    Set.foldr (\v acc -> Map.insert (v, v) (Bpa1 []) acc) Map.empty (nonterminals g)
+
 
 calculateBeta :: (Word, Word) -> GlobalState (Maybe Word)
 calculateBeta (x : xs, y : ys) = do
@@ -422,7 +428,7 @@ main = do
         root = Node {nodeValue = node, parentNode = Nothing }
         tree = Seq.fromList [root]
         initState = TState { basis = b, visitedPairs = Set.empty, normMap = Map.empty, grammar = g1, log = [] }
-        (result, newState) = runState (basisUpdating tree [] Set.empty ) initState
+        (result, newState) = runState (basisUpdate tree [] Set.empty ) initState
         fullLog = evalState getFullLog newState
     putStrLn "Full Log:"
     mapM_ putStrLn fullLog
