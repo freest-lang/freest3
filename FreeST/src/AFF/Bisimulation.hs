@@ -3,25 +3,23 @@ module AFF.Bisimulation
  ( bisimilar
  ) where
 
-import Control.Monad.State (State, evalState, gets, modify, runState, foldM)
-import Data.Foldable ()
-import Data.Function (on)
-import Data.List (sortBy)
-import Data.Map.Strict  as Map (empty, insert, lookup, keysSet, findWithDefault, filterWithKey, fromList, assocs)
-import Data.Maybe (isNothing)
-import Data.Ord (comparing)
-import Data.Sequence ((><))
-import qualified Data.Sequence as Seq
-import Data.Set as Set (empty, Set, insert, toList, filter)
 import AFF.Norm
 import AFF.State
 import AFF.Congruence 
 import SimpleGrammar.Grammar
-import SimpleGrammar.TypeToGrammar ( convertToGrammar )
-import SimpleGrammar.Minimal
 import Syntax.Base
 import qualified Syntax.Type                as T
 import Prelude hiding (Word, log)
+
+import Control.Monad.State (State, evalState, gets, modify, runState, foldM)
+import Data.Foldable ()
+import Data.Function (on)
+import Data.List (sortBy)
+import Data.Map.Strict as Map (empty, insert, lookup, keysSet, findWithDefault, filterWithKey, fromList, assocs)
+import Data.Maybe (isNothing)
+import Data.Ord (comparing)
+import qualified Data.Sequence as Seq
+import qualified Data.Set as Set (Set, empty, insert, toList, filter)
 
 -- Are two words bisimilar?
 bisimilar :: Grammar -> Bool
@@ -117,8 +115,6 @@ isBPA1Guess  (x,y) b =
     Just (Bpa1 _) -> True
     _ -> False
 
-
-
 checkIfInBasis :: Branch -> BranchQueue -> BranchQueue -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 checkIfInBasis node@(Node { nodeValue = nodeValue@(x',y'), parentNode = ancestor' }) rest bq track bpa2Mark = do
   b <- gets basis
@@ -205,7 +201,7 @@ addMatchingTransitions node@(Node { nodeValue = nodeValue@(x,y), parentNode = an
         childs <- getChildren  node
         modifyNode [] (bpa1Word) childs
   orderedChildren <- mapM orderNode children
-  let newBQ = orderedChildren >< rest
+  let newBQ = orderedChildren Seq.>< rest
 
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
@@ -214,8 +210,6 @@ orderNode:: Node -> GlobalState Node
 orderNode node@(Node { nodeValue = nodeValue, parentNode = ancestor' }) = do
   nodeValue2 <- orderPairsByNorm nodeValue
   return (Node { nodeValue = nodeValue2 , parentNode = ancestor' })
-
-
 
 addPairBpa1ToBasis :: Node -> BranchQueue -> Word -> [(Variable, Variable)] -> Set.Set (Variable, Variable) -> GlobalState Bool
 addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancestor' }) rest bpa1Word track bpa2Mark = do
@@ -226,13 +220,12 @@ addPairBpa1ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   children <- getChildren  node
   bq'' <- addBetaToPair bpa1Word g (children)
   orderedBq'' <- mapM orderNode bq''
-  let bq' = orderedBq'' >< rest
+  let bq' = orderedBq'' Seq.>< rest
       nodes = applyRules newB nodeValue
   bpa1Children <- mapM (orderPairsByNorm ) nodes
   newBQ <- foldM (enqueuePrunedNode  node) bq' bpa1Children
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
-
 
 addBetaToPair:: Word -> Grammar -> BranchQueue ->GlobalState BranchQueue
 addBetaToPair x g bq =  traverse (pruneNode  . addToSecond x) bq
@@ -250,7 +243,7 @@ addPairBpa2ToBasis node@(Node { nodeValue = nodeValue@(x,y), parentNode = ancest
   children <- getChildren  node
   let newB = Map.insert (head x, head y) (Bpa2 bpa2Word) b
       newTrack = (head x, head y) : track
-      newBQ' = children >< rest
+      newBQ' = children Seq.>< rest
   newBQ <-  modifyNode  (tail x) (tail y) newBQ'
   replaceBasis newB
   basisUpdating newBQ newTrack bpa2Mark
@@ -269,7 +262,6 @@ orderPairsByNorm  (v1@(x : xs), v2@(y : ys)) = do
       | n2 > n1 -> (v2, v1)
       | x <= y -> (v1, v2)
       | otherwise -> (v2, v1)
-    
 
 getChildren :: Node ->GlobalState BranchQueue
 getChildren  node@(Node {nodeValue = nodeValue@(x:xs,y:ys), parentNode = _}) = do
@@ -280,8 +272,6 @@ getChildren  node@(Node {nodeValue = nodeValue@(x:xs,y:ys), parentNode = _}) = d
       commonWords = Data.List.sortBy (comparing fst) [(label, (Map.findWithDefault [] label transitions1, Map.findWithDefault [] label transitions2)) | label <- Set.toList commonLabels]
   foldM (\acc (_, pair) -> enqueuePrunedNode node acc pair) Seq.empty commonWords
   --updatedQueue = foldlM (\acc (_, pair) -> enqueuePrunedNode g node acc pair) Seq.empty commonWords
-
-
 
 modifyNode :: Word -> Word -> BranchQueue -> GlobalState BranchQueue
 modifyNode  xs ys =  mapM modifyAndPrune
@@ -309,7 +299,7 @@ updateBpa2Pair node@(Node {nodeValue = _, parentNode = Just ancestor@(Node {node
   let
       newTrack = dropWhile (/= (x, y)) track
       bq' = filterBranchQueue node bq
-  newBQ <- modifyNode  xs ys (children >< bq')
+  newBQ <- modifyNode  xs ys (children Seq.>< bq')
   updateBasis nodeValue newTrack
   basisUpdating newBQ newTrack bpa2Mark
 
