@@ -61,10 +61,10 @@ odd : Int -> Bool
 (-.) : Float -> Float -> Float
 (*.) : Float -> Float -> Float
 (/.) : Float -> Float -> Float
-(>.) : Float -> Float -> Float
-(<.) : Float -> Float -> Float
-(>=.) : Float -> Float -> Float
-(<=.) : Float -> Float -> Float
+(>.) : Float -> Float -> Bool
+(<.) : Float -> Float -> Bool
+(>=.) : Float -> Float -> Bool
+(<=.) : Float -> Float -> Bool
 absF : Float -> Float
 negateF : Float -> Float
 maxF : Float -> Float -> Float
