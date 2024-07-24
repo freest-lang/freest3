@@ -33,9 +33,10 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
+import           Debug.Trace (trace)
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
     -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -74,7 +75,8 @@ toGrammar' (T.Message _ p t) = do
 -- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
 toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
+  getLHS $  Map.singleton ('∀' : intern a) xs
+  -- getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (intern a) []
 toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 -- Type operators
@@ -123,7 +125,7 @@ collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 collect σ (T.Message _ _ t) = collect σ t
   -- Polymorphism and recursive types
--- collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
+collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t
 collect σ t@(T.Rec _ (Bind _ a _ u)) = do
   let σ' = (t, a) : σ
   let u' = Substitution.subsAll σ' u

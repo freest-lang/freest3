@@ -1251,5 +1251,5 @@ rec x:*S . &{A:x, B:x, C:x}
 -- Forall and Close/Wait
 
 []
-forall a:1T . rec a:1S . Wait ; Close
-forall a:1T . rec a:1S . rec a:1S . Wait ; a
+forall b . Wait
+forall b . rec a . Wait ; a
