@@ -96,6 +96,7 @@ bisimPair K.Top cVars n =
                 , varPair    (bisimPair K.Top) cVars 
                 , arrowPair  cVars n
                 , pairPair   cVars n
+                , pairForall cVars n
                 , recPair    (bisimPair K.Session) cVars n
                 , commut     (bisimPair K.Session) cVars n
                   -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
@@ -191,7 +192,7 @@ typeMapPair pairGen cVars n = do
     let x = mkVar pos l
     return ((x, t), (x, u))
 
--- The various type constructors (except forall)
+-- The various functional type constructors (except forall)
 
 arrowPair :: PairGen
 arrowPair cVars n = do
@@ -205,6 +206,13 @@ pairPair cVars n = do
   (t, u) <- bisimPair K.Top cVars (n `div` 8)
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.tuple pos [t,v], T.tuple pos [u,w])
+
+recForall :: PairGen -> PairGen
+recForall pairGen cVars n = do
+  a      <- arbitrary
+  k      <- arbitrary
+  (t, u) <- pairGen (S.insert a cVars) n
+  return (T.Forall pos (Bind pos a k t), T.Forall pos (Bind pos a k u))
 
 -- Recursion
 
