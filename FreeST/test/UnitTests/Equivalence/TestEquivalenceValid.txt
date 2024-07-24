@@ -1243,3 +1243,9 @@ rec x:*S . &{A:x, B:x, C:x}
 []
 (rec a:1S . &{A: a})
 (rec a:*S . &{A: a})
+
+-- Forall and Close/Wait
+
+[]
+forall b . Wait
+forall b . rec a . Wait ; a

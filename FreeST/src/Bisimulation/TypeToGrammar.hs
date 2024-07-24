@@ -33,6 +33,7 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Grammar
+import           Debug.Trace (trace)
 
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
