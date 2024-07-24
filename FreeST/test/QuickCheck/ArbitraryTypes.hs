@@ -218,6 +218,14 @@ recPair pairGen cVars n = do
   --          then (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
   --          else (t, u)
 
+-- Wait;T ~ Wait;U, forall T and U of kind S
+endT :: PairGen
+endT cVars n = do
+  t <- arbitrary
+  u <- arbitrary
+  p <- arbitrary
+  return (T.Semi pos (T.End pos p) t, T.Semi pos (T.End pos p) u)
+
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
 skipT :: PairGen
@@ -229,12 +237,6 @@ tSkip :: PairGen
 tSkip cVars n = do
   (t, u) <- bisimPair K.Session cVars n -- (n `div` 2)
   return (T.Semi pos t (T.Skip pos), u)
-
-endT :: PairGen
-endT cVars n = do
-  (t, u) <- bisimPair K.Session cVars (n `div` 2)
-  p <- arbitrary
-  return (T.Semi pos (T.End pos p) t, T.End pos p)
 
 distrib :: PairGen
 distrib cVars n = do
