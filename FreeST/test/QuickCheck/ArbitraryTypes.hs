@@ -96,7 +96,7 @@ bisimPair K.Top cVars n =
                 , varPair    (bisimPair K.Top) cVars 
                 , arrowPair  cVars n
                 , pairPair   cVars n
-                , pairForall cVars n
+                , forallPair (bisimPair K.Top) cVars n
                 , recPair    (bisimPair K.Session) cVars n
                 , commut     (bisimPair K.Session) cVars n
                   -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
@@ -174,9 +174,9 @@ semiPair pairGen cVars n = do
 
 choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
-  c        <- arbitrary
+  s        <- arbitrary
   (m1, m2) <- typeMapPair pairGen cVars n
-  return (T.Labelled pos c m1, T.Labelled pos c m2)
+  return (T.Labelled pos s m1, T.Labelled pos s m2)
 
 typeMapPair :: PairGen -> S.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
@@ -207,8 +207,8 @@ pairPair cVars n = do
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.tuple pos [t,v], T.tuple pos [u,w])
 
-recForall :: PairGen -> PairGen
-recForall pairGen cVars n = do
+forallPair :: PairGen -> PairGen
+forallPair pairGen cVars n = do
   a      <- arbitrary
   k      <- arbitrary
   (t, u) <- pairGen (S.insert a cVars) n

@@ -1247,3 +1247,9 @@ rec x:*S . &{A:x, B:x, C:x}
 []
 &{A: c ; c ; a, C: Skip ; Close ; Skip} ; !Char
 (&{A: ((c ; c) ; a) ; !Char, C: ((Skip ; Close) ; Skip) ; !Char})
+
+-- Forall and Close/Wait
+
+[]
+forall a:1T . rec a:1S . Wait ; Close
+forall a:1T . rec a:1S . rec a:1S . Wait ; a
