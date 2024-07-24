@@ -39,8 +39,7 @@ kinded t =
   null $ errors $ execState (synthetise kEnv t) (initialTyp defaultOpts)
   where 
     kEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ua defaultSpan)))
-        -- TODO: This env should only contain the free vars of t; plus
-        -- its kind may be SU
+   -- TODO: is UA the right kind?
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
