@@ -7,9 +7,9 @@ import           Syntax.Kind as K
 import           Elaboration.ResolveDuality
 import qualified Elaboration.Phase as EP
 import qualified Typing.Phase as VP
-import           Typing.Rename
+import           Typing.Rename ( renameTypes )
 import           Kinding.Kinding ( synthetise )
-import           Equivalence.TypeEquivalence ( equivalent )
+import           Equivalence.TypeEquivalence ( equivalent, bisimilar )
 import           SpecUtils
 import           Util.State ( initial, errors, defaultOpts )
 
@@ -17,10 +17,10 @@ import Control.Monad.State ( execState, evalState )
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] |
-  wellFormed kEnv t' &&
-  wellFormed kEnv u' = it
+  kinded kEnv t' &&
+  kinded kEnv u' = it
     (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-    (equivalent t' u' `shouldBe` True)
+    (bisimilar t' u' `shouldBe` True)
   where
     kEnv = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
@@ -29,8 +29,9 @@ matchValidSpec _ = it "" (True `shouldBe` True) -- Why not accept "Non-exhaustiv
 resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial EP.extraElab)
 
-wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) (VP.initialTyp defaultOpts)
+kinded :: K.KindEnv -> Type -> Bool
+kinded kEnv t =
+  null $ errors $ execState (synthetise kEnv t) (VP.initialTyp defaultOpts)
 
 spec :: Spec
 spec = do

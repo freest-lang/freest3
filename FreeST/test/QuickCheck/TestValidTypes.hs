@@ -12,8 +12,9 @@ import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
 import           Kinding.Kinding
 import           Typing.Phase
-import           Equivalence.TypeEquivalence ( bisimilar )
+import           Equivalence.TypeEquivalence ( equivalent, bisimilar )
 import           Util.State
+import           Typing.Rename ( renameTypes )
 
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
@@ -33,27 +34,19 @@ import           Debug.Trace
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual_convolution
 
--- Convenience
-
-kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultSpan)))
+kinded :: T.Type -> Bool
+kinded t =
+  null $ errors $ execState (synthetise kEnv t) (initialTyp defaultOpts)
+  where 
+    kEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ua defaultSpan)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 
-kinded :: T.Type -> Bool
-kinded t =
-  null $ errors $ execState (synthetise kindEnv t) (initialTyp defaultOpts)
-
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar p@(BisimPair t u) =
-   kinded t && kinded u ==>
-    -- trace ("Check:\n" ++ show p) -- trace at TypeToGrammar instead
-    t `bisimilar` u
-
--- Equivalence
-prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
+prop_bisimilar (BisimPair t u) = kinded t' && kinded u' ==> t' `bisimilar` u'
+  where
+    [t', u'] = renameTypes [t, u]
 
 -- Normalisation preserves bisimilarity
 -- prop_norm_preserves_bisim :: Type -> Property

@@ -1251,5 +1251,29 @@ rec x:*S . &{A:x, B:x, C:x}
 -- Forall and Close/Wait
 
 []
+Wait
+rec a . Wait ; a
+
+[]
 forall b . Wait
 forall b . rec a . Wait ; a
+
+[]
+(a 1-> Int) -> ∀c . Skip ; Wait ; a
+(a 1-> Int) -> ∀c . Wait ; c
+
+[]
+∀c . (rec a . &{B: c ; Skip} ; b ; Skip, b ; Skip ; Wait)
+∀c . (rec a . &{B: c ; b ; Skip}, (b ; Skip) ; Wait)
+
+[]
+∀b . Close ; a
+∀b . Close ; Wait ; (rec c . rec c . Close ; (rec b . Wait ; (rec c . rec c . Close ; b)))
+
+[]
+∀c . &{A: Skip ; (rec δ . &{C: Skip ; b ; c}), B: &{A: Skip, B: a} ; Close ; Skip}
+∀c . &{A: &{C: (Skip ; b) ; c}, B: &{A: Skip ; Close ; Skip, B: a ; Close ; Skip}}
+
+[]
+∀a . Wait ; ?(Int -> c)
+∀a . Wait ; a

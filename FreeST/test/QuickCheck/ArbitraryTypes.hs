@@ -211,7 +211,7 @@ forallPair :: PairGen -> PairGen
 forallPair pairGen cVars n = do
   a      <- arbitrary
   k      <- arbitrary
-  (t, u) <- pairGen (S.insert a cVars) n
+  (t, u) <- pairGen cVars n
   return (T.Forall pos (Bind pos a k t), T.Forall pos (Bind pos a k u))
 
 -- Recursion
