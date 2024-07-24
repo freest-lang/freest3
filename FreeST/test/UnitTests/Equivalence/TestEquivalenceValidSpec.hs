@@ -23,7 +23,7 @@ matchValidSpec [k, t, u] |
     (bisimilar t' u' `shouldBe` True)
   where
     kEnv = readKenv k
-    [t', u'] = {- renameTypes -} [resolveDuals $ read t, resolveDuals $ read u]
+    [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
 matchValidSpec _ = it "" (True `shouldBe` True) -- Why not accept "Non-exhaustive patterns"?
 
 resolveDuals :: Type -> Type
