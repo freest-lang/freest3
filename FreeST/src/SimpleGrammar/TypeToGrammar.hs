@@ -36,7 +36,7 @@ import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Gra
 import           Debug.Trace (trace)
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
+convertToGrammar ts = {-trace (show ts ++ "\n" ++ show grammar)-} grammar
   where
     -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
     (word, state) = runState (mapM typeToGrammar ts) initial

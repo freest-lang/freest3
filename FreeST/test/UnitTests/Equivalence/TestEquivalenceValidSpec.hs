@@ -24,9 +24,13 @@ matchValidSpec [k, t, u] |
   where
     kEnv = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
-matchValidSpec xs =
-  it ("Something fundamentally wrong happened: " ++ show xs) (False `shouldBe` True)
+matchValidSpec [k,t,u] =
+  it ("malformed: "++show (filter (not . kinded kEnv) [t',u'])) (False `shouldBe` True)
+  where
+    kEnv = readKenv k
+    [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
   -- Why not accept "Non-exhaustive patterns"?
+matchValidSpec xs = it ("Something fundamentally wrong happened: "++show xs) (False `shouldBe` True)
 
 resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial EP.extraElab)
