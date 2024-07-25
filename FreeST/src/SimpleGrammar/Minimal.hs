@@ -24,6 +24,7 @@ where
 import           Syntax.Base
 import           Syntax.Type
 import           Typing.Substitution ( subs )
+import           Kinding.Norm        ( normed )
 
 import qualified Data.Map.Strict     as Map
 import qualified Data.Set as Set
@@ -37,7 +38,9 @@ minimal' used (Arrow s m t u) = Arrow s m (minimal' (used `Set.union` free u) t)
   -- Functional and Session Types
 minimal' used (Labelled s k m) = Labelled s k (Map.map (minimal' used) m)
   -- Session Types
-minimal' used (Semi s t u) = Semi s (minimal' (used `Set.union` free u) t) (minimal' used u)
+-- minimal' used (Semi s t u) = Semi s (minimal' (used `Set.union` free u) t) (minimal' used u)
+minimal' used (Semi s t u) = Semi s (minimal' used' t) (minimal' used u)
+  where used' = if normed Set.empty t then used `Set.union` free u else used
 minimal' used (Message s p t) = Message s p (minimal' used t)
   -- Polymorphism and recursive types
 minimal' used t@(Forall s1 (Bind s2 a k u)) =
@@ -70,3 +73,21 @@ first used = head $ filter (`Set.notMember` used) freshVars
 --     first' n (m:ms)
 --       | n < m     = n
 --       | otherwise = first' (n + 1) ms
+
+-- The set of free type variables in a type
+free :: Type -> Set.Set Variable
+  -- Functional Types
+free (Arrow _ _ t u) = free t `Set.union` free u
+free (Labelled _ _ m) =
+  Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
+  -- Session Types
+free (Semi _ t u) = free t `Set.union` free u
+free (Message _ _ t) = free t 
+  -- Polymorphism and recursive types
+free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Var _ x) = Set.singleton x
+  -- Type operators
+free (Dualof _ t) = free t
+  --Int, Float, Char, String, Skip, End
+free _ = Set.empty 
