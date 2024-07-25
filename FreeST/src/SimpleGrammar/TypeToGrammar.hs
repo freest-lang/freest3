@@ -36,7 +36,7 @@ import           Prelude hiding ( Word ) -- redefined in module Bisimulation.Gra
 import           Debug.Trace (trace)
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {-trace (show ts ++ "\n" ++ show grammar)-} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
     -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -75,8 +75,7 @@ toGrammar' (T.Message _ p t) = do
 -- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
 toGrammar' (T.Forall _ (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton ('∀' : intern a) xs
-  -- getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
+  getLHS $  Map.singleton ('∀' : intern a ++ ":" ++ show k) xs
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (intern a) []
 toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 -- Type operators

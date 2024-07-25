@@ -764,9 +764,9 @@ rec y : 1S . &{N: y, L: y};!Int
 (!Char;(+{A: z, B: z, C: z};(rec z_0: 1S. ((rec y_1: 1S. x);(Skip;x)))))
 ((!Char;+{A: z, B: z, C: z});(rec z_2: 1S. ((rec y_3: 1S. x);(Skip;x))))
 
-[("x", "1S")]
-rec y: 1S. x
-rec z: 1S. x
+[]
+forall x:1S. rec y:1T. x
+forall x:1S. rec z:1T. x
 
 -- This one is non-kinded (as of version April 24, 2019)
 --[]
@@ -1279,5 +1279,5 @@ forall b . rec a . Wait ; a
 ∀a . Wait ; a
 
 []
-∀a . Close
-∀b . Close ; c
+∀c . ∀a . Close
+∀c . ∀b . Close ; c
