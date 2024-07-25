@@ -761,12 +761,8 @@ rec y : 1S . &{N: y, L: y};!Int
 -- Examples from QuickCheck
 
 [("x", "1S"), ("z", "1S")]
-(!Char;(+{A: z, B: z, C: z};(rec z_0: 1S. ((rec y_1: 1S. x);(Skip;x)))))
-((!Char;+{A: z, B: z, C: z});(rec z_2: 1S. ((rec y_3: 1S. x);(Skip;x))))
-
-[]
-forall x:1S. rec y:1T. x
-forall x:1S. rec z:1T. x
+(!Char;(+{A: z, B: z, C: z};(rec z_0: 1S. ((rec y_1: 1S. !Int;x);(Skip;x)))))
+((!Char;+{A: z, B: z, C: z});(rec z_2: 1S. ((rec y_3: 1S. !Int;x);(Skip;x))))
 
 -- This one is non-kinded (as of version April 24, 2019)
 --[]
@@ -830,8 +826,8 @@ x
 x ; Skip
 
 [("z", "1S")]
-(+{A: z};(rec d: *S. +{A: Skip, B: !Char}))
-+{A: (z;(rec x_1: *S. +{A: Skip, B: !Char}))}
+(+{A: z};(rec d: 1S. +{A: Skip, B: !Char}))
++{A: (z;(rec x_1: 1S. +{A: Skip, B: !Char}))}
 
 [("y", "1S")]
 (&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
@@ -854,7 +850,7 @@ rec a: 1S. &{A: rec b. a}
 (rec d_1: 1S. y)
 
 [("x","1S"),("y","1S")]
-(&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: *S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
+(&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: 1S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
 &{A: (?Int;&{B: ((rec b: 1S. (&{A: (y;(?Int;!Char))};y));x)}), C: (?Char;&{B: ((rec d: 1S. (&{A: (y;(?Int;!Char))};y));x)})}
 
 []
@@ -862,8 +858,8 @@ rec a: 1S. (&{B: Skip, C: (rec d: 1S. (a;!Int))})
 rec e: 1S. (&{B: Skip, C: e;!Int})
 
 [("x","1S"),("y","1S"),("z","1S")]
-((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
-((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
+((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: 1S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: 1S. ?Char)), C: (x;(rec r: 1S. ?Char))})};Skip);Skip)
+((Skip;(&{B: ((rec h: 1S. (rec l: 1S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: 1S. ?Char))));(Skip;Skip))
 
 []
 rec z_0: 1S. &{B: &{B: ?()}, C: (rec y_0: 1S. (z_0;y_0))}
@@ -914,8 +910,8 @@ rec z: 1S. !Int; rec w: 1S. z;w
 (rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
 []
-(rec z:*S.(rec y:1S.(rec x:1S.(rec z:1S.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
-(rec z:*S.(rec z:1S.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
+(rec z:1S.(rec y:1S.(rec x:1S.(rec z:1S.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
+(rec z:1S.(rec z:1S.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
 
 -- forall
 
@@ -1149,8 +1145,8 @@ Skip
 
 -- Skip^omega
 []
-rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
-rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
+rec x:1S.(+{A: Skip, C: x} ; rec z3:1S.(rec y:1S.Skip;?Int;z3))
+rec z:1S.(+{A: Skip, C: z} ; rec y:1S.Skip;?Int;y) 
 
 -- Skip^omega
 []
@@ -1244,7 +1240,7 @@ rec x:*S . &{A:x, B:x, C:x}
 (rec a:1S . &{A: a})
 (rec a:*S . &{A: a})
 
-[]
+[("a","1S"),("c","1S")]
 &{A: c ; c ; a, C: Skip ; Close ; Skip} ; !Char
 (&{A: ((c ; c) ; a) ; !Char, C: ((Skip ; Close) ; Skip) ; !Char})
 
@@ -1258,26 +1254,26 @@ rec a . Wait ; a
 forall b . Wait
 forall b . rec a . Wait ; a
 
-[]
+[("a","1S")]
 (a 1-> Int) -> forall c . Skip ; Wait ; a
 (a 1-> Int) -> forall c . Wait ; c
 
-[]
+[("b","1S")]
 ∀c . (rec a . &{B: c ; Skip} ; b ; Skip, b ; Skip ; Wait)
 ∀c . (rec a . &{B: c ; b ; Skip}, (b ; Skip) ; Wait)
 
-[]
+[("a","1S")]
 ∀b . Close ; a
 ∀b . Close ; Wait ; (rec c . rec c . Close ; (rec b . Wait ; (rec c . rec c . Close ; b)))
 
-[]
+[("a","1S"),("b","1S")]
 ∀c . &{A: Skip ; (rec δ . &{C: Skip ; b ; c}), B: &{A: Skip, B: a} ; Close ; Skip}
 ∀c . &{A: &{C: (Skip ; b) ; c}, B: &{A: Skip ; Close ; Skip, B: a ; Close ; Skip}}
 
-[]
+[("c","1T")]
 ∀a . Wait ; ?(Int -> c)
 ∀a . Wait ; a
 
-[]
-(∀a:*S . ∀b:1S . Wait)
-(∀c:*S . ∀d:1S . Wait ; c)
+[("c","1S")]
+∀a . Close
+∀b . Close ; c

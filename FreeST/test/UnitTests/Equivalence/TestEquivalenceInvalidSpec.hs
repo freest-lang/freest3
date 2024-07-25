@@ -7,33 +7,26 @@ import Equivalence.TypeEquivalence ( equivalent )
 import Control.Monad.State ( execState, evalState )
 import SpecUtils
 import Syntax.Kind as K
-import Util.State ( initial, errors, initialS )
+import Util.State ( initial, errors, initialS, Errors )
 import Kinding.Kinding ( synthetise )
 import Typing.Rename ( renameTypes )
 import Elaboration.ResolveDuality ( resolve )
 import Elaboration.Phase ( extraElab )
 
 matchInvalidSpec :: [String] -> Spec
-matchInvalidSpec [k, t, u]  |
-  wellFormed kEnv t' &&
-  wellFormed kEnv u' = it
-    (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-    (equivalent t' u' `shouldBe` False)
-  where
-    kEnv     = readKenv k
-    [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
-matchInvalidSpec [k,t,u] =
-  it ("malformed: "++show (filter (not . wellFormed kEnv) [t',u'])) (False `shouldBe` True)
+matchInvalidSpec [k,t,u] = it
+  (k ++ "  |-  " ++ t ++ " /~ " ++ u)
+  (testValidExpectation (equivalent t' u') (concatMap (wellFormed kEnv) ts) `shouldBe` Left False)
   where
     kEnv = readKenv k
-    [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
+    ts@[t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
 matchInvalidSpec xs = it ("Something fundamentally wrong happened: "++show xs) (False `shouldBe` True)
 
 resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial extraElab)
 
-wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialS
+wellFormed :: K.KindEnv -> Type -> Errors
+wellFormed kEnv t = errors $ execState (synthetise kEnv t) initialS
 
 spec :: Spec
 spec = do
