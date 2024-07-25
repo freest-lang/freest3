@@ -24,6 +24,7 @@ matchValidSpec [k, t, u] |
   where
     kEnv = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
+-- matchValidSpec xs = it ("BANG! " ++ show xs) (False `shouldBe` True)
 matchValidSpec _ = it "" (True `shouldBe` True) -- Why not accept "Non-exhaustive patterns"?
 
 resolveDuals :: Type -> Type
