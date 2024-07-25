@@ -22,7 +22,7 @@ module SimpleGrammar.Minimal
 where
 
 import           Syntax.Base
-import           Syntax.Type
+import           Syntax.Type hiding (free)
 import           Typing.Substitution ( subs )
 import           Kinding.Norm        ( normed )
 
