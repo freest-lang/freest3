@@ -13,6 +13,6 @@ spec =
   describe "QuickCheck" $
     prop "prop_bisimilar" $
       {-quickCheckWith  verboseCheckWith -} quickCheckWith args
-    prop_bisimilar -- prop_distribution
+    {- prop_bisimilar -} prop_distribution
 
 main = hspec spec

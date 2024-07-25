@@ -98,11 +98,11 @@ showBindNoKind :: (Show a, Show b) => a -> String -> b -> String
 showBindNoKind var arrow term = show var ++ spaced arrow ++ show term
 
 showBindType :: Bind K.Kind T.Type -> String
-showBindType (Bind _ a k t) = showBind a k True "." t -- ∀ a:k . t
+showBindType (Bind _ a k t) = showBind a k False "." t -- ∀ a:k . t
 -- showBindType (Bind _ a _ t) = showBindNoKind a "." t -- ∀ a:k . t
 
 showBindExp :: Bind K.Kind E.Exp -> String
-showBindExp (Bind _ a k e) = showBind a k True "=>" e -- Λ a:k => e
+showBindExp (Bind _ a k e) = showBind a k False "=>" e -- Λ a:k => e
 -- showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
 -- Type bind

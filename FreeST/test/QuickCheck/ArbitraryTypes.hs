@@ -5,7 +5,7 @@
 module ArbitraryTypes
   ( BisimPair(..)
   , NonBisimPair(..)
-  , ids
+  , kEnv
   )
 where
 
@@ -27,6 +27,9 @@ pos = defaultSpan
 -- | Type variables
 ids :: [String]
 ids = ["a", "b", "c"] -- , "d", "e", "f", "g", "h", "i"]
+
+kEnv :: K.KindEnv
+kEnv = M.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ua defaultSpan)))
 
 freeTypeVar :: Variable
 freeTypeVar = mkVar pos "δ"
@@ -60,7 +63,7 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (Bind a b) where
 data BisimPair = BisimPair T.Type T.Type
 
 instance Show BisimPair where
-  show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
+  show (BisimPair t u) = show kEnv ++ " |- " ++ show t ++ " bisimilar-to " ++ show u
 
 instance Arbitrary BisimPair where
   arbitrary = do
