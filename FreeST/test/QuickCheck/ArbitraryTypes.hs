@@ -44,11 +44,6 @@ instance Arbitrary T.Polarity where
 instance Arbitrary T.View where
   arbitrary = elements [T.External, T.Internal]
 
-instance Arbitrary T.Sort where
-  arbitrary = elements [
-    -- T.Record, T.Variant, -- These two yield too many 'precondition false'
-    T.Choice T.External, T.Choice T.Internal]
-
 instance Arbitrary Variable where
   arbitrary = do
     id <- elements ids
@@ -95,7 +90,7 @@ bisimPair K.Top cVars n =
                 , charPair
                 , varPair    (bisimPair K.Top) cVars 
                 , arrowPair  cVars n
-                , pairPair   cVars n
+                , dataPair   cVars n
                 , forallPair (bisimPair K.Top) cVars n
                 , recPair    (bisimPair K.Session) cVars n
                 , commut     (bisimPair K.Session) cVars n
@@ -174,9 +169,9 @@ semiPair pairGen cVars n = do
 
 choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
-  s        <- arbitrary
+  v        <- arbitrary
   (m1, m2) <- typeMapPair pairGen cVars n
-  return (T.Labelled pos s m1, T.Labelled pos s m2)
+  return (T.Labelled pos (T.Choice v) m1, T.Labelled pos (T.Choice v) m2)
 
 typeMapPair :: PairGen -> S.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
@@ -201,11 +196,11 @@ arrowPair cVars n = do
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.Arrow pos mult t v, T.Arrow pos mult u w)
 
-pairPair :: PairGen
-pairPair cVars n = do
-  (t, u) <- bisimPair K.Top cVars (n `div` 8)
-  (v, w) <- bisimPair K.Top cVars (n `div` 8)
-  return (T.tuple pos [t,v], T.tuple pos [u,w])
+dataPair :: PairGen
+dataPair cVars n = do
+  s        <- elements [T.Record, T.Variant]
+  (m1, m2) <- typeMapPair (bisimPair K.Top) cVars n
+  return (T.Labelled pos s m1, T.Labelled pos s m2)
 
 forallPair :: PairGen -> PairGen
 forallPair pairGen cVars n = do
