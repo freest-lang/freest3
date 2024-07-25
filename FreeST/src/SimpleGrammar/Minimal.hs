@@ -34,32 +34,36 @@ minimal = minimal' Set.empty
 
 minimal' :: Set.Set Variable -> Type -> Type
   -- Functional Types
-minimal' used (Arrow s m t u) = Arrow s m (minimal' (used `Set.union` free u) t) (minimal' used u) -- We may not need the union here
-  -- Functional and Session Types
-minimal' used (Labelled s k m) = Labelled s k (Map.map (minimal' used) m)
+minimal' set (Arrow s m t u) =
+  Arrow s m (minimal' set t) (minimal' set u)
+  -- Arrow s m (minimal' (set `Set.union` used u) t) (minimal' set u)
+  -- We may not need the union here Functional and Session Types
+minimal' set (Labelled s k m) =
+  Labelled s k (Map.map (minimal' set) m)
   -- Session Types
--- minimal' used (Semi s t u) = Semi s (minimal' (used `Set.union` free u) t) (minimal' used u)
-minimal' used (Semi s t u) = Semi s (minimal' used' t) (minimal' used u)
-  where used' = if normed Set.empty t then used `Set.union` free u else used
-minimal' used (Message s p t) = Message s p (minimal' used t)
+minimal' set (Semi s t u) =
+  Semi s (minimal' (set `Set.union` used u) t) (minimal' set u)
+minimal' set (Message s p t) =
+  Message s p (minimal' set t)
   -- Polymorphism and recursive types
-minimal' used t@(Forall s1 (Bind s2 a k u)) =
-  Forall s1 (Bind s2 b k (minimal' used (subs vb a u)))
-    where b = first (used `Set.union` free t) -- mkNewVar (first t) a
+minimal' set t@(Forall s1 (Bind s2 a k u)) =
+  Forall s1 (Bind s2 b k (minimal' set (subs vb a u)))
+    where b = first (set `Set.union` used t) -- mkNewVar (first t) a
           vb = Var (getSpan b) b
-minimal' used (Rec s1 (Bind s2 a k t))
-  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal' used t))
+minimal' set (Rec s1 (Bind s2 a k t))
+  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal' set t))
   -- Required by the current translation to grammar. Otherwise:
   -- uncaught exception: PatternMatchFail
   --  src/Bisimulation/TypeToGrammar.hs:130:3-39: Non-exhaustive patterns in z : zs  
-  | otherwise = minimal' used t
+  | otherwise = minimal' set t
   -- Type operators
-minimal' used (Dualof s t) = Dualof s (minimal' used t)
+minimal' set (Dualof s t) =
+  Dualof s (minimal' set t)
   -- Int, Float, Char, String, Skip, End, Var
 minimal' _ t = t
 
 first :: Set.Set Variable -> Variable
-first used = head $ filter (`Set.notMember` used) freshVars
+first set = head $ filter (`Set.notMember` set) freshVars
   where
     -- ["%1", "%2", ...]
     freshVars = [mkVar defaultSpan $ "%" ++ show i | i <- [1..]]
@@ -74,20 +78,22 @@ first used = head $ filter (`Set.notMember` used) freshVars
 --       | n < m     = n
 --       | otherwise = first' (n + 1) ms
 
--- The set of free type variables in a type
-free :: Type -> Set.Set Variable
+-- The set of type variables used in a type (similar to free, except in case Semi
+used :: Type -> Set.Set Variable
   -- Functional Types
-free (Arrow _ _ t u) = free t `Set.union` free u
-free (Labelled _ _ m) =
-  Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
+used (Arrow _ _ t u) = used t `Set.union` used u
+used (Labelled _ _ m) =
+  Map.foldr (\t acc -> used t `Set.union` acc) Set.empty m
   -- Session Types
-free (Semi _ t u) = free t `Set.union` free u
-free (Message _ _ t) = free t 
+used (Semi _ t u)
+  | normed Set.empty t = used t `Set.union` used u
+  | otherwise = used t
+used (Message _ _ t) = used t 
   -- Polymorphism and recursive types
-free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
-free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
-free (Var _ x) = Set.singleton x
+used (Forall _ (Bind _ a _ t)) = Set.delete a (used t)
+used (Rec _ (Bind _ a _ t)) = Set.delete a (used t)
+used (Var _ x) = Set.singleton x
   -- Type operators
-free (Dualof _ t) = free t
+used (Dualof _ t) = used t
   --Int, Float, Char, String, Skip, End
-free _ = Set.empty 
+used _ = Set.empty 

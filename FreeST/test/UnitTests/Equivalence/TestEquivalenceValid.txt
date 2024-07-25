@@ -1277,3 +1277,7 @@ forall b . rec a . Wait ; a
 [("c","1S")]
 ∀a . Close
 ∀b . Close ; c
+
+[]
+∀b:1S . ∀a:1S . Close ; b
+∀b:1S . ∀a:1S . Close ; a
