@@ -1279,5 +1279,5 @@ forall b . rec a . Wait ; a
 ∀a . Wait ; a
 
 []
-∀c . ∀a . Close
-∀c . ∀b . Close ; c
+(∀a:*S . ∀b:1S . Wait)
+(∀c:*S . ∀d:1S . Wait ; c)
