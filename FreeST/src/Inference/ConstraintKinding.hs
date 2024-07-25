@@ -3,6 +3,7 @@ module Inference.ConstraintKinding (constraintKinding) where
 
 import           Inference.Constraint
 import           Inference.Phase
+import           Kinding.Norm
 import           Kinding.Kinding
 import           Syntax.Base
 import qualified Syntax.Kind as K

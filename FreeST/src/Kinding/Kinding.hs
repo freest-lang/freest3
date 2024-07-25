@@ -21,7 +21,6 @@ module Kinding.Kinding
   , lin
   , checkAgainstAbsorb
   , checkContractive
-  , normed
   )
 where
 
@@ -31,6 +30,7 @@ import qualified Syntax.Type as T
 import           Util.Error
 import           Util.State
 import           Kinding.Contractive
+import           Kinding.Norm
 import           Kinding.Subkind ( (<:), join, meet )
 
 import           Control.Monad.State hiding (join)
@@ -162,10 +162,3 @@ mult m1 t = do
 -- unr s kEnv (T.Var _ a) = Set.notMember a s && Map.member a kEnv
 -- unr _ _ _ = False
 
-
-normed :: Set.Set Variable -> T.Type -> Bool
-normed s (T.Semi _ t u) = normed s t && normed s u
-normed s (T.Rec _ b) = normed s (body b)
-normed s (T.Labelled _ (T.Choice _) m) = any (normed s) (Map.elems m)
-normed s (T.Var _ a) = Set.member a s
-normed _ _ = True
