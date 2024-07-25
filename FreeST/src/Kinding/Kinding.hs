@@ -21,7 +21,7 @@ module Kinding.Kinding
   , lin
   , checkAgainstAbsorb
   , checkContractive
-  , unr
+  , normed
   )
 where
 
@@ -43,7 +43,9 @@ synthetise :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 synthetise kenv = synthetise' (Map.keysSet kenv) kenv
 
 checkAgainst :: MonadState (FreestS a) m =>  K.KindEnv -> K.Kind -> T.Type -> m K.Kind
-checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
+checkAgainst kenv k t = do
+  when (show (getSpan k) == "9:17" ) $ debugM $ show k ++ " -> " ++ show t 
+  checkAgainst' (Map.keysSet kenv) kenv k t
 
 checkAgainstSession :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
@@ -88,9 +90,9 @@ synthetise' s kEnv mu@(T.Rec _ (Bind _ a k t)) = do
   k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
   unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
 --  if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
-  if unr s kEnv mu
-    then pure $ K.Kind p m K.Absorb
-    else pure k'
+  if normed s mu
+    then pure k'
+    else pure $ K.Kind p m K.Absorb
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p m K.Top
@@ -153,9 +155,17 @@ mult m1 t = do
 -- unr s (T.Var _ a) = Set.member a s
 -- unr _ _ = False
 
-unr :: Set.Set Variable -> K.KindEnv -> T.Type -> Bool
-unr s kEnv (T.Semi _ t u) = unr s kEnv t || unr s kEnv u
-unr s kEnv (T.Rec _ (Bind _ a k t)) = unr s (Map.insert a k kEnv) t
-unr s kEnv (T.Labelled _ (T.Choice _) m) = all (unr s kEnv) (Map.elems m)
-unr s kEnv (T.Var _ a) = Set.notMember a s && Map.member a kEnv
-unr _ _ _ = False
+-- unr :: Set.Set Variable -> K.KindEnv -> T.Type -> Bool
+-- unr s kEnv (T.Semi _ t u) = unr s kEnv t || unr s kEnv u
+-- unr s kEnv (T.Rec _ (Bind _ a k t)) = unr s (Map.insert a k kEnv) t
+-- unr s kEnv (T.Labelled _ (T.Choice _) m) = all (unr s kEnv) (Map.elems m)
+-- unr s kEnv (T.Var _ a) = Set.notMember a s && Map.member a kEnv
+-- unr _ _ _ = False
+
+
+normed :: Set.Set Variable -> T.Type -> Bool
+normed s (T.Semi _ t u) = normed s t && normed s u
+normed s (T.Rec _ b) = normed s (body b)
+normed s (T.Labelled _ (T.Choice _) m) = any (normed s) (Map.elems m)
+normed s (T.Var _ a) = Set.member a s
+normed _ _ = True

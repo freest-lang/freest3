@@ -70,13 +70,11 @@ cg pEnv kEnv mu@(T.Rec _ b) = do
   k' <- cg pEnv (Map.insert (var b) (binder b) kEnv) (body b)
   addConstraint (KindC k' (binder b))
   when (isVar (binder b)) (addConstraint (KindC (binder b) k'))
-  if unr pEnv kEnv mu then do
+  if normed pEnv mu then return k'
+  else do
     mv <- freshMultVar (getSpan $ binder b)
     addConstraint (MultC mv [k'])
     return $ K.Kind (getSpan $ binder b) (MultVar mv) K.Absorb
-  else
-    return k'
-
 
 isVar :: K.Kind -> Bool
 isVar (K.Kind _ MultVar{} K.PKVar{}) = True
