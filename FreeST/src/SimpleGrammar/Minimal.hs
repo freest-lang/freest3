@@ -33,33 +33,33 @@ minimal = minimal' Set.empty
 
 minimal' :: Set.Set Variable -> Type -> Type
   -- Functional Types
-minimal' fv (Arrow s m t u) = Arrow s m (minimal' (fv `Set.union` free u) t) (minimal' fv u)
+minimal' used (Arrow s m t u) = Arrow s m (minimal' (used `Set.union` free u) t) (minimal' used u) -- We may not need the union here
   -- Functional and Session Types
-minimal' fv (Labelled s k m) = Labelled s k (Map.map (minimal' fv) m)
+minimal' used (Labelled s k m) = Labelled s k (Map.map (minimal' used) m)
   -- Session Types
-minimal' fv (Semi s t u) = Semi s (minimal' (fv `Set.union` free u) t) (minimal' fv u)
-minimal' fv (Message s p t) = Message s p (minimal' fv t)
+minimal' used (Semi s t u) = Semi s (minimal' (used `Set.union` free u) t) (minimal' used u)
+minimal' used (Message s p t) = Message s p (minimal' used t)
   -- Polymorphism and recursive types
-minimal' fv t@(Forall s1 (Bind s2 a k u)) =
-  Forall s1 (Bind s2 b k (minimal' fv (subs vb a u)))
-    where b = first fv t -- mkNewVar (first t) a
+minimal' used t@(Forall s1 (Bind s2 a k u)) =
+  Forall s1 (Bind s2 b k (minimal' used (subs vb a u)))
+    where b = first (used `Set.union` free t) -- mkNewVar (first t) a
           vb = Var (getSpan b) b
-minimal' fv (Rec s1 (Bind s2 a k t))
-  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal' fv t))
+minimal' used (Rec s1 (Bind s2 a k t))
+  | a `isFreeIn` t = Rec s1 (Bind s2 a k (minimal' used t))
   -- Required by the current translation to grammar. Otherwise:
   -- uncaught exception: PatternMatchFail
   --  src/Bisimulation/TypeToGrammar.hs:130:3-39: Non-exhaustive patterns in z : zs  
-  | otherwise = minimal' fv t
+  | otherwise = minimal' used t
   -- Type operators
-minimal' fv (Dualof s t) = Dualof s (minimal' fv t)
+minimal' used (Dualof s t) = Dualof s (minimal' used t)
   -- Int, Float, Char, String, Skip, End, Var
 minimal' _ t = t
 
-first :: Set.Set Variable -> Type -> Variable
-first fv t = head $ filter (`Set.notMember` (fv `Set.union` free t)) freshVars
+first :: Set.Set Variable -> Variable
+first used = head $ filter (`Set.notMember` used) freshVars
   where
-    -- ["#1", "#2", ...]
-    freshVars = map (\i -> mkVar defaultSpan $ "#" ++ show i) [1..]
+    -- ["%1", "%2", ...]
+    freshVars = [mkVar defaultSpan $ "%" ++ show i | i <- [1..]]
 
 -- first :: Type -> Int
 -- first t = first' 0 (Set.toList (Set.map (\(Variable _ _ n) -> n) (free t)))
