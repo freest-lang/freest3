@@ -1259,8 +1259,8 @@ forall b . Wait
 forall b . rec a . Wait ; a
 
 []
-(a 1-> Int) -> ∀c . Skip ; Wait ; a
-(a 1-> Int) -> ∀c . Wait ; c
+(a 1-> Int) -> forall c . Skip ; Wait ; a
+(a 1-> Int) -> forall c . Wait ; c
 
 []
 ∀c . (rec a . &{B: c ; Skip} ; b ; Skip, b ; Skip ; Wait)
@@ -1277,3 +1277,7 @@ forall b . rec a . Wait ; a
 []
 ∀a . Wait ; ?(Int -> c)
 ∀a . Wait ; a
+
+[]
+∀a . Close
+∀b . Close ; c
