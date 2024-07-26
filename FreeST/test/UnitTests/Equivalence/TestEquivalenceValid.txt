@@ -793,14 +793,6 @@ rec y_0: 1S. !Char ; +{A: y_0, B: Skip, C: Skip}
 rec x. !Int ; !Int
 !Int ; !Int
 
-[("y","1S"),("z","1S")]
-rec x: 1S. (((z;z);(Skip;y));?Int)
-((z;z);(Skip;y));?Int
-
-[("z","1S")]
-((rec x: 1S. (rec y: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
-((rec u: 1S. (rec v: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
-
 []
 rec x: 1S. &{B:Skip, C: x} ;+{D: ?Char}
 rec y: 1S. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
@@ -808,14 +800,6 @@ rec y: 1S. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
 []
 (rec x: 1S. +{LeafC: Skip, NodeC: x ; x}) ; Skip
  rec y: 1S. +{LeafC: Skip, NodeC: y ; y}
-
-[("α", "1S")]
-rec x: 1S. α
-rec y: 1S. α
-
-[("x", "1S")]
-rec y_0: 1S. (rec y_1: 1S. (rec y_2: 1S. x))
-rec z: 1S. (rec y_4: 1S. x)
 
 []
 &{A: !Char, B: ?Int}
@@ -833,21 +817,9 @@ x ; Skip
 (&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
 &{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}
 
-[("y", "1S")]
-(Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
-(rec x_2: 1S. y)
-
 []
 rec a: 1S. &{A: rec b. a}
 &{A: rec c: 1S. &{A: c}}
-
-[("y", "1S")]
-(Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
-(rec x_2: 1S. y)
-
-[("y", "1S")]
-((rec d_0: 1S. y);Skip)
-(rec d_1: 1S. y)
 
 [("x","1S"),("y","1S")]
 (&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: 1S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
@@ -1147,26 +1119,6 @@ Skip
 []
 rec x:1S.(+{A: Skip, C: x} ; rec z3:1S.(rec y:1S.Skip;?Int;z3))
 rec z:1S.(+{A: Skip, C: z} ; rec y:1S.Skip;?Int;y) 
-
--- Skip^omega
-[]
-Skip
-rec y:1S. (Skip ; y) ; ?Int
-
--- Skip^omega
-[]
-rec y:1S. (Skip ; y) ; ?Int
-Skip 
-
--- Skip^omega
-[]
-Skip
-(rec y:1S. Skip ; y) ; ?Int
-
--- Skip^omega
-[]
-rec y:1S. Skip ; y ; ?Int
-Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
 
 -- Star (unrestricted session) types
 
