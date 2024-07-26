@@ -24,7 +24,6 @@ where
 import           Syntax.Base
 import           Syntax.Type hiding (free)
 import           Typing.Substitution ( subs )
-import           Kinding.Norm        ( normed )
 
 import qualified Data.Map.Strict     as Map
 import qualified Data.Set as Set
@@ -78,7 +77,7 @@ first set = head $ filter (`Set.notMember` set) freshVars
 --       | n < m     = n
 --       | otherwise = first' (n + 1) ms
 
--- The set of type variables used in a type (similar to free, except in case Semi
+-- | The set of type variables used in a type (similar to free, except in case Semi)
 used :: Type -> Set.Set Variable
   -- Functional Types
 used (Arrow _ _ t u) = used t `Set.union` used u
@@ -86,14 +85,30 @@ used (Labelled _ _ m) =
   Map.foldr (\t acc -> used t `Set.union` acc) Set.empty m
   -- Session Types
 used (Semi _ t u)
-  | normed Set.empty t = used t `Set.union` used u
-  | otherwise = used t
+  | absorbing Set.empty t = used t
+  | otherwise = used t `Set.union` used u
 used (Message _ _ t) = used t 
   -- Polymorphism and recursive types
 used (Forall _ (Bind _ a _ t)) = Set.delete a (used t)
 used (Rec _ (Bind _ a _ t)) = Set.delete a (used t)
-used (Var _ x) = Set.singleton x
+used (Var _ a) = Set.singleton a
   -- Type operators
 used (Dualof _ t) = used t
   --Int, Float, Char, String, Skip, End
 used _ = Set.empty 
+
+-- | Is a type absorbing?
+-- | The set of variables keeps track of the *type references* in scope
+-- | Lemma: absorbing T implies T is a session type
+absorbing :: Set.Set Variable -> Type -> Bool
+absorbing _ End{} = True
+absorbing trefs (Labelled _ Choice{} m) =
+  all (absorbing trefs) (Map.elems m)
+absorbing trefs (Semi _ t u) =
+  absorbing trefs t || absorbing trefs u
+-- absorbing (Forall _ (Bind _ a _ t)) = Set.delete a (absorbing t) -- Not a session type do far
+absorbing trefs (Rec _ (Bind _ a _ t)) = absorbing (Set.insert a trefs) t
+absorbing trefs (Var _ a) = a `Set.member` trefs
+absorbing trefs (Dualof _ t) = absorbing trefs t
+absorbing _ _ = False
+

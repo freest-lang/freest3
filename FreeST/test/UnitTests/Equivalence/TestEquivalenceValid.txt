@@ -1233,3 +1233,7 @@ forall b . rec a . Wait ; a
 []
 ∀b:1S . ∀a:1S . Close ; b
 ∀b:1S . ∀a:1S . Close ; a
+
+[]
+∀c:*S . ∀a:1S . +{A: c,    C: Close ; c}
+∀c:*S . ∀a:1S . +{A: Skip, C: Close} ; c
