@@ -87,11 +87,12 @@ prop_distribution (BisimPair t u) =
 
 -- The number of nodes in a type
 nodes :: T.Type -> Int
-nodes (T.Labelled _ (T.Choice _) m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
+nodes (T.Arrow _ _ t u) = 1 + nodes t + nodes u
+nodes (T.Labelled _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (T.Semi _ t u) = 1 + nodes t + nodes u
 nodes (T.Message _ _ t) = 1 + nodes t
 nodes (T.Forall _ (Bind _ _ _ t)) = 1 + nodes t
-nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
+nodes (T.Rec _ (Bind _ _ _ t)) = 1 + nodes t
 nodes (T.Dualof _ t) = 1 + nodes t
 -- Int, Char, String, Float, Skip, End, Var
 nodes _ = 1
@@ -103,8 +104,8 @@ constr T.Char{} = "Char"
 constr T.Float{} = "Float"
 constr T.String{} = "String"
 constr T.Arrow{} = "Arrow"
-constr (T.Labelled _ s _) | s == T.Record || s == T.Variant= "Record/Variant"
-constr (T.Labelled _ (T.Choice _) _) = "Choice"
+constr (T.Labelled _ T.Choice{} _) = "Choice"
+constr T.Labelled{} = "Record/Variant"
 constr T.Skip{} = "Skip"
 constr T.End{} = "Wait/Close"
 constr T.Semi{} = "Semi"
