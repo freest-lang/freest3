@@ -68,8 +68,7 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- sized (bisimPair K.Top S.empty)
-    let [t', u'] = Rename.renameTypes [t, u]
-    return $ BisimPair t' u'
+    return $ BisimPair t u
 
 instance Arbitrary T.Type where
   arbitrary = do

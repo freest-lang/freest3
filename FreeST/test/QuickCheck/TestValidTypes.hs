@@ -1,5 +1,6 @@
 module TestValidTypes
   ( prop_bisimilar
+  , prop_equivalent
   , prop_distribution
   , kinded
   , nodes
@@ -42,11 +43,14 @@ kinded t =
 -- Bisimilar types are bisimilar
 prop_bisimilar (BisimPair t u) = kinded t' && kinded u' ==> t' `bisimilar` u'
   where
+    -- Renaming is needed to convert rec a.T into T when a not in free T
     [t', u'] = renameTypes [t, u]
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
+prop_equivalent (BisimPair t u) = kinded t' && kinded u' ==> t' `equivalent` u'
+  where
+    [t', u'] = renameTypes [t, u]
 
 -- Normalisation preserves bisimilarity
 -- prop_norm_preserves_bisim :: Type -> Property
