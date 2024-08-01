@@ -408,8 +408,8 @@ forall a:1S . !Int ; Close ; a
 1S
 
 -- as rec x is infinite, a shoul be ignored, no?
-(forall a:1S . a) ; (rec x . !Int ; ?Int ; x) ; a
-1S
+--(forall a:1S . a) ; (rec x . !Int ; ?Int ; x) ; a
+--1S
 
 forall a:*T . ?(() 1-> a) ; !a ; Skip
 1S

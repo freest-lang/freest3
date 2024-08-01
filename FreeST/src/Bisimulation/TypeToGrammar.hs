@@ -123,7 +123,7 @@ collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 collect σ (T.Message _ _ t) = collect σ t
   -- Polymorphism and recursive types
--- collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
+collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
 collect σ t@(T.Rec _ (Bind _ a _ u)) = do
   let σ' = (t, a) : σ
   let u' = Substitution.subsAll σ' u
