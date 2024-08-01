@@ -1,4 +1,4 @@
-module AFF.Congruence
+module Bisimulation.Congruence
   ( applyRules
   )
 where
@@ -7,7 +7,7 @@ import Control.Monad.State (State, evalState, gets, modify)
 import Data.List (isPrefixOf, nub)
 import Data.Map.Strict as Map (empty, lookup)
 import Data.Set as Set (empty, Set, union, fromList)
-import AFF.State hiding (TState, visitedPairs)
+import Bisimulation.State hiding (TState, visitedPairs)
 import Prelude hiding (Word)
 import SimpleGrammar.Grammar
 import Syntax.Base

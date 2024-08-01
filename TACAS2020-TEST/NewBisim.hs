@@ -7,7 +7,6 @@ module NewBisim
   )where
 
 -- import Bisimilarity.BisimilarityPresets ()
-import AFF.Congruence
 import Control.Monad.State (State, evalState, gets, modify, runState, foldM)
 import Data.Foldable ()
 import Data.Function (on)
@@ -18,8 +17,9 @@ import Data.Ord (comparing)
 import Data.Sequence ((><))
 import Data.Sequence  as Seq
 import Data.Set  as Set (empty, Set, insert, toList, filter)
-import AFF.Norm
-import AFF.State
+import Bisimulation.Congruence
+import Bisimulation.Norm
+import Bisimulation.State
 import Prelude hiding (Word, log)
 import SimpleGrammar.Grammar
 

@@ -1,4 +1,4 @@
-module AFF.State where
+module Bisimulation.State where
 
 import Control.Monad.State
 import Data.Map.Strict  as Map

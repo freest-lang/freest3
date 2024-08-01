@@ -1,19 +1,30 @@
+{- |
+Module      :  Equivalence.Bisimulation
+Description :  A bisimulation
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-
+This module defines a bisimulation. Function bisimilar first converts two context-free
+session types into a grammar, which is pruned. An expansion tree is computed afterwards,
+through an alternation of expansion of children nodes and their simplification, using the
+reflexive, congruence, and BPA rules.
+-}
 
 {-# LANGUAGE TupleSections #-}
 
-module OldBisim
-(bisimilarGrm
-) where
-
+module BisimulationTACAS.Bisimulation
+  ( bisimilar
+  )
+where
 
 import           Syntax.Base                ( Variable ) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                as T
 import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
 import           SimpleGrammar.Grammar
-import           BisimulationTACAS.Norm
 import           SimpleGrammar.Minimal
+import           BisimulationTACAS.Norm
 
 import qualified Data.Map.Strict            as Map
 import qualified Data.Set                   as Set
@@ -23,11 +34,11 @@ import           Data.List                  ( union, stripPrefix )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                    hiding ( Word )
 import           Data.Bitraversable         ( bisequence )
---import           AFF.BisimilarityModule     ( isBisimilar )
 import Debug.Trace (trace)
 
-bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
+-- | Assumes a grammar without unreachable symbols
+bisimilar :: Grammar -> Bool
+bisimilar (Grammar [xs, ys] ps) = expand queue rules ps
  where
   rules | allNormed ps = [reflex, headCongruence, bpa2,       filtering]
         | otherwise    = [reflex, headCongruence, bpa1, bpa2, filtering]
