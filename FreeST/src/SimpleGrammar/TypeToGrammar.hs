@@ -27,6 +27,7 @@ import           Kinding.Terminated ( terminated )
 import           Parse.Unparser ( showArrow )
 import           Util.Error ( internalError )
 import           Util.State ( tMapM, tMapM_ )
+import           SimpleGrammar.Minimal
 
 import           Control.Monad.State
 import           Data.Functor
@@ -38,8 +39,8 @@ import           Debug.Trace (trace)
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
-    -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
-    (word, state) = runState (mapM typeToGrammar ts) initial
+    ts'           = map minimal ts
+    (word, state) = runState (mapM typeToGrammar ts') initial
     θ             = substitution state
     prods         = substitute θ (productions state)
     grammar       = Grammar (substitute θ word) prods

@@ -19,7 +19,6 @@ where
 
 import qualified Syntax.Type                 as T
 import           Equivalence.AlphaCongruence
-import           SimpleGrammar.Minimal
 import           SimpleGrammar.TypeToGrammar ( convertToGrammar )
 -- import qualified BisimulationTACAS.Bisimulation   as G ( bisimilar )
 import qualified Bisimulation.Bisimulation   as G ( bisimilar )
@@ -28,5 +27,4 @@ equivalent :: T.Type -> T.Type -> Bool
 equivalent t u = t == u || bisimilar t u
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = G.bisimilar (convertToGrammar [minimal t, minimal u])
-  -- (trace (show (convertToGrammar [minimal t, minimal u])) $ G.bisimilar (convertToGrammar [minimal t, minimal u]))
+bisimilar t u = G.bisimilar (convertToGrammar [t, u])
