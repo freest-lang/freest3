@@ -189,7 +189,7 @@ typeMapPair pairGen cVars n = do
     let x = mkVar pos l
     return ((x, t), (x, u))
 
--- The various functional type constructors (except forall)
+-- The various functional type constructors
 
 arrowPair :: PairGen
 arrowPair cVars n = do

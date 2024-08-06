@@ -43,7 +43,8 @@ kinded t =
 -- Bisimilar types are bisimilar
 prop_bisimilar (BisimPair t u) = kinded t' && kinded u' ==> t' `bisimilar` u'
   where
-    -- Renaming is needed to convert rec a.T into T when a not in free T
+    -- Q: Why renameTypes if function bisimilar performs minimal renaming?
+    -- A: Because we need unique type references across the two types
     [t', u'] = renameTypes [t, u]
 
 -- Equivalence
