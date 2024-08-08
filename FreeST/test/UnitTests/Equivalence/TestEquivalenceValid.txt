@@ -1237,3 +1237,7 @@ forall b . rec a . Wait ; a
 []
 ∀c:*S . ∀a:1S . +{A: c,    C: Close ; c}
 ∀c:*S . ∀a:1S . +{A: Skip, C: Close} ; c
+
+[]
+rec a:1S . &{A: !Int, C: +{B: a}}
+rec a:1S . &{A: !Int, C: +{B: Skip} ; a}
