@@ -1,6 +1,8 @@
 import qualified OldBisim as OB
-import qualified NewBisim as NB
-
+import qualified Bisimulation as NB
+import qualified Bisimulation1 as NB1
+import qualified Bisimulation2 as NB2
+import qualified Bisimulation12 as NB12
 
 --import qualified TypeToGrammar as TG
 --import qualified TypeToGrammar1 as TG1
@@ -50,7 +52,10 @@ timeoutInMicro = 2 * 60 * 1000000
 -- bisimCombs :: [(String, TypeEnv -> Type -> Type -> Bool)]
 bisimCombs = -- Map.fromList
   [ ("OB", OB.bisimilarGrm, TG3.convertToGrammar)
-  , ("NB", NB.isBisimilar, TG3.convertToGrammar)
+  , ("NB", NB.bisimilar, TG3.convertToGrammar)
+  , ("NB1", NB1.bisimilar, TG3.convertToGrammar)
+  , ("NB2", NB2.bisimilar, TG3.convertToGrammar)
+  , ("NB12", NB12.bisimilar, TG3.convertToGrammar)
   ]
 
 -- Get exectime of a computation

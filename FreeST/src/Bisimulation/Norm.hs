@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Bisimulation.Norm
   ( isNormed
   , norm
@@ -38,28 +39,44 @@ instance Normalizable Word where
 instance Normalizable Variable where
   norm g v = norm g [v]
 
+
+normUsingMap :: Set.Set Variable -> Word ->  GlobalState IOF
+normUsingMap _ [] = return (Just 0)
+normUsingMap visitedVars w@(v:vs) = do 
+  (x,y) <- computeNorm visitedVars w v Set.empty
+  deleteFromMap y
+  return x
+
+
+deleteFromMap :: Set.Set Variable -> GlobalState ()
+deleteFromMap vars = do
+  map <- gets normMap
+  let newMap = Set.foldr Map.delete map vars
+  updateNormMap newMap
+
+
 -- Calculates the norm using the NormMap
 -- Receive a grammar, a word, a map and an array of "Variables" (variables already visited)
 -- Returns a tuple with the values of the norm, the variables already visited and the NormMap
-normUsingMap :: Set.Set Variable -> Word -> GlobalState IOF
-normUsingMap _ [] = return (Just 0)
-normUsingMap visitedVars w@(v : vs) = do
+computeNorm :: Set.Set Variable -> Word-> Variable -> Set.Set Variable -> GlobalState (IOF, Set.Set Variable)
+computeNorm _ [] _ vars = return (Just 0, vars)
+computeNorm visitedVars w@(v : vs) parent varsToRecheck = do
   -- troco a ordem e ponho o visitedVars como parametro
   map <- gets normMap
   case Map.lookup v map of
     Just nVar -> do
-      nTail <- normUsingMap visitedVars vs
-      return (liftA2 (+) nTail nVar)
+      (nTail, vars) <- computeNorm visitedVars vs parent varsToRecheck
+      return (liftA2 (+) nTail nVar, vars)
     Nothing -> do
       if v `elem` visitedVars
         then do
-          return Nothing
+          return (Nothing, Set.insert parent varsToRecheck)
         else do
           (Grammar _ prods) <- gets grammar
-          wordNorm visitedVars prods w
+          wordNorm visitedVars prods w parent varsToRecheck
 
-wordNorm :: Set.Set Variable -> Productions -> Word -> GlobalState IOF
-wordNorm visitedVars prods (v : vs) = do
+wordNorm :: Set.Set Variable -> Productions -> Word -> Variable -> Set.Set Variable -> GlobalState (IOF, Set.Set Variable)
+wordNorm visitedVars prods (v : vs) parent varsToRecheck = do
   map <- gets normMap
   let newVisitedVars = Set.insert v visitedVars
       trans = transitions v prods
@@ -68,22 +85,32 @@ wordNorm visitedVars prods (v : vs) = do
     then do
       let nVar = Just 1
       updateNormMap (Map.insert v nVar map)
-      nTail <- normUsingMap newVisitedVars vs
-      return (liftA2 (+) nVar nTail)
+      (nTail,vars) <- computeNorm newVisitedVars vs parent varsToRecheck
+      return (liftA2 (+) nVar nTail,vars)
     else do
-      nVar <-
+      (nVar,vars'') <-
         foldM
-          ( \acc w -> do
-              a <- normUsingMap newVisitedVars w
-              return (minWithInf acc a)
+          ( \(acc,vars) w -> do
+              (a,vars') <- computeNorm newVisitedVars w v vars
+              case a of
+                Nothing -> do 
+                  if (head w) == v 
+                    then
+                      return (minWithInf acc a,vars')
+                    else do 
+                      addLog("notihng")
+                      return (minWithInf acc a, Set.insert v vars')
+                _ -> do
+                  addLog("valor")
+                  return (minWithInf acc a,vars')
           )
-          Nothing
+          (Nothing,varsToRecheck)
           toVisit
       map <- gets normMap
       let nVar' = liftA2 (+) nVar (Just 1)
       updateNormMap (Map.insert v nVar' map)
-      nTail <- normUsingMap newVisitedVars vs
-      return (liftA2 (+) nVar' nTail)
+      (nTail,vars''' )<- computeNorm newVisitedVars vs parent vars''
+      return (liftA2 (+) nVar' nTail,vars''')
 
 -- Auxiliary function of normUsingMap
 -- normUsingMapAux ::  [Word] -> NormState IOF
