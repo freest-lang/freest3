@@ -16,12 +16,12 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE LambdaCase #-}
 
 module Typing.Typing
-  ( typeCheck
-  , synthetise -- for tests
-  , checkAgainst -- for tests
-  , checkDefs
-  , buildMap
-  )
+  -- ( typeCheck
+  -- , synthetise -- for tests
+  -- , checkAgainst -- for tests
+  -- , checkDefs
+  -- , buildMap
+  -- )
 where
 
 import           Syntax.AST
@@ -48,6 +48,13 @@ import           Control.Monad.State ( evalState, MonadState (get), evalStateT, 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
+
+import Debug.Trace
+import qualified Data.Set as Set
+import qualified Typing.Substitution as TSubs
+import Data.Char
+import Data.Maybe
+import           Typing.Normalisation ( normalise )
 
 
 typeCheck :: TypingState ()
@@ -139,7 +146,7 @@ synthetise _ (E.Float p _ ) = return $ T.Float p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv (E.Var _ x) =
+synthetise kEnv e@(E.Var _ x) = synthApp "SYNTH" kEnv e Nothing >>
   getFromSignatures x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
@@ -197,17 +204,19 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   checkAgainst kEnv e1 u1
   return u2
   -- fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  s <- get
-  u <- liftIO $ evalStateT (synthetise kEnv e) s
-  (_, _, t) <- Extract.function e u
-  synthetise kEnv (E.App p (E.TypeApp p fork t) e)
+-- synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
+--   s <- get
+--   u <- liftIO $ evalStateT (synthetise kEnv e) s
+--   (_, _, t) <- Extract.function e u
+--   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
-synthetise kEnv (E.App _ e1 e2) = do
-  t        <- synthetise kEnv e1
-  (_, u1, u2) <- Extract.function e1 t
-  checkAgainst kEnv e2 u1
-  return u2
+synthetise kEnv e@(E.App _ e1 e2) = do
+  synthApp "SYNTH" kEnv e Nothing
+  -- t        <- synthetise kEnv e1
+  -- (_, u1, u2) <- Extract.function e1 t
+  
+  -- -- checkAgainst kEnv e2 u1
+  -- return u2
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
@@ -297,10 +306,75 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- cannot decide whether to use a Lin or a Un function. See
 -- counterexamples: polySUTL.fst when using Lin, and mult.fst when
 -- using Un
--- checkAgainst kEnv (App p e1 e2) u = do
---   t <- synthetise kEnv e2
---   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e t = do 
+checkAgainst kEnv e@(E.App p e1 e2) t = do
+  -- t <- synthetise kEnv e2
+  -- checkAgainst kEnv e1 (Fun p Un/Lin t u)
+    debugM $ "APP Check Against {\n"
+        ++ "\t * e:    " ++ show e ++ "\n"
+        ++ "\t * t:    " ++ show t ++ "\n"
+        ++ "\t * kEnv: " ++ show kEnv ++ "\n"
+        ++ "              }\n"
+    void $ synthApp "CA" kEnv e (Just t)
+
+checkAgainst  kEnv e@(E.Var _ x) t = do
+--  void $ synthApp "CA" kEnv e (Just t)
+  getFromSignatures x >>= \case
+    Just s -> do
+      k <- K.synthetise kEnv s
+      when (K.isLin k) $ removeFromSignatures x
+    Nothing -> return ()
+
+-- synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
+--   void $ K.synthetise kEnv t1
+--   sigs1 <- getSignatures -- Redundant when mult == Lin
+--   addToSignatures x t1
+--   t2 <- synthetise kEnv e
+--   difference kEnv x
+--   when (mult == Un) (do
+--     sigs2 <- getSignatures
+--     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
+--   return $ T.Arrow p mult t1 t2
+
+
+checkAgainst  kEnv e'@(E.Abs p mult (Bind _ x t e)) u = do
+  let (T.Arrow _ _ u1 u2) = normalise u
+
+--  void $ K.synthetise kEnv t
+  sigs1 <- getSignatures -- Redundant when mult == Lin
+  addToSignatures x t
+  
+  compareTypes e' u1 t
+  debugM $ "******** " ++ show u2
+  checkAgainst kEnv e u2
+  difference kEnv x
+  when (mult == Un) (do
+    sigs2 <- getSignatures
+    checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
+
+  return ()
+  -- void $ synthApp "CA" kEnv e (Just t)
+    
+checkAgainst kEnv e'@(E.TypeAbs _ (Bind _ x k e)) t = do
+  ~xx@(T.Forall _ (Bind s y k u')) <- Extract.forall e' t
+  -- TODO: x vs y and also the k's??
+
+  debugM $ "TABS checkAgainst {\n"
+        ++ "\t* e: " ++ show e ++ "\n"
+        ++ "\t* e': " ++ show e' ++ "\n"
+        ++ "\t* t: " ++ show t ++ "\n"
+        ++ "\t* extracted: " ++ show xx ++ "\n"
+        ++ "}\n"
+  -- [t/a]u, substitute t for for every occurrence of a in u
+
+
+  checkAgainst (Map.insert x k kEnv) e (TSubs.subs (T.Var s x) y u')
+
+  
+checkAgainst kEnv e t = do
+  debugM $ "Generic checkAgainst {\n"
+        ++ "\t* e: " ++ show e ++ "\n"
+        ++ "\t* t: " ++ show t ++ "\n"
+        ++ "}\n"
   sub <- subtyping <$> getRunOpts
   case t of 
     t@(T.Arrow _ Lin t1 t2) | not sub -> do 
@@ -353,3 +427,258 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' (x : xs, e) (t:ts) =
     E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
 
+
+
+{- ***********************
+ *
+ * Inference relative
+ *
+*************************-}
+
+
+
+
+data Nary = Nary E.Exp [Nary]
+--          | Simple E.Exp
+          deriving Show
+
+-- toNary function to convert Exp to Nary
+toNary :: E.Exp -> Nary
+toNary e@E.Var{} = Nary e []    -- Base case: A simple variable
+toNary exp = uncurry Nary (collectApps exp [])
+  where
+    collectApps (E.App _ f x) acc = collectApps f (simpleOrNary x : acc)
+    collectApps f acc         = (f, acc)
+
+    simpleOrNary e@E.App{} = toNary e  -- Keep converting if it's an application
+    simpleOrNary exp       = Nary exp []        -- Otherwise, it's a simple expression
+
+
+fromNary :: Nary -> E.Exp
+fromNary (Nary h xs) =
+  foldl (\acc e -> case e of
+            Nary h [] -> E.App (getSpan h) acc h
+            nary@(Nary h _) -> E.App (getSpan h) acc (fromNary nary)
+        ) h xs
+-- fromNary (Simple e) = e
+
+type Sigma = Map.Map Variable T.Type
+
+freshInstVar :: Span -> TypingState Variable
+freshInstVar s = do
+  i <- getNextIndex
+  return $ mkVar s (show i ++ "κ")
+
+-- TODO: Env and add only binds 
+fiv :: T.Type -> Set.Set Variable
+fiv t@(T.Var _ x)
+  | isFiv t = Set.singleton x
+  | otherwise = Set.empty
+fiv (T.Arrow _ _ t u) = fiv t `Set.union` fiv u
+fiv (T.Forall _ b) = fiv (body b)
+fiv t = Set.empty -- TODO: finish (wrong)
+
+
+isFiv (T.Var _ x) = dropWhile isDigit (show x) == "κ"
+isFiv _ = False
+
+-- returns a type 𝜙𝑖 for each of the 𝜋; and the result type 𝜌
+inst :: T.Type -> [Nary] -> TypingState ([T.Type], T.Type) 
+inst t xs = baseInst t xs >>= \(_,xs,u) -> pure (xs, u)
+  where
+    baseInst :: T.Type -> [Nary] -> TypingState (Sigma, [T.Type], T.Type) 
+    baseInst t [] = pure (Map.empty, [], t) -- IRESULT
+    baseInst (T.Forall _ (Bind s y _ t)) xs = do -- IALL 
+      k <- freshInstVar s
+      baseInst (TSubs.subs (T.Var s k) y t) xs
+    baseInst a@(T.Arrow _ _ t u) (x:xs) = do -- IArg
+      sigma1 <- quicklook x t
+      (sigma2, ts, ret) <- baseInst (fullSubs sigma1 u) xs
+      let sigma = sigma1 `Map.union` sigma2
+
+
+      
+      debugM $ "baseInst " ++ " {\n"
+        ++ "\t * x:xs: " ++ show (x:xs) ++ "\n"
+        ++ "\t * type: " ++ show a ++ "\n"
+        ++ "\t * rho: " ++ show (fullSubs sigma t) ++ "\n"
+        ++ "\t * sigma1: " ++ show sigma1 ++ "\n"
+        -- ++ "\t * sigma2: " ++ show sigma2 ++ "\n"
+        -- ++ "\t * ts (u): " ++ show ts ++ "\n"
+        -- ++ "\t * res (u): " ++ show ret ++ "\n"
+        ++ "                              }\n"
+      return (sigma, fullSubs sigma t : ts,ret)
+
+    baseInst x@(T.Var s t) xs
+      | isFiv x = do -- IVar
+          k1 <- freshInstVar s
+          k2 <- freshInstVar s
+          let arrow = T.Arrow s Un (T.Var s k1) (T.Var s k2)
+          (sigma, ts, ret) <- baseInst arrow xs
+          return (Map.singleton t arrow `Map.union` sigma, ts,ret)
+    baseInst t _ = pure (Map.empty, [], t)
+  
+--   undefined
+
+-- TODO finish
+fullSubs :: Sigma -> T.Type -> T.Type
+fullSubs = fullSubs' Set.empty
+  where
+    fullSubs' :: Set.Set Variable -> Sigma -> T.Type -> T.Type
+    fullSubs' s sigma t@(T.Var _ x) =
+      case sigma Map.!? x of
+        Just t -> if Set.member x s then t else fullSubs' (Set.insert x s) sigma t
+        Nothing -> t
+    fullSubs' set sigma (T.Arrow s m t u) =
+      T.Arrow s m (fullSubs' set sigma t) (fullSubs' set sigma u)
+    fullSubs' set sigma (T.Semi s t u) =
+      T.Semi s (fullSubs' set sigma t) (fullSubs' set sigma u)
+    fullSubs' set sigma (T.Message s p t) = T.Message s p (fullSubs' set sigma t)
+    fullSubs' set sigma (T.Labelled p s tm) = T.Labelled p s $ Map.map (fullSubs' set sigma) tm
+    fullSubs' set sigma (T.Forall s (Bind s1 x k t)) = T.Forall s $ Bind s1 x k (fullSubs' set sigma t) 
+    fullSubs' set sigma (T.Dualof s t) = T.Dualof s (fullSubs' set sigma t) 
+    fullSubs' _ _ t = t
+
+quicklook :: Nary -> T.Type -> TypingState Sigma
+quicklook n@(Nary h xs) res = do
+  debugM $ "qlHead\n"
+        ++ "\t* n:" ++ show n ++ "\n"
+  qlHead h >>= \case
+    Just sig -> do
+      (args, res') <- inst sig xs
+      mgu Map.empty (fromNary n) res res' 
+    Nothing -> return Map.empty
+
+
+qlHead :: E.Exp -> TypingState (Maybe T.Type)
+qlHead (E.Var _ x) = getFromSignatures x >>= \case
+  Just sig -> return $ Just sig
+  Nothing  -> error $ show x ++ " is not in gamma"
+  
+-- qlHead (E.Int s _) = return $ Just $ T.Int s
+-- qlHead (E.Char s _) = return $ Just $ T.Char s
+qlHead _ = return Nothing -- error $ "QL Head does not apply " ++ show x
+
+
+-- TODO: TO COMPLETE & This is only matching
+mgu :: K.KindEnv -> E.Exp -> T.Type -> T.Type -> TypingState Sigma
+mgu delta e (T.Forall _ (Bind _ x k1 t1)) (T.Forall _ (Bind _ y k2 t2)) = 
+  mgu (Map.insert x k1 (Map.insert y k2 delta)) e t1 t2
+mgu delta _ (T.Var _ x) t
+  | Map.notMember x delta = pure $ Map.singleton x t
+  | otherwise             = pure $ Map.empty
+mgu delta _ t (T.Var _ x)
+  | Map.notMember x delta = pure $ Map.singleton x t
+  | otherwise             = pure $ Map.empty  
+mgu delta e (T.Arrow _ m1 t1 t2) (T.Arrow _ m2 u1 u2) -- TODO: Check mults
+ {- | m1 == m2-}              = Map.union <$> mgu delta e t1 u1 <*> mgu delta e t2 u2
+--  | otherwise = undefined
+mgu delta e (T.Message _ p1 t1) (T.Message _ p2 t2)
+  | p1 == p2 = mgu delta e t1 t2
+  | otherwise = undefined -- TODO: diff pols
+mgu delta e (T.Semi _ t1 t2) (T.Semi _ u1 u2) =
+  Map.union <$> mgu delta e t1 u1 <*> mgu delta e t2 u2
+
+mgu delta e (T.Labelled _ s1 tm1) (T.Labelled _ s2 tm2)
+  | s1 == s2 = -- Map.union <$> mgu delta e t1 u1 <*> mgu delta e t2 u2
+      Map.foldlWithKey (\m k t -> mgu delta e t (tm2 Map.! k) >>=
+                         \m2 -> m >>= \m1 -> pure $ Map.union m1 m2) (return Map.empty) tm1
+mgu delta e (T.Dualof _ t) (T.Dualof _ u) = mgu delta e t u      
+mgu delta e t u = pure Map.empty
+  -- | equivalent t u = debugM (show t ++ " vs " ++ show u) $> Map.empty
+  -- | otherwise = addError (TypeMismatch (getSpan t) t u e) $> Map.empty
+
+
+
+synthHead kEnv (E.Var _ x) =
+  getFromSignatures x >>= \case
+    Just s -> do
+      -- k <- K.synthetise kEnv s
+      -- debugM $ "removing " ++ show x
+--      when (K.isLin k) $ removeFromSignatures x
+      return s
+
+    Nothing -> do
+      let p = getSpan x
+          s = omission p
+      addError (VarOrConsNotInScope p x)
+      addToSignatures x s
+      return s
+-- synthHead kEnv (E.TypeApp _ e t) = do -- TODO: tmp      
+--   u                             <- synthHead kEnv e
+--   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
+--   void $ K.checkAgainst kEnv k t
+--   return $ Rename.subs t y u' 
+synthHead kEnv e =
+  debugM ("synthHead " ++ show e) >>
+  synthetise kEnv e  -- error $ "synthHead " ++ show e
+      
+
+-- synthApp :: K.KindEnv ->  E.Exp -> TypingState T.Type
+synthApp :: String -> K.KindEnv ->  E.Exp -> Maybe T.Type -> TypingState T.Type
+synthApp mode kEnv e@E.App{} m = checkApp mode kEnv e m
+synthApp mode kEnv e@E.Var{} m = checkApp mode kEnv e m
+-- synthApp _ _ _ _ = return ()
+
+-- checkApp :: K.KindEnv ->  E.Exp -> TypingState T.Type
+checkApp :: String -> K.KindEnv ->  E.Exp -> Maybe T.Type -> TypingState T.Type
+checkApp mode kEnv e m = do
+  let (Nary h pi) = toNary e
+  sigma <- synthHead kEnv h
+  (phi, rho) <- inst (normalise sigma) pi
+
+  theta <- case m of
+             Just t -> mgu kEnv e t rho
+             Nothing -> pure Map.empty
+
+  let phi' = map (fullSubs theta . normalise) phi 
+  let rho' = fullSubs theta rho 
+  
+  
+  debugM $ "checkApp " ++ mode ++ " {\n"
+        ++ "\t * nary:   " ++ show (Nary h pi) ++ "\n"
+        ++ "\t * sigma:  " ++ show sigma ++ "\n"
+        ++ "\t * phi: " ++ show phi ++ "\n"
+        ++ "\t * rho: " ++ show rho ++ "\n"
+        ++ "\t * theta: " ++ show theta ++ "\n"
+        ++ "\t * phi': " ++ show phi' ++ "\n"
+        ++ "\t * rho': " ++ show rho' ++ "\n"
+        ++ "\t * kEnv: " ++ show kEnv ++ "\n"
+        ++ "\t * theta: " ++ show theta ++ "\n"
+        ++ "                        }\n"
+  mapM_ (uncurry (checkArguments mode kEnv . fromNary)) (zip pi phi')
+  
+  when (isJust m) (
+--    compareTypes e (remove rho') (remove $ fromJust m)
+    compareTypes e (applyForall rho') (applyForall $ fullSubs theta $ fromJust m)
+    )
+  return rho'
+  where
+    applyForall t = let s = getSpan t in
+      Map.foldlWithKey(\u x k -> if x `T.isFreeIn` u then T.Forall s (Bind s x k u) else u) t kEnv
+
+    remove (T.Forall _ (Bind _ x k t)) = t
+    remove t = t
+
+checkArguments :: String -> K.KindEnv -> E.Exp -> T.Type -> TypingState ()
+checkArguments mode kEnv e t = do
+  debugM $ "checkArguments " ++ mode ++ " {\n"
+        ++ "\t * e: " ++ show e ++ "\n"
+        ++ "\t * t: " ++ show t ++ "\n"
+        ++ "\t * kEnv: " ++ show kEnv ++ "\n"
+        -- ++ "\t * kEnv: " ++ show kEnv ++ "\n"
+        ++ "                              }\n"
+  
+--  let s = getSpan t
+--  checkAgainst kEnv e t -- (Map.foldlWithKey (\u x k -> T.Forall s (Bind s x k u)) t kEnv)
+  gen kEnv e t
+
+
+gen kEnv e (T.Forall _ (Bind _ x k t)) = gen (Map.insert x k kEnv) e t
+gen kEnv e t =
+  case t of 
+    t@(T.Arrow _ Lin t1 t2) -> do 
+      (_, u1, u2) <- Extract.function e =<< synthetise kEnv e 
+      compareTypes e u1 t1 
+      compareTypes e u2 t2
+    _ ->  checkAgainst kEnv e t

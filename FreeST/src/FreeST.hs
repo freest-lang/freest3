@@ -118,7 +118,7 @@ elabToInf defs s =  s {ast = newAst, extra = newExtra}
                             }
 
 infToTyping :: RunOpts -> IP.InferenceS -> TypingS
-infToTyping runOpts s = s {ast=newAst, extra = runOpts} -- , errors = []}
+infToTyping runOpts s = s {ast=newAst, extra = runOpts , errors = []} -- TODO: comment out errs
   where newAst = AST { types       = types       $ ast s
                      , signatures  = signatures  $ ast s
                      , definitions = definitions $ ast s

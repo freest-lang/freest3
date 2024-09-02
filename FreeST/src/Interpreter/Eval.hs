@@ -144,7 +144,7 @@ eval fun tys ctx eenv (E.App p (E.Var _ x) e)
   | x == mkSelect p =
       return $ PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send (Label $ show e) c)
   | x == mkCollect p = eval fun tys ctx eenv e
-eval fun tys ctx eenv (E.App _ e1 e2) = eval fun tys ctx eenv e1 >>= \case
+eval fun tys ctx eenv (E.App s e1 e2) = eval fun tys ctx eenv e1 >>= \case
   (Closure fun x e ctx' eenv') -> do
     !v <- eval fun tys ctx eenv e2
     eval fun tys (Map.insert x v ctx') eenv' e
@@ -159,6 +159,8 @@ eval fun tys ctx eenv (E.App _ e1 e2) = eval fun tys ctx eenv e1 >>= \case
   (Cons x xs) -> do
     !v <- eval fun tys ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
+
+  (TypeAbs v _ _) -> eval fun tys ctx eenv (E.App s v e2)
   c -> pure c
 eval fun tys ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval fun tys ctx eenv e1 <*> eval fun tys ctx eenv e2
 eval fun tys ctx eenv (E.BinLet _ x y e1 e2) = do

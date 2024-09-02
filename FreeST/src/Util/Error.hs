@@ -266,8 +266,8 @@ instance Message ErrorType where
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
   msg (TypeMismatch _ t u e) sty ts =
     "Couldn't match expected type " ++ style red sty ts t ++ "\n" ++ 
-    "            with actual type " ++ style red sty ts u ++ "\n" ++
-    "              for expression " ++ style red sty ts e
+    "              with actual type " ++ style red sty ts u ++ "\n" ++
+    "                for expression " ++ style red sty ts e
   msg (TypeCheckTimeout _ sub t u e to) sty ts =
     "Timeout when matching expected type " ++ style red sty ts t ++ "\n" ++
     "                     with actual type " ++ style red sty ts u ++ "\n" ++
