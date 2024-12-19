@@ -1,0 +1,12 @@
+<pending>
+There are may possible outcomes. Here is one:
+
+1 is entering critical region 
+2 is entering critical region 
+1 is leaving critical region 
+3 is entering critical region 
+2 is leaving critical region 
+4 is entering critical region 
+3 is leaving critical region 
+4 is leaving critical region 
+()
