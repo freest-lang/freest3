@@ -18,7 +18,7 @@ instance Replace T.Type where
   replace (  T.Message p pol t) = T.Message p pol <$> replace t
   replace (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> replace t1 <*> replace t2
   replace (  T.Semi   p t1  t2) = T.Semi p <$> replace t1 <*> replace t2
-  replace (  T.Forall p kb    ) = T.Forall p <$> replace kb
+  replace (  T.Quant s p kb   ) = T.Quant s p <$> replace kb
   replace (  T.Rec    p kb    ) = T.Rec p <$> replace kb
   replace n@(T.Var    p tname ) = getFromTypes tname >>= \case
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
@@ -71,7 +71,7 @@ changePos s (T.End _ p        ) = T.End s p
 changePos s (T.Semi _ t u     ) = T.Semi s t u
 changePos s (T.Message _ p t  ) = T.Message s p t
   -- Polymorphism and recursive types
-changePos s (T.Forall _ b     ) = T.Forall s b
+changePos s (T.Quant _ p b     ) = T.Quant s p b
 changePos s (T.Rec _ b        ) = T.Rec s b
 changePos s (T.Var _ v        ) = T.Var s v
   -- Type operators

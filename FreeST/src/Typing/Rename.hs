@@ -98,7 +98,7 @@ instance Rename T.Type where
   rename σ τ (T.Semi p t u) = T.Semi p <$> rename σ τ t <*> rename σ τ u
   rename σ τ (T.Message p pol t) = T.Message p pol <$> rename σ τ t
   -- Polymorphism and recursive types
-  rename σ τ (T.Forall p b) = T.Forall p <$> rename σ τ b
+  rename σ τ (T.Quant s p b) = T.Quant s p <$> rename σ τ b
   -- Without rec-cleaning
   rename σ τ (T.Rec p b) = T.Rec p <$> rename σ τ b
   -- With rec-cleaning

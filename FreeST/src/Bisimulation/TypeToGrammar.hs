@@ -72,9 +72,9 @@ toGrammar' (T.Message _ p t) = do
   getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])]
 -- Polymorphism and recursive types
 -- Use intern to build the terminal for polymorphic variables (do not use show which gets the program-level variable
-toGrammar' (T.Forall _ (Bind _ a k t)) = do
+toGrammar' (T.Quant _ p (Bind _ a k t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton (Forall (intern a) k) xs
+  getLHS $  Map.singleton (Quant p (intern a) k) xs
 toGrammar' (T.Rec _ (Bind _ a _ _)) = return [a]
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ intern a) []
 -- Type operators

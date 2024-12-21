@@ -50,7 +50,7 @@ data Type =
   | Semi Span Type Type
   | Message Span Polarity Type
   -- Polymorphism and recursive types
-  | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Quant Span Polarity (Bind K.Kind Type)   -- ∀k . T, Universal type; ∃k . T, Existential type
   | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
   | Var Span Variable
   -- Type operators
@@ -75,7 +75,7 @@ instance Located Type where
   getSpan (End p _       ) = p
   getSpan (Semi p _ _    ) = p
   getSpan (Message p _ _ ) = p
-  getSpan (Forall p _    ) = p
+  getSpan (Quant p _ _   ) = p
   getSpan (Rec p _       ) = p
   getSpan (Var p _       ) = p
   getSpan (Dualof p _    ) = p
@@ -99,7 +99,7 @@ free (Labelled _ _ m) =
 free (Semi _ t u) = free t `Set.union` free u
 free (Message _ _ t) = free t 
   -- Polymorphism and recursive types
-free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
+free (Quant _ _ (Bind _ a _ t)) = Set.delete a (free t)
 free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
 free (Var _ x) = Set.singleton x
   -- Type operators

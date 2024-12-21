@@ -45,7 +45,7 @@ $eol=[\n]
 @exponent = [eE][\-\+]?@decimal
 
 -- # λ  -- forall not in range ([λ ∀])
-$greekId = [λ ∀ Λ μ]
+$greekId = [λ ∀ ∃ Λ μ]
 
 @lowerId = ($lower # $greekId) $alphaNumeric*
 @upperId = ($upper # $greekId) $alphaNumeric*
@@ -143,7 +143,8 @@ tokens :-
   with				{ \p s -> TokenWith (internalPos p) }
   case				{ \p s -> TokenCase (internalPos p) }
   of				{ \p s -> TokenOf (internalPos p) }
-  (forall|∀)                    { \p s -> TokenForall (internalPos p) }
+  (forall|∀)                    { \p s -> TokenExists (internalPos p) }
+  (exists|∃)                     { \p s -> TokenExists (internalPos p) }
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
@@ -224,6 +225,7 @@ data Token =
   | TokenCase Span
   | TokenOf Span
   | TokenForall Span
+  | TokenExists Span
   | TokenDualof Span
   | TokenFArrow Span
   | TokenMinus Span
@@ -316,6 +318,7 @@ instance Show Token where
   show (TokenCase _) = "case"
   show (TokenOf _) = "of"
   show (TokenForall _) = "forall"
+  show (TokenExists _) = "exists"
   show (TokenDualof _) = "dualof"
   show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
@@ -442,6 +445,7 @@ instance Located Token where
   getSpan (TokenMatch p) = p
   getSpan (TokenCase p) = p
   getSpan (TokenForall p) = p
+  getSpan (TokenExists p) = p
   getSpan (TokenMinus p) = p
   getSpan (TokenMinusDot p) = p
   getSpan (TokenTimes p) = p

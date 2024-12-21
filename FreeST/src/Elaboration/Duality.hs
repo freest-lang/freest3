@@ -58,7 +58,7 @@ instance Cosubs T.Type where
   cosubs t x (T.Labelled p s  m   ) = T.Labelled p s (Map.map (cosubs t x) m)
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
-  cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
+  cosubs t x (T.Quant s p b      ) = T.Quant s p (cosubs t x b)
   cosubs t x u@(T.Dualof _ (T.Var _ y))
     | y == x = t
     | otherwise = u
@@ -84,7 +84,7 @@ instance Subs T.Type Variable T.Type where
   subs t x (T.Semi   p t1 t2  ) = T.Semi p (subs t x t1) (subs t x t2)
   -- Polymorphism and recursion
   subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
-  subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
+  subs t x (T.Quant s p b     ) = T.Quant s p (subs t x b)
   subs t x u@(T.Var _ y)
     | y == x    = t
     | otherwise = u

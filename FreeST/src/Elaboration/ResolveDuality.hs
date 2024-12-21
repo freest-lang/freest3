@@ -77,8 +77,8 @@ solveType v (T.Labelled p s m   ) = T.Labelled p s <$> tMapM (solveType v) m
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
 solveType v (T.Message p pol t) = T.Message p pol <$> solveType v t
 -- Polymorphism and recursive types
-solveType v (T.Forall p (Bind p' a k t)) =
-  T.Forall p . Bind p' a k <$> solveType v t
+solveType v (T.Quant s p (Bind p' a k t)) =
+  T.Quant s p . Bind p' a k <$> solveType v t
 solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
 solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
@@ -131,9 +131,9 @@ changePos p (T.Labelled _ s m ) = T.Labelled p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End _ pol      ) = T.End p pol
 changePos p (T.Semi    _ t   u) = T.Semi p t u
-changePos p (T.Message _ pol b) = T.Message p pol b
+changePos p (T.Message _ pol u) = T.Message p pol u
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
-changePos p (T.Forall _ xs    ) = T.Forall p xs
+changePos p (T.Quant _ pol   b) = T.Quant p pol b
 changePos p (T.Var    _ x     ) = T.Var p x
 changePos p (T.Dualof _ (T.Var _ x)) = T.Dualof p $ T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t

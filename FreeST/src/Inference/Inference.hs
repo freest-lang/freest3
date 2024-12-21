@@ -50,7 +50,7 @@ instance KindSubs T.Type where
   substitute subs (T.Labelled s sort m) = T.Labelled s sort (Map.map (substitute subs) m)
   substitute subs (T.Semi s t1 t2) = T.Semi s (substitute subs t1) (substitute subs t2)
   substitute subs (T.Message s p t) = T.Message s p (substitute subs t)
-  substitute subs (T.Forall s b) = T.Forall s (substitute subs b)
+  substitute subs (T.Quant s p b) = T.Quant s p (substitute subs b)
   substitute subs (T.Rec s b) = T.Rec s (substitute subs b)
   substitute subs (T.Dualof s t) = T.Dualof s (substitute subs t)
   substitute _ t = t

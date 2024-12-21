@@ -93,7 +93,7 @@ synthetise' s kEnv mu@(T.Rec _ (Bind _ a k t)) = do
   if normed s mu
     then pure k'
     else pure $ K.Kind p m K.Absorb
-synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
+synthetise' s kEnv (T.Quant _ _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p m K.Top
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of

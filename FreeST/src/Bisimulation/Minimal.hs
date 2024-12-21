@@ -36,8 +36,8 @@ minimal (Labelled s k m) = Labelled s k (Map.map minimal m)
 minimal (Semi s t u) = Semi s (minimal t) (minimal u)
 minimal (Message s p t) = Message s p (minimal t)
   -- Polymorphism and recursive types
-minimal t@(Forall s1 (Bind s2 a k u)) =
-  Forall s1 (Bind s2 b k (minimal (subs vb a u)))
+minimal t@(Quant s1 p (Bind s2 a k u)) =
+  Quant s1 p (Bind s2 b k (minimal (subs vb a u)))
     where b = mkNewVar (first t) a
           vb = Var (getSpan b) b
 minimal (Rec s1 (Bind s2 a k t))

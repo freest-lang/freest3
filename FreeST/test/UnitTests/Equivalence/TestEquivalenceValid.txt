@@ -951,6 +951,82 @@ rec y:1S . rec x:1S . (+{B: z, C: !Char});(?();!Int;+{A: y, C: Skip};!());!Int;x
 rec y:1S . (+{B: z;Skip, C: !Char;Skip};(?();!Int);+{A: y;!(), C: Skip;!()});!Int;y
 rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!());!Int;x
 
+[]
+!(forall a . a) ; Skip
+!(forall b . b)
+
+[]
+!(∀a . a -> a) -> Skip
+!(∀b . b -> b) -> Skip ; Skip
+
+[]
+!(∀a . (rec b:1S . !Int ; b) -> a) -> Skip
+!(∀c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
+
+[]
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
+∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
+[]
+∀a:1S . ∀c:1S . c 1-> a
+∀a:1S . ∀c:1S . c 1-> Skip ; a
+
+-- exists - dual of the above
+
+[]
+exists α: 1S . α -> α
+exists β: 1S . β -> β
+
+[]
+Int -> exists α: 1S . α -> α
+Int -> exists α: 1S . α -> α
+
+[("α", "*T")]
+exists β: 1S . β -> α
+exists β: 1S . β -> α
+
+[]
+Int -> exists α: 1S . α -> α ; Skip
+Int -> exists α: 1S . α -> α
+
+[]
+Int -> exists α: 1S . α -> α ; (α ; α)
+Int -> exists α: 1S . α -> (α ; α) ; α
+
+[]
+!(∃a . a) ; Skip
+!(∃b . b)
+
+[]
+!(∃a . a -> a) -> Skip
+!(∃b . b -> b) -> Skip ; Skip
+
+[]
+!(∃a . (rec b:1S . !Int ; b) -> a) -> Skip
+!(∃c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
+
+[]
+∃a:1S . ∃b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
+∃a:1S . ∃b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
+[]
+∃a:1S . ∃c:1S . c 1-> a
+∃a:1S . ∃c:1S . c 1-> Skip ; a
+
+-- Mixing forall and exists
+
+[]
+∀a:1S . ∃c:1S . c 1-> a
+∀a:1S . ∃c:1S . c 1-> Skip ; a
+
+[]
+∃a:1S . ∀c:1S . ∃c:1S . c 1-> a
+∃a:1S . ∀c:1S . ∃c:1S . c 1-> Skip ; a
+
+[]
+∃a:1S . ∀b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
+∃a:1S . ∀b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
 -- Higher-order
 
 []
@@ -1026,27 +1102,6 @@ rec x:1S. !x
 []
 (Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
-
--- Forall
-[]
-!(forall a . a) ; Skip
-!(forall b . b)
-
-[]
-!(∀a . a -> a) -> Skip
-!(∀b . b -> b) -> Skip ; Skip
-
-[]
-!(∀a . (rec b:1S . !Int ; b) -> a) -> Skip
-!(∀c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
-
-[]
-∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
-∀a:1S . ∀b:1S . ∀c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
-
-[]
-∀a:1S . ∀c:1S . c 1-> a
-∀a:1S . ∀c:1S . c 1-> Skip ; a
 
 -- Two alpha-equivalent types
 []
@@ -1246,6 +1301,6 @@ rec x:*S . &{A:x, B:x, C:x}
 
 -- Forall and Close/Wait
 
-[]
-forall b . Wait
-forall b . rec a . Wait ; a
+-- []
+-- forall b . Wait
+-- forall b . rec a . Wait ; a

@@ -118,6 +118,7 @@ import           Paths_FreeST ( getDataFileName )
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
+  exists   {TokenExists _}
   dualof   {TokenDualof _}
 
 -- %nonassoc LOWER_ID UPPER_ID
@@ -237,7 +238,7 @@ ProgVarAndList :: { [Variable] }
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
-  | KindBind TypeDecl { let (a,k) = $1 in T.Forall (getSpan a) (Bind (getSpan k) a k $2) }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Quant (getSpan a) T.In (Bind (getSpan k) a k $2) }
 
 DataCons :: { [(Variable, [T.Type])] }
   : DataCon              {% checkDupCons $1 [] >> return [$1] }
@@ -437,7 +438,8 @@ Type :: { T.Type }
 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
-  | forall KindBind Forall        {% let (a,k) = $2 in flip T.Forall (Bind (getSpan a) a k $3) `fmap` mkSpanSpan $1 $3 }
+  | forall KindBind Forall        {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ T.Quant s T.In  (Bind (getSpan a) a k $3) }
+  | exists KindBind Exists        {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ T.Quant s T.Out (Bind (getSpan a) a k $3) }
   | TypeVar                       {% flip T.Var $1 `fmap` mkSpan $1 }
   -- Type operators
   | dualof Type                   {% flip T.Dualof $2 `fmap` mkSpanSpan $1 $2 }
@@ -447,7 +449,12 @@ Type :: { T.Type }
 Forall :: { T.Type }
   : '.' Type { $2 }
   | KindBind Forall
-      { let (a,k) = $1 in T.Forall (getSpan a) (Bind (getSpan k) a k $2) }
+      { let (a,k) = $1 in T.Quant (getSpan a) T.In (Bind (getSpan k) a k $2) }
+
+Exists :: { T.Type }
+  : '.' Type { $2 }
+  | KindBind Exists
+      { let (a,k) = $1 in T.Quant (getSpan a) T.Out (Bind (getSpan k) a k $2) }
 
 TupleType :: { T.Type }
   : Type               { $1 }

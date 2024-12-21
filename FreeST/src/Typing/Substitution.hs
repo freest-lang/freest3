@@ -47,7 +47,7 @@ instance Subs T.Type where
   subs t a (T.Message s pol t1) = T.Message s pol (subs t a t1)
   -- Polymorphism and recursion
   subs t a (T.Rec s b) = T.Rec s (subs t a b)
-  subs t a (T.Forall s b) = T.Forall s (subs t a b)
+  subs t a (T.Quant s p b) = T.Quant s p (subs t a b)
   subs t a u@(T.Var _ y)
     | y == a    = t
     | otherwise = u
@@ -80,7 +80,7 @@ instance Cosubs T.Type where
   cosubs t a (T.Message s pol t1) = T.Message s pol (cosubs t a t1)
     -- Polymorphism and recursion
   cosubs t a (T.Rec s b) = T.Rec s (cosubs t a b)
-  cosubs t a (T.Forall s b) = T.Forall s (cosubs t a b)
+  cosubs t a (T.Quant s p b) = T.Quant s p (cosubs t a b)
   -- Type operators
   cosubs t a u@(T.Dualof _ (T.Var _ b))
     | a == b    = t

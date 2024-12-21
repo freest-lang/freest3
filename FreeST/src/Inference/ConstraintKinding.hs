@@ -57,7 +57,7 @@ cg pEnv kEnv (T.Labelled s _ m) = do
   unless (all isVar kl) $ 
     addConstraint $ MultC mv (foldl (\acc k -> if isVar k then acc else k:acc ) [] kl)
   return $ K.Kind s (MultVar mv) K.Top
-cg pEnv kEnv (T.Forall s b) = do
+cg pEnv kEnv (T.Quant s _ b) = do
   k' <- cg (Set.insert (var b) pEnv) (Map.insert (var b) (binder b) kEnv) (body b)
   mv <- freshMultVar s
   addConstraint $ MultC mv [k']

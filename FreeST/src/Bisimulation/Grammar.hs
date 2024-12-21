@@ -64,7 +64,7 @@ data Label = FatTerm String
            | MessageC T.Polarity  
            | Pair1
            | Pair2
-           | Forall String K.Kind 
+           | Quant T.Polarity String K.Kind 
            | Var String    
   deriving (Eq, Ord)
 
@@ -144,7 +144,8 @@ instance Show Label where
   show (MessageC p) = show p ++ "c"
   show Pair1 = "π1" 
   show Pair2 = "π2" 
-  show (Forall a k) = "∀"++a++":"++show k
+  show (Quant T.In a k) = "∀"++a++":"++show k
+  show (Quant T.Out a k) = "∃"++a++":"++show k
   show (Var a) = a
 
 instance Show Grammar where

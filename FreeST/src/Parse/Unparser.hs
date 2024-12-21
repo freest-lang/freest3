@@ -201,7 +201,7 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right semiRator
   unparse (T.Labelled _ (T.Choice v) m) =
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
+  unparse (T.Quant _ p b) = (arrowRator, showQuant p ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
     (maxRator, "*" ++ show t)
@@ -211,6 +211,10 @@ instance Unparse T.Type where
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
+
+showQuant :: T.Polarity -> String
+showQuant (T.In) = "∀"
+showQuant (T.Out) = "∃"
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "

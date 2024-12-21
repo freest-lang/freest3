@@ -211,17 +211,17 @@ synthetise kEnv (E.App _ e1 e2) = do
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
-  T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
+  T.Quant p T.In . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   u                             <- synthetise kEnv new
-  ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
+  ~(T.Quant _ T.In (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
   return $ Rename.subs t y u'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                               <- synthetise kEnv e
-  ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
+  ~(T.Quant _ T.In (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Pair introduction

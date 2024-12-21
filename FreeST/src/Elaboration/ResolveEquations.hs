@@ -38,8 +38,8 @@ solveEq v f t@(T.Var p x)
   | otherwise = getFromTypes x >>= \case
     Just tx -> solveEq (f `Set.insert` v) x (snd tx)
     Nothing -> addError (TypeVarOutOfScope p x) $> omission p
-solveEq v f (T.Forall p (Bind p1 x k t)) =
-  T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+solveEq v f (T.Quant s p (Bind p1 x k t)) =
+  T.Quant s p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
 solveEq v f (T.Rec p (Bind p1 x k t)) =
   T.Rec p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
 solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
@@ -65,6 +65,6 @@ clean (T.Labelled p s tm) = T.Labelled p s $ Map.map clean tm
 clean (T.Arrow p m t1 t2) = T.Arrow p m (clean t1) (clean t2)
 clean (T.Semi p t1 t2) = T.Semi p (clean t1) (clean t2) 
 clean (T.Message p pol t) = T.Message p pol (clean t)
-clean (T.Forall p (Bind p1 y k t)) = T.Forall p $ Bind p1 y k (clean t)
+clean (T.Quant s p (Bind p1 y k t)) = T.Quant s p $ Bind p1 y k (clean t)
 clean (T.Dualof p t) = T.Dualof p (clean t)
 clean kt = kt

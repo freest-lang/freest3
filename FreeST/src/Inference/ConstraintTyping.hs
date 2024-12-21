@@ -88,11 +88,11 @@ ctyping kEnv (E.Abs s m b) = do
     isAbs _ = False
 ctyping kEnv (E.TypeAbs s b) = do
   (t, u) <- ctyping (Map.insert (var b) (binder b) kEnv) (body b)
-  return (T.Forall s (Bind s (var b) (binder b) t), u)
+  return (T.Quant s T.In (Bind s (var b) (binder b) t), u)
 ctyping kEnv (E.TypeApp _ e t) = do
   k <- constraintKinding kEnv t
   (t1, u) <- ctyping kEnv e 
-  ~(T.Forall _ b) <- Extract.forall e t1
+  ~(T.Quant _ T.In b) <- Extract.forall e t1
   addConstraint $ KindC k (binder b)
   return (subs t (var b) (body b), u)
 ctyping kEnv (E.BinLet _ x y e1 e2) = do
@@ -131,7 +131,7 @@ ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity
 mult (T.Arrow _ m _ _) = m
-mult (T.Forall _ b) = mult (body b)
+mult (T.Quant _ _ b) = mult (body b)
 mult t = error $ show t    
 
 ctypingMap :: K.KindEnv -> ([Variable], E.Exp) ->
