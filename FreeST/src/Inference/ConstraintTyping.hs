@@ -134,11 +134,11 @@ ctyping kEnv (E.Pack _ u e2 t) = do
   -- k2 <- constraintKinding kEnv t2
   -- ~(T.Quant _ T.Out b) <- Extract.exists e t1
   pure (t, Map.empty)
-ctyping kEnv (E.Unpack _ _ x e1 e2) = do
+ctyping kEnv (E.Unpack _ a x e1 e2) = do
   (t,u1) <- ctyping kEnv e1
   ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t
   addToSignatures x t12
-  ctyping (Map.insert b k kEnv) e2
+  ctyping (Map.insert b k (Map.insert b k kEnv)) e2
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

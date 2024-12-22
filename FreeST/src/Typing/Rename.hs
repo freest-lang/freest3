@@ -172,7 +172,7 @@ renameVar x = do
 
 -- Substitution and unfold, the renamed versions
 
--- [t/x]u, substitute t for for every free occurrence of x in u;
+-- [t/a]u, substitute t for for every free occurrence of a in type u;
 -- rename the resulting type
 subs :: T.Type -> Variable -> T.Type -> T.Type
 subs = renameType `compose3` Subs.subs

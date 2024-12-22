@@ -187,7 +187,6 @@ rec b:1S . !(rec a:1S . +{A: !Int;a, B: Wait;a});Skip;?(b;Skip;!(Wait);Wait;b;!b
 ∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;Wait;α});!Int);?(a;!(Wait);Wait)
 ∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;Wait;!a});Skip;?(b;Skip;!(Wait);Wait;β;!β)
 
-
 -- Functional and session, mixed
 
 []
@@ -972,6 +971,10 @@ rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!
 ∀a:1S . ∀c:1S . c 1-> Skip ; a
 
 -- exists - dual of the above
+
+[]
+exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
 
 []
 exists α: 1S . α -> α

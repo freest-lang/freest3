@@ -6,21 +6,24 @@ Types and programming languages. MIT Press 2002
 counterADT : ∃a . (a, a -> Int, a -> a)
 counterADT =
   { Int
-  , (1, λi:Int -> i, λi:Int -> succ i)
+  , ( 1                -- new
+    , λi:Int -> i      -- get
+    , λi:Int -> succ i -- inc
+    )
   }
   as
   ∃a . (a, a -> Int, a -> a)
 
 flipFlopADT : ∃a . (a, a -> Bool, a -> a, a -> a)
 flipFlopADT =
-  let {a, counter} = counterADT in
+  let {counterType, counter} = counterADT in
   let (newc, ops) = counter in
-  let (get, inc) = ops in
-  { a
-  , ( newc
-    , λc:a -> even (get c)
-    , λc:a -> inc c
-    , λc:a -> new
+  let (get, inc) = b in
+  { counterType
+  , ( newc                           -- new
+    , λc:counterType -> even (get c) -- read
+    , λc:counterType -> inc c        --  toggle
+    , λc:counterType -> newc         -- reset
     )
   }
   as

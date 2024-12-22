@@ -214,16 +214,16 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   T.Quant p T.In . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
-  u                             <- synthetise kEnv new
+  u                                 <- synthetise kEnv new
   ~(T.Quant _ T.In (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
   return $ Rename.subs t y u'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
-  u                               <- synthetise kEnv e
-  ~(T.Quant _ T.In (Bind _ y k u')) <- Extract.forall e u
+  u                                 <- synthetise kEnv e
+  ~(T.Quant _ T.In (Bind _ a k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
-  return $ Rename.subs t y u'
+  return $ Rename.subs t a u'
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -255,11 +255,12 @@ synthetise kEnv e@(E.Pack _ u e2 t) = do
   ~(T.Quant _ T.Out (Bind _ a _ t2)) <- Extract.exists e t
   checkAgainst kEnv e2 (Rename.subs u a t2) -- [u/a]t2
   pure t
-synthetise kEnv (E.Unpack _ _ x e1 e2) = do
+synthetise kEnv (E.Unpack _ a x e1 e2) = do
   t1 <- synthetise kEnv e1
   ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t1
-  addToSignatures x t12
-  let kEnv' = Map.insert b k kEnv
+  let aAsVar = T.Var (getSpan a) a
+  addToSignatures x (Rename.subs aAsVar b t12)
+  let kEnv' = Map.insert a k kEnv
   t2 <- synthetise kEnv' e2
   difference kEnv' x
   pure t2
