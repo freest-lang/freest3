@@ -252,14 +252,14 @@ synthetise kEnv (E.Case p e fm) = do
   return t
 -- Pack & Unpack
 synthetise kEnv e@(E.Pack _ u e2 t) = do
-  ~(T.Quant _ T.Out (Bind _ a _ t2)) <- {- trace ("Encontrei " ++ show u ++ " / " ++ show e2 ++ " / " ++ show t) -} Extract.exists e t
+  ~(T.Quant _ T.Out (Bind _ a _ t2)) <- Extract.exists e t
   checkAgainst kEnv e2 (Rename.subs u a t2) -- [u/a]t2
   pure t
-synthetise kEnv e@(E.Unpack _ a x e1 e2) = do
-  t1 <- {- trace ("Encontrei " ++ show a ++ " / " ++ show x ++ " / " ++ show e1 ++ " / " ++ show e2) -} synthetise kEnv e1
-  ~(T.Quant _ T.Out (Bind _ a k t12)) <- Extract.exists e1 t1
+synthetise kEnv (E.Unpack _ _ x e1 e2) = do
+  t1 <- synthetise kEnv e1
+  ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t1
   addToSignatures x t12
-  let kEnv' = Map.insert a k kEnv
+  let kEnv' = Map.insert b k kEnv
   t2 <- synthetise kEnv' e2
   difference kEnv' x
   pure t2

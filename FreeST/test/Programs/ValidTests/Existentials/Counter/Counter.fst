@@ -1,7 +1,7 @@
--- {T,e} as T
-
--- let {X,x} = e in e
-
+{-
+Benjamin C. Pierce:
+Types and programming languages. MIT Press 2002
+-}
 counterADT : ∃a . (a, a -> Int, a -> a)
 counterADT =
   { Int

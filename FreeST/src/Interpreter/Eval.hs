@@ -168,7 +168,12 @@ eval fun tys ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tys ctx eenv e1
   eval fun tys (Map.insert x v ctx) eenv e2
 eval fun tys ctx eenv (E.Case s e m) = eval fun tys ctx eenv e >>=  evalCase fun s tys ctx eenv m 
-eval fun _ _ _ _ = internalError "Interpreter.Eval.eval" fun
+-- Pack & Unpack
+eval fun tys ctx eenv (E.Pack _ _ e _)  = eval fun tys ctx eenv e
+eval fun tys ctx eenv (E.Unpack _ _ x e1 e2)  = do
+  !v <- eval fun tys ctx eenv e1
+  eval fun tys (Map.insert x v ctx) eenv e2  
+eval fun _ _ _ e = internalError "Interpreter.Eval.eval" e
 
 
 evalCase :: Variable -> Span -> Types -> Ctx -> Definitions Typing -> E.FieldMap -> Value -> IO Value
