@@ -259,7 +259,7 @@ synthetise kEnv (E.Unpack _ a x e1 e2) = do
   t1 <- synthetise kEnv e1
   ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t1
   let aAsVar = T.Var (getSpan a) a
-  addToSignatures x (Rename.subs aAsVar b t12)
+  addToSignatures x (Rename.subs aAsVar b t12) -- [a/b]t12
   let kEnv' = Map.insert a k kEnv
   t2 <- synthetise kEnv' e2
   difference kEnv' x

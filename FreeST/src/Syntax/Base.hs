@@ -81,11 +81,11 @@ extern :: Variable -> String
 extern (Variable _ str _) = str
 -- extern = intern -- for debugging purposes
 
--- Making a variable from a span and string
+-- Make a variable from a span and string
 mkVar :: Span -> String -> Variable
 mkVar s str = Variable s str (-1)
 
--- Making a variable from an integer and a variable. The new variable is
+-- Make a variable from an integer and a variable. The new variable is
 -- unique if the integer is.
 mkNewVar :: Int -> Variable -> Variable
 mkNewVar next (Variable s str _) = Variable s str next

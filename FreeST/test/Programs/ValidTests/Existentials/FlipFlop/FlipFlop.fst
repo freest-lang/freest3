@@ -18,11 +18,11 @@ flipFlopADT : ∃a . (a, a -> Bool, a -> a, a -> a)
 flipFlopADT =
   let {counterType, counter} = counterADT in
   let (newc, ops) = counter in
-  let (get, inc) = b in
+  let (get, inc) = ops in
   { counterType
   , ( newc                           -- new
     , λc:counterType -> even (get c) -- read
-    , λc:counterType -> inc c        --  toggle
+    , λc:counterType -> inc c        -- toggle
     , λc:counterType -> newc         -- reset
     )
   }

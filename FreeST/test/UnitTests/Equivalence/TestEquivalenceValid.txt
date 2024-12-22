@@ -976,6 +976,10 @@ rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!
 exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
 exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
 
+[("counterType","*T")]
+(counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+(counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+
 []
 exists α: 1S . α -> α
 exists β: 1S . β -> β
