@@ -126,7 +126,19 @@ ctyping kEnv (E.Pair s e1 e2) = do
   let (l0:l1:_) = mkTupleLabels
   let m = Map.insert (l0 defaultSpan) t (Map.singleton (l1 defaultSpan) u)
   merge u1 u2
-  return (T.Labelled s T.Record m, u1 ∪ u2) 
+  return (T.Labelled s T.Record m, u1 ∪ u2)
+-- Existentials
+ctyping kEnv (E.Pack _ u e2 t) = do
+  -- k1 <- constraintKinding kEnv u
+  -- (t, u) <- ctyping kEnv e2
+  -- k2 <- constraintKinding kEnv t2
+  -- ~(T.Quant _ T.Out b) <- Extract.exists e t1
+  pure (t, Map.empty)
+ctyping kEnv (E.Unpack _ a x e1 e2) = do
+  (t,u1) <- ctyping kEnv e1
+  ~(T.Quant _ T.Out (Bind _ a k t12)) <- Extract.exists e1 t
+  addToSignatures x t12
+  ctyping (Map.insert a k kEnv) e2
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

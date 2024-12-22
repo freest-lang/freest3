@@ -19,6 +19,7 @@ module Typing.Extract
   ( function
   , pair
   , forall
+  , exists
   , output
   , input
   , outChoiceMap
@@ -61,11 +62,18 @@ pair e t =
         l1 = (mkTupleLabels !! 1) defaultSpan 
 
 forall :: MonadState (FreestS a) m => E.Exp -> T.Type -> m T.Type
-forall e t =
+forall = quant T.In
+
+exists :: MonadState (FreestS a) m => E.Exp -> T.Type -> m T.Type
+exists = quant T.Out
+
+quant :: MonadState (FreestS a) m => T.Polarity -> E.Exp -> T.Type -> m T.Type
+quant p e t =
   case normalise t of
-    u@(T.Quant _ T.In _) -> return u
-    u -> let s = getSpan e in
-      addError (ExtractError s "a polymorphic" e u) $> T.Quant s T.In (omission s)
+    u@(T.Quant _ p' _) | p == p' -> pure u
+    u -> let s = getSpan e
+             q = if p == T.In then "a polymorphic" else "an existential" in
+      addError (ExtractError s q e u) $> T.Quant s p (omission s)
 
 output :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Type, T.Type)
 output = message T.Out "an output"

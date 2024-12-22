@@ -308,6 +308,18 @@ instance Unparse Exp where
     p = "(" ++ show x ++ ", " ++ show y ++ ")"
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
+  -- Pack and unpack
+  unparse (E.Pack _ t1 e t2) =  (maxRator, "{" ++ t1' ++ ", " ++ e' ++ "} as " ++ t2')
+    where
+      t1' = bracket (unparse t1) Left inRator
+      e'  = bracket (unparse e)  Right inRator
+      t2' = bracket (unparse t2) NonAssoc inRator
+  unparse (E.Unpack _ x y e1 e2) = 
+    (inRator, "let " ++ p ++ " = " ++ l ++ " in " ++ r)
+   where
+    p = "{" ++ show x ++ ", " ++ show y ++ "}"
+    l = bracket (unparse e1) Left inRator
+    r = bracket (unparse e2) Right inRator
   -- Boolean elim
   unparse (E.Case p e m) | Map.keysSet m == Set.fromList [mkTrue p, mkFalse p] = 
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)

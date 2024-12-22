@@ -48,7 +48,7 @@ import           Control.Monad.State ( evalState, MonadState (get), evalStateT, 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
-
+import           Debug.Trace (trace)
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -250,6 +250,19 @@ synthetise kEnv (E.Case p e fm) = do
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return t
+-- Pack & Unpack
+synthetise kEnv e@(E.Pack _ u e2 t) = do
+  ~(T.Quant _ T.Out (Bind _ a _ t2)) <- {- trace ("Encontrei " ++ show u ++ " / " ++ show e2 ++ " / " ++ show t) -} Extract.exists e t
+  checkAgainst kEnv e2 (Rename.subs u a t2) -- [u/a]t2
+  pure t
+synthetise kEnv e@(E.Unpack _ a x e1 e2) = do
+  t1 <- {- trace ("Encontrei " ++ show a ++ " / " ++ show x ++ " / " ++ show e1 ++ " / " ++ show e2) -} synthetise kEnv e1
+  ~(T.Quant _ T.Out (Bind _ a k t12)) <- Extract.exists e1 t1
+  addToSignatures x t12
+  let kEnv' = Map.insert a k kEnv
+  t2 <- synthetise kEnv' e2
+  difference kEnv' x
+  pure t2
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])

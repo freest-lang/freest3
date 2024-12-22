@@ -119,6 +119,7 @@ import           Paths_FreeST ( getDataFileName )
   of       {TokenOf _}
   forall   {TokenForall _}
   exists   {TokenExists _}
+  as       {TokenAs _}
   dualof   {TokenDualof _}
 
 -- %nonassoc LOWER_ID UPPER_ID
@@ -259,9 +260,14 @@ Exp :: { E.Exp }
   | match Exp with '{' MatchMap '}'{% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkCollect s')) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
+  -- Existenttials
+  | '{' Type ',' Exp '}' as Type {% mkSpanSpan $1 $7 >>= \s -> pure $ E.Pack s $2 $4 $7 }
+  | let '{' TypeVar ',' ProgVarWild '}' '=' Exp in Exp
+                                   {% mkSpanSpan $1 $10 >>= \s -> pure $ E.Unpack s $3 $5 $8 $10 }
+  -- Operators
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
   | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }

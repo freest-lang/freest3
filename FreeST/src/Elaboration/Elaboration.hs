@@ -88,7 +88,7 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
     E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
-  buildExp e bs (T.Quant p _ (Bind p1 x k t)) =
+  buildExp e bs (T.Quant p T.In (Bind p1 x k t)) =
     E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp _ xs _ = do

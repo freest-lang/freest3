@@ -55,10 +55,10 @@ instance Cosubs T.Type where
   cosubs t x (T.Arrow p m t1 t2 ) = T.Arrow p m (cosubs t x t1) (cosubs t x t2)
   -- Session types
   cosubs t x (T.Semi   p t1 t2  ) = T.Semi p (cosubs t x t1) (cosubs t x t2)
-  cosubs t x (T.Labelled p s  m   ) = T.Labelled p s (Map.map (cosubs t x) m)
+  cosubs t x (T.Labelled p s  m ) = T.Labelled p s (Map.map (cosubs t x) m)
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
-  cosubs t x (T.Quant s p b      ) = T.Quant s p (cosubs t x b)
+  cosubs t x (T.Quant s p b     ) = T.Quant s p (cosubs t x b)
   cosubs t x u@(T.Dualof _ (T.Var _ y))
     | y == x = t
     | otherwise = u

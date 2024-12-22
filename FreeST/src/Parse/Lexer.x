@@ -137,15 +137,15 @@ tokens :-
   if				{ \p s -> TokenIf (internalPos p) }
   then				{ \p s -> TokenThen (internalPos p) }
   else				{ \p s -> TokenElse (internalPos p) }
---  new				{ \p s -> TokenNew (internalPos p) }
   select		        { \p s -> TokenSelect (internalPos p) }
   match				{ \p s -> TokenMatch (internalPos p) }
   with				{ \p s -> TokenWith (internalPos p) }
   case				{ \p s -> TokenCase (internalPos p) }
   of				{ \p s -> TokenOf (internalPos p) }
-  (forall|∀)                    { \p s -> TokenExists (internalPos p) }
-  (exists|∃)                     { \p s -> TokenExists (internalPos p) }
   dualof			{ \p s -> TokenDualof (internalPos p) }
+  (forall|∀)                    { \p s -> TokenForall (internalPos p) }
+  (exists|∃)                    { \p s -> TokenExists (internalPos p) }
+  as				{ \p s -> TokenAs (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
@@ -226,6 +226,7 @@ data Token =
   | TokenOf Span
   | TokenForall Span
   | TokenExists Span
+  | TokenAs Span
   | TokenDualof Span
   | TokenFArrow Span
   | TokenMinus Span
@@ -319,6 +320,7 @@ instance Show Token where
   show (TokenOf _) = "of"
   show (TokenForall _) = "forall"
   show (TokenExists _) = "exists"
+  show (TokenAs _) = "as"
   show (TokenDualof _) = "dualof"
   show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
@@ -446,6 +448,7 @@ instance Located Token where
   getSpan (TokenCase p) = p
   getSpan (TokenForall p) = p
   getSpan (TokenExists p) = p
+  getSpan (TokenAs p) = p
   getSpan (TokenMinus p) = p
   getSpan (TokenMinusDot p) = p
   getSpan (TokenTimes p) = p

@@ -46,6 +46,9 @@ data Exp =
   -- Type Abstraction intro and elim
   | TypeAbs Span (Bind K.Kind Exp)   -- Λ a:k => e
   | TypeApp Span Exp T.Type     -- e[T]
+  -- Existentials
+  | Pack Span T.Type Exp T.Type
+  | Unpack Span Variable Variable Exp Exp
   -- Let
   | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
 
@@ -74,3 +77,5 @@ instance Located Exp where
   getSpan (BinLet p _ _ _ _   ) = p
   getSpan (Case  p _ _        ) = p
   getSpan (CasePat  p _ _     ) = p
+  getSpan (Pack  p _ _ _      ) = p
+  getSpan (Unpack  p _ _ _ _  ) = p
