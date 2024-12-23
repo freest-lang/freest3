@@ -14,6 +14,13 @@ counterADT =
   as
   ∃a . (a, a -> Int, a -> a)
 
+mainCounter : Int
+mainCounter =
+  let {counterType, counter} = counterADT in
+  let (newc, ops) = counter in
+  let (get, inc) = ops in
+  get (inc newc)
+
 flipFlopADT : ∃a . (a, a -> Bool, a -> a, a -> a)
 flipFlopADT =
   let {counterType, counter} = counterADT in
@@ -29,10 +36,11 @@ flipFlopADT =
   as
   ∃a . (a, a -> Bool, a -> a, a -> a)
 
-main : Int
+main : Bool
 main =
-  let {counterType, counter} = counterADT in
-  let (newc, ops) = counter in
-  let (get, inc) = ops in
-  get (inc newc)
-
+  let {fFType, flipflop} = flipFlopADT in
+  let (newff, ops) = flipflop in
+  let (read, ops) = ops in
+  let (toggle, reset) = ops in
+  read (toggle (reset (toggle newff)))
+  

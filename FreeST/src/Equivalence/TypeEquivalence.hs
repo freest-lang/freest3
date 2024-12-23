@@ -16,11 +16,13 @@ module Equivalence.TypeEquivalence
   )
 where
 
-import Equivalence.AlphaCongruence()
-import Bisimulation.Bisimulation
+import           Equivalence.AlphaCongruence()
+import           Bisimulation.Bisimulation
 import qualified Syntax.Type                   as T
+import           Debug.Trace (trace)
 
 equivalent :: T.Type -> T.Type -> Bool
 equivalent t u =
+  -- trace (show t ++ "\t ~\n" ++ show u ++ "\n == " ++ show (t == u))
   t == u || -- Alpha-congruence, 30% speed up in :program tests
   bisimilar t u

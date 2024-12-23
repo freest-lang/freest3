@@ -324,7 +324,8 @@ checkAgainst kEnv e t = do
     _ -> compareTypes e t =<< synthetise kEnv e
 
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
-compareTypes e t u = do 
+compareTypes e t u = do
+  -- trace (show t ++ "\n" ++ show u) (pure ())
   sub <- subtyping <$> getRunOpts
   timeout_ms   <- subTimeout_ms <$> getRunOpts
   let cmp = if sub then subtype else equivalent 
