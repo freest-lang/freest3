@@ -25,6 +25,7 @@ import Test.HUnit ( assertFailure )
 import Test.Hspec
 -- import Util.FreestState
 import           Util.State hiding (void)
+import qualified Language.Haskell.Interpreter as Hint -- dar fix na dependencia
 
 data TestResult = Timeout | Passed | Failed
 
@@ -46,14 +47,19 @@ validTest dir (testFile, exp) =
       Failed  -> void $ assertFailure out
       Passed  -> doExpectationsMatch out exp
 
-
 pendingMessage :: String -> Expectation
 pendingMessage =  pendingWith . intercalate "\n\t" . tail . lines
  
 doExpectationsMatch :: String -> String -> Expectation
-doExpectationsMatch out exp =
-  filter (/= '\n') out `shouldBe` filter (/= '\n') exp
-  
+doExpectationsMatch out exp = evalPredicate exp >>= either 
+  (\err -> (assertFailure . show) err) 
+  (\pred -> out `shouldSatisfy` pred)
+
+evalPredicate :: String -> IO (Either Hint.InterpreterError (String -> Bool))
+evalPredicate exp = Hint.runInterpreter $ do
+  Hint.setImports ["Prelude"]
+  Hint.interpret exp (Hint.as :: (String -> Bool))
+
 testOne :: FilePath -> IO (String, TestResult)
 testOne file = hCapture [stdout, stderr] $
    catches runTest
