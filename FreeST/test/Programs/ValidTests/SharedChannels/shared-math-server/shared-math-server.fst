@@ -1,63 +1,50 @@
 type MathServer  = *?MathService
-type MathService = +{ Plus   : !Int; !Int; ?Int; MathService
-                         , Greater: !Int; !Int; ?Bool; MathService
-                         , Neg    : !Int; ?Int; MathService
-                         , End    : Close 
-                         }
+type MathService = +{ Plus: !Int; !Int; ?Int; MathService
+                    , Gt  : !Int; !Int; ?Bool; MathService
+                    , Neg : !Int; ?Int; MathService
+                    , Done: Close 
+                    }
 
 runMathService : dualof MathService -> ()
-runMathService ch =
-    match ch with {
-        Plus    ch ->
-            let (n1, ch) = receive ch in
-            let (n2, ch) = receive ch in
-            runMathService $ send (n1 + n2) ch,
-        Greater ch ->
-            let (n1, ch) = receive ch in
-            let (n2, ch) = receive ch in
-            runMathService $ send (n1 > n2) ch,
-        Neg     ch -> 
-            let (n1, ch) = receive ch in
-            runMathService $ send (-n1) ch,
-        End     ch -> wait ch
-    }
+runMathService (Plus s) =
+  let (n1, s) = receive s in
+  let (n2, s) = receive s in
+  runMathService $ send (n1 + n2) s
+runMathService (Gt s) =
+  let (n1, s) = receive s in
+  let (n2, s) = receive s in
+  runMathService $ send (n1 > n2) s
+runMathService (Neg s) =
+  let (n1, s) = receive s in
+  runMathService $ send (-n1) s
+runMathService (Done s) =
+  wait s
 
+-- Serve one client at a time. Try variant where runMathService runs on a
+-- separate thread, for better throughput.
 runMathServer : dualof MathServer -> ()
 runMathServer ch =
-    let (c, s) = new @MathService () in
-    let ch = send c ch in
-    runMathService s;
-    runMathServer ch
+  runMathService (accept @MathService c);
+  runMathServer ch
 
 client1 : MathServer -> ()
 client1 ch =
-    let (c, _) = receive ch in
-    let (n, c) = select Plus c 
-               |> send 1
-               |> send 2
-               |> receive
-               in
-    let (m, c) = select Neg c
-               |> send n
-               |> receive
-               in
-    select End c |> close;
-    print @Int m
+  let c = receive_ @MathService ch in
+  let (n, c) = c |> select Plus |> send 1 |> send 2 |> receive in
+  let (m, c) = c |> select Neg |> send n |> receive in
+  c |> select Done |> close;
+  print @Int m
 
 client2 : MathServer -> ()
 client2 ch =
-    let (c, _) = receive ch in
-    let (b, c) = select Greater c
-               |> send 2
-               |> send 1
-               |> receive
-               in
-    select End c |> close; 
-    print @Bool b
+  let c = receive_ @MathService ch in
+  let (b, c) = c |> select Gt |> send 2 |> send 1 |> receive in
+  c|> select Done |> close; 
+  print @Bool b
 
 main : ()
 main =
-    let (c, s) = new @MathServer () in
-    fork (\_:() 1-> client1 c);
-    fork (\_:() 1-> client2 c);
-    runMathServer s
+  let (c, s) = new @MathServer () in
+  fork (\_:() 1-> client1 c);
+  fork (\_:() 1-> client2 c);
+  runMathServer s
