@@ -25,7 +25,7 @@ import Test.HUnit ( assertFailure )
 import Test.Hspec
 -- import Util.FreestState
 import           Util.State hiding (void)
-import qualified Language.Haskell.Interpreter as Hint -- dar fix na dependencia
+import qualified Language.Haskell.Interpreter as Hint
 
 data TestResult = Timeout | Passed | Failed
 
@@ -57,7 +57,7 @@ doExpectationsMatch out exp = evalPredicate exp >>= either
 
 evalPredicate :: String -> IO (Either Hint.InterpreterError (String -> Bool))
 evalPredicate exp = Hint.runInterpreter $ do
-  Hint.setImports ["Prelude"]
+  Hint.setImports ["Prelude","Data.List","Data.Function"]
   Hint.interpret exp (Hint.as :: (String -> Bool))
 
 testOne :: FilePath -> IO (String, TestResult)
