@@ -23,6 +23,6 @@ import           Debug.Trace (trace)
 
 equivalent :: T.Type -> T.Type -> Bool
 equivalent t u =
-  -- trace (show t ++ "\t ~\n" ++ show u ++ "\n == " ++ show (t == u))
+  -- trace (show t ++ " ==\n" ++ show u ++ " = " ++ show (t == u))
   t == u || -- Alpha-congruence, 30% speed up in :program tests
   bisimilar t u
