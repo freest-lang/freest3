@@ -148,6 +148,17 @@ instance Rename E.Exp where
     e1' <- rename σ τ e1
     e2' <- rename σ (Map.insert x x' τ) e2
     return $ E.UnLet p x' e1' e2'
+  rename σ τ (E.Pack p u e2 t) = do
+    u' <- rename σ τ u
+    e2' <- rename σ τ e2
+    t' <- rename σ τ t
+    return $ E.Pack p u' e2' t'
+  rename σ τ (E.Unpack p a x e1 e2) = do
+    a' <- rename σ τ a
+    x' <- rename σ τ x
+    e1' <- rename σ τ e1
+    e2' <- rename (Map.insert a a' σ) (Map.insert x x' τ) e2
+    return $ E.Unpack p a' x' e1' e2'
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ e = return e
 

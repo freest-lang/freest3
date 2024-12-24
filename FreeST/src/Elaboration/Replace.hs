@@ -50,6 +50,8 @@ instance Replace E.Exp where
   replace (E.TypeApp p e t  ) = E.TypeApp p <$> replace e <*> replace t
   replace (E.TypeAbs p b    ) = E.TypeAbs p <$> replace b
   replace (E.UnLet p x e1 e2) = E.UnLet p x <$> replace e1 <*> replace e2
+  replace (E.Pack p u e2 t     ) = E.Pack p <$> replace u <*> replace e2 <*> replace t
+  replace (E.Unpack p a x e1 e2) = E.Unpack p a x <$> replace e1 <*> replace e2
   replace e                 = return e
 
 instance Replace E.FieldMap where
