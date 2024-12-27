@@ -16,15 +16,15 @@ counterADT =
 
 mainCounter : Int
 mainCounter =
-  let {counterType, counter} = counterADT in
-  let (newc, ops) = counter in
+  let {counterType, ops} = counterADT in
+  let (newc, ops) = ops in
   let (get, inc) = ops in
   get (inc newc)
 
 flipFlopADT : ∃a . (a, a -> Bool, a -> a, a -> a)
 flipFlopADT =
-  let {counterType, counter} = counterADT in
-  let (newc, ops) = counter in
+  let {counterType, ops} = counterADT in
+  let (newc, ops) = ops in
   let (get, inc) = ops in
   { counterType
   , ( newc                           -- new

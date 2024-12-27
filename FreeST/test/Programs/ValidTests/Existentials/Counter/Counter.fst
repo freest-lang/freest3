@@ -12,8 +12,8 @@ counterADT =
 
 main : Int
 main =
-  let {counterType, counter} = counterADT in
-  let (newc, ops) = counter in
+  let {counterType, ops} = counterADT in
+  let (newc, ops) = ops in
   let (get, inc) = ops in
   get (inc newc)
 
