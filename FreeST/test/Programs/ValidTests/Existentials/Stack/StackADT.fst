@@ -5,7 +5,7 @@ stackAdt =
   { [Int]
   , ( []                              -- new
     , λx:Int xs:[Int] -> x::xs        -- push
-    , λxs:[Int] -> (head xs, tail xs) -- top
+    , λxs:[Int] -> (head xs, tail xs) -- top/pop
     , λxs:[Int] -> xs                 -- toList
     )
   }
@@ -18,9 +18,13 @@ mainStack =
   let (news, ops) = ops in
   let (push, ops) = ops in
   let (top, toList) = ops in
-  fst @Int @StackType $ top (push 5 (push 7 news))
+  fst @Int @stackType $ top (push 5 (push 7 news))
 
 -- Reversing a list in O(n)
+
+rev : ∀a . (Int -> a -> a) -> (a -> [Int]) -> a -> [Int] -> [Int]
+rev push toList stack [] = toList stack
+rev push toList stack (x::xs) = rev @a push toList (push x stack) xs
 
 reverse' : [Int] -> [Int]
 reverse' = 
@@ -29,10 +33,6 @@ reverse' =
   let (push, ops) = ops in
   let (pop, toList) = ops in
   rev @stackType push toList news
-
-rev : ∀a . (Int -> a -> a) -> (a -> [Int]) -> a -> [Int] -> [Int]
-rev push toList stack [] = toList stack
-rev push toList stack (x::xs) = rev @a push toList (push x stack) xs
 
 main : [Int]
 main = reverse' [1, 2, 3]
