@@ -73,7 +73,7 @@ instance Default Variable where
 
 -- The internal representation of a variable
 intern :: Variable -> String
-intern (Variable _ str (-1)) = str -- We need this because renaming comes too late; renameProgram should be move to a position after parse
+intern (Variable _ str (-1)) = str -- We need this because renaming comes too late; renameProgram should be moved to a position after parse
 intern (Variable _ _ n) = show n
 
 -- The program-level representation of a variable
@@ -81,7 +81,7 @@ extern :: Variable -> String
 extern (Variable _ str _) = str
 -- extern = intern -- for debugging purposes
 
--- Make a variable from a span and string
+-- Make a variable from a span and string; the internal representation is default (-1)
 mkVar :: Span -> String -> Variable
 mkVar s str = Variable s str (-1)
 

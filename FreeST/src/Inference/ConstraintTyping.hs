@@ -12,6 +12,7 @@ import qualified Syntax.Type as T
 import qualified Typing.Extract as Extract
 import           Typing.Rename
 import           Typing.Typing
+import qualified Typing.Rename as Rename ( subs )
 import           Util.Error
 import           Util.State
 
@@ -135,10 +136,12 @@ ctyping kEnv (E.Pack _ u e2 t) = do
   -- ~(T.Quant _ T.Out b) <- Extract.exists e t1
   pure (t, Map.empty)
 ctyping kEnv (E.Unpack _ a x e1 e2) = do
-  (t,u1) <- ctyping kEnv e1
-  ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t
-  addToSignatures x t12
-  ctyping (Map.insert b k (Map.insert b k kEnv)) e2
+  (t1, u1) <- ctyping kEnv e1
+  ~(T.Quant _ T.Out (Bind _ b k t12)) <- Extract.exists e1 t1
+  let aAsVar = T.Var (getSpan a) a
+  addToSignatures x (Rename.subs aAsVar b t12)
+  (t2, u2) <- ctyping (Map.insert a k kEnv) e2
+  pure (t2, u1 ∪ u2)
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity
