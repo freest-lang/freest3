@@ -8,6 +8,7 @@ import Control.Exception
 import Control.Monad ( void, unless )
 import Control.Monad.Extra
 import Data.List
+import Data.List.Split
 import Data.Maybe
 import Debug.Trace
 import FreeST ( checkAndRun )
@@ -25,7 +26,6 @@ import Test.HUnit ( assertFailure )
 import Test.Hspec
 -- import Util.FreestState
 import           Util.State hiding (void)
-import qualified Language.Haskell.Interpreter as Hint
 
 data TestResult = Timeout | Passed | Failed
 
@@ -51,14 +51,18 @@ pendingMessage :: String -> Expectation
 pendingMessage =  pendingWith . intercalate "\n\t" . tail . lines
  
 doExpectationsMatch :: String -> String -> Expectation
-doExpectationsMatch out exp = evalPredicate exp >>= either 
-  (\err -> (assertFailure . show) err) 
-  (\pred -> out `shouldSatisfy` pred)
+doExpectationsMatch out exp = normalizedOutput `shouldSatisfy` (`elem` normalizedExpectedOutputs)
+  where
+    normalizedOutput = stripLastNewLine out
+    normalizedExpectedOutputs = init parseExpectedOutputs ++ [stripLastNewLine (last parseExpectedOutputs)]
+    parseExpectedOutputs = (splitOn "\n\n" . fixNewLineCharacter) exp
+    stripLastNewLine str = if last str == '\n' then init str else str
 
-evalPredicate :: String -> IO (Either Hint.InterpreterError (String -> Bool))
-evalPredicate exp = Hint.runInterpreter $ do
-  Hint.setImports ["Prelude","Data.List","Data.Function"]
-  Hint.interpret exp (Hint.as :: (String -> Bool))
+fixNewLineCharacter :: String -> String
+fixNewLineCharacter = foldr fixAux []
+  where
+    fixAux '\\' ('n':acc) = '\n' : acc
+    fixAux c acc = c : acc
 
 testOne :: FilePath -> IO (String, TestResult)
 testOne file = hCapture [stdout, stderr] $
