@@ -1,1 +1,2 @@
-(`elem` permutations ["True", "-3"]) . lines
+-3\nTrue\n
+True\n-3\n
