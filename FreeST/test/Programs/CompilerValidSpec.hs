@@ -49,20 +49,11 @@ validTest dir (testFile, exp) =
 
 pendingMessage :: String -> Expectation
 pendingMessage =  pendingWith . intercalate "\n\t" . tail . lines
- 
-doExpectationsMatch :: String -> String -> Expectation
-doExpectationsMatch out exp = normalizedOutput `shouldSatisfy` (`elem` normalizedExpectedOutputs)
-  where
-    normalizedOutput = stripLastNewLine out
-    normalizedExpectedOutputs = init parseExpectedOutputs ++ [stripLastNewLine (last parseExpectedOutputs)]
-    parseExpectedOutputs = (splitOn "\n\n" . fixNewLineCharacter) exp
-    stripLastNewLine str = if last str == '\n' then init str else str
 
-fixNewLineCharacter :: String -> String
-fixNewLineCharacter = foldr fixAux []
+doExpectationsMatch :: String -> String -> Expectation
+doExpectationsMatch out exp = out `shouldSatisfy` (`elem` expectedOutputs)
   where
-    fixAux '\\' ('n':acc) = '\n' : acc
-    fixAux c acc = c : acc
+    expectedOutputs = map (read . (\line -> "\"" ++ line ++ "\"")) . lines $ exp
 
 testOne :: FilePath -> IO (String, TestResult)
 testOne file = hCapture [stdout, stderr] $
