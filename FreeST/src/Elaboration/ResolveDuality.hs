@@ -47,6 +47,8 @@ instance {-# OVERLAPPING #-} ResolveDuality E.Exp where
   resolve (E.TypeApp p e t  ) = E.TypeApp p <$> resolve e <*> resolve t
   resolve (E.TypeAbs p b    ) = E.TypeAbs p <$> resolve b
   resolve (E.UnLet p x e1 e2) = E.UnLet p x <$> resolve e1 <*> resolve e2
+  resolve (E.Pack s t e u) = E.Pack s <$> resolve t <*> resolve e <*> resolve u
+  resolve (E.Unpack s x y e1 e2) = E.Unpack s x y <$> resolve e1 <*> resolve e2
   resolve e                   = return e
 
 -- -- This should be an instance but it overlaps with that one of ParseEnv
