@@ -76,7 +76,7 @@ replaceDefinitions = tMapWithKeyM_ (\x (ps, e) -> curry (addToDefinitions x) ps 
 buildDefs :: Defs -> ElabState VP.Defs 
 buildDefs = Map.foldlWithKey (\def pv (ps,e) -> addToDefs def pv =<< buildFunBody pv ps e)
              (return Map.empty)
-  where addToDefs acc pv e = acc >>= \def -> return $ Map.insert pv e def
+  where addToDefs acc pv e = acc <&> Map.insert pv e
 
 buildFunBody :: Variable -> [Variable] -> E.Exp -> ElabState E.Exp
 buildFunBody f as e = getFromSignatures f >>= \case

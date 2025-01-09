@@ -232,6 +232,9 @@ replaceExp v p (CasePat s e flp)      = do
   nVar <- R.renameVar $ Variable (getSpan e) "unLetHiddenVar" (-1)    -- creates an hidden variable
   UnLet s nVar <$> replaceExp v p e
                <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
+replaceExp v p (Pack s t e u) = flip (Pack s t) u <$> replaceExp v p e
+replaceExp v p (Unpack s v1 v2 e1 e2) = Unpack  s      (replaceVar  v p v1)   (replaceVar v p v2)
+                                                    <$> replaceExp  v p e1 <*> replaceExp v p e2
 replaceExp _ _ e = return e
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> PatternState (Bind a Exp)
