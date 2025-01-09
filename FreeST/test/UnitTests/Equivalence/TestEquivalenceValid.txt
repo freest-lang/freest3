@@ -1021,8 +1021,8 @@ Int -> exists α: 1S . α -> (α ; α) ; α
 ∃a:1S . ∃c:1S . c 1-> Skip ; a
 
 []
-∀s . () -> (∃c . (?(s ; Close ; c) ; Wait, !c ; Close), ∃c . (?(dualof s ; Wait ; c) ; Wait, !c ; Close))
-∀s . () -> (∃c . (?(s ; Close ; c) ; Wait, !c ; Close), ∃c . (?((dualof s ; Wait) ; c) ; Wait, !c ; Close))
+∃c . (?(dualof(s;Close);c); Wait, !c; Close)
+∃c . (?(dualof s;Wait  ;c); Wait, !c; Close)
 
 -- Mixing forall and exists
 
