@@ -25,7 +25,7 @@ matchValidSpec [k, t, u] |
     kEnv = readKenv k
     [t', u'] = renameTypes [resolveDuals $ read t, resolveDuals $ read u]
 -- matchValidSpec xs = it ("BANG! " ++ show xs) (False `shouldBe` True)
-matchValidSpec _ = it "" (True `shouldBe` True) -- Why not accept "Non-exhaustive patterns"?
+matchValidSpec x = it ("Bogus test:\n" ++ show x ++ "\n") (True `shouldBe` False)
 
 resolveDuals :: Type -> Type
 resolveDuals t = evalState (resolve t) (initial EP.extraElab)

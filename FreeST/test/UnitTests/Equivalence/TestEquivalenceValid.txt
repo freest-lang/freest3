@@ -1001,16 +1001,16 @@ Int -> exists α: 1S . α -> α ; (α ; α)
 Int -> exists α: 1S . α -> (α ; α) ; α
 
 []
-!(∃a . a) ; Skip
-!(∃b . b)
+!(∃a:1S . a) ; Skip
+!(∃b:1S . b)
 
 []
-!(∃a . a -> a) -> Skip
-!(∃b . b -> b) -> Skip ; Skip
+!(∃a:1S . a -> a) -> Skip
+!(∃b:1S . b -> b) -> Skip ; Skip
 
 []
-!(∃a . (rec b:1S . !Int ; b) -> a) -> Skip
-!(∃c . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
+!(∃a:1S . (rec b:1S . !Int ; b) -> a) -> Skip
+!(∃c:1S . (rec d:1S . Skip; !Int ; d) -> c) -> Skip ; Skip
 
 []
 ∃a:1S . ∃b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
@@ -1021,8 +1021,8 @@ Int -> exists α: 1S . α -> (α ; α) ; α
 ∃a:1S . ∃c:1S . c 1-> Skip ; a
 
 []
-∃c . (? (dualof s ; Wait)      ; Wait, !c ; Close)
-∃c . (?((dualof s ; Wait) ; c) ; Wait, !c ; Close)
+∀s:1S . ∃c:1S . (? (dualof s ; Wait)      ; Wait, !c ; Close)
+∀s:1S . ∃c:1S . (?((dualof s ; Wait) ; c) ; Wait, !c ; Close)
 
 -- Mixing forall and exists
 
@@ -1039,8 +1039,8 @@ Int -> exists α: 1S . α -> (α ; α) ; α
 ∃a:1S . ∀b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
 
 []
-∀s1 s2 . (∃c . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
-∀s1 s2 . (∃c . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
+∀s1:1S s2:1S . (∃c:1S . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c:1S . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c:1S . (() 1-> (s2 ; c ; Skip) , c 1-> () , dualof c -> ()))
+∀s1:1S s2:1S . (∃c:1S . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c:1S . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c:1S . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
 
 -- Higher-order
 
@@ -1217,30 +1217,30 @@ Skip; rec x.Skip
 rec x.Skip
 Skip
 
--- Skip^omega
-[]
-rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
-rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
+-- Skip^omega -- not contractive
+-- []
+-- rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
+-- rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
+
+-- Skip^omega -- not contractive
+-- []
+-- Skip
+-- rec y:1S. (Skip ; y) ; ?Int
+
+-- Skip^omega -- not contractive
+-- []
+-- rec y:1S. (Skip ; y) ; ?Int
+-- Skip 
+
+-- Skip^omega -- not contractive
+-- []
+-- Skip
+-- (rec y:1S. Skip ; y) ; ?Int
 
 -- Skip^omega
-[]
-Skip
-rec y:1S. (Skip ; y) ; ?Int
-
--- Skip^omega
-[]
-rec y:1S. (Skip ; y) ; ?Int
-Skip 
-
--- Skip^omega
-[]
-Skip
-(rec y:1S. Skip ; y) ; ?Int
-
--- Skip^omega
-[]
-rec y:1S. Skip ; y ; ?Int
-Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
+-- []
+-- rec y:1S. Skip ; y ; ?Int
+-- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
 
 -- Star (unrestricted session) types
 
@@ -1316,6 +1316,6 @@ rec x:*S . &{A:x, B:x, C:x}
 
 -- Forall and Close/Wait
 
--- []
--- forall b . Wait
--- forall b . rec a . Wait ; a
+[]
+forall b . Wait
+forall b . rec a . Wait ; a

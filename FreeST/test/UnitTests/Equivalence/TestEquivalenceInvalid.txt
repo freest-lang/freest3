@@ -265,3 +265,10 @@ forall a:1S . *!Int ; a
 []
 (Int, Int)
 ((), ())
+
+-- exists
+
+[]
+∀s1:1S s2:1S . (∃c:1S . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c:1S . (() -> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c:1S . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
+∀s1:1S s2:1S . (∃c:1S . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c:1S . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c:1S . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
+
