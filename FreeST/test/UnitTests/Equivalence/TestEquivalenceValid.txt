@@ -132,7 +132,6 @@ rec b:1S . !(rec a:1S . +{A: !Int;a, B: Close;a});Skip;?(b;Skip;!(Close);Close;b
 ∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;Close;α});!Int);?(a;!(Close);Close)
 ∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;Close;!a});Skip;?(b;Skip;!(Close);Close;β;!β)
 
-
 -- Wait 
 
 []
@@ -969,8 +968,8 @@ rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!
 -- exists - dual of the above
 
 []
-exists counterType:*T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
-exists counterType:*T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+exists a: 1S . (a, (a -> Char, (a -> a, a -> a)))
+exists a: 1S . (a, (a -> Char, (a -> a, a -> a)))
 
 []
 exists α: 1S . α -> α
@@ -1308,6 +1307,6 @@ rec x:*S . &{A:x, B:x, C:x}
 
 -- Forall and Close/Wait
 
-[] -- 11 Jan 2025 Fails. Why?
-forall b . Wait
-forall b . rec a:1A . Wait ; a 
+[]
+forall b:1T . Wait
+forall b:1T . rec a:1A . Wait ; a 
