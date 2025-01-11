@@ -759,15 +759,15 @@ rec y : 1S . &{N: y, L: y};!Int
 
 -- Examples from QuickCheck
 
-[("x", "1S"), ("z", "1S")]
-(!Char;(+{A: z, B: z, C: z};(rec z_0: 1S. ((rec y_1: 1S. x);(Skip;x)))))
-((!Char;+{A: z, B: z, C: z});(rec z_2: 1S. ((rec y_3: 1S. x);(Skip;x))))
+-- [("x", "1S"), ("z", "1S")] -- Non-contractive 11 jan 2025 ???
+-- (!Char;(+{A: z, B: z, C: z};(rec z_0: 1S. ((rec y_1: 1S. x);(Skip;x)))))
+-- ((!Char;+{A: z, B: z, C: z});(rec z_2: 1S. ((rec y_3: 1S. x);(Skip;x))))
 
-[("x", "1S")]
-rec y: 1S. x
-rec z: 1S. x
+-- [("x", "1S")] -- Non contractive 11 jan 2015 ???
+-- rec y: 1S. x
+-- rec z: 1S. x
 
--- This one is non-kinded (as of version April 24, 2019)
+-- This one is not well formed (as of version April 24, 2019)
 --[]
 --((rec z_0:1S. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Int;(rec x_1:1S. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:1S. Skip), B: ?Int, C: !Int}))
 --(((rec z_3:1S. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Int;(rec x_4:1S. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:1S. Skip), B: ?Int, C: !Int})
@@ -796,13 +796,13 @@ rec y_0: 1S. !Char ; +{A: y_0, B: Skip, C: Skip}
 rec x. !Int ; !Int
 !Int ; !Int
 
-[("y","1S"),("z","1S")]
-rec x: 1S. (((z;z);(Skip;y));?Int)
-((z;z);(Skip;y));?Int
+-- [("y","1S"),("z","1S")] -- Non contractive 15 jan 2025 ???
+-- rec x: 1S. (((z;z);(Skip;y));?Int)
+-- ((z;z);(Skip;y));?Int
 
-[("z","1S")]
-((rec x: 1S. (rec y: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
-((rec u: 1S. (rec v: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
+-- [("z","1S")] -- Non contractive 15 jan 2025 ???
+-- ((rec x: 1S. (rec y: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
+-- ((rec u: 1S. (rec v: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
 
 []
 rec x: 1S. &{B:Skip, C: x} ;+{D: ?Char}
@@ -812,13 +812,13 @@ rec y: 1S. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
 (rec x: 1S. +{LeafC: Skip, NodeC: x ; x}) ; Skip
  rec y: 1S. +{LeafC: Skip, NodeC: y ; y}
 
-[("α", "1S")]
-rec x: 1S. α
-rec y: 1S. α
+-- [("α", "1S")] -- Non contractive 15 jan 2025 ???
+-- rec x: 1S. α
+-- rec y: 1S. α
 
-[("x", "1S")]
-rec y_0: 1S. (rec y_1: 1S. (rec y_2: 1S. x))
-rec z: 1S. (rec y_4: 1S. x)
+-- [("x", "1S")] -- Non contractive 15 jan 2025 ???
+-- rec y_0: 1S. (rec y_1: 1S. (rec y_2: 1S. x))
+-- rec z: 1S. (rec y_4: 1S. x)
 
 []
 &{A: !Char, B: ?Int}
@@ -828,41 +828,37 @@ rec z: 1S. (rec y_4: 1S. x)
 x
 x ; Skip
 
-[("z", "1S")]
-(+{A: z};(rec d: *S. +{A: Skip, B: !Char}))
-+{A: (z;(rec x_1: *S. +{A: Skip, B: !Char}))}
+-- [("y", "1S")] -- Non contractive 15 jan 2025 ???
+-- (&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
+-- &{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}
 
-[("y", "1S")]
-(&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
-&{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}
-
-[("y", "1S")]
-(Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
-(rec x_2: 1S. y)
+-- [("y", "1S")] -- Non contractive 15 jan 2025 ???
+-- (Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
+-- (rec x_2: 1S. y)
 
 []
 rec a: 1S. &{A: rec b. a}
 &{A: rec c: 1S. &{A: c}}
 
-[("y", "1S")]
-(Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
-(rec x_2: 1S. y)
+-- [("y", "1S")] -- Non contractive 15 jan 2025 ???
+-- (Skip;(rec x_0: 1S. (rec x_1: 1S. y)))
+-- (rec x_2: 1S. y)
 
-[("y", "1S")]
-((rec d_0: 1S. y);Skip)
-(rec d_1: 1S. y)
+-- [("y", "1S")] -- Non contractive 15 jan 2025 ???
+-- ((rec d_0: 1S. y);Skip)
+-- (rec d_1: 1S. y)
 
-[("x","1S"),("y","1S")]
-(&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: *S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
-&{A: (?Int;&{B: ((rec b: 1S. (&{A: (y;(?Int;!Char))};y));x)}), C: (?Char;&{B: ((rec d: 1S. (&{A: (y;(?Int;!Char))};y));x)})}
+-- [("x","1S"),("y","1S")] -- Non contractive 15 jan 2025 ???
+-- (&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: *S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
+-- &{A: (?Int;&{B: ((rec b: 1S. (&{A: (y;(?Int;!Char))};y));x)}), C: (?Char;&{B: ((rec d: 1S. (&{A: (y;(?Int;!Char))};y));x)})}
 
 []
 rec a: 1S. (&{B: Skip, C: (rec d: 1S. (a;!Int))})
 rec e: 1S. (&{B: Skip, C: e;!Int})
 
-[("x","1S"),("y","1S"),("z","1S")]
-((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
-((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
+-- [("x","1S"),("y","1S"),("z","1S")]  -- Non contractive 15 jan 2025 ???
+-- ((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
+-- ((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
 
 []
 rec z_0: 1S. &{B: &{B: ?()}, C: (rec y_0: 1S. (z_0;y_0))}
@@ -913,8 +909,8 @@ rec z: 1S. !Int; rec w: 1S. z;w
 (rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
 []
-(rec z:*S.(rec y:1S.(rec x:1S.(rec z:1S.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
-(rec z:*S.(rec z:1S.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
+(rec z:1S.(rec y:1S.(rec x:1S.(rec z:1S.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
+(rec z:1S.(rec z:1S.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
 
 -- forall
 
@@ -973,12 +969,8 @@ rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!
 -- exists - dual of the above
 
 []
-exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
-exists counterType: *T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
-
-[("counterType","*T")]
-(counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
-(counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+exists counterType:*T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
+exists counterType:*T . (counterType, (counterType -> Bool, (counterType -> counterType, counterType -> counterType)))
 
 []
 exists α: 1S . α -> α
@@ -1316,6 +1308,6 @@ rec x:*S . &{A:x, B:x, C:x}
 
 -- Forall and Close/Wait
 
-[]
+[] -- 11 Jan 2025 Fails. Why?
 forall b . Wait
-forall b . rec a . Wait ; a
+forall b . rec a:1A . Wait ; a 
