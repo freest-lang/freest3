@@ -1021,8 +1021,8 @@ Int -> exists α: 1S . α -> (α ; α) ; α
 ∃a:1S . ∃c:1S . c 1-> Skip ; a
 
 []
-∃c . (?(dualof(s;Close);c); Wait, !c; Close)
-∃c . (?(dualof s;Wait  ;c); Wait, !c; Close)
+∃c . (? (dualof s ; Wait)      ; Wait, !c ; Close)
+∃c . (?((dualof s ; Wait) ; c) ; Wait, !c ; Close)
 
 -- Mixing forall and exists
 
@@ -1037,6 +1037,10 @@ Int -> exists α: 1S . α -> (α ; α) ; α
 []
 ∃a:1S . ∀b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (a, (b, c))
 ∃a:1S . ∀b:1S . ∃c:1S . (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; a -> (rec d:1S . &{Dollar: Skip, Lt: (rec t:1S . &{Gt: Skip, Lt: t ; t}) ; d}) ; b 1-> (rec d:1S . +{Dollar: Skip, Lt: (rec t:1S . +{Gt: Skip, Lt: t ; t}) ; d}) ; c 1-> (Skip ; a, (b, c))
+
+[]
+∀s1 s2 . (∃c . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
+∀s1 s2 . (∃c . (() -> (s1 ; s2 ; c) , c -> () , dualof c -> ())) -> (∃c . (() 1-> (s1 ; c) , c 1-> () , dualof c -> ()) , ∃c . (() 1-> (s2 ; c) , c 1-> () , dualof c -> ()))
 
 -- Higher-order
 
