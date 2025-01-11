@@ -97,7 +97,7 @@ nodes :: T.Type -> Int
 nodes (T.Labelled _ (T.Choice _) m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
 nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
 nodes (T.Message _ _ t) = 1 + nodes t
-nodes (T.Forall _ (Bind _ _ _ t)) = 1 + nodes t
+nodes (T.Quant _ _ (Bind _ _ _ t)) = 1 + nodes t
 nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
 nodes (T.Dualof _ t) = 1 + nodes t
 -- Int, Char, String, Skip, End, TypeVar
@@ -115,7 +115,7 @@ constr T.Skip{} = "Skip"
 constr T.End{} = "End"
 constr T.Semi{} = "Semi"
 constr T.Message{} = "Message"
-constr T.Forall{} = "Forall"
+constr T.Quant{} = "Quant"
 constr T.Rec{} = "Rec"
 constr T.Var{} = "Var"
 constr T.Dualof{} = "Dualof"
