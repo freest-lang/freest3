@@ -9,9 +9,8 @@ type CakeStore   = *?CakeService
 type CakeService = &{Cake: Close, Disappointment: Close}
 
 runCakeStore : dualof CakeStore -> Bool -> Diverge
-runCakeStore cakeStore gotCake = 
-    let (c, s)    = new @CakeService () in
-    let cakeStore = send c cakeStore in
+runCakeStore cakeStore gotCake =
+    let s = accept @CakeService cakeStore in
     if gotCake
     then 
         s |> select Cake |> wait;
