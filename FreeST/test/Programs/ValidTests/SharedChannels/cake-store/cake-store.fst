@@ -6,7 +6,7 @@ Based on the 'Ami and Boe' example from
 -}
 
 type CakeStore   = *?CakeService
-type CakeService = &{Cake: Wait, Disappointment: Wait}
+type CakeService = &{Cake: Close, Disappointment: Close}
 
 runCakeStore : dualof CakeStore -> Bool -> Diverge
 runCakeStore cakeStore gotCake = 
@@ -14,25 +14,21 @@ runCakeStore cakeStore gotCake =
     let cakeStore = send c cakeStore in
     if gotCake
     then 
-        s |> select Cake |> close;
+        s |> select Cake |> wait;
         runCakeStore cakeStore False
     else 
-        s |> select Disappointment |> close
+        s |> select Disappointment |> wait
 
 storeClient : String -> CakeStore -> ()
 storeClient name cakeStore =
     match receive_ @CakeService cakeStore with {
-        Cake           c -> putStrLn (name ^^ " got cake!") ; wait c,
-        Disappointment c -> putStrLn (name ^^ " got disappointment") ; wait c
+        Cake           c -> putStrLn (name ^^ " got cake!") ; close c,
+        Disappointment c -> putStrLn (name ^^ " got disappointment") ; close c
     }
-
-sleep : Int -> ()
-sleep n = if n == 0 then () else sleep (n - 1)
 
 main : ()
 main =
     let (c, s) = new @CakeStore () in
     fork (\_:() 1-> storeClient "Ami" c);
     fork (\_:() 1-> storeClient "Boe" c);
-    runCakeStore s True;
-	sleep 10000
+    runCakeStore s True
