@@ -25,6 +25,12 @@ type Donation  = +{ SetTitle: !String; Donation
 type Fork = *+{Over}
 type Join = dualof Fork
 
+waitFor : Int -> Join -> ()
+waitFor n join =
+  putStrLn $ "waitFor " ^^ show @Int n ;
+  if n == 0 then ()
+  else match join with { Over _ -> waitFor (n - 1) join }
+
 donate : Promotion -> String -> CreditCard -> Int -> ()
 donate p donor ccard amount =
   receive_ @Promotion' p |> send donor |> send ccard |> send amount |> close
@@ -72,8 +78,8 @@ bank ccard amount =
 
 
 -- 4. The Online Donation Server
-promotion : dualof Promotion -> ()
-promotion p =
+promotion : Int -> Int -> dualof Promotion -> ()
+promotion k n noOfDonations p =
   let (c, p') = new @Promotion' () in
   let p = send c p in
   let (donor, p') = receive p' in
@@ -95,26 +101,25 @@ setup title date f (Commit   p) =
     promotion s) ;
   select Over f ; ()
 
-waitFor : Int -> Join -> ()
-waitFor n join =
-  putStrLn $ "waitFor " ^^ show @Int n ;
-  if n == 0 then ()
-  else match join with { Over _ -> waitFor (n - 1) join }
-
-donationServer : Int -> Int -> DonationS -> (Fork, Join) 1-> ()
-donationServer k n donationService fj =
+server : Int -> Int -> Promotion -> (Fork, Join) -> DonationS -> ()
+server k n p fj donationService =
   if k == 0 then waitFor n (snd @Fork @Join fj)
   else
-    let (p1, p2) = new @Donation () in        -- create a channel for a new donation campaign
-    let donationService = send p1 donationService in  -- send one end;  keep the other (p2)
-    fork (\_:() 1-> setup "Help me" 2000 (fst @Fork @Join fj) p2); -- call with default values
-    donationServer (k - 1) n donationService fj    -- serve another client
+    let d = accept @Donation donationService in
+    fork (\_:() 1-> setup "<default>" 0000 (fst @Fork @Join fj) d) ;
+    donationServer (k - 1) n donationService p fj
+
+donationServer : Int -> DonationS -> ()
+donationServer noOfClients =
+  let p = forkWith @Promotion @() promotion noOfDonations noOfDonations in
+  server noOfClients noOfClients p (new @Fork ())
 
 -- 5. Main
 main : ()
 main = 
-  let (ps1, ps2) = new @DonationS () in   -- create a Online Donation channel
-  fork (\_:() 1-> helpSavingTheWolf ps2); -- let the whole world know the other
-  fork (\_:() 1-> wrongYear ps2);
-  fork (\_:() 1-> helpSavingTheWolf ps2);
-  donationServer 7 7 ps1 (new @Fork ())   -- send one end to the Donation Server
+  let (s, c) = new @DonationS () in   -- create a Online Donation channel
+  let noOfClients = 3 in
+  fork (\_:() 1-> helpSavingTheWolf c); -- let the whole world know the other
+  fork (\_:() 1-> wrongYear c);
+  fork (\_:() 1-> helpSavingTheWolf c);
+  donationServer noOfClients s   -- send one end to the Donation Server
