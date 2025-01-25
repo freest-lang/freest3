@@ -35,8 +35,8 @@ client1 ch =
   let c = receive_ @MathService ch in
   let (n, c) = c |> select Plus |> send 1 |> send 2 |> receive in
   let (m, c) = c |> select Neg |> send n |> receive in
-  c |> select Done |> close;
-  print @Int m
+  print @Int m;
+  c |> select Done |> close
 
 client2 : MathServer -> ()
 client2 ch =
