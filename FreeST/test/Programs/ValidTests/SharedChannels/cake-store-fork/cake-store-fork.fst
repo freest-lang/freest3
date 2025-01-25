@@ -1,7 +1,7 @@
 {-
 
 Based on the 'Ami and Boe' example from
-    'Towards Races in Linear Logic', Wen Kokke, J. Garret Morris, And Philip Waddler
+    'Towards Races in Linear Logic', Wen Kokke, J. Garret Morris, And Philip Wadler
 
 -}
 
