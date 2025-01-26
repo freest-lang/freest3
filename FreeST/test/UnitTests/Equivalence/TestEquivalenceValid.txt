@@ -917,6 +917,10 @@ rec z: 1S. !Int; rec w: 1S. z;w
 (rec z:*S.(rec y:1S.(rec x:1S.(rec z:1S.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
 (rec z:*S.(rec z:1S.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
 
+[]
+(rec t . +{LeafC: Skip, NodeC: !Int ; t ; t ; ?Int}) ; (rec t . +{LeafC: Skip, NodeC: !Int ; t ; t ; ?Int}) ; ?Int ; a
+(rec t . +{LeafC: Skip, NodeC: !Int ; t ; t ; ?Int}) ; (rec t . +{LeafC: Skip, NodeC: !Int ; t ; t ; ?Int}) ; ?Int ; a
+
 -- forall
 
 []
