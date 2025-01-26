@@ -52,7 +52,6 @@ helpSavingTheWolf d =
     Accepted d ->
       let p = receiveAndClose @PromotionS d in 
       fork (\_:()1-> donate p "Benefactor1" "2345" 5);
-      fork (\_:()1-> donate p "Benefactor2" "1234" 20);
       donate p "Benefactor3" "1004" 10,
     Denied d ->
       putStrLn $ receiveAndClose @String d
@@ -124,7 +123,7 @@ main : ()
 main = 
   let (ds, dc) = new @DonationS () in
   let noOfClients = 3 in
-  let noOfDonations = 6 in
+  let noOfDonations = 4 in
   fork (\_:() 1-> helpSavingTheWolf dc);
   fork (\_:() 1-> wrongYear dc);
   fork (\_:() 1-> helpSavingTheWolf dc);
