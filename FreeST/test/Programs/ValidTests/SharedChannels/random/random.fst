@@ -30,14 +30,8 @@ initRandom =
     -- return client endpoint
     client
 
-main : Bool -- Int
+main : Int
 main =
     let rand = initRandom in
     let (i, _) = receive rand in
-    --printIntLn i; --comment out this line to manually test 
-    -- no way to test non-deterministic
-    --   values, so opt instead to only
-    --   check no errors are raised
-    --   during execution
-    --i
-    True
+	i

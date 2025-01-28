@@ -1,6 +1,0 @@
-<pending>
-I don't think that this one is invalid.
-A TypeAbs is introduced during elaboration.
-So, it seems that the type variable appears free in the body of the
-function but it doesn't. When we implement type inference,
-both the abstraction and the variable will be silently introduced.

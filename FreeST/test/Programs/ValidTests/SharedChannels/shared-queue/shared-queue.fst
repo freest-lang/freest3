@@ -11,7 +11,7 @@ runHeadNode : Internal -> dualof Head 1-> ()
 runHeadNode prev head = 
     let (i, prev) = receive prev in
     send_ @Int i head;
-    runHeadNode (receiveAndWait @Internal prev) head
+    runHeadNode (receiveAndClose @Internal prev) head
 
 runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =
@@ -57,13 +57,16 @@ initCounter =
 
 -- main
 
+maxSize : Int
+maxSize = 3
+
 main : ()
 main =
     let queue   = initQueue in
     let counter = initCounter in
     -- writer-reader concurrency, no writter-writer nor reader-reader concurrency
-    parallel @() 10 $ (\_:() -> enqueue (receive_ @Int counter) queue);
-    repeat @()  10 $ (\_:() -> print @Int (dequeue queue))
+    parallel @() maxSize $ (\_:() -> enqueue (receive_ @Int counter) queue);
+    repeat @()  maxSize $ (\_:() -> print @Int (dequeue queue))
     -- writer-reader, writter-writer and reader-reader concurrency
     -- parallel [()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);
     -- parallel [()]  10 $ (\_:() -> printIntLn (dequeue queue))

@@ -8,6 +8,7 @@ import Control.Exception
 import Control.Monad ( void, unless )
 import Control.Monad.Extra
 import Data.List
+import Data.List.Split
 import Data.Maybe
 import Debug.Trace
 import FreeST ( checkAndRun )
@@ -46,14 +47,14 @@ validTest dir (testFile, exp) =
       Failed  -> void $ assertFailure out
       Passed  -> doExpectationsMatch out exp
 
-
 pendingMessage :: String -> Expectation
 pendingMessage =  pendingWith . intercalate "\n\t" . tail . lines
- 
+
 doExpectationsMatch :: String -> String -> Expectation
-doExpectationsMatch out exp =
-  filter (/= '\n') out `shouldBe` filter (/= '\n') exp
-  
+doExpectationsMatch out exp = out `shouldSatisfy` (`elem` expectedOutputs)
+  where
+    expectedOutputs = map (read . (\line -> "\"" ++ line ++ "\"")) . lines $ exp
+
 testOne :: FilePath -> IO (String, TestResult)
 testOne file = hCapture [stdout, stderr] $
    catches runTest

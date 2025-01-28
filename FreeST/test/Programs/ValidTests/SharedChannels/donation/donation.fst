@@ -5,95 +5,126 @@ Based on the Donation.pi from SePi, available in
 Note that FreeST does not have refinement types
 -}
 
--- 1. Type abbreviations that make the code below more understandable
 type CreditCard = String
+type Amount = Int
+type Date = Int
 
--- type Promotion = *?(String, CreditCard, Int)
-type Promotion  = *?Promotion'
-type Promotion' = !String; !CreditCard; !Int; Close 
+-- type PromotionS = *?(String, CreditCard, Int)
+type PromotionS  = *?Promotion
+type Promotion = !String ; !CreditCard ; !Amount ; Close 
 
-type Decision = &{ Accepted: ?Promotion; Wait
-                 , Denied  : ?String   ; Wait
+type Decision = &{ Accepted: ?PromotionS; Close
+                 , Denied  : ?String   ; Close
                  }
 
 type DonationS = *!Donation
-type Donation  = +{ SetTitle: !String; Donation
-                  , SetDate : !Int   ; Donation
+type Donation  = +{ SetTitle: !String ; Donation
+                  , SetDate : !Date   ; Donation
                   , Commit  : Decision
                   }
 
-donate : Promotion -> String -> CreditCard -> Int -> ()
-donate p donor ccard amount =
-    -- let _ = send (donor, ccard, amount) p in ()
-    let (p, _) = receive p in
-    send donor p |> send ccard |> send amount |> close
+-- 1. Fork join
 
--- 2. One possible client
+type Fork = *+{Over}
+type Join = dualof Fork
+
+waitFor : Int -> Join -> ()
+waitFor n join =
+  if n == 0 then ()
+  else match join with { Over _ -> waitFor (n - 1) join }
+
+
+-- 2. Two clients
+
+donate : PromotionS -> String -> CreditCard -> Amount -> ()
+donate p donor ccard amount =
+  receive_ @Promotion p |> send donor |> send ccard |> send amount |> close
+
 helpSavingTheWolf : dualof DonationS -> ()
-helpSavingTheWolf donationServer =
-    let (p, donationServer) = receive donationServer in         -- get a session channel p from the donation server 
-    let p = select SetDate  p |> send 2012 in                   -- setup the date
-    let p = select SetTitle p |> send "Help Saving the Wolf" in -- setup the title
-    let p = select SetDate  p |> send 2013 in                   -- fix the 2012 date
-    let p = select Commit p in                                  -- commit once happy
-    match p with {                                              -- wait for the outcome
-        Accepted p ->                                           -- if accepted, we have three benefactors
-            let d = receiveAndWait @Promotion p in 
-            fork (\_:()1-> donate d "Benefactor1" "2345" 5);
-            fork (\_:()1-> donate d "Benefactor2" "1234" 20);
-            donate d "Benefactor3" "1004" 10,
-        Denied p ->                                             -- otherwise, print the reason
-            putStrLn $ receiveAndWait @String p
-    }
+helpSavingTheWolf d =
+  match
+    d |> receive_ @Donation |>
+    select SetDate |> send 2012 |>                    -- setup the date
+    select SetTitle |> send "Help Saving the Wolf" |> -- setup the title
+    select SetDate |> send 2013 |>                    -- fix the 2012 date
+    select Commit
+  with {
+    Accepted d ->
+      let p = receiveAndClose @PromotionS d in 
+      fork (\_:()1-> donate p "Benefactor1" "2345" 5);
+      donate p "Benefactor3" "1004" 10,
+    Denied d ->
+      putStrLn $ receiveAndClose @String d
+  }
+
+wrongYear : dualof DonationS -> ()
+wrongYear d = 
+  match
+    d |> receive_ @Donation |>
+    select SetDate |> send 1999 |>  -- wrong date
+    select SetTitle |> send "Help Saving the Mink" |>
+    select Commit
+  with {
+    Accepted d -> -- Not going to happen...
+      let p = receiveAndClose @PromotionS d in 
+      donate p "No Benefactor" "0000" 0,
+    Denied d ->
+      putStrLn $ receiveAndClose @String d
+  }
 
 
 -- 3. The bank that charges credit cards
-bank : CreditCard -> Int -> ()
-bank ccard amount =
-    putStrLn $ "Charging " ^^ show @Int amount ^^ " euros on card " ^^ ccard
+charge : CreditCard -> Amount -> ()
+charge ccard amount =
+  putStrLn $ "Charging " ^^ show @Int amount ^^ " euros on card " ^^ ccard
 
 
 -- 4. The Online Donation Server
+promotion : Int -> Fork -> dualof PromotionS -> ()
+promotion k f pc =
+  if k == 0 then select Over f ; ()
+  else
+    let p = accept @Promotion pc in
+    let (donor, p) = receive p in
+    let (ccard, p) = receive p in
+    let amount     = receiveAndWait @Int p in
+    charge ccard amount ;
+    promotion (k - 1) f pc
 
-promotion : dualof Promotion -> ()
-promotion p =
-    --
-    let (c, p') = new @Promotion' () in
-    let p = send c p in
-    --
-    let (donor , p') = receive p' in
-    let (ccard , p') = receive p' in
-    let amount       = receiveAndWait @Int p' in
-    bank ccard amount;
-    promotion p
+setup : String -> Date -> Fork -> PromotionS -> dualof Donation -> ()
+setup title _ f p (SetDate  d) = let (date,  d) = receive d in setup title date f p d
+setup _  date f p (SetTitle d) = let (title, d) = receive d in setup title date f p d
+setup title date f p (Commit d) =
+  (if date < 2013
+  then 
+    select Denied d |> send "Can only accept donations from year 2013"
+  else 
+    select Accepted d |> send p)
+  |> wait ;
+  select Over f ; ()
 
-setup : dualof Donation -> String 1-> Int 1-> ()
-setup p title date =
-    match p with {
-        SetDate  p -> let (d, p) = receive p in setup p title d   ,
-        SetTitle p -> let (t, p) = receive p in setup p t     date,
-        Commit   p -> if date < 2013
-                      then 
-                        select Denied p |> send "We can only accept 2013 donations\n" |> wait
-                      else 
-                        let (c, s) = new @Promotion () in
-                        select Accepted p |> send c |> wait ;
-                        promotion s
-    }
+server : Int -> Int -> (Fork, Join) -> PromotionS -> DonationS -> ()
+server k n fj p ds =
+  if k == 0 then waitFor n (snd @Fork @Join fj)
+  else
+    let d = accept @Donation ds in
+    fork (\_:() 1-> setup "<default>" 0000 (fst @Fork @Join fj) p d) ;
+    server (k - 1) n fj p ds
 
-donationServer : DonationS -> ()
-donationServer donationService =
-    let (p1, p2) = new @Donation () in                      -- create a channel for a new donation campaign
-    let donationService = send p1 donationService in    -- send one end; keep the other (p2)
-    fork (\_:() 1-> setup p2 "Help me" 2000);           -- call with default values
-    donationServer donationService                      -- serve another client
-
+donationServer : Int -> Int -> DonationS -> ()
+donationServer noOfClients noOfDonations ds =
+  let (f, j) = new @Fork () in
+  let p = forkWith @PromotionS @() (promotion noOfDonations f) in
+  server noOfClients noOfClients (new @Fork ()) p ds ;
+  match j with { Over _ -> () }
 
 -- 5. Main
 main : ()
 main = 
-    let (ps1, ps2) = new @DonationS () in   -- create a Online Donation channel
-    fork (\_:() 1-> helpSavingTheWolf ps2); -- let the whole world know the other
-    fork (\_:() 1-> helpSavingTheWolf ps2);
-    fork (\_:() 1-> helpSavingTheWolf ps2);
-    donationServer ps1                      -- send one end to the Donation Server
+  let (ds, dc) = new @DonationS () in
+  let noOfClients = 3 in
+  let noOfDonations = 4 in
+  fork (\_:() 1-> helpSavingTheWolf dc);
+  fork (\_:() 1-> wrongYear dc);
+  fork (\_:() 1-> helpSavingTheWolf dc);
+  donationServer noOfClients noOfDonations ds

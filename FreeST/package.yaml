@@ -109,6 +109,7 @@ tests:
         - hspec >= 2.7.1       
         - HUnit >= 1.6.0.0
         - silently >= 1.2.5.1
+        - split >= 0.2.3.3
       ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
 
     valid-types-quick:

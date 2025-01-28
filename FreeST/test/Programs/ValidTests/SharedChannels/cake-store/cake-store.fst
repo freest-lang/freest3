@@ -6,41 +6,28 @@ Based on the 'Ami and Boe' example from
 -}
 
 type CakeStore   = *?CakeService
-type CakeService = &{ Cake: Wait
-                    , Disappointment: Wait 
-                    }
+type CakeService = &{Cake: Close, Disappointment: Close}
 
-runCakeStore : dualof CakeStore -> Bool -> ()
-runCakeStore cakeStore gotCake = 
-    let (c, s)    = new @CakeService () in
-    let cakeStore = send c cakeStore in
+runCakeStore : dualof CakeStore -> Bool -> Diverge
+runCakeStore cakeStore gotCake =
+    let s = accept @CakeService cakeStore in
     if gotCake
     then 
-        s |> select Cake |> close;
+        s |> select Cake |> wait;
         runCakeStore cakeStore False
     else 
-        s |> select Disappointment |> close;
-        runCakeStore cakeStore False
+        s |> select Disappointment |> wait
 
-ami : CakeStore -> ()
-ami cakeStore = 
-    let cakeService = fst @CakeService @CakeStore $ receive cakeStore in
-    match cakeService with {
-        Cake           c -> wait c; putStrLn "Ami got cake!",
-        Disappointment c -> wait c; putStrLn "Ami got disappointment"
-    }
-
-boe : CakeStore -> ()
-boe cakeStore =
-    let cakeService = fst @CakeService @CakeStore $ receive cakeStore in
-    match cakeService with {
-        Cake           c -> wait c; putStrLn "Boe got cake!",
-        Disappointment c -> wait c; putStrLn "Boe got disappointment"
+storeClient : String -> CakeStore -> ()
+storeClient name cakeStore =
+    match receive_ @CakeService cakeStore with {
+        Cake           c -> putStrLn (name ^^ " got cake!") ; close c,
+        Disappointment c -> putStrLn (name ^^ " got disappointment") ; close c
     }
 
 main : ()
 main =
     let (c, s) = new @CakeStore () in
-    fork (\_:() 1-> ami c);
-    fork (\_:() 1-> boe c);
+    fork (\_:() 1-> storeClient "Ami" c);
+    fork (\_:() 1-> storeClient "Boe" c);
     runCakeStore s True
