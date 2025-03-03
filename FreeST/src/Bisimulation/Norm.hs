@@ -25,30 +25,30 @@ nonterminals (Grammar _ productions) = Set.union (Map.keysSet productions) (Set.
 
 -- 1 Given a Grammar and a word indicates if the word is normed
 isNormed :: Grammar -> Word -> Bool
-isNormed g w = Data.Maybe.isJust (norm g w)
+isNormed g w = case norm g w of Normed _ -> True ; _ -> False
 
 -- 2 Given a Grammar and a word returns the norm of the word
 class Normalizable a where
-  norm :: Grammar -> a -> IOF
+  norm :: Grammar -> a -> Norm
 
 instance Normalizable Word where
   norm g w = evalState (normUsingMap Set.empty w) initState
     where
-      initState = TState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
+      initState = BisimulationState{basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
 
 instance Normalizable Variable where
   norm g v = norm g [v]
 
 
-normUsingMap :: Set.Set Variable -> Word ->  GlobalState IOF
-normUsingMap _ [] = return (Just 0)
+normUsingMap :: Set.Set Variable -> Word ->  Bisimulation Norm
+normUsingMap _ [] = return (Normed 0)
 normUsingMap visitedVars w@(v:vs) = do 
   (x,y) <- computeNorm visitedVars w v Set.empty
   deleteFromMap y
   return x
 
 
-deleteFromMap :: Set.Set Variable -> GlobalState ()
+deleteFromMap :: Set.Set Variable -> Bisimulation ()
 deleteFromMap vars = do
   map <- gets normMap
   let newMap = Set.foldr Map.delete map vars
@@ -58,24 +58,24 @@ deleteFromMap vars = do
 -- Calculates the norm using the NormMap
 -- Receive a grammar, a word, a map and an array of "Variables" (variables already visited)
 -- Returns a tuple with the values of the norm, the variables already visited and the NormMap
-computeNorm :: Set.Set Variable -> Word-> Variable -> Set.Set Variable -> GlobalState (IOF, Set.Set Variable)
-computeNorm _ [] _ vars = return (Just 0, vars)
+computeNorm :: Set.Set Variable -> Word-> Variable -> Set.Set Variable -> Bisimulation (Norm, Set.Set Variable)
+computeNorm _ [] _ vars = return (Normed 0, vars)
 computeNorm visitedVars w@(v : vs) parent varsToRecheck = do
   -- troco a ordem e ponho o visitedVars como parametro
   map <- gets normMap
   case Map.lookup v map of
     Just nVar -> do
       (nTail, vars) <- computeNorm visitedVars vs parent varsToRecheck
-      return (liftA2 (+) nTail nVar, vars)
+      return (nTail + nVar, vars)
     Nothing -> do
       if v `elem` visitedVars
         then do
-          return (Nothing, Set.insert parent varsToRecheck)
+          return (Unnormed, Set.insert parent varsToRecheck)
         else do
           (Grammar _ prods) <- gets grammar
           wordNorm visitedVars prods w parent varsToRecheck
 
-wordNorm :: Set.Set Variable -> Productions -> Word -> Variable -> Set.Set Variable -> GlobalState (IOF, Set.Set Variable)
+wordNorm :: Set.Set Variable -> Productions -> Word -> Variable -> Set.Set Variable -> Bisimulation (Norm, Set.Set Variable)
 wordNorm visitedVars prods (v : vs) parent varsToRecheck = do
   map <- gets normMap
   let newVisitedVars = Set.insert v visitedVars
@@ -83,37 +83,35 @@ wordNorm visitedVars prods (v : vs) parent varsToRecheck = do
       toVisit = Map.elems trans -- ver se da para fazer sem listas/ noa consegui
   if [] `elem` toVisit
     then do
-      let nVar = Just 1
+      let nVar = Normed 1
       updateNormMap (Map.insert v nVar map)
       (nTail,vars) <- computeNorm newVisitedVars vs parent varsToRecheck
-      return (liftA2 (+) nVar nTail,vars)
+      return (nVar + nTail, vars)
     else do
       (nVar,vars'') <-
         foldM
           ( \(acc,vars) w -> do
               (a,vars') <- computeNorm newVisitedVars w v vars
               case a of
-                Nothing -> do 
+                Unnormed -> do 
                   if (head w) == v 
                     then
-                      return (minWithInf acc a,vars')
+                      return (min acc a,vars')
                     else do 
-                      addLog("notihng")
-                      return (minWithInf acc a, Set.insert v vars')
+                      return (min acc a, Set.insert v vars')
                 _ -> do
-                  addLog("valor")
-                  return (minWithInf acc a,vars')
+                  return (min acc a,vars')
           )
-          (Nothing,varsToRecheck)
+          (Unnormed, varsToRecheck)
           toVisit
       map <- gets normMap
-      let nVar' = liftA2 (+) nVar (Just 1)
+      let nVar' = nVar + Normed 1
       updateNormMap (Map.insert v nVar' map)
       (nTail,vars''' )<- computeNorm newVisitedVars vs parent vars''
-      return (liftA2 (+) nVar' nTail,vars''')
+      return (nVar' + nTail,vars''')
 
 -- Auxiliary function of normUsingMap
--- normUsingMapAux ::  [Word] -> NormState IOF
+-- normUsingMapAux ::  [Word] -> NormState Norm
 -- normUsingMapAux [] = return Nothing
 -- normUsingMapAux  (w:ws) = do
 -- a <- normUsingMap w
@@ -126,18 +124,18 @@ wordNorm visitedVars prods (v : vs) parent varsToRecheck = do
 seminorm :: Grammar -> Word -> Int
 seminorm g w = evalState (seminormUsingMap Set.empty w) initState
   where
-    initState = TState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
+    initState = BisimulationState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
 
 -- Calculates the seminorm using the NormMap
 -- Receive a grammar, a word, a map and an array of "Variables" (variables already visited)
 -- Returns a tuple with the values of the norm, the variables already visited and the NormMap
-seminormUsingMap :: Set.Set Variable -> Word -> GlobalState Int
+seminormUsingMap :: Set.Set Variable -> Word -> Bisimulation Int
 seminormUsingMap _ [] = return 0
 seminormUsingMap visitedVars (x : xs) = do
   result <- normUsingMap visitedVars [x]
   case result of
-    Nothing -> return 0
-    Just y -> do
+    Unnormed -> return 0
+    Normed y -> do
       result' <- seminormUsingMap visitedVars xs
       return (y + result')
 
@@ -148,17 +146,17 @@ seminormUsingMap visitedVars (x : xs) = do
 yk :: Grammar -> Word -> Int -> Word
 yk g w i = evalState (ykUsingMap Set.empty i w) initState
   where
-    initState = TState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
+    initState = BisimulationState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
 
 -- Calculates the  k-th term using the NormMap
 -- Receive a grammar, a word, the k, a map and an array of "Variables" (variables already visited)
 -- Returns a word
-ykUsingMap :: Set.Set Variable -> Int -> Word -> GlobalState Word
+ykUsingMap :: Set.Set Variable -> Int -> Word -> Bisimulation Word
 ykUsingMap _ 0 w = return w
 ykUsingMap visitedVars i (x : xs) = do
   result <- normUsingMap visitedVars [x]
   case result of
-    Just n
+    Normed n
       | n <= i -> ykUsingMap visitedVars (i - n) xs
       | n > i -> do
           map <- gets normMap
@@ -177,19 +175,13 @@ valuation g@(Grammar _ p) = evalState (valuationUsingMap Set.empty words) initSt
   where
     transList = Map.elems p
     words = concatMap Map.elems transList
-    initState = TState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
+    initState = BisimulationState {basis = Map.empty, visitedPairs = Set.empty, normMap = Map.empty, grammar = g, log = []}
 
 -- Auxiliary function of valuation
-valuationUsingMap :: Set.Set Variable -> [Word] -> GlobalState Int
+valuationUsingMap :: Set.Set Variable -> [Word] -> Bisimulation Int
 valuationUsingMap visitedVars = foldM (\acc w -> max acc <$> seminormUsingMap visitedVars w) 0
 
 -----------------------------------------------------------------------------------------------------------------------------
-
--- Extra Functions
-minWithInf :: IOF -> IOF -> IOF
-minWithInf x Nothing = x
-minWithInf Nothing x = x
-minWithInf (Just x) (Just y) = Just (min x y)
 
 reducesNorm :: Int -> Int -> Bool
 reducesNorm x y = x == (y + 1)
@@ -197,8 +189,8 @@ reducesNorm x y = x == (y + 1)
 getNormFromMap :: Variable -> NormMap -> Int
 getNormFromMap x mp = case Map.lookup x mp of
   Just val -> case val of
-    Nothing -> -1
-    Just x -> x
+    Unnormed -> -1
+    Normed x -> x
   Nothing -> undefined
 
 getNormWordFromMap :: Word -> NormMap -> Int
