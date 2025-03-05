@@ -350,7 +350,7 @@ basisUpdate track s = \case                                                    -
               --        \((\gamma_i \alpha, \delta_i \beta)\)
               --      as a child of \((X \alpha, Y \beta)\).
               (Unnormed, Unnormed) -> do
-                partialFailure2 node track q s
+                partialFailure2 node track q s                                 -- Does this deviate from the paper?
               -- 3. If at least one of \(x \alpha\), \(Y \beta\) is normed, then:
               -- 
               --   1. Update \(\mathcal B\) by removing the pair associated with
@@ -361,7 +361,7 @@ basisUpdate track s = \case                                                    -
               --      i.e., go back to subcase 1, considering node 
               --        \((X \alpha, Y \beta)\) instead of \((\gamma, \delta)\).
               _ -> do
-                modifyBasis (Map.insert (x, y) (Bpa2 (α, β)))
+                modifyBasis (Map.insert (x, y) (Bpa2 (α, β)))                  -- Does this deviate from the paper?
                 partialFailure node' track q s
           -- In any other cases, recursively execute the partial failure 
           -- routine on \((X \alpha, Y \beta)\); i.e., go back to subcase 1,
@@ -371,15 +371,15 @@ basisUpdate track s = \case                                                    -
             partialFailure node' track q s
     
     -- TODO: comment (and rename?)
-    partialFailure2 node track q s =
+    partialFailure2 node track q s = -- Does this deviate from the paper?
       case parent node of
         Nothing -> return False
-        Just node'@Node{pair = (x : xs, y : ys)} -> do
+        Just node'@Node{pair = (x : α, y : β)} -> do
           let track' = dropWhile (/= (x, y)) track
-          modifyBasis (Map.insert (x, y) (Bpa2 (xs, ys)) . filterBasis track')
+          modifyBasis (Map.insert (x, y) (Bpa2 (α, β)) . filterBasis track')
           modifyVisitedPairs (filterSet track')
           children <- getChildren node'
-          q' <- orderAndPruneNodes xs ys (children Seq.>< filterBranchQueue node q)
+          q' <- orderAndPruneNodes α β (children Seq.>< filterBranchQueue node q)
           basisUpdate track' s q'
       where
         filterBasis ks = Map.filterWithKey (\k _ -> k `elem` ks || uncurry (==) k)
