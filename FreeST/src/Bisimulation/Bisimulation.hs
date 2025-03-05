@@ -1,5 +1,14 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE LambdaCase, BlockArguments, NamedFieldPuns, ViewPatterns #-}
+{- |
+Module      :  Bisimulation.Bisimulation
+Copyright   :  © The FreeST Team
+Maintainer  :  freest-lang@listas.ciencias.ulisboa.pt
+
+An implementation of [Poças and Vasconcelos' simple grammar bisimilarity 
+algorithm](https://arxiv.org/abs/2407.04063).
+
+-}
 module Bisimulation.Bisimulation 
  ( bisimilar
  ) where
@@ -19,22 +28,31 @@ import Data.Ord (comparing)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 
--- | Are two words over a simple grammar bisimilar?
 bisimilar :: Grammar -> Bool
-bisimilar g@(Grammar [γ, δ] _) =                                             -- IMO the grammar should only include the productions
-  evalState (basisUpdate [] Set.empty initQueue) initState                   -- (with γ and δ as parameters to bisimilar)
+-- | Are two words over a simple grammar bisimilar?
+bisimilar g@(Grammar [γ, δ] _) =                                               -- IMO 'Grammar' should only include the productions
+  evalState (basisUpdate [] initS initQ) initState                             -- (with 'γ' and 'δ' as parameters to bisimilar)
   where
-    initQueue = Seq.singleton Node{pair = (γ, δ), parent = Nothing}
+    -- Initially, the tree has the single leaf node \((\gamma, \delta)\) 
+    -- corresponding to the pair of words given as input; \(\mathcal B\) is
+    -- comprised of the pairs \((X, X)\) for every nonterminal \(X\); and 
+    -- \(\mathcal S = \emptyset\).
+    initQ = Seq.singleton Node{pair = (γ, δ), parent = Nothing}
+    initB = 
+      Set.foldr (\x -> Map.insert (x, x) (Bpa1 [])) Map.empty (nonterminals g)
+    initS = Set.empty
     initState = BisimulationState
-      { basis = initBasis g
+      { basis = initB
       , visitedPairs = Set.empty
       , normMap = Map.empty
       , grammar = g
       , log = []
       }
-    initBasis g =
-      Set.foldr (\α b -> Map.insert (α, α) (Bpa1 []) b) Map.empty (nonterminals g)
 
+basisUpdate :: [(Variable, Variable)]
+            -> Set.Set (Variable, Variable) 
+            -> BranchQueue 
+            -> Bisimulation Bool
 -- | The basis-updating algorithm for deciding the bisimilarity of two words
 -- over a simple grammar. The main ideas driving the algorithm are as follows:
 -- 
@@ -97,22 +115,22 @@ bisimilar g@(Grammar [γ, δ] _) =                                             -
 -- throughout the algorithm abide by the pruning convention. This convention 
 -- can be enforced by removing all nonterminals after the first unnormed 
 -- nonterminal, according to the pruning lemma.
-basisUpdate :: [(Variable, Variable)]                                          -- the name of this parameter 'track' is not very elucidating. rename to what?
-            -> Set.Set (Variable, Variable) 
-            -> BranchQueue 
-            -> Bisimulation Bool
-basisUpdate track s = \case
+basisUpdate track s = \case                                                    -- the name of this parameter 'track' is not very elucidating. rename to what?
+  -- If all leaves are finished, the algorithm terminates concluding that the
+  -- initial pair is bisimilar.
   (Seq.viewl -> Seq.EmptyL) -> return True
+  -- Otherwise, the algorithm proceeds by expanding the first unfinished leaf.
   q@(Seq.viewl -> node'@Node{parent} Seq.:< q') -> do                          -- proposal: @type Node = NonEmpty (Word, Word)@
     b <- gets basis                                                            -- ('Traversable' etc. instances would help with node transformations.)
     g <- gets grammar
+    visited <- gets visitedPairs
+    -- Suppose that the algorithm examines an unfinished leaf
+    -- \((\gamma, \delta)\).
     node@Node{pair = (γ, δ)} <- case parent of
         Nothing -> pruneNode node' >>= orderNode
         _       -> return node'
-    visited <- gets visitedPairs
     -- We are now ready to describe the possible ways in which a leaf can be
-    -- expanded. Suppose that the algorithm examines an unfinished leaf
-    -- \((\gamma, \delta)\). Each of the following cases is considered in order.
+    -- expanded. Each of the following cases is considered in order.
     if  -- __Case 1__ (Loop detection).
         -- if \((\gamma, \delta)\) coincides with an already visited node
         -- (either an internal node, or some finished leaf in the current tree),
@@ -138,7 +156,7 @@ basisUpdate track s = \case
           -- then the expansion of this leaf is a partial failure (described in
           -- __Case 10__).
           nγ /= nδ
-      then partialFail node track q' s
+      then partialFailure node track q' s
       else do
         -- From now on, we can assume that \(\gamma\) and \(\delta\) are both
         -- non-empty. Let us rewrite 
@@ -211,7 +229,7 @@ basisUpdate track s = \case
                 | not (isNormed g δ) -> addMatchingTransitions β' node q'
                 -- If \(Y \beta'\) is normed, then execute the partial failure
                 -- routine (__Case 10__) on node \((X, Y \beta')\).
-                | otherwise -> partialFail2 node track q s                     -- Does this deviate from the paper?
+                | otherwise -> partialFailure2 node track q s                  -- Does this deviate from the paper?
                 -- The symmetric case in which \(X\) is normed and \(Y\) is
                 -- unnormed is handled similarly.
               -- __Case 9__ (Basis does not include pair, transitions match,
@@ -257,7 +275,7 @@ basisUpdate track s = \case
                     case (nγ, nδ) of
                       (Unnormed, Unnormed) -> do
                         addPairBpa2ToBasis node q' (α', β') track s'
-                      _ -> partialFail2 node track q s'
+                      _ -> partialFailure2 node track q s'
                 -- If \((X, Y) \in \mathcal S\), we consider the following
                 -- subcases:
                 | otherwise -> case (nγ, nδ) of
@@ -285,12 +303,12 @@ basisUpdate track s = \case
                   --      (if it is still not in \(S\).
                   --   2. Execute the partial failure routine (__Case 10__) on 
                   --      node \((X \gamma', Y \delta')\).
-                  _ -> partialFail2 node track q s
+                  _ -> partialFailure2 node track q s
   where
     -- __Case 10__ (Partial failure)
     -- In a partial failure, the algorithm moves up the tree, removing some 
     -- of the nodes and updating the basis.
-    partialFail node track q s = case parent node of
+    partialFailure node track q s = case parent node of
       -- When executing a partial failure on a given node \((\gamma, \delta)\), the
       -- algorithm considers the following subcases:
       --
@@ -332,7 +350,7 @@ basisUpdate track s = \case
               --        \((\gamma_i \alpha, \delta_i \beta)\)
               --      as a child of \((X \alpha, Y \beta)\).
               (Unnormed, Unnormed) -> do
-                partialFail2 node track q s
+                partialFailure2 node track q s
               -- 3. If at least one of \(x \alpha\), \(Y \beta\) is normed, then:
               -- 
               --   1. Update \(\mathcal B\) by removing the pair associated with
@@ -344,16 +362,16 @@ basisUpdate track s = \case
               --        \((X \alpha, Y \beta)\) instead of \((\gamma, \delta)\).
               _ -> do
                 modifyBasis (Map.insert (x, y) (Bpa2 (α, β)))
-                partialFail node' track q s
+                partialFailure node' track q s
           -- In any other cases, recursively execute the partial failure 
           -- routine on \((X \alpha, Y \beta)\); i.e., go back to subcase 1,
           -- considering node 
           --   \((X \alpha, Y \beta)\) instead of \((\gamma, \delta)\).
           _ -> do
-            partialFail node' track q s
+            partialFailure node' track q s
     
     -- TODO: comment (and rename?)
-    partialFail2 node track q s =
+    partialFailure2 node track q s =
       case parent node of
         Nothing -> return False
         Just node'@Node{pair = (x : xs, y : ys)} -> do
