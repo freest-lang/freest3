@@ -12,6 +12,8 @@ data-files:
   - Prelude.fst
   - List.fst
   - File.fst
+  - Random.fst
+  - Secure.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
