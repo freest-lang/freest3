@@ -55,6 +55,11 @@ odd : Int -> Bool
 (>) : Int -> Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
+shiftL : Int -> Int -> Int
+shiftR : Int -> Int -> Int
+andBit : Int -> Int -> Int
+orBit : Int -> Int -> Int
+xorBit : Int -> Int -> Int
 
 -- Float
 (+.) : Float -> Float -> Float
@@ -95,6 +100,41 @@ log1pexp: Float -> Float
 log1mexp: Float -> Float
 fromInteger: Int -> Float
 
+-- Infinite Int
+(+i) : InfiniteInt -> InfiniteInt -> InfiniteInt
+(-i) : InfiniteInt -> InfiniteInt -> InfiniteInt
+(*i) : InfiniteInt -> InfiniteInt -> InfiniteInt
+(/i) : InfiniteInt -> InfiniteInt -> InfiniteInt
+divI : InfiniteInt -> InfiniteInt -> InfiniteInt
+(^i) : InfiniteInt -> InfiniteInt -> InfiniteInt
+modI : InfiniteInt -> InfiniteInt -> InfiniteInt
+remI : InfiniteInt -> InfiniteInt -> InfiniteInt
+maxI : InfiniteInt -> InfiniteInt -> InfiniteInt
+minI : InfiniteInt -> InfiniteInt -> InfiniteInt
+quotI : InfiniteInt -> InfiniteInt -> InfiniteInt
+gcdI : InfiniteInt -> InfiniteInt -> InfiniteInt
+lcmI : InfiniteInt -> InfiniteInt -> InfiniteInt
+subtractI : InfiniteInt -> InfiniteInt -> InfiniteInt
+succI : InfiniteInt -> InfiniteInt
+predI : InfiniteInt -> InfiniteInt
+absI : InfiniteInt -> InfiniteInt
+negateI : InfiniteInt -> InfiniteInt
+evenI : InfiniteInt -> Bool
+oddI : InfiniteInt -> Bool
+(==i) : InfiniteInt -> InfiniteInt -> Bool
+(/=i) : InfiniteInt -> InfiniteInt -> Bool
+(<i) : InfiniteInt -> InfiniteInt -> Bool
+(>i) : InfiniteInt -> InfiniteInt -> Bool
+(<=i) : InfiniteInt -> InfiniteInt -> Bool
+(>=i) : InfiniteInt -> InfiniteInt -> Bool
+shiftLI : InfiniteInt -> Int -> InfiniteInt
+shiftRI : InfiniteInt -> Int -> InfiniteInt
+andBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
+orBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
+xorBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
+integerToInfinite : Int -> InfiniteInt
+infiniteToInteger : InfiniteInt -> Int
+
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
@@ -119,6 +159,9 @@ __putStrErr : String -> ()
 __getChar : () -> Char
 __getLine : () -> String
 __getContents : () -> String
+
+-- System time
+getSystemTime : () -> Int
 
 -- Fork
 fork : forall a:*T. (() 1-> a) -> ()

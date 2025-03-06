@@ -12,6 +12,8 @@ import           System.IO
 import           Data.Bifunctor (Bifunctor(bimap))
 -- import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
 import GHC.Float
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Data.Bits
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -77,6 +79,11 @@ initialCtx = Map.fromList
   , (var "odd" , PrimitiveFun (\(Integer x) -> boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
+  , (var "shiftL", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ shiftL x y)))
+  , (var "shiftR", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ shiftR x y)))
+  , (var "andBit", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x .&. y)))
+  , (var "orBit", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x .|. y)))
+  , (var "xorBit", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ xor x y)))
   -- Float
   , (var "(+.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x + y)))
   , (var "(-.)", PrimitiveFun (\(Float x) -> PrimitiveFun (\(Float y) -> Float $ x - y)))
@@ -115,6 +122,41 @@ initialCtx = Map.fromList
   , (var "log1pexp", PrimitiveFun (\(Float x) -> Float $ log1pexp x))
   , (var "log1mexp", PrimitiveFun (\(Float x) -> Float $ log1mexp x))
   , (var "fromInteger", PrimitiveFun (\(Integer x) -> Float $ Prelude.fromInteger (toInteger x)))
+  -- Infinite Percision Integer
+  , (var "(+i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x + y)))
+  , (var "(-i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x - y)))
+  , (var "subtractI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ y - x)))
+  , (var "(*i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x * y)))
+  , (var "(/i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `div` y)))
+  , (var "(^i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x ^ y)))
+  , (var "absI", PrimitiveFun (\(InfiniteInt x) -> InfiniteInt $ abs x))
+  , (var "modI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `mod` y)))
+  , (var "remI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `rem` y)))
+  , (var "divI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `div` y)))
+  , (var "negateI", PrimitiveFun (\(InfiniteInt x) -> InfiniteInt $ negate x))
+  , (var "maxI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `max` y)))
+  , (var "minI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `min` y)))
+  , (var "succI", PrimitiveFun (\(InfiniteInt x) -> InfiniteInt $ succ x))
+  , (var "predI", PrimitiveFun (\(InfiniteInt x) -> InfiniteInt $ pred x))
+  , (var "absI" , PrimitiveFun (\(InfiniteInt x) -> InfiniteInt $ abs x))
+  , (var "quotI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `quot` y)))
+  , (var "evenI", PrimitiveFun (\(InfiniteInt x) -> boolean $ even x))
+  , (var "oddI" , PrimitiveFun (\(InfiniteInt x) -> boolean $ odd x))
+  , (var "gcdI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `gcd` y)))
+  , (var "lcmI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x `lcm` y)))
+  , (var "(==i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x == y)))
+  , (var "(/=i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x /= y)))
+  , (var "(>i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x > y)))
+  , (var "(<i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x < y)))
+  , (var "(<=i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x <= y)))
+  , (var "(>=i)", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> boolean $ x >= y)))
+  , (var "shiftLI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(Integer y) -> InfiniteInt $ shiftL x y)))
+  , (var "shiftRI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(Integer y) -> InfiniteInt $ shiftR x y)))
+  , (var "andBitI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x .&. y)))
+  , (var "orBitI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ x .|. y)))
+  , (var "xorBitI", PrimitiveFun (\(InfiniteInt x) -> PrimitiveFun (\(InfiniteInt y) -> InfiniteInt $ xor x y)))
+  , (var "integerToInfinite", PrimitiveFun (\(Integer x) -> InfiniteInt $ toInteger x))
+  , (var "infiniteToInteger", PrimitiveFun (\(InfiniteInt x) -> Integer $ fromIntegral x))
   -- Booleans
   , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
   , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
@@ -163,6 +205,8 @@ initialCtx = Map.fromList
   , (var "__closeFile"   , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
+  -- System time (seed for rng)
+  , (var "getSystemTime", PrimitiveFun (\_ -> IOValue $ fmap (Integer . truncate . (* 10^9)) getPOSIXTime))
   -- Undefined
 --  , (var "undefined", PrimitiveFun undefined)
   -- Error

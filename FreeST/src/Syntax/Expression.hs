@@ -30,6 +30,7 @@ data Exp =
     Unit Span
   | Int Span Int
   | Float Span Double
+  | InfiniteInt Span Integer
   | Char Span Char
   | String Span String
   -- Variable
@@ -62,6 +63,7 @@ instance Located Exp where
   getSpan (Unit p             ) = p
   getSpan (Int p _            ) = p
   getSpan (Float p _          ) = p
+  getSpan (InfiniteInt p _    ) = p
   getSpan (Char p _           ) = p
   getSpan (String p _         ) = p
   getSpan (Var p _            ) = p

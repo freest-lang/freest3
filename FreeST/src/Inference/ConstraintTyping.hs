@@ -37,6 +37,7 @@ constraintTyping f e = do
 ctyping :: K.KindEnv -> E.Exp -> InfState (T.Type, UsageSet)
 ctyping _ (E.Int s _) = pure (T.Int s, Map.empty)
 ctyping _ (E.Float s _) = pure (T.Float s, Map.empty)
+ctyping _ (E.InfiniteInt s _) = pure (T.InfiniteInt s, Map.empty)
 ctyping _ (E.String s _) = pure (T.String s, Map.empty)
 ctyping _ (E.Char s _) = pure (T.Char s, Map.empty)
 ctyping _ (E.Unit s) = pure (T.unit s, Map.empty)

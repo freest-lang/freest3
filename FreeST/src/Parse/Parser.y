@@ -38,87 +38,94 @@ import           Paths_FreeST ( getDataFileName )
 %monad { ParseState } { (>>=) } { return }
 
 %token
-  nl       {TokenNL _}
-  where    {TokenWhere _}
-  module   {TokenModule _}  
-  import   {TokenImport _}  
-  and      {TokenAnd _}
-  Int      {TokenIntT _}
-  Float    {TokenFloatT _}
-  Char     {TokenCharT _}
-  String   {TokenStringT _}
-  '()'     {TokenUnit _}
-  '->'     {TokenUnArrow _}
-  '1->'    {TokenLinArrow _}
-  lambda   {TokenLambda _}
-  Lambda   {TokenUpperLambda _}
-  '@'      {TokenAt _}
-  Skip     {TokenSkip _}
-  Close     {TokenClose _}
-  Wait     {TokenWait _}
-  '('      {TokenLParen _}
-  ')'      {TokenRParen _}
-  ','      {TokenComma _}
-  '['      {TokenLBracket _}
-  ']'      {TokenRBracket _}
-  ':'      {TokenColon _}
-  '::'     {TokenDoubleColon _}
-  ';'      {TokenSemi _}
-  '!'      {TokenMOut _}
-  '?'      {TokenMIn _}
-  '{'      {TokenLBrace _}
-  '}'      {TokenRBrace _}
-  '=>'     {TokenFArrow _}
-  '&&'     {TokenConjunction _}
-  '||'     {TokenDisjunction _}
-  '/'      {TokenDiv _}
-  '/.'     {TokenDivDot _}
-  '&'      {TokenAmpersand _}
-  '|>'     {TokenPipeOp _}
-  '+'      {TokenPlus _}
-  '+.'     {TokenPlusF _}
-  '-'      {TokenMinus _}
-  '-.'     {TokenMinusDot _}
-  '*'      {TokenTimes _}
-  '*.'     {TokenTimesDot _}
-  '^'      {TokenRaise _}
-  '**'     {TokenRaiseTimes _}
-  '++'     {TokenAppend _}
-  '^^'     {TokenAppendString _}
-  '_'      {TokenWild _}
-  '$'      {TokenDollar _}
-  '.'      {TokenDot _}
-  CMP       {TokenCmp _ _}
-  UPPER_ID {TokenUpperId _ _}
-  LOWER_ID {TokenLowerId _ _}
-  rec      {TokenRec _}
-  US       {TokenUnS _}
-  LS       {TokenLinS _}
-  UT       {TokenUnT _}
-  LT       {TokenLinT _}
-  UA       {TokenUnA _}
-  LA       {TokenLinA _}
-  INT      {TokenInt _ _ }
-  FLOAT    {TokenFloat _ _}
-  CHAR     {TokenChar _ _}
-  STR      {TokenString _ _}
-  let      {TokenLet _}
-  in       {TokenIn _}
-  '='      {TokenEq _}
-  data     {TokenData _}
-  type     {TokenType _}
-  '|'      {TokenPipe _}
-  otherwise{TokenOtherwise _}
-  if       {TokenIf _}
-  then     {TokenThen _}
-  else     {TokenElse _}
-  select   {TokenSelect _}
-  match    {TokenMatch _}
-  with     {TokenWith _}
-  case     {TokenCase _}
-  of       {TokenOf _}
-  forall   {TokenForall _}
-  dualof   {TokenDualof _}
+  nl          {TokenNL _}
+  where       {TokenWhere _}
+  module      {TokenModule _}  
+  import      {TokenImport _}  
+  and         {TokenAnd _}
+  Int         {TokenIntT _}
+  Float       {TokenFloatT _}
+  InfiniteInt {TokenInfiniteIntT _}
+  Char        {TokenCharT _}
+  String      {TokenStringT _}
+  '()'        {TokenUnit _}
+  '->'        {TokenUnArrow _}
+  '1->'       {TokenLinArrow _}
+  lambda      {TokenLambda _}
+  Lambda      {TokenUpperLambda _}
+  '@'         {TokenAt _}
+  Skip        {TokenSkip _}
+  Close       {TokenClose _}
+  Wait        {TokenWait _}
+  '('         {TokenLParen _}
+  ')'         {TokenRParen _}
+  ','         {TokenComma _}
+  '['         {TokenLBracket _}
+  ']'         {TokenRBracket _}
+  ':'         {TokenColon _}
+  '::'        {TokenDoubleColon _}
+  ';'         {TokenSemi _}
+  '!'         {TokenMOut _}
+  '?'         {TokenMIn _}
+  '{'         {TokenLBrace _}
+  '}'         {TokenRBrace _}
+  '=>'        {TokenFArrow _}
+  '&&'        {TokenConjunction _}
+  '||'        {TokenDisjunction _}
+  '/'         {TokenDiv _}
+  '/.'        {TokenDivDot _}
+  '/i'        {TokenDivI _}
+  '&'         {TokenAmpersand _}
+  '|>'        {TokenPipeOp _}
+  '+'         {TokenPlus _}
+  '+.'        {TokenPlusF _}
+  '+i'        {TokenPlusI _}
+  '-'         {TokenMinus _}
+  '-.'        {TokenMinusDot _}
+  '-i'        {TokenMinusI _}
+  '*'         {TokenTimes _}
+  '*.'        {TokenTimesDot _}
+  '*i'        {TokenTimesI _}
+  '^'         {TokenRaise _}
+  '**'        {TokenRaiseTimes _}
+  '^i'        {TokenRaiseI _}
+  '++'        {TokenAppend _}
+  '^^'        {TokenAppendString _}
+  '_'         {TokenWild _}
+  '$'         {TokenDollar _}
+  '.'         {TokenDot _}
+  CMP          {TokenCmp _ _}
+  UPPER_ID    {TokenUpperId _ _}
+  LOWER_ID    {TokenLowerId _ _}
+  rec         {TokenRec _}
+  US          {TokenUnS _}
+  LS          {TokenLinS _}
+  UT          {TokenUnT _}
+  LT          {TokenLinT _}
+  UA          {TokenUnA _}
+  LA          {TokenLinA _}
+  INT         {TokenInt _ _ }
+  FLOAT       {TokenFloat _ _}
+  INFINITEINT {TokenInfiniteInt _ _}
+  CHAR        {TokenChar _ _}
+  STR         {TokenString _ _}
+  let         {TokenLet _}
+  in          {TokenIn _}
+  '='         {TokenEq _}
+  data        {TokenData _}
+  type        {TokenType _}
+  '|'         {TokenPipe _}
+  otherwise   {TokenOtherwise _}
+  if          {TokenIf _}
+  then        {TokenThen _}
+  else        {TokenElse _}
+  select      {TokenSelect _}
+  match       {TokenMatch _}
+  with        {TokenWith _}
+  case        {TokenCase _}
+  of          {TokenOf _}
+  forall      {TokenForall _}
+  dualof      {TokenDualof _}
 
 -- %nonassoc LOWER_ID UPPER_ID
 -- %nonassoc '(' '['
@@ -134,9 +141,9 @@ import           Paths_FreeST ( getDataFileName )
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
 %right '::' '++' '^^' -- lists & strings
-%left '+' '-' '+.' '-.' -- aditive
-%left '*' '/' '*.' '/.'   -- multiplicative
-%right '^' '**'       -- power
+%left '+' '-' '+.' '-.' '+i' '-i' -- aditive
+%left '*' '/' '*.' '/.' '*.' '/.' -- multiplicative
+%right '^' '**' '^i'      -- power
 %left NEG not    -- unary
 %right MSG       -- !T and ?T
 %right dualof
@@ -266,14 +273,19 @@ Exp :: { E.Exp }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
   | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
   | Exp '+.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+.)") $3}
+  | Exp '+i' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+i)") $3}
   | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
   | Exp '-.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-.)") $3}
+  | Exp '-i' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-i)") $3}
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
   | Exp '*.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*.)") $3}
+  | Exp '*i' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*i)") $3}
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
   | Exp '/.' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/.)") $3}
+  | Exp '/i' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/i)") $3}
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
   | Exp '**' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(**)") $3}
+  | Exp '^i' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^i)") $3}
   | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
   | Exp '^^' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $ binOp $1 (mkCaretCaret s) $3 }
   | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
@@ -291,6 +303,7 @@ App :: { E.Exp }
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
   | FLOAT                          {% let (TokenFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
+  | INFINITEINT                    {% let (TokenInfiniteInt p x) = $1 in flip E.InfiniteInt x `fmap` liftModToSpan p }
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -381,9 +394,13 @@ Op :: { Variable }
    | '/'  {% mkDiv        `fmap` mkSpan $1 }
    | '+.'  {% flip mkVar "(+.)" `fmap` mkSpan $1}
    | '*.'  {% flip mkVar "(*.)" `fmap` mkSpan $1}
-   | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}   
+   | '/.'  {% flip mkVar "(/.)" `fmap` mkSpan $1}
+   | '+i'  {% flip mkVar "(+i)" `fmap` mkSpan $1}
+   | '*i'  {% flip mkVar "(*i)" `fmap` mkSpan $1}
+   | '/i'  {% flip mkVar "(/i)" `fmap` mkSpan $1}   
    | '^'  {% mkPower      `fmap` mkSpan $1 }
-   | '**'  {% flip mkVar "(**)" `fmap` mkSpan $1}   
+   | '**'  {% flip mkVar "(**)" `fmap` mkSpan $1}
+   | '^i'  {% flip mkVar "(^i)" `fmap` mkSpan $1}  
    | '++' {% mkPlusPlus   `fmap` mkSpan $1 }
    | '^^' {% mkCaretCaret `fmap` mkSpan $1 }
    | '|>' {% mkPipeGT     `fmap` mkSpan $1 }
@@ -400,6 +417,7 @@ Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
   | Float                         {% T.Float `fmap` mkSpan $1}
+  | InfiniteInt                   {% T.InfiniteInt `fmap` mkSpan $1}
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
@@ -510,6 +528,7 @@ ProgVar :: { Variable }
   | '(' Op ')'  {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s $ intern $2 }
   | '(' '-' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkMinus s }
   | '(' '-.' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s "(-.)" }
+  | '(' '-i' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s "(-i)" }
 
 Constructor :: { Variable }
   : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }

@@ -60,6 +60,7 @@ changePos :: Span -> T.Type -> T.Type
   -- Functional Types
 changePos s (T.Int _          ) = T.Int s
 changePos s (T.Float _        ) = T.Float s
+changePos s (T.InfiniteInt _  ) = T.InfiniteInt s
 changePos s (T.Char _         ) = T.Char s
 changePos s (T.String _       ) = T.String s
 changePos s (T.Arrow _ p t u  ) = T.Arrow s p t u

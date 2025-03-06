@@ -8,19 +8,20 @@ import           Syntax.MkName (mkSelect, mkSend, mkReceive, mkClose, mkWait)
 
 isVal :: E.Exp -> Bool
 -- | x 
-isVal E.Var{}     = True
+isVal E.Var{}         = True
 -- | c
-isVal E.Unit{}    = True
-isVal E.Int{}     = True
-isVal E.Float{}   = True
-isVal E.Char{}    = True
-isVal E.String{}  = True
+isVal E.Unit{}        = True
+isVal E.Int{}         = True
+isVal E.Float{}       = True
+isVal E.InfiniteInt{} = True
+isVal E.Char{}        = True
+isVal E.String{}      = True
 -- | λm x:T . e
-isVal E.Abs{}     = True
+isVal E.Abs{}         = True
 -- | Λa:κ . v
-isVal E.TypeAbs{} = True
+isVal E.TypeAbs{}     = True
 -- | {l=v_l}_l∈L 
-isVal E.Pair{}    = True
+isVal E.Pair{}        = True
 -- | l v -- TODO
 -- | select l
 isVal (E.App _ (E.Var p x) _) | x == mkSelect p = True

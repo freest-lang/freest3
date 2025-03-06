@@ -52,10 +52,11 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.ut p
-synthetise' _ _ (T.Float  p) = return $ K.ut p 
-synthetise' _ _ (T.Char   p) = return $ K.ut p
-synthetise' _ _ (T.String p) = return $ K.ut p
+synthetise' _ _ (T.Int          p) = return $ K.ut p
+synthetise' _ _ (T.Float        p) = return $ K.ut p
+synthetise' _ _ (T.InfiniteInt  p) = return $ K.ut p
+synthetise' _ _ (T.Char         p) = return $ K.ut p
+synthetise' _ _ (T.String       p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p m K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
