@@ -316,7 +316,61 @@ secureReceiveChar sc =
 
 
 --Float:
---TODO:
+
+_addMantissa : InfiniteInt -> Float -> Int -> InfiniteInt
+_addMantissa bits mantissa i = 
+    if i <= 0 then
+        bits
+    else
+        let mantissa = mantissa *. 2.0 in
+        let bits = shiftLI bits 1 in
+        if mantissa >=. 1.0 then
+            _addMantissa (bits +i 1i) (mantissa -. 1.0) (i-1)
+        else
+            _addMantissa bits mantissa (i-1)
+
+_getMantissa : InfiniteInt -> Float -> Int -> Float
+_getMantissa bits mantissa i =
+    --let (bits, i) = removeZeros bits i in
+    if i <= 0 then
+        mantissa
+    else
+        if oddI bits then
+            _getMantissa (shiftRI bits 1) ((mantissa +. 1.0) /. 2.0) (i-1)
+        else
+            _getMantissa (shiftRI bits 1) (mantissa /. 2.0) (i-1)
+
+-- From Float to IEEE 754 format in InfiniteInt
+_floatToBit : Float -> InfiniteInt
+_floatToBit value =
+    if value >=. 0.0 && value <=. 0.0 then --Why is there no ==. ??????
+        0i
+    else
+        let sign = integerToInfinite $ abs $ (floor(value/.(absF value)) - 1) / 2 in --Purely arythmetic way to obtain sign bit
+        let value = absF value in
+        let exponent = fromInteger $ floor $ logBase 2.0 value in
+        let mantissa = (value /. (2.0 ** exponent)) -. 1.0 in
+        let exponent = integerToInfinite $ (truncate exponent) + 1023 in
+        _addMantissa (orBitI exponent (shiftLI sign 11)) mantissa 52
+
+-- From IEEE 754 format in InfiniteInt to Float
+_bitToFloat : InfiniteInt -> Float
+_bitToFloat bits = 
+    if bits ==i 0i then
+        0.0
+    else
+        let mantissa = 1.0 +. (_getMantissa bits 0.0 52) in
+        let exponent = fromInteger $ infiniteToInteger $ (modI (shiftRI bits 52) (2i ^i 11i)) -i 1023i in
+        let sign = fromInteger $ infiniteToInteger $ shiftRI bits 63 in
+        (-1.0**sign) *. mantissa *. (2.0**exponent)
+
+secureSendFloat : Float -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendFloat msg sc = secureSendInfiniteInt (_floatToBit msg) @a sc
+
+secureReceiveFloat : forall a . (SecureReceive ; a, SecureChannelState) -> (Float, (a, SecureChannelState))
+secureReceiveFloat sc = 
+    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    (_bitToFloat msg, sc)
 
 
 --String:
