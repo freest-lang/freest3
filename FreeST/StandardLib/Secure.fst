@@ -68,19 +68,23 @@ dhB c0 =
 --  ██      ██   ██ ██   ██ ██      ██   ██ ██   ██      ██ ██  ████ 
 --  ██      ███████ ███████ ██      ███████ ███████  █████  ██ ██ ██ 
 --  ██      ██   ██ ██   ██ ██      ██   ██ ██   ██ ██      ████  ██ 
---   ██████ ██   ██ ██   ██  ██████ ██   ██ ██   ██ ███████  ██████                                                                     
+--   ██████ ██   ██ ██   ██  ██████ ██   ██ ██   ██ ███████  ██████    
+
+-- IF THIS CODE SEEMS REPETITIVE AND UGLY, IT IS BECAUSE THERE ARE NO ARRAYS AND LISTS ARE INEFICIENT TO ACCES AND MODIFY,
+-- OLD "PRETY" CODE WAS LAMOST 10 TIMES SLOWER
 
 
 type Nonce = InfiniteInt        -- 96-bit
 type ChaChaState = (Nonce, Int) -- Nonce + Counter
 type Stream = InfiniteInt       -- 512-bit
-type Block = [Int]              -- 4x4 matrix of 32-bit values, No list of lists (bidimentional array/matrix) in FreeST.
+type Block = [Int]              -- 4x4 matrix of 32-bit values, This should be a mutable array.
 
 _newNonce : () -> Nonce
 _newNonce u = 
     let rng = newRNG u in
     let (nonce, rng) = nextN64Bits 2 rng in
     modI nonce (2i ^i 96i)
+
 
 -- Round assisting functions
 
@@ -93,6 +97,9 @@ _bitRotation32 value shift = orBit (shiftL value shift) (shiftR value (32 - shif
 _setNth : [Int] -> Int -> Int -> [Int]
 _setNth list n value = (take n list) ++ value :: (drop (n+1) list)
 
+_popHead : [Int] -> (Int, [Int])
+_popHead list = (head list, tail list)
+
 
 -- Rounds
 
@@ -104,56 +111,306 @@ _quarterRound a b c d =
     let c = _clampTo32 (c + d) in let b = xorBit b c in let b = _clampTo32 (_bitRotation32 b 7) in
     (a, b, c, d)
 
+_chacha20Rounds : Block -> Block
+_chacha20Rounds block =
+    -- Extract values from list
+    let (c0, block) =  _popHead block in let (c1, block)  = _popHead block in let (c2, block)  = _popHead block in let (c3, block)  = _popHead block in
+    let (c4, block) =  _popHead block in let (c5, block)  = _popHead block in let (c6, block)  = _popHead block in let (c7, block)  = _popHead block in
+    let (c8, block) =  _popHead block in let (c9, block)  = _popHead block in let (c10, block) = _popHead block in let (c11, block) = _popHead block in
+    let (c12, block) = _popHead block in let (c13, block) = _popHead block in let (c14, block) = _popHead block in let (c15, block) = _popHead block in
 
-_columnRound : Block -> Block
-_columnRound block =
+    -- Round 1 --
+    -- Column Round
     -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound (nth block 0) (nth block 4) (nth block 8) (nth block 12) in                                                 --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 0 a in let block = _setNth block 4 b in let block = _setNth block 8 c in let block = _setNth block 12 d in    --Write to the block
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
     -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound (nth block 1) (nth block 5) (nth block 9) (nth block 13) in                                                 --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 1 a in let block = _setNth block 5 b in let block = _setNth block 9 c in let block = _setNth block 13 d in    --Write to the block
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
     -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound (nth block 2) (nth block 6) (nth block 10) (nth block 14) in                                                --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 2 a in let block = _setNth block 6 b in let block = _setNth block 10 c in let block = _setNth block 14 d in   --Write to the block
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
     -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound (nth block 3) (nth block 7) (nth block 11) (nth block 15) in                                                --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 3 a in let block = _setNth block 7 b in let block = _setNth block 11 c in let block = _setNth block 15 d in   --Write to the block
-    block
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
 
-_diagonalRound : Block -> Block
-_diagonalRound block =
+    -- Diagonal Round
     -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound (nth block 0) (nth block 5) (nth block 10) (nth block 15) in                                                --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 0 a in let block = _setNth block 5 b in let block = _setNth block 10 c in let block = _setNth block 15 d in   --Write to the block
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
     -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound (nth block 1) (nth block 6) (nth block 11) (nth block 12) in                                                --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 1 a in let block = _setNth block 6 b in let block = _setNth block 11 c in let block = _setNth block 12 d in   --Write to the block
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
     -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound (nth block 2) (nth block 7) (nth block 8) (nth block 13) in                                                 --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 2 a in let block = _setNth block 7 b in let block = _setNth block 8 c in let block = _setNth block 13 d in    --Write to the block
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
     -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound (nth block 3) (nth block 4) (nth block 9) (nth block 14) in                                                 --Preforme quarter round
-    let (a, bcd) = abcd in let (b,cd) = bcd in let (c, d) = cd in                                                                       --Unpackge the result
-    let block = _setNth block 3 a in let block = _setNth block 4 b in let block = _setNth block 9 c in let block = _setNth block 14 d in    --Write to the block
-    block
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
+    -- Round 2 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
 
-_doNRounds : Block -> Int -> Block
-_doNRounds block n =
-    if n == 0 then
-        block
-    else
-        let block = _columnRound block in
-        let block = _diagonalRound block in
-        _doNRounds block (n - 1)
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 3 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 4 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 5 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 6 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 7 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 8 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 9 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Round 10 --
+    -- Column Round
+    -- Column 1: 0, 4, 8, 12
+    let abcd = _quarterRound c0 c4 c8 c12 in
+    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
+    -- Column 2: 1, 5, 9, 13
+    let abcd = _quarterRound c1 c5 c9 c13 in
+    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
+    -- Column 3: 2, 6, 10, 14
+    let abcd = _quarterRound c2 c6 c10 c14 in
+    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
+    -- Column 4: 3, 7, 11, 15
+    let abcd = _quarterRound c3 c7 c11 c15 in
+    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
+
+    -- Diagonal Round
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+
+    -- Rebuild and return list
+    c0 :: c1 :: c2 :: c3 :: c4 :: c5 :: c6 :: c7 :: c8 :: c9 :: c10 :: c11 :: c12 :: c13 :: c14 :: [c15] 
 
 -- ChaCha
 
@@ -165,25 +422,28 @@ _splitTo32Bit value i =
         let part = infiniteToInteger $ modI value (2i ^i 32i) in
         (_splitTo32Bit (shiftRI value 32) (i-1)) ++ [part]
 
-_chacha20Once : Key -> ChaChaState -> (Stream, ChaChaState)
-_chacha20Once key nonceCounter =
+_chacha20 : Key -> ChaChaState -> (Stream, ChaChaState)
+_chacha20 key nonceCounter =
     let (nonce, counter) = nonceCounter in
-    let block = [1634760805, 857760878, 2036477234, 1797285236] in  -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
+    -- Building inital block
+    let block = [1634760805, 857760878, 2036477234, 1797285236] in   -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
     let block = block ++ _splitTo32Bit key 8 in                      -- Key in row 2 and 3
-    let block = block ++ [counter] in                               -- Counter first column last row
+    let block = block ++ [counter] in                                -- Counter first column last row
     let block = block ++ _splitTo32Bit nonce 3 in                    -- Nonce last 3 values of last row
-    let block = _doNRounds block 10 in
-    let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i block in    -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
+    -- ChaCha Rounds (10 colum + 10 diagonal, 20 total)
+    let block = _chacha20Rounds block in
+    -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
+    let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i block in
     (stream, (nonce, counter + 1))
 
---Gives stream of size * 512 bits
-_chacha20 : Key -> ChaChaState -> Int -> (Stream, ChaChaState)
-_chacha20 key chaChaState size =
+--Gives stream of size*512 bits
+_multipleChacha20 : Key -> ChaChaState -> Int -> (Stream, ChaChaState)
+_multipleChacha20 key chaChaState size =
     if size <= 1 then
-        _chacha20Once key chaChaState
+        _chacha20 key chaChaState
     else
-        let (streamL, chaChaState) = _chacha20 key chaChaState (size - 1) in
-        let (streamR, chaChaState) = _chacha20Once key chaChaState in
+        let (streamL, chaChaState) = _multipleChacha20 key chaChaState (size - 1) in
+        let (streamR, chaChaState) = _chacha20 key chaChaState in
         ((orBitI (shiftLI streamL 512) streamR), chaChaState)
 
 
@@ -261,15 +521,15 @@ secureWait ck =
 
 secureSendInfiniteInt : InfiniteInt -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
 secureSendInfiniteInt msg sc =
-    --Separate channel, key, and _chacha20 state
+    --Separate channel, key, and chacha20 state
     let (c, secureState) = sc in
     let (key, chaChaState) = secureState in
     --Encode sign into the value bit representaion, otherwise the values sign is exposed as it is not encrypted
     let msg = _encodeSign msg in
     --Calculate msg size
     let size = _calculateSize msg in
-    --Obtain _chacha20 stream and update secure state
-    let (stream, chaChaState) = _chacha20 key chaChaState size in
+    --Obtain chacha20 stream and update secure state
+    let (stream, chaChaState) = _multipleChacha20 key chaChaState size in
     let secureState = (key, chaChaState) in
     --Encrypt and send message
     let msg = xorBitI msg stream in
@@ -277,15 +537,15 @@ secureSendInfiniteInt msg sc =
 
 secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (InfiniteInt, (a, SecureChannelState))
 secureReceiveInfiniteInt sc =
-    --Separate channel, key, and _chacha20 state
+    --Separate channel, key, and chacha20 state
     let (c, secureState) = sc in
     let (key, chaChaState) = secureState in
     --Receive message
     let (msg, c) = receive c in
     --Calculate msg size
     let size = _calculateSize msg in
-    --Obtain _chacha20 stream and update secure state
-    let (stream, chaChaState) = _chacha20 key chaChaState size in
+    --Obtain chacha20 stream and update secure state
+    let (stream, chaChaState) = _multipleChacha20 key chaChaState size in
     let secureState = (key, chaChaState) in
     --Decrypt message
     let msg = xorBitI msg stream in
