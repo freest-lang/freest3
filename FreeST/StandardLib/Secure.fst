@@ -165,14 +165,14 @@ _splitTo32Bit value i =
         let part = infiniteToInteger $ modI value (2i ^i 32i) in
         (_splitTo32Bit (shiftRI value 32) (i-1)) ++ [part]
 
-__chacha20Once : Key -> ChaChaState -> (Stream, ChaChaState)
-__chacha20Once key nonceCounter =
+_chacha20Once : Key -> ChaChaState -> (Stream, ChaChaState)
+_chacha20Once key nonceCounter =
     let (nonce, counter) = nonceCounter in
     let block = [1634760805, 857760878, 2036477234, 1797285236] in  -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
     let block = block ++ _splitTo32Bit key 8 in                      -- Key in row 2 and 3
     let block = block ++ [counter] in                               -- Counter first column last row
     let block = block ++ _splitTo32Bit nonce 3 in                    -- Nonce last 3 values of last row
-    let block = _doNRounds block 20 in
+    let block = _doNRounds block 10 in
     let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i block in    -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
     (stream, (nonce, counter + 1))
 
@@ -180,10 +180,10 @@ __chacha20Once key nonceCounter =
 _chacha20 : Key -> ChaChaState -> Int -> (Stream, ChaChaState)
 _chacha20 key chaChaState size =
     if size <= 1 then
-        __chacha20Once key chaChaState
+        _chacha20Once key chaChaState
     else
         let (streamL, chaChaState) = _chacha20 key chaChaState (size - 1) in
-        let (streamR, chaChaState) = __chacha20Once key chaChaState in
+        let (streamR, chaChaState) = _chacha20Once key chaChaState in
         ((orBitI (shiftLI streamL 512) streamR), chaChaState)
 
 
