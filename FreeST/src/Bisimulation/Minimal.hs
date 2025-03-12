@@ -30,11 +30,11 @@ import qualified Data.Set as Set
 
 minimal :: Type -> Type
   -- Functional Types
-minimal (Arrow s m t u) = Arrow s m (minimal t) (minimal u)
+minimal (Arrow s m (l1,l2) t u) = Arrow s m (l1,l2) (minimal t) (minimal u)
 minimal (Labelled s k m) = Labelled s k (Map.map minimal m)
   -- Session Types
 minimal (Semi s t u) = Semi s (minimal t) (minimal u)
-minimal (Message s p t) = Message s p (minimal t)
+minimal (Message s l p t) = Message s l p (minimal t)
   -- Polymorphism and recursive types
 minimal t@(Forall s1 (Bind s2 a k u)) =
   Forall s1 (Bind s2 b k (minimal (subs vb a u)))

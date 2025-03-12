@@ -43,12 +43,12 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 
-function :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (Multiplicity, T.Type, T.Type)
+function :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (Multiplicity, (T.Level, T.Level), T.Type, T.Type)
 function e t =
   case normalise t of
-    (T.Arrow _ m u v) -> return (m, u, v)
+    (T.Arrow _ m (l1,l2) u v) -> return (m, (l1,l2), u, v)
     u -> let p = getSpan e in
-      addError (ExtractError p "an arrow" e u) $> (Un, omission p, omission p)
+      addError (ExtractError p "an arrow" e u) $> (Un, (T.Bottom, T.Bottom), omission p, omission p)
 
 pair :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Type, T.Type)
 pair e t =
@@ -76,7 +76,7 @@ input = message T.In "an input"
 message :: MonadState (FreestS a) m => T.Polarity -> String -> E.Exp -> T.Type -> m (T.Type, T.Type)
 message pol msg e t =
   case normalise t of
-    T.Semi _ (T.Message _ pol' u) v | pol == pol' -> return (u, v)
+    T.Semi _ (T.Message _ _ pol' u) v | pol == pol' -> return (u, v)
     u -> addError (ExtractError (getSpan e) msg e u) $>
            (omission $ getSpan u, T.Skip $ getSpan u)
 

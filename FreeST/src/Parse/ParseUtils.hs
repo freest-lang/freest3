@@ -143,14 +143,14 @@ leftSection op e s = do
   return $ E.Abs s Un (Bind s v t
              (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
   where
-    genFstType (T.Arrow _ _ t _) = t
+    genFstType (T.Arrow _ _ _ t _) = t
     genFstType t = t
     
 -- Datatypes
 
 typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListsToUnArrows a = 
-  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
+  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un (T.Bottom, T.Bottom)) (T.Var (getSpan a) a) ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)

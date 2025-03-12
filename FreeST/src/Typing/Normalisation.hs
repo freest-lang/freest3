@@ -41,7 +41,7 @@ normalise :: T.Type -> T.Type
 normalise (T.Semi p t u)
   | terminated t = normalise u
   | otherwise    = append p (normalise t) u
-normalise (T.Message s p t) = T.Semi s (T.Message s p t) (T.Skip s)
+normalise (T.Message s l p t) = T.Semi s (T.Message s l p t) (T.Skip s)
 normalise (T.Labelled s c@T.Choice{}  m) = T.Semi s (T.Labelled s c m) (T.Skip s)
   -- recursive types
 normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)

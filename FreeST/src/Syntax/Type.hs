@@ -16,6 +16,7 @@ module Syntax.Type
   , Polarity(..)
   , Sort(..)
   , View(..)
+  , Level(..)
   , unit 
   , tuple 
 --  , Multiplicity(..)
@@ -36,19 +37,21 @@ data View = External | Internal deriving (Eq, Ord)
 
 data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
+data Level = Literal String | Top | Bottom deriving (Eq, Ord)
+
 data Type =
   -- Functional Types
     Int Span
   | Float Span
   | Char Span
   | String Span
-  | Arrow Span Multiplicity Type Type
+  | Arrow Span Multiplicity (Level, Level) Type Type
   | Labelled Span Sort TypeMap
   -- Session Types
   | Skip Span
   | End Span Polarity
   | Semi Span Type Type
-  | Message Span Polarity Type
+  | Message Span Level Polarity Type
   -- Polymorphism and recursive types
   | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
   | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
@@ -69,12 +72,12 @@ instance Located Type where
   getSpan (Float p       ) = p
   getSpan (Char p        ) = p
   getSpan (String p      ) = p
-  getSpan (Arrow p _ _ _ ) = p
+  getSpan (Arrow p _ _ _ _ ) = p
   getSpan (Labelled p _ _) = p
   getSpan (Skip p        ) = p
   getSpan (End p _       ) = p
   getSpan (Semi p _ _    ) = p
-  getSpan (Message p _ _ ) = p
+  getSpan (Message p _ _ _ ) = p
   getSpan (Forall p _    ) = p
   getSpan (Rec p _       ) = p
   getSpan (Var p _       ) = p
@@ -92,12 +95,12 @@ unit s = tuple s []
 -- The set of free type variables in a type
 free :: Type -> Set.Set Variable
   -- Functional Types
-free (Arrow _ _ t u) = free t `Set.union` free u
+free (Arrow _ _ _ t u) = free t `Set.union` free u
 free (Labelled _ _ m) =
   Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
   -- Session Types
 free (Semi _ t u) = free t `Set.union` free u
-free (Message _ _ t) = free t 
+free (Message _ _ _ t) = free t 
   -- Polymorphism and recursive types
 free (Forall _ (Bind _ a _ t)) = Set.delete a (free t)
 free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)

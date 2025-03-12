@@ -55,7 +55,7 @@ toGrammar t = case fatTerminal t of
 -- Only non fat terminals
 toGrammar' :: T.Type -> TransState Word
 -- Functional Types
-toGrammar' (T.Arrow _ m t u) = do
+toGrammar' (T.Arrow _ m (l1,l2) t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList $
@@ -67,7 +67,7 @@ toGrammar' (T.Labelled _  s m) = do -- Can't test this type directly
 toGrammar' (T.Skip _)        = return []
 toGrammar' (T.End _ p)       = getLHS $ Map.singleton (End p) [bottom]
 toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
-toGrammar' (T.Message _ p t) = do
+toGrammar' (T.Message _ l p t) = do
   xs <- toGrammar t
   getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])]
 -- Polymorphism and recursive types
@@ -101,8 +101,8 @@ fatTerminal t@T.String{} = Just t
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t
-fatTerminal (T.Message p pol t) =
-  Just (T.Message p pol) <*> fatTerminal t
+fatTerminal (T.Message p l pol t) =
+  Just (T.Message p l pol) <*> fatTerminal t
 -- These two would preclude distributivity:
 -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
 -- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
@@ -120,11 +120,11 @@ type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
   -- Functional Types
-collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Arrow _ _ _ t u) = collect σ t >> collect σ u
 collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
   -- Session Types
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
-collect σ (T.Message _ _ t) = collect σ t
+collect σ (T.Message _ _ _ t) = collect σ t
   -- Polymorphism and recursive types
 -- collect σ (T.Forall _ (Bind _ a _ t)) = collect σ t -- Needed? Correct?
 collect σ t@(T.Rec _ (Bind _ a _ u)) = do

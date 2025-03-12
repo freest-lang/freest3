@@ -92,11 +92,11 @@ instance Rename te => Rename (Bind K.Kind te) where
 
 instance Rename T.Type where
   -- Functional types
-  rename σ τ (T.Arrow p m t u) = T.Arrow p m <$> rename σ τ t <*> rename σ τ u
+  rename σ τ (T.Arrow p m (l1,l2) t u) = T.Arrow p m (l1,l2) <$> rename σ τ t <*> rename σ τ u
   rename σ τ (T.Labelled p s m) = T.Labelled p s <$> tMapM (rename σ τ) m
   -- Session types
   rename σ τ (T.Semi p t u) = T.Semi p <$> rename σ τ t <*> rename σ τ u
-  rename σ τ (T.Message p pol t) = T.Message p pol <$> rename σ τ t
+  rename σ τ (T.Message p l pol t) = T.Message p l pol <$> rename σ τ t
   -- Polymorphism and recursive types
   rename σ τ (T.Forall p b) = T.Forall p <$> rename σ τ b
   -- Without rec-cleaning

@@ -154,6 +154,9 @@ tokens :-
 -- Identifiers
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
+--Levels
+  bot                           { \p s -> TokenBottom (internalPos p) }
+  top                           { \p s -> TokenTop (internalPos p) }
 
 {
 
@@ -248,6 +251,8 @@ data Token =
   | TokenImport Span
   | TokenMutual Span
   | TokenAnd Span
+  | TokenBottom Span
+  | TokenTop Span
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -340,6 +345,8 @@ instance Show Token where
   show (TokenImport _)  = "import"
   show (TokenMutual _) = "mutual"
   show (TokenAnd _) = "and"
+  show (TokenBottom _) = "bot"
+  show (TokenTop _) = "top"
 
 -- Trim newlines
 scanTokens :: String -> FilePath -> Either ErrorType [Token] 
@@ -471,7 +478,9 @@ instance Located Token where
   getSpan (TokenWhere p) = p
   getSpan (TokenImport p) = p
   getSpan (TokenMutual p) = p 
-  getSpan (TokenAnd p) = p 
+  getSpan (TokenAnd p) = p
+  getSpan (TokenBottom p) = p
+  getSpan (TokenTop p) = p 
 --  pos t = error $ show t
 
 

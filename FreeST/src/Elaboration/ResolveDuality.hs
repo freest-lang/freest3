@@ -70,12 +70,12 @@ type Visited = Set.Set Variable
 
 solveType :: Visited -> T.Type -> ElabState T.Type
 -- Functional Types
-solveType v (T.Arrow p pol t u) =
-  T.Arrow p pol <$> solveType v t <*> solveType v u
+solveType v (T.Arrow p pol (l1,l2) t u) =
+  T.Arrow p pol (l1,l2) <$> solveType v t <*> solveType v u
 solveType v (T.Labelled p s m   ) = T.Labelled p s <$> tMapM (solveType v) m
 -- Session Types
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
-solveType v (T.Message p pol t) = T.Message p pol <$> solveType v t
+solveType v (T.Message p l pol t) = T.Message p l pol <$> solveType v t
 -- Polymorphism and recursive types
 solveType v (T.Forall p (Bind p' a k t)) =
   T.Forall p . Bind p' a k <$> solveType v t
@@ -90,7 +90,7 @@ solveDual :: Visited -> T.Type -> ElabState T.Type
 solveDual _ t@T.Skip{}          = pure t
 solveDual _ (T.End p pol)       = pure (T.End p (dualof pol))
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
-solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
+solveDual v (T.Message p l pol t) = T.Message p l (dualof pol) <$> solveType v t
 solveDual v (T.Labelled p (T.Choice pol) m) =
   T.Labelled p (T.Choice $ dualof pol) <$> tMapM (solveDual v) m
 -- Recursive types
@@ -126,12 +126,12 @@ changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Float  _       ) = T.Float p
 changePos p (T.Char   _       ) = T.Char p
 changePos p (T.String _       ) = T.String p
-changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
+changePos p (T.Arrow _ pol (l1,l2) t u) = T.Arrow p pol (l1,l2) t u
 changePos p (T.Labelled _ s m ) = T.Labelled p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End _ pol      ) = T.End p pol
 changePos p (T.Semi    _ t   u) = T.Semi p t u
-changePos p (T.Message _ pol b) = T.Message p pol b
+changePos p (T.Message _ l pol b) = T.Message p l pol b
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x

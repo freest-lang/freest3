@@ -56,7 +56,7 @@ synthetise' _ _ (T.Int    p) = return $ K.ut p
 synthetise' _ _ (T.Float  p) = return $ K.ut p 
 synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
-synthetise' s kEnv (T.Arrow p m t u) =
+synthetise' s kEnv (T.Arrow p m (l1,l2) t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p m K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
@@ -76,7 +76,7 @@ synthetise' s kEnv (T.Semi p t u) = do
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t k1))
   unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u k2))
   return $ K.Kind p (join mt mu) (meet vt vu)
-synthetise' s kEnv (T.Message p _ t) =
+synthetise' s kEnv (T.Message p _ _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
 synthetise' s kEnv (T.Labelled _ T.Choice{} m) = do
   ks <- tMapM (checkAgainstSession' s kEnv) m

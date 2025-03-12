@@ -40,11 +40,11 @@ class Subs a where
 
 instance Subs T.Type where
   -- Functional types
-  subs t a (T.Arrow s m t1 t2) = T.Arrow s m (subs t a t1) (subs t a t2)
+  subs t a (T.Arrow s m (l1,l2) t1 t2) = T.Arrow s m (l1,l2) (subs t a t1) (subs t a t2)
   subs t a (T.Labelled s k m) = T.Labelled s k (Map.map (subs t a) m)
   -- Session types
   subs t a (T.Semi s t1 t2) = T.Semi s (subs t a t1) (subs t a t2)
-  subs t a (T.Message s pol t1) = T.Message s pol (subs t a t1)
+  subs t a (T.Message s l pol t1) = T.Message s l pol (subs t a t1)
   -- Polymorphism and recursion
   subs t a (T.Rec s b) = T.Rec s (subs t a b)
   subs t a (T.Forall s b) = T.Forall s (subs t a b)
@@ -73,11 +73,11 @@ class Cosubs a where
 
 instance Cosubs T.Type where
   -- Functional types
-  cosubs t a (T.Arrow s m t1 t2 ) = T.Arrow s m (cosubs t a t1) (cosubs t a t2)
+  cosubs t a (T.Arrow s m (l1,l2) t1 t2 ) = T.Arrow s m (l1,l2) (cosubs t a t1) (cosubs t a t2)
   cosubs t a (T.Labelled s k m) = T.Labelled s k (Map.map (cosubs t a) m)
   -- Session types
   cosubs t a (T.Semi s t1 t2) = T.Semi s (cosubs t a t1) (cosubs t a t2)
-  cosubs t a (T.Message s pol t1) = T.Message s pol (cosubs t a t1)
+  cosubs t a (T.Message s l pol t1) = T.Message s l pol (cosubs t a t1)
     -- Polymorphism and recursion
   cosubs t a (T.Rec s b) = T.Rec s (cosubs t a b)
   cosubs t a (T.Forall s b) = T.Forall s (cosubs t a b)
