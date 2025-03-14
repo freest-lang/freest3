@@ -1,14 +1,14 @@
 type X = !p();Close
 type Y = !q();Close
 
-server : dualof X -> Y 1-> ()
+server : dualof X ->[Bottom,Bottom] Y 1->[Bottom,Bottom] ()
 server x y = 
     let (_,x) = receive x in
     let y = send () y in
     wait x;
     close y
 
-client : X -> dualof Y 1-> ()
+client : X ->[Bottom,Bottom] dualof Y 1->[Bottom,Bottom] ()
 client x y = 
     let (_,y) = receive y in
     let x = send () x in

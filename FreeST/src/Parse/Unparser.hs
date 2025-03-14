@@ -70,16 +70,16 @@ instance Show T.Level where
   show T.Top = "top"
   show T.Bottom = "bot"
 
---Arrow multiplicity has a different textual representation
--- showArrow :: Multiplicity -> String
--- showArrow Un  = "->"
--- showArrow Lin = "1->"
--- showArrow _ = error "tmp"
+-- Arrow multiplicity has a different textual representation
+showArrow :: Multiplicity -> String
+showArrow Un  = "->"
+showArrow Lin = "1->"
+showArrow _ = error "tmp"
 
-showArrow :: Multiplicity -> (T.Level, T.Level) -> String
-showArrow Un (l1, l2) = "->[ " ++ show l1 ++ ", " ++ show l2 ++ " ]"
-showArrow Lin (l1, l2) = "1->[ " ++ show l1 ++ ", " ++ show l2 ++ " ]"
-showArrow _ _ = error "tmp"
+-- showArrow :: Multiplicity -> (T.Level, T.Level) -> String
+-- showArrow Un (l1, l2) = "->[ " ++ show l1 ++ ", " ++ show l2 ++ " ]"
+-- showArrow Lin (l1, l2) = "1->[ " ++ show l1 ++ ", " ++ show l2 ++ " ]"
+-- showArrow _ _ = error "tmp"
 
 -- Sorted variable. Either a:k, x:t or x:(t) (just to get the spacing right).
 -- The parenthesis are necessary in expressions such as \x:(Int -> Int) -> ...
@@ -114,9 +114,9 @@ showBindExp :: Bind K.Kind E.Exp -> String
 showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
 -- Type bind
-showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> (T.Level, T.Level) -> String
-showBindTerm (Bind _ x t@T.Arrow{} e) m (l1,l2) = showBind x t True (showArrow m (l1,l2)) e -- λ x:(t) -> e
-showBindTerm (Bind _ x t e) m (l1,l2) = showBind x t False (showArrow m (l1,l2)) e -- λ x:t -> e
+showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
+showBindTerm (Bind _ x t@T.Arrow{} e) m = showBind x t True (showArrow m) e -- λ x:(t) -> e
+showBindTerm (Bind _ x t e) m = showBind x t False (showArrow m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
@@ -194,7 +194,7 @@ instance Unparse T.Type where
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
   unparse (T.Message _ l p t) = (msgRator, show p ++ show l ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m (l1,l2) t u) = (arrowRator, l ++ spaced (showArrow m (l1,l2)) ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (showArrow m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -259,7 +259,7 @@ instance Unparse Exp where
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m (T.Bottom, T.Bottom))
+  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
   unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where

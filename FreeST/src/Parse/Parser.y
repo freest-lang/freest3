@@ -309,7 +309,7 @@ Primary :: { E.Exp }
 
 
 Abs :: { (Multiplicity, E.Exp) }
-  : Arrow Exp { ((fst $1), $2) }
+  : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs
       {% let (v, t) = $1 in
          let (m, e) = $2 in
@@ -405,7 +405,7 @@ Type :: { T.Type }
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
-  | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s (fst $2) ((fst(snd $2)), snd(snd $2)) $1 $3 }
+  | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
   | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
@@ -456,9 +456,9 @@ TupleType :: { T.Type }
   | Type ',' TupleType { T.tuple (getSpan $1) [$1,$3] }
                                                
 
--- Arrow :: { Multiplicity }
---   : '->' { Un  }
---   | '1->' { Lin }
+Arrow :: { Multiplicity }
+  : '->' { Un  }
+  | '1->' { Lin }
 
 -- Polarity :: { (Span, T.Polarity) }
 --   : '!' { (getSpan $1, T.Out) }
@@ -555,9 +555,9 @@ Level :: { (Span, T.Level) }
   | top { (getSpan $1, T.Top) }
   | LOWER_ID { (getSpan $1, T.Literal (getText $1)) }
 
-Arrow :: { (Multiplicity, (T.Level, T.Level)) }
-  : '->' '[' Level ',' Level ']' { (Un, ((snd $3), (snd $5))) }
-  | '1->' '[' Level ',' Level ']' { (Lin, ((snd $3), (snd $5))) }
+-- Arrow :: { (Multiplicity, (T.Level, T.Level)) }
+--   : '->' '[' Level ',' Level ']' { (Un, ((snd $3), (snd $5))) }
+--   | '1->' '[' Level ',' Level ']' { (Lin, ((snd $3), (snd $5))) }
 
 Polarity :: { (Span, (T.Polarity, T.Level)) }
   : '!' Level { (getSpan $1, (T.Out, (snd $2))) }

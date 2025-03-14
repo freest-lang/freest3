@@ -168,7 +168,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2)
-  return $ T.Arrow p mult (T.Bottom,T.Bottom) t1 t2
+  return $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -200,12 +200,12 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   s <- get
   u <- liftIO $ evalStateT (synthetise kEnv e) s
-  (_, _, _, t) <- Extract.function e u
+  (_, _, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
-  (_, _, u1, u2) <- Extract.function e1 t
+  (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
@@ -263,7 +263,7 @@ synthetiseMap kEnv sigs (xs, e) state = do
  where
   returnType :: [Variable] -> T.Type -> T.Type
   returnType [] t                  = t
-  returnType (_:xs) (T.Arrow _ _ _ _ t2) = returnType xs t2
+  returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
   returnType _ t                  = t
 
 -- The difference operation. Removes a program variable from the
@@ -303,8 +303,8 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 checkAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
   case t of 
-    t@(T.Arrow _ Lin _ t1 t2) | not sub -> do 
-      (_, _, u1, u2) <- Extract.function e =<< synthetise kEnv e 
+    t@(T.Arrow _ Lin t1 t2) | not sub -> do 
+      (_, u1, u2) <- Extract.function e =<< synthetise kEnv e 
       compareTypes e u1 t1 
       compareTypes e u2 t2 
     _ -> compareTypes e t =<< synthetise kEnv e

@@ -55,7 +55,7 @@ toGrammar t = case fatTerminal t of
 -- Only non fat terminals
 toGrammar' :: T.Type -> TransState Word
 -- Functional Types
-toGrammar' (T.Arrow _ m (l1,l2) t u) = do
+toGrammar' (T.Arrow _ m t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList $
@@ -120,7 +120,7 @@ type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
   -- Functional Types
-collect σ (T.Arrow _ _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
 collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
   -- Session Types
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u

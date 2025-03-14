@@ -30,7 +30,7 @@ import qualified Data.Set as Set
 
 minimal :: Type -> Type
   -- Functional Types
-minimal (Arrow s m (l1,l2) t u) = Arrow s m (l1,l2) (minimal t) (minimal u)
+minimal (Arrow s m t u) = Arrow s m (minimal t) (minimal u)
 minimal (Labelled s k m) = Labelled s k (Map.map minimal m)
   -- Session Types
 minimal (Semi s t u) = Semi s (minimal t) (minimal u)

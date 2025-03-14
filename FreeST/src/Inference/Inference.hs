@@ -46,7 +46,7 @@ instance KindSubs K.Kind where
   substitute _ k = k   
 
 instance KindSubs T.Type where
-  substitute subs (T.Arrow s m (l1,l2) t1 t2) = T.Arrow s m (l1,l2) (substitute subs t1) (substitute subs t2)
+  substitute subs (T.Arrow s m t1 t2) = T.Arrow s m (substitute subs t1) (substitute subs t2)
   substitute subs (T.Labelled s sort m) = T.Labelled s sort (Map.map (substitute subs) m)
   substitute subs (T.Semi s t1 t2) = T.Semi s (substitute subs t1) (substitute subs t2)
   substitute subs (T.Message s l p t) = T.Message s l p (substitute subs t)
@@ -82,7 +82,7 @@ fixConsTypes = do
     (fixConsType kEnv K.Un v >>= addToSignatures k)
   where
     fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> InfState T.Type
-    fixConsType kEnv m (T.Arrow s _ (l1,l2) t u) = do
+    fixConsType kEnv m (T.Arrow s _ t u) = do
       (K.Kind _ m' _) <- synthetise kEnv t
-      T.Arrow s m (l1,l2) t <$> fixConsType kEnv (SK.join m m') u
+      T.Arrow s m t <$> fixConsType kEnv (SK.join m m') u
     fixConsType _ _ t = pure t

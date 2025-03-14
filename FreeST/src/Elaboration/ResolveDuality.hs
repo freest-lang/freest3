@@ -70,8 +70,8 @@ type Visited = Set.Set Variable
 
 solveType :: Visited -> T.Type -> ElabState T.Type
 -- Functional Types
-solveType v (T.Arrow p pol (l1,l2) t u) =
-  T.Arrow p pol (l1,l2) <$> solveType v t <*> solveType v u
+solveType v (T.Arrow p pol t u) =
+  T.Arrow p pol <$> solveType v t <*> solveType v u
 solveType v (T.Labelled p s m   ) = T.Labelled p s <$> tMapM (solveType v) m
 -- Session Types
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
@@ -126,7 +126,7 @@ changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Float  _       ) = T.Float p
 changePos p (T.Char   _       ) = T.Char p
 changePos p (T.String _       ) = T.String p
-changePos p (T.Arrow _ pol (l1,l2) t u) = T.Arrow p pol (l1,l2) t u
+changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Labelled _ s m ) = T.Labelled p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End _ pol      ) = T.End p pol

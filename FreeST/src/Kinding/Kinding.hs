@@ -56,7 +56,7 @@ synthetise' _ _ (T.Int    p) = return $ K.ut p
 synthetise' _ _ (T.Float  p) = return $ K.ut p 
 synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
-synthetise' s kEnv (T.Arrow p m (l1,l2) t u) =
+synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p m K.Top
 synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m

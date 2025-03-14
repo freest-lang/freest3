@@ -45,7 +45,7 @@ data Type =
   | Float Span
   | Char Span
   | String Span
-  | Arrow Span Multiplicity (Level, Level) Type Type
+  | Arrow Span Multiplicity Type Type
   | Labelled Span Sort TypeMap
   -- Session Types
   | Skip Span
@@ -72,7 +72,7 @@ instance Located Type where
   getSpan (Float p       ) = p
   getSpan (Char p        ) = p
   getSpan (String p      ) = p
-  getSpan (Arrow p _ _ _ _ ) = p
+  getSpan (Arrow p _ _ _ ) = p
   getSpan (Labelled p _ _) = p
   getSpan (Skip p        ) = p
   getSpan (End p _       ) = p
@@ -95,7 +95,7 @@ unit s = tuple s []
 -- The set of free type variables in a type
 free :: Type -> Set.Set Variable
   -- Functional Types
-free (Arrow _ _ _ t u) = free t `Set.union` free u
+free (Arrow _ _ t u) = free t `Set.union` free u
 free (Labelled _ _ m) =
   Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
   -- Session Types

@@ -49,7 +49,7 @@ cg pEnv kEnv (T.Semi s t1 t2) = do
   addConstraint (PKMeetC pk [k1,k2]) 
   return $ K.Kind s (MultVar mv) (K.PKVar pk)
 cg _ _ (T.Labelled s T.Record m) | Map.null m = return $ K.ut s -- Unit
-cg pEnv kEnv (T.Arrow s m _ t1 t2) = cg pEnv kEnv t1 >>  cg pEnv kEnv t2 $> K.Kind s m K.Top
+cg pEnv kEnv (T.Arrow s m t1 t2) = cg pEnv kEnv t1 >>  cg pEnv kEnv t2 $> K.Kind s m K.Top
 cg pEnv kEnv (T.Labelled s _ m) = do
   kl <- foldM (\acc t -> cg pEnv kEnv t >>= \k -> return $ k : acc) [] m
   mv <- freshMultVar s

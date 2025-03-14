@@ -33,8 +33,8 @@ instance Equiv T.Type where
   equiv _ T.Float{} T.Float{} = True
   equiv _ T.Char{} T.Char{} = True
   equiv _ T.String{} T.String{} = True
-  equiv v (T.Arrow _ m1 (l1, l2) t1 u1) (T.Arrow _ m2 (l3, l4) t2 u2) =
-    m1 == m2 && l1 == l3 && l2 == l4 && equiv v t1 t2 && equiv v u1 u2
+  equiv v (T.Arrow _ m1 t1 u1) (T.Arrow _ m2 t2 u2) =
+    m1 == m2 && equiv v t1 t2 && equiv v u1 u2
   equiv v (T.Labelled _ s1 m1) (T.Labelled _ s2 m2) =
     s1 == s2 &&
     Map.size m1 == Map.size m2 &&

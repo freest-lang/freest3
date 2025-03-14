@@ -42,7 +42,7 @@ ctyping _ (E.Char s _) = pure (T.Char s, Map.empty)
 ctyping _ (E.Unit s) = pure (T.unit s, Map.empty)
 ctyping kEnv (E.App s fork@(E.Var _ x) e) | x == mkFork s = do
   state <- get 
-  (_, _, _, t2) <- Extract.function e (fst $ evalState (ctyping kEnv e) state)
+  (_, _, t2) <- Extract.function e (fst $ evalState (ctyping kEnv e) state)
   put state
   ctyping kEnv (E.App s (E.TypeApp s fork t2) e)
 ctyping kEnv (E.App s (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkSelect s = do
@@ -67,7 +67,7 @@ ctyping kEnv (E.App s (E.App _ (E.Var _ x) e1) e2) | x == mkSend s = do
   return (t4, u1 ∪ u2)
 ctyping kEnv (E.App _ e1 e2) = do
   (t,u1) <- ctyping kEnv e1
-  (_, _, _, t2) <- Extract.function e1 t
+  (_, _, t2) <- Extract.function e1 t
   (_, u2) <- ctyping kEnv e2
   merge u1 u2
   return (t2, u1 ∪ u2)
@@ -81,7 +81,7 @@ ctyping kEnv (E.Abs s m b) = do
   weaken (var b) k u
   when (isAbs (body b)) $ addConstraint $ KindC k (K.Kind s (mult t) K.Top)
   removeFromSignatures (var b)  
-  return (T.Arrow s m (T.Bottom, T.Bottom) (binder b) t, Map.delete (var b) u)
+  return (T.Arrow s m (binder b) t, Map.delete (var b) u)
   where
     isAbs E.Abs{} = True
     isAbs (E.TypeAbs _ b) = isAbs $ body b
@@ -130,7 +130,7 @@ ctyping kEnv (E.Pair s e1 e2) = do
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity
-mult (T.Arrow _ m _ _ _) = m
+mult (T.Arrow _ m _ _) = m
 mult (T.Forall _ b) = mult (body b)
 mult t = error $ show t    
 
@@ -143,7 +143,7 @@ ctypingMap kEnv (xs, e) state = do
   where
     returnType :: [Variable] -> T.Type -> T.Type
     returnType [] t                  = t
-    returnType (_:xs) (T.Arrow _ _ _ _ t2) = returnType xs t2
+    returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
     returnType _ t = t
 
 (∪) :: Ord k => Map.Map k a -> Map.Map k a -> Map.Map k a
