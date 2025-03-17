@@ -409,12 +409,12 @@ Type :: { T.Type }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
   | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
-  | Skip                          {% T.Skip `fmap` mkSpan $1 }
-  | Close                         {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
-  | Wait                          {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
-  | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
-  --| Polarity Type %prec MSG       {% mkSpanFromSpan (fst(fst $1)) $2 >>= \s -> pure $ T.Message s T.Bottom (snd(fst $1)) $2 }   
-  | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $2 }       
+  | Skip                             {% T.Skip `fmap` mkSpan $1 }
+  | Close                            {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
+  | Wait                             {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
+  | Type ';' Type                    {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
+  | Polarity Type %prec MSG          {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $2 }       
+  -- | LeveledPolarity Type %prec MSG   {% mkSpanFromSpan (fst(fst $1)) $2 >>= \s -> pure $ T.Message s (snd $1) (snd(fst $1)) $2 }   
   -- Structural records and variants (testing purposes)
   -- | '{' FieldList '}'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Record $2 }    
   -- | '<' FieldList '>'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Variant $2 }                           
@@ -429,7 +429,12 @@ Type :: { T.Type }
         -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
         return (T.Rec p $ Bind p tVar (K.us p) $
           T.Semi p (uncurry T.Message ((fst $2), T.Bottom) (snd $2) $3) (T.Var p tVar)) }
-          --T.Semi p (uncurry T.Message ((fst (fst $2)), T.Bottom) (snd(fst $2)) $3) (T.Var p tVar)) }
+  -- | '*' LeveledPolarity Type %prec MSG 
+  -- {% do
+  --     p <- mkSpan $1
+  --     tVar <- freshTVar p
+  --     return (T.Rec p $ Bind p tVar (K.us p) $
+  --       T.Semi p (uncurry T.Message ((fst (fst $2)), (snd $2)) (snd(fst $2)) $3) (T.Var p tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
         p <- mkSpan $1
@@ -462,17 +467,22 @@ Arrow :: { Multiplicity }
   : '->' { Un  }
   | '1->' { Lin }
 
--- Polarity :: { (Span, T.Polarity) }
---   : '!' { (getSpan $1, T.Out) }
---   | '?' { (getSpan $1, T.In) }
-
--- Polarity :: { ((Span, T.Polarity), T.Level) }
---    : '!' Level { ((getSpan $1, T.Out), $2) }
---    | '?' Level { ((getSpan $1, T.In), $2) }
-
 Polarity :: { (Span, T.Polarity) }
-   : '!' Level { (getSpan $1, T.Out) }
-   | '?' Level { (getSpan $1, T.In) }
+  : '!' Level 
+    {% do
+        let (Span _ p1 _) = getSpan $1
+        let (Span _ _ p2) = (fst $2)
+        m <- modulePath
+        return ((Span m p1 p2), T.Out) }
+  | '?' { (getSpan $1, T.In) }
+
+LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
+   : '!' Level { (((fst $2), T.Out), (snd $2)) }
+   | '?' Level { (((fst $2), T.In), (snd $2)) }
+
+-- Polarity :: { (Span, T.Polarity) }
+--    : '!' Level { (getSpan $1, T.Out) }
+--    | '?' Level { (getSpan $1, T.In) }
 
 ChoiceView :: { (Span, T.View) }
   : '+' { (getSpan $1, T.Internal) }
@@ -480,10 +490,10 @@ ChoiceView :: { (Span, T.View) }
 
 -- LEVELS 
 
-Level :: { T.Level }
-  : bot { T.Bottom }
-  | top { T.Top }
-  | LOWER_ID { T.Literal (getText $1) }
+Level :: { (Span, T.Level) }
+  : top { (getSpan $1, T.Top) }
+  | bot { (getSpan $1, T.Bottom) }
+  | LOWER_ID { (getSpan $1, T.Literal (getText $1)) }
 
 -- Arrow :: { (Multiplicity, (T.Level, T.Level)) }
 --   : '->' '[' Level ',' Level ']' { (Un, ((snd $3), (snd $5))) }

@@ -66,9 +66,9 @@ instance Show Multiplicity where
   show (MultVar x) = show x
 
 instance Show T.Level where
-  show (T.Literal s) = s
   show T.Top = "top"
   show T.Bottom = "bot"
+  show (T.Literal s) = s
 
 -- Arrow multiplicity has a different textual representation
 showArrow :: Multiplicity -> String
