@@ -47,7 +47,7 @@ reduceKey n =
 
 dhA : forall a . DHProtocol ; a -> (a, Key)
 dhA c0 =
-    let (aSecret, rng) = nextN64Bits 4 (newRNG ()) in
+    let (aSecret, rng) = nextN64Bits 4 (newRNGState ()) in
     let aShared = _modExp _dhG aSecret _dhP in
     let c1 = send aShared c0 in
     let (bShared, c2) = receive c1 in
@@ -55,7 +55,7 @@ dhA c0 =
 
 dhB : forall a . dualof DHProtocol ; a -> (a, Key)
 dhB c0 =
-    let (bSecret, rng) = nextN64Bits 4 (newRNG ()) in
+    let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
     let (aShared, c1) = receive c0 in
     let bShared = (_modExp _dhG bSecret _dhP) in
     let c2 = send bShared c1 in
@@ -81,7 +81,7 @@ type Block = [Int]              -- 4x4 matrix of 32-bit values, This should be a
 
 _newNonce : () -> Nonce
 _newNonce u = 
-    let rng = newRNG u in
+    let rng = newRNGState u in
     let (nonce, rng) = nextN64Bits 2 rng in
     modI nonce (2i ^i 96i)
 
@@ -119,7 +119,7 @@ _chacha20Rounds block =
     let (c8, block) =  _popHead block in let (c9, block)  = _popHead block in let (c10, block) = _popHead block in let (c11, block) = _popHead block in
     let (c12, block) = _popHead block in let (c13, block) = _popHead block in let (c14, block) = _popHead block in let (c15, block) = _popHead block in
 
-    -- Round 1 --
+    -- Round 1, 2 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -148,7 +148,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 2 --
+    -- Round 3, 4 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -177,7 +177,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 3 --
+    -- Round 5, 6 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -206,7 +206,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 4 --
+    -- Round 7, 8 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -235,7 +235,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 5 --
+    -- Round 9, 10 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -264,7 +264,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 6 --
+    -- Round 11, 12 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -293,7 +293,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 7 --
+    -- Round 13, 14 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -322,7 +322,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 8 --
+    -- Round 15, 16 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -351,7 +351,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 9 --
+    -- Round 17, 18 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
@@ -380,7 +380,7 @@ _chacha20Rounds block =
     let abcd = _quarterRound c3 c4 c9 c14 in
     let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
 
-    -- Round 10 --
+    -- Round 19, 20 --
     -- Column Round
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in

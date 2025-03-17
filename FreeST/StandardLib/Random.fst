@@ -24,27 +24,27 @@ _squaresRNG ctr key =
     infiniteToInteger $ xorBitI t (_clampTo64 (shiftLI (_clampTo64 (_clampTo64 (x *i x) +i y)) 32))                --round 5
 
 
-type RNG = (Int, Int)
+type RNGState = (Int, Int)
 
 --Creates new rng state
-newRNG : () -> RNG
-newRNG u = (1, getSystemTime u)
+newRNGState : () -> RNGState
+newRNGState u = (1, getSystemTime u)
 
 --Gets next Int
-nextInt64 : RNG -> (Int ,RNG)
+nextInt64 : RNGState -> (Int ,RNGState)
 nextInt64 rng =
     let (ctr, key) = rng in
     let n = _squaresRNG ctr key in
     (n, (n, key))
 
 --Gets the next Int between min and max, inclusive, exclusive, respectively
-nextInt :  Int -> Int -> RNG -> (Int ,RNG)
+nextInt :  Int -> Int -> RNGState -> (Int ,RNGState)
 nextInt min max rng =
     let (n, rng) = nextInt64 rng in
     (min + (mod n (max - min)), rng)
 
 --Gets next 64 bits
-next64Bits : RNG -> (InfiniteInt ,RNG)
+next64Bits : RNGState -> (InfiniteInt ,RNGState)
 next64Bits rng =
     let (n, rng) = nextInt64 rng in
     let n = integerToInfinite n in
@@ -54,7 +54,7 @@ next64Bits rng =
         (n, rng)
 
 --Gets the next n*64 bits
-nextN64Bits : Int -> RNG -> (InfiniteInt ,RNG)
+nextN64Bits : Int -> RNGState -> (InfiniteInt ,RNGState)
 nextN64Bits n rng = 
     if n <= 1 then
         next64Bits rng
