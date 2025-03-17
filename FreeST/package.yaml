@@ -27,6 +27,10 @@ dependencies:
   - optparse-applicative >= 0.16.1.0
   - control-bool >= 0.2.1
   - extra >= 1.7.9       # TODO, replace control-bool and its occurrences, there's no point on having both
+  - network 
+  - bytestring
+  - stm
+  - unix >= 2.8.6.0
 
 library:
   source-dirs: src
