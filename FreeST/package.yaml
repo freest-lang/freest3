@@ -30,7 +30,7 @@ dependencies:
   - network 
   - bytestring
   - stm
-  - unix >= 2.8.6.0
+  # - unix >= 2.8.6.0
 
 library:
   source-dirs: src

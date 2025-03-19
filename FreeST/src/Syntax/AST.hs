@@ -105,3 +105,5 @@ typeListToRcdType ((c, us) : ts) =
   Map.insert c (T.Labelled (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
   where typesToMap _ [] = Map.empty
         typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
+
+-- Labelled (getSpan a) T.Variant [(mkTrue defaultSpan, []), (mkFalse defaultSpan, [])]

@@ -13,7 +13,6 @@ import qualified Monitor.FSM as FSM
 import System.IO
 import System.Posix.Types
 import Foreign.C (getErrno)
-import Data.ByteString (hGetNonBlocking)
 import qualified Data.ByteString.Char8 as BC 
 import Data.Binary.Put (runPut, putWord32be)
 import qualified Data.ByteString.Lazy as LBS
@@ -34,37 +33,19 @@ data MessageType = Simple   T.Type B.ByteString
                  | LLabel   B.ByteString Word8 B.ByteString
                  | Finish
                  | Error    String
+    deriving Show
 
-{-
-    Converts the first byte of the message that is the tag to a type.
-    
-    First parameter  -> The first byte of the message
-    Second parameter -> The polarity of the message. That means from where it came from
-    Return           -> If the tag is not recognised it will return Nothing. Else it will return Just
-                        with the corresponding type
--}
-
-toType :: Word8 -> T.Polarity -> Maybe T.Type
-toType x p =
-    case x of
-        -- 0 -> T.Message defaultSpan p (T.Unit defaultSpan)
-        -- 1 -> T.Message defaultSpan p (T.Bool defaultSpan)
-        2 -> Just(T.Int defaultSpan)
-        3 -> Just(T.Float defaultSpan)
-        4 -> Just(T.Char defaultSpan)
-        -- 5 -> Just(T.Message defaultSpan p (T.String defaultSpan))
-        -- 6 -> T.Message defaultSpan p (T.Labelled defaultSpan)
-        7 -> Just(T.End defaultSpan p)
-        _ -> Nothing
 
 extractMessage :: Handle -> B.ByteString -> IO MessageType
 extractMessage hdl tagB = 
     let tag = B.head tagB in
     case tag of
-        2 -> getRestOfMessage hdl tag >>= \originalMessage                    -> return $ Simple (T.Int defaultSpan)   originalMessage
-        3 -> getRestOfMessage hdl tag >>= \originalMessage                    -> return $ Simple (T.Float defaultSpan) originalMessage
-        4 -> getRestOfMessage hdl tag >>= \originalMessage                    -> return $ Simple (T.Char defaultSpan)  originalMessage
-        5 -> getFromStringMessage hdl >>= \originalMessage                    -> return $ Str originalMessage
+        0 -> return $ Simple (T.unit defaultSpan) tagB
+        1 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Var defaultSpan (Variable defaultSpan "Bool" (-1))) originalMessage
+        2 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Int defaultSpan)   originalMessage
+        3 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Float defaultSpan) originalMessage
+        4 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Char defaultSpan)  originalMessage
+        5 -> getFromStringMessage hdl >>= \originalMessage -> return $ Str originalMessage
         6 -> getFromLabelMessage hdl  >>= \(choiceId, label, originalMessage) -> return $ LLabel choiceId label originalMessage
         7 -> return Finish
         _ -> return $ Error "The tag was not recognised"
@@ -72,26 +53,25 @@ extractMessage hdl tagB =
             getRestOfMessage :: Handle -> Word8 -> IO B.ByteString
             getRestOfMessage hdl n =
                 case n of
-                    2 -> hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
-                    3 -> hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
-                    4 -> hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
+                    1 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
+                    2 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
+                    3 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
+                    4 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
                     _ -> return B.empty -- Never going to happen
 
             getFromStringMessage :: Handle -> IO B.ByteString
             getFromStringMessage hdl = do
-                lenBytes <- hGetNonBlocking hdl 4
-                case BC.readInt lenBytes of 
-                    Just (length, _) -> do
-                        str <- hGetNonBlocking hdl length
-                        return $ B.concat [tagB, lenBytes, str]
-                    Nothing -> return B.empty   
+                lenBytes <- B.hGetNonBlocking hdl 4
+                let length = B.foldl' (\acc w -> acc `shiftL` 8 .|. fromIntegral w) 0 lenBytes 
+                str <- B.hGetNonBlocking hdl length
+                return $ B.concat [tagB, lenBytes, str]
 
             getFromLabelMessage :: Handle -> IO (B.ByteString, Word8, B.ByteString)
             getFromLabelMessage hdl = do
-                lenBytes <- hGetNonBlocking hdl 4
+                lenBytes <- B.hGetNonBlocking hdl 4
                 let length = B.foldl' (\acc w -> acc `shiftL` 8 .|. fromIntegral w) 0 lenBytes 
-                labelList <- hGetNonBlocking hdl length
-                label <- hGetNonBlocking hdl 1
+                labelList <- B.hGetNonBlocking hdl length
+                label <- B.hGetNonBlocking hdl 1
                 return (labelList, B.head label, B.concat [tagB, lenBytes, labelList, label])
 
 {-
@@ -105,9 +85,9 @@ extractMessage hdl tagB =
 getRestOfMessage :: Handle -> Word8 -> IO B.ByteString
 getRestOfMessage hdl n =
     case n of
-        2 -> hGetNonBlocking hdl 4
-        3 -> hGetNonBlocking hdl 4
-        4 -> hGetNonBlocking hdl 1
+        2 -> B.hGetNonBlocking hdl 4
+        3 -> B.hGetNonBlocking hdl 4
+        4 -> B.hGetNonBlocking hdl 1
         7 -> return B.empty
         _ -> return B.empty
 
@@ -273,8 +253,8 @@ nonBlockingReceive :: Handle -> Handle -> StateMachine -> IO ()
 nonBlockingReceive hdl1 hdl2 sm = loop
   where
     loop = do
-        h1Tag <- hGetNonBlocking hdl1 1
-        h2Tag <- hGetNonBlocking hdl2 1
+        h1Tag <- B.hGetNonBlocking hdl1 1
+        h2Tag <- B.hGetNonBlocking hdl2 1
 
         case (B.null h1Tag, B.null h2Tag) of
             (True, True)   -> threadDelay 100000 >> putStrLn "Looping" >> loop

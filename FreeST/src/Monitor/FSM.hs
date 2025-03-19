@@ -93,7 +93,8 @@ check (Label choiceId label T.External) sm = case outChoiceMap sm of
         Left "Label not found" 
     Left x -> Left x
 
-check _ _ = Left "Not implemented"
+
+check _ b = Left $ "Not implemented " ++ show b
 
 end :: T.Type -> T.Polarity -> Either String T.Type
 end t p = case normalise t of
@@ -124,3 +125,16 @@ choiceMap view t =
     (T.Semi _ (T.Labelled _ (T.Choice view') m) u) | view == view' ->
       Right $ Map.map (\v -> T.Semi B.defaultSpan v u) m
     u -> Left $ "Expected a choice type but got " ++ show u
+
+datatypeMap :: T.Type -> Either String T.TypeMap
+datatypeMap t =
+  case normalise t of
+    (T.Labelled _ T.Variant m) -> return m
+    u -> Left $ "Expected a datatype but got " ++ show u
+
+choiceBranch :: T.TypeMap -> B.Variable -> T.Type -> Either String T.Type
+choiceBranch tm a t = case tm Map.!? a of
+  Just t -> Right t
+  Nothing -> Left $ "Branch not in scope " ++ show a ++ " " ++ show t
+
+
