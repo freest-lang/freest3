@@ -414,7 +414,14 @@ Type :: { T.Type }
   | Wait                             {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
   | Type ';' Type                    {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG          {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $2 }       
-  -- | LeveledPolarity Type %prec MSG   {% mkSpanFromSpan (fst(fst $1)) $2 >>= \s -> pure $ T.Message s (snd $1) (snd(fst $1)) $2 }   
+  -- | Polarity Level Type %prec MSG    
+  --   {% do
+  --       let (Span _ p1 _) = (fst $1)
+  --       let (Span _ _ p2) = (fst $2)
+  --       m <- modulePath
+  --       let span = (Span m p1 p2)
+  --       mkSpanFromSpan span $3 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $3 }       
+  -- | LeveledPolarity Type %prec MSG   {% mkSpanSpan (fst(fst $1)) $2 >>= \s -> pure $ T.Message s (snd $1) (snd(fst $1)) $2 }   
   -- Structural records and variants (testing purposes)
   -- | '{' FieldList '}'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Record $2 }    
   -- | '<' FieldList '>'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Variant $2 }                           
@@ -468,17 +475,30 @@ Arrow :: { Multiplicity }
   | '1->' { Lin }
 
 Polarity :: { (Span, T.Polarity) }
-  : '!' Level 
-    {% do
-        let (Span _ p1 _) = getSpan $1
-        let (Span _ _ p2) = (fst $2)
-        m <- modulePath
-        return ((Span m p1 p2), T.Out) }
+  : '!' { (getSpan $1, T.Out) }
   | '?' { (getSpan $1, T.In) }
 
-LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
-   : '!' Level { (((fst $2), T.Out), (snd $2)) }
-   | '?' Level { (((fst $2), T.In), (snd $2)) }
+-- Polarity :: { (Span, T.Polarity) }
+--   : '!' Level 
+--     {% do
+--         let (Span _ p1 _) = getSpan $1
+--         let (Span _ _ p2) = (fst $2)
+--         m <- modulePath
+--         return ((Span m p1 p2), T.Out) }
+--   | '?' Level 
+--     {% do
+--         let (Span _ p1 _) = getSpan $1
+--         let (Span _ _ p2) = (fst $2)
+--         m <- modulePath
+--         return ((Span m p1 p2), T.In) }
+
+-- LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
+--    : '!' Level { (((fst $2), T.Out), (snd $2)) }
+--    | '?' Level { (((fst $2), T.In), (snd $2)) }
+
+-- LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
+--    : '!' Level { ((getSpan $1, T.Out), $2) }
+--    | '?' Level { ((getSpan $1, T.In), $2) }
 
 -- Polarity :: { (Span, T.Polarity) }
 --    : '!' Level { (getSpan $1, T.Out) }
@@ -494,6 +514,11 @@ Level :: { (Span, T.Level) }
   : top { (getSpan $1, T.Top) }
   | bot { (getSpan $1, T.Bottom) }
   | LOWER_ID { (getSpan $1, T.Literal (getText $1)) }
+
+-- Level :: { T.Level }
+--   : top { T.Top }
+--   | bot { T.Bottom }
+--   | LOWER_ID { T.Literal (getText $1) }
 
 -- Arrow :: { (Multiplicity, (T.Level, T.Level)) }
 --   : '->' '[' Level ',' Level ']' { (Un, ((snd $3), (snd $5))) }

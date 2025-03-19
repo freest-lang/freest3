@@ -13,6 +13,7 @@ import           Util.Warning
 import qualified Control.Monad.State as S
 import           Data.List ( intercalate, nub )
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Data.Maybe
 import qualified Data.Traversable as Traversable
 import           Data.Void
@@ -20,6 +21,7 @@ import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
+type Inequalities = Set.Set [(T.Level, T.Level)]
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -28,6 +30,7 @@ data FreestS a = FreestS
   , warnings :: Warnings
   , typenames :: TypeOpsEnv -- TODO: Remove with the new errors 
   , extra :: XExtra a
+  , inequalities :: Inequalities
   }
 
 type family XExtra a
@@ -46,6 +49,7 @@ initial ext = FreestS {
   , warnings = []
   , typenames = Map.empty
   , extra = ext
+  , inequalities = Set.empty
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -60,6 +64,7 @@ initialS = FreestS {
   , warnings = []
   , typenames = Map.empty
   , extra = void
+  , inequalities = Set.empty
   }
 
 -- | AST
