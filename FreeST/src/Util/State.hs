@@ -9,6 +9,7 @@ import           Syntax.MkName
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.Warning
+import qualified Restriction.Restriction as R
 
 import qualified Control.Monad.State as S
 import           Data.List ( intercalate, nub )
@@ -21,7 +22,7 @@ import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
-type Inequalities = Set.Set [(T.Level, T.Level)]
+type Inequalities = Set.Set [R.Inequality]
 
 data FreestS a = FreestS
   { ast :: AST a

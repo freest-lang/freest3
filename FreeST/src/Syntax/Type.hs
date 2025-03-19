@@ -46,10 +46,10 @@ data Type =
   | Char Span
   | String Span
   | Arrow Span Multiplicity Type Type
-  | Labelled Span Sort TypeMap
+  | Labelled Span Sort TypeMap --will also need a level
   -- Session Types
   | Skip Span
-  | End Span Polarity
+  | End Span Polarity --will also need a level 
   | Semi Span Type Type
   | Message Span Level Polarity Type
   -- Polymorphism and recursive types
