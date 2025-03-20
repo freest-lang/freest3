@@ -26,7 +26,7 @@ _modExp b e m =
 
 type DHProtocol = !InfiniteInt ; ?InfiniteInt
 
-type Key = InfiniteInt  -- 256-bit
+data Key = Key InfiniteInt  -- 256-bit
 
 --8192-bit MODP group 18
 _dhP : InfiniteInt
@@ -36,13 +36,13 @@ _dhG : InfiniteInt
 _dhG = 2i
 
 --8192-bit to 256-bit key, doing this to somewhat keep the "full output" of DH, rather then just mod by 256
-reduceKey : InfiniteInt -> Key
-reduceKey n =
+_reduceKey : InfiniteInt -> Key
+_reduceKey n =
     let n = xorBitI (shiftRI n 4096) (modI n (2i ^i 4096i)) in    --8192 -> 4096
     let n = xorBitI (shiftRI n 2048) (modI n (2i ^i 2048i)) in    --4096 -> 2048
     let n = xorBitI (shiftRI n 1024) (modI n (2i ^i 1024i)) in    --2048 -> 1024
     let n = xorBitI (shiftRI n 512)  (modI n (2i ^i 512i)) in     --1024 -> 512
-            xorBitI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
+      Key $ xorBitI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
 
 
 dhA : forall a . DHProtocol ; a -> (a, Key)
@@ -51,7 +51,7 @@ dhA c0 =
     let aShared = _modExp _dhG aSecret _dhP in
     let c1 = send aShared c0 in
     let (bShared, c2) = receive c1 in
-    (c2, reduceKey $ _modExp bShared aSecret _dhP)
+    (c2, _reduceKey $ _modExp bShared aSecret _dhP)
 
 dhB : forall a . dualof DHProtocol ; a -> (a, Key)
 dhB c0 =
@@ -59,7 +59,7 @@ dhB c0 =
     let (aShared, c1) = receive c0 in
     let bShared = (_modExp _dhG bSecret _dhP) in
     let c2 = send bShared c1 in
-    (c2, reduceKey $ _modExp aShared bSecret _dhP)
+    (c2, _reduceKey $ _modExp aShared bSecret _dhP)
 
 
 
@@ -70,21 +70,23 @@ dhB c0 =
 --  ██      ██   ██ ██   ██ ██      ██   ██ ██   ██ ██      ████  ██ 
 --   ██████ ██   ██ ██   ██  ██████ ██   ██ ██   ██ ███████  ██████    
 
--- IF THIS CODE SEEMS REPETITIVE AND UGLY, IT IS BECAUSE THERE ARE NO ARRAYS AND LISTS ARE INEFICIENT TO ACCES AND MODIFY,
--- OLD "PRETY" CODE WAS LAMOST 10 TIMES SLOWER
 
+data Nonce = Nonce InfiniteInt                  -- 96-bit
+data ChachaState = ChachaState (Nonce, Int)     -- Nonce + Counter
+data Stream = Stream InfiniteInt                -- 512-bit
+data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
 
-type Nonce = InfiniteInt        -- 96-bit
-type ChaChaState = (Nonce, Int) -- Nonce + Counter
-type Stream = InfiniteInt       -- 512-bit
-type Block = [Int]              -- 4x4 matrix of 32-bit values, This should be a mutable array.
+_getNonce : Nonce -> InfiniteInt
+_getNonce (Nonce nonceValue) = nonceValue
+
+_getStream : Stream -> InfiniteInt
+_getStream (Stream streamValue) = streamValue
 
 _newNonce : () -> Nonce
 _newNonce u = 
     let rng = newRNGState u in
     let (nonce, rng) = nextN64Bits 2 rng in
-    modI nonce (2i ^i 96i)
-
+    Nonce $ modI nonce (2i ^i 96i)
 
 -- Round assisting functions
 
@@ -94,14 +96,7 @@ _clampTo32 x = mod x (2 ^ 32)
 _bitRotation32 : Int -> Int -> Int
 _bitRotation32 value shift = orBit (shiftL value shift) (shiftR value (32 - shift))
 
-_setNth : [Int] -> Int -> Int -> [Int]
-_setNth list n value = (take n list) ++ value :: (drop (n+1) list)
-
-_popHead : [Int] -> (Int, [Int])
-_popHead list = (head list, tail list)
-
-
--- Rounds
+-- Chacha Rounds
 
 _quarterRound : Int -> Int -> Int -> Int -> (Int, Int, Int, Int)
 _quarterRound a b c d =
@@ -111,16 +106,8 @@ _quarterRound a b c d =
     let c = _clampTo32 (c + d) in let b = xorBit b c in let b = _clampTo32 (_bitRotation32 b 7) in
     (a, b, c, d)
 
-_chacha20Rounds : Block -> Block
-_chacha20Rounds block =
-    -- Extract values from list
-    let (c0, block) =  _popHead block in let (c1, block)  = _popHead block in let (c2, block)  = _popHead block in let (c3, block)  = _popHead block in
-    let (c4, block) =  _popHead block in let (c5, block)  = _popHead block in let (c6, block)  = _popHead block in let (c7, block)  = _popHead block in
-    let (c8, block) =  _popHead block in let (c9, block)  = _popHead block in let (c10, block) = _popHead block in let (c11, block) = _popHead block in
-    let (c12, block) = _popHead block in let (c13, block) = _popHead block in let (c14, block) = _popHead block in let (c15, block) = _popHead block in
-
-    -- Round 1, 2 --
-    -- Column Round
+_columnRound : Block -> Block
+_columnRound (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) =
     -- Column 1: 0, 4, 8, 12
     let abcd = _quarterRound c0 c4 c8 c12 in
     let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
@@ -133,286 +120,36 @@ _chacha20Rounds block =
     -- Column 4: 3, 7, 11, 15
     let abcd = _quarterRound c3 c7 c11 c15 in
     let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 3, 4 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 5, 6 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 7, 8 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 9, 10 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 11, 12 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 13, 14 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 15, 16 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 17, 18 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
-    -- Round 19, 20 --
-    -- Column Round
-    -- Column 1: 0, 4, 8, 12
-    let abcd = _quarterRound c0 c4 c8 c12 in
-    let (c0, bcd) = abcd in let (c4, cd) = bcd in let (c8, c12) = cd in
-    -- Column 2: 1, 5, 9, 13
-    let abcd = _quarterRound c1 c5 c9 c13 in
-    let (c1, bcd) = abcd in let (c5, cd) = bcd in let (c9, c13) = cd in
-    -- Column 3: 2, 6, 10, 14
-    let abcd = _quarterRound c2 c6 c10 c14 in
-    let (c2, bcd) = abcd in let (c6, cd) = bcd in let (c10, c14) = cd in
-    -- Column 4: 3, 7, 11, 15
-    let abcd = _quarterRound c3 c7 c11 c15 in
-    let (c3, bcd) = abcd in let (c7, cd) = bcd in let (c11, c15) = cd in
-
-    -- Diagonal Round
-    -- Main diagonal: 0, 5, 10, 15
-    let abcd = _quarterRound c0 c5 c10 c15 in
-    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
-    -- Diagonal 2: 1, 6, 11, 12
-    let abcd = _quarterRound c1 c6 c11 c12 in
-    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
-    -- Diagonal 3: 2, 7, 8, 13
-    let abcd = _quarterRound c2 c7 c8 c13 in
-    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
-    -- Diagonal 4: 3, 4, 9, 14
-    let abcd = _quarterRound c3 c4 c9 c14 in
-    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
-
     -- Rebuild and return list
-    c0 :: c1 :: c2 :: c3 :: c4 :: c5 :: c6 :: c7 :: c8 :: c9 :: c10 :: c11 :: c12 :: c13 :: c14 :: [c15] 
+    (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15)
 
--- ChaCha
+_diagonalRound : Block -> Block
+_diagonalRound (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) =
+    -- Main diagonal: 0, 5, 10, 15
+    let abcd = _quarterRound c0 c5 c10 c15 in
+    let (c0, bcd) = abcd in let (c5, cd) = bcd in let (c10, c15) = cd in
+    -- Diagonal 2: 1, 6, 11, 12
+    let abcd = _quarterRound c1 c6 c11 c12 in
+    let (c1, bcd) = abcd in let (c6, cd) = bcd in let (c11, c12) = cd in
+    -- Diagonal 3: 2, 7, 8, 13
+    let abcd = _quarterRound c2 c7 c8 c13 in
+    let (c2, bcd) = abcd in let (c7, cd) = bcd in let (c8, c13) = cd in
+    -- Diagonal 4: 3, 4, 9, 14
+    let abcd = _quarterRound c3 c4 c9 c14 in
+    let (c3, bcd) = abcd in let (c4, cd) = bcd in let (c9, c14) = cd in
+    -- Rebuild and return list
+    (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15)
+
+_chachaN : Block -> Int -> Block
+_chachaN block n =
+    if n <= 0 then
+        block
+    else
+        let block = _columnRound block in
+        let block = _diagonalRound block in
+        _chachaN block (n - 2)
+
+-- ChaCha Block and Stream building assinting function
 
 _splitTo32Bit : InfiniteInt -> Int -> [Int]
 _splitTo32Bit value i =
@@ -422,29 +159,55 @@ _splitTo32Bit value i =
         let part = infiniteToInteger $ modI value (2i ^i 32i) in
         (_splitTo32Bit (shiftRI value 32) (i-1)) ++ [part]
 
-_chacha20 : Key -> ChaChaState -> (Stream, ChaChaState)
-_chacha20 key nonceCounter =
+_popHead : [Int] -> (Int, [Int])
+_popHead list = (head list, tail list)
+
+_listToBlock : [Int] -> Block
+_listToBlock list =
+    let (c0, list) =  _popHead list in let (c1, list)  = _popHead list in let (c2, list)  = _popHead list in let (c3, list)  = _popHead list in
+    let (c4, list) =  _popHead list in let (c5, list)  = _popHead list in let (c6, list)  = _popHead list in let (c7, list)  = _popHead list in
+    let (c8, list) =  _popHead list in let (c9, list)  = _popHead list in let (c10, list) = _popHead list in let (c11, list) = _popHead list in
+    let (c12, list) = _popHead list in let (c13, list) = _popHead list in let (c14, list) = _popHead list in let (c15, list) = _popHead list in
+    (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15)
+
+_blockToList : Block -> [Int]
+_blockToList (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) = c0::c1::c2::c3::c4::c5::c6::c7::c8::c9::c10::c11::c12::c13::c14::[c15]
+
+-- ChaCha Block and Stream building
+
+_chacha20 : Key -> ChachaState -> (Stream, ChachaState)
+_chacha20 (Key keyValue) (ChachaState nonceCounter) =
     let (nonce, counter) = nonceCounter in
+    let nonceValue = _getNonce nonce in
+
     -- Building inital block
-    let block = [1634760805, 857760878, 2036477234, 1797285236] in   -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
-    let block = block ++ _splitTo32Bit key 8 in                      -- Key in row 2 and 3
-    let block = block ++ [counter] in                                -- Counter first column last row
-    let block = block ++ _splitTo32Bit nonce 3 in                    -- Nonce last 3 values of last row
+    let list = [1634760805, 857760878, 2036477234, 1797285236] in   -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
+    let list = list ++ _splitTo32Bit keyValue 8 in                  -- Key in row 2 and 3
+    let list = list ++ [counter] in                                 -- Counter first column last row
+    let list = list ++ _splitTo32Bit nonceValue 3 in                -- Nonce last 3 values of last row
+    let block = _listToBlock list in
+
     -- ChaCha Rounds (10 colum + 10 diagonal, 20 total)
-    let block = _chacha20Rounds block in
+    let block = _chachaN block 20 in
+
     -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
-    let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i block in
-    (stream, (nonce, counter + 1))
+    let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i (_blockToList block) in
+
+    (Stream stream, ChachaState (Nonce nonceValue, counter + 1))
 
 --Gives stream of size*512 bits
-_multipleChacha20 : Key -> ChaChaState -> Int -> (Stream, ChaChaState)
-_multipleChacha20 key chaChaState size =
+_multipleChacha20 : Key -> ChachaState -> Int -> (Stream, ChachaState)
+_multipleChacha20 key chachaState size =
     if size <= 1 then
-        _chacha20 key chaChaState
+        _chacha20 key chachaState
     else
-        let (streamL, chaChaState) = _multipleChacha20 key chaChaState (size - 1) in
-        let (streamR, chaChaState) = _chacha20 key chaChaState in
-        ((orBitI (shiftLI streamL 512) streamR), chaChaState)
+        let (streamL, chachaState) = _multipleChacha20 key chachaState (size - 1) in
+        let streamLValue = _getStream streamL in
+        let (streamR, chachaState) = _chacha20 key chachaState in
+        let streamRValue = _getStream streamR in
+        (Stream (orBitI (shiftLI streamLValue 512) streamRValue), chachaState)
+
+
 
 
 --  ███████ ███████  ██████ ██    ██ ██████  ███████      ██████  ██████  ███    ███ ███    ███ ██    ██ ███    ██ ██  ██████  █████  ████████ ██  ██████  ███    ██ 
@@ -456,29 +219,28 @@ _multipleChacha20 key chaChaState size =
 
 ---- Secure channel establishment ----
 
-type SecureChannelState = (Key, ChaChaState)
+data SecureChannelState = SecureChannelState (Key, ChachaState)
 
 type EstablishSecureChannel = DHProtocol ; !Nonce
+
+_getSecureChannelState : SecureChannelState -> (Key, ChachaState)
+_getSecureChannelState (SecureChannelState keyChachaState) = keyChachaState
 
 establishSecureChannelA : forall a . EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureChannelA c =
     let (c, key) = dhA @(!Nonce ; a) c in
     let nonce = _newNonce () in
     let c = send nonce c in
-    (c, (key, (nonce, 0)))
-
+    (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
 establishSecureChannelB : dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureChannelB c =
     let (c, key) = dhB @(?Nonce ; a) c in
     let (nonce, c) = receive c in
-    (c, (key, (nonce, 0)))
+    (c, SecureChannelState (key, ChachaState (nonce, 0)))
+
 
 ---- Secure Send and Receive ----
-
-type SecureSend = !InfiniteInt
-type SecureReceive = ?InfiniteInt
-
 
 --Encodes values sign into the least significant bit, shifting everyrhing else
 _encodeSign : InfiniteInt -> InfiniteInt
@@ -506,74 +268,107 @@ _calculateSize value =
 
 --Close Wait:
 
+type SecureClose = Close
 secureClose : (Close, SecureChannelState) -> ()
 secureClose ck = 
     let (c, secureState) = ck in 
     close c
 
+type SecureWait = Wait
 secureWait : (Wait, SecureChannelState) -> ()
 secureWait ck = 
     let (c, secureState) = ck in 
     wait c
 
 
---InfiniteInt:
+--Send/Recive Bits:
 
-secureSendInfiniteInt : InfiniteInt -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendInfiniteInt msg sc =
+data Bits = Bits InfiniteInt
+
+_getBits : Bits -> InfiniteInt
+_getBits (Bits bits) = bits
+
+
+type SecureSend = !Bits
+_secureSend : Bits -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+_secureSend (Bits bits) sc =
     --Separate channel, key, and chacha20 state
     let (c, secureState) = sc in
-    let (key, chaChaState) = secureState in
+    let (key, chachaState) = _getSecureChannelState secureState in
     --Encode sign into the value bit representaion, otherwise the values sign is exposed as it is not encrypted
-    let msg = _encodeSign msg in
-    --Calculate msg size
-    let size = _calculateSize msg in
+    let bits = _encodeSign bits in
+    --Calculate message size
+    let size = _calculateSize bits in
     --Obtain chacha20 stream and update secure state
-    let (stream, chaChaState) = _multipleChacha20 key chaChaState size in
-    let secureState = (key, chaChaState) in
+    let (stream, chachaState) = _multipleChacha20 key chachaState size in
+    let secureState = SecureChannelState (key, chachaState) in
     --Encrypt and send message
-    let msg = xorBitI msg stream in
-    -- print @(String, InfiniteInt) $ ("Sending: ", msg);
+    let bits = xorBitI bits (_getStream stream) in
+    let msg = (Bits bits) in
+    -- print @(String, Bits) $ ("Sending: ", msg); --TODO: Remove this line
     (send msg c, secureState)
 
-secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (InfiniteInt, (a, SecureChannelState))
-secureReceiveInfiniteInt sc =
+type SecureReceive = ?Bits
+_secureReceive : forall a . (SecureReceive ; a, SecureChannelState) -> (Bits, (a, SecureChannelState))
+_secureReceive sc =
     --Separate channel, key, and chacha20 state
     let (c, secureState) = sc in
-    let (key, chaChaState) = secureState in
+    let (key, chachaState) = _getSecureChannelState secureState in
     --Receive message
     let (msg, c) = receive c in
-    --Calculate msg size
-    let size = _calculateSize msg in
+    -- print @(String, Bits) $ ("Received: ", msg); --TODO: Remove this line
+    let bits = _getBits msg in
+    --Calculate message size
+    let size = _calculateSize bits in
     --Obtain chacha20 stream and update secure state
-    let (stream, chaChaState) = _multipleChacha20 key chaChaState size in
-    let secureState = (key, chaChaState) in
+    let (stream, chachaState) = _multipleChacha20 key chachaState size in
+    let secureState = SecureChannelState (key, chachaState) in
     --Decrypt message
-    -- print @(String, InfiniteInt) $ ("Received: ", msg);
-    let msg = xorBitI msg stream in
+    let bits = xorBitI bits (_getStream stream) in
     --Decode sign
-    let msg = _decodeSign msg in
-    (msg, (c, secureState))
+    let bits = _decodeSign bits in
+    (Bits bits, (c, secureState))
+
+
+--InfiniteInt:
+
+type SecureSendInfiniteInt = SecureSend
+secureSendInfiniteInt : InfiniteInt -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendInfiniteInt msg sc = _secureSend (Bits msg) @a sc
+
+type SecureReceiveInfiniteInt = SecureReceive
+secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (InfiniteInt, (a, SecureChannelState))
+secureReceiveInfiniteInt sc = 
+    let (bits, sc) = _secureReceive @a sc in
+    let msg = _getBits bits in
+    (msg, sc)
 
 
 --Int:
 
+type SecureSendInt = SecureSend
 secureSendInt : Int -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendInt msg sc = secureSendInfiniteInt (integerToInfinite msg) @a sc
+secureSendInt msg sc = _secureSend (Bits $ integerToInfinite msg) @a sc
 
+type SecureReceiveInt = SecureReceive
 secureReceiveInt : forall a . (SecureReceive ; a, SecureChannelState) -> (Int, (a, SecureChannelState))
 secureReceiveInt sc = 
-    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    let (bits, sc) = _secureReceive @a sc in
+    let msg = _getBits bits in
     (infiniteToInteger msg, sc)
 
 
 --Char
-secureSendChar : Char -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendChar msg sc = secureSendInfiniteInt (integerToInfinite (ord msg)) @a sc
 
+type SecureSendChar = SecureSend
+secureSendChar : Char -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendChar msg sc = _secureSend (Bits (integerToInfinite (ord msg))) @a sc
+
+type SecureReceiveChar = SecureReceive
 secureReceiveChar : forall a . (SecureReceive ; a, SecureChannelState) -> (Char, (a, SecureChannelState))
 secureReceiveChar sc = 
-    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    let (bits, sc) = _secureReceive @a sc in
+    let msg = _getBits bits in
     (chr (infiniteToInteger msg), sc)
 
 
@@ -603,25 +398,25 @@ _getMantissa bits mantissa i =
             _getMantissa (shiftRI bits 1) (mantissa /. 2.0) (i-1)
 
 -- From Float to IEEE 754 format in InfiniteInt
-_floatToBit : Float -> InfiniteInt
-_floatToBit value =
+_floatToBits : Float -> Bits
+_floatToBits value =
     if value >=. 0.0 && value <=. 0.0 then --Why is there no ==. ??????
-        0i
+        Bits 0i
     else if value >=. (1.0 /. 0.0) && value <=. (1.0 /. 0.0) then
-        (shiftLI 2047i 52)
+        Bits (shiftLI 2047i 52)
     else if value >=. (-1.0 /. 0.0) && value <=. (-1.0 /. 0.0) then
-        (shiftLI 4095i 52)
+        Bits (shiftLI 4095i 52)
     else
         let sign = integerToInfinite $ abs $ (floor(value/.(absF value)) - 1) / 2 in --Purely arythmetic way to obtain sign bit
         let value = absF value in
         let exponent = fromInteger $ floor $ logBase 2.0 value in
         let mantissa = (value /. (2.0 ** exponent)) -. 1.0 in
         let exponent = integerToInfinite $ (truncate exponent) + 1023 in
-        _addMantissa (orBitI exponent (shiftLI sign 11)) mantissa 52
+        Bits $ _addMantissa (orBitI exponent (shiftLI sign 11)) mantissa 52
 
 -- From IEEE 754 format in InfiniteInt to Float
-_bitToFloat : InfiniteInt -> Float
-_bitToFloat bits = 
+_bitsToFloat : Bits -> Float
+_bitsToFloat (Bits bits) = 
     if bits ==i 0i then
         0.0
     else if (shiftRI bits 52) ==i 2047i then
@@ -634,39 +429,49 @@ _bitToFloat bits =
         let sign = fromInteger $ infiniteToInteger $ shiftRI bits 63 in
         (-1.0**sign) *. mantissa *. (2.0**exponent)
 
+type SecureSendFloat = SecureSend
 secureSendFloat : Float -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendFloat msg sc = secureSendInfiniteInt (_floatToBit msg) @a sc
+secureSendFloat msg sc = _secureSend (_floatToBits msg) @a sc
 
+type SecureReceiveFloat = SecureReceive
 secureReceiveFloat : forall a . (SecureReceive ; a, SecureChannelState) -> (Float, (a, SecureChannelState))
 secureReceiveFloat sc = 
-    let (msg, sc) = secureReceiveInfiniteInt @a sc in
-    (_bitToFloat msg, sc)
+    let (msg, sc) = _secureReceive @a sc in
+    (_bitsToFloat msg, sc)
 
 
 --Bool:
 
+type SecureSendBool = SecureSend
 secureSendBool : Bool -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
 secureSendBool msg sc = 
     if msg then 
-        secureSendInfiniteInt 1i @a sc
+        _secureSend (Bits 1i) @a sc
     else
-        secureSendInfiniteInt 0i @a sc
+        _secureSend (Bits 0i) @a sc
 
+type SecureReceiveBool = SecureReceive
 secureReceiveBool : forall a . (SecureReceive ; a, SecureChannelState) -> (Bool, (a, SecureChannelState))
 secureReceiveBool sc = 
-    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    let (bits, sc) = _secureReceive @a sc in
+    let msg = _getBits bits in
     if msg ==i 1i then
         (True, sc)
+    else if msg ==i 0i then
+        (False, sc)
     else
+        --TODO: Not sure how this should be handled, returning Flase for now
         (False, sc)
 
 --Unit:
+
+type SecureSendUnit = SecureSend
 secureSendUnit : () -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendUnit msg sc = secureSendInfiniteInt 0i @a sc
+secureSendUnit msg sc = _secureSend (Bits 0i) @a sc
 
 secureReceiveUnit : forall a . (SecureReceive ; a, SecureChannelState) -> ((), (a, SecureChannelState))
-secureReceiveUnit sc = 
-    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+secureReceiveUnit sc =
+    let (bits, sc) = _secureReceive @a sc in
     ((), sc)
 
 --String:
