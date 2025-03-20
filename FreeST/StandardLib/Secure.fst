@@ -660,12 +660,12 @@ secureReceiveBool sc =
     else
         (False, sc)
 
---Entity:
-secureSendEntity : () -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendEntity msg sc = secureSendInfiniteInt 0i @a sc
+--Unit:
+secureSendUnit : () -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendUnit msg sc = secureSendInfiniteInt 0i @a sc
 
-secureReceiveEntity : forall a . (SecureReceive ; a, SecureChannelState) -> ((), (a, SecureChannelState))
-secureReceiveEntity sc = 
+secureReceiveUnit : forall a . (SecureReceive ; a, SecureChannelState) -> ((), (a, SecureChannelState))
+secureReceiveUnit sc = 
     let (msg, sc) = secureReceiveInfiniteInt @a sc in
     ((), sc)
 
