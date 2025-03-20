@@ -105,6 +105,8 @@ data ErrorType =
   | MutualDefNotValue Span Variable E.Exp
   -- Kind Inference
   | CantUnifyKind Span K.Kind K.Kind
+  -- Levels
+  | LevelMismatch Span T.Level T.Level
   deriving Show
 
 -- | This is just for avoiding throwing equal error messages
@@ -159,6 +161,7 @@ instance Located ErrorType where
   getSpan (RuntimeError p _                ) = p
   getSpan (MutualDefNotValue p _ _         ) = p
   getSpan (CantUnifyKind p _ _             ) = p
+  getSpan (LevelMismatch p _ _             ) = p
 
 
 instance Message ErrorType where
@@ -335,6 +338,9 @@ instance Message ErrorType where
   msg (CantUnifyKind _ k1 k2) sty ts =
     "Can't unify kinds. Got " ++  style red sty ts k1 ++ " <: " ++ style red sty ts k2
     ++ ", but " ++  style red sty ts k1 ++ " is not a subkind of " ++  style red sty ts k2
+  -- Levels
+  msg (LevelMismatch _ l1 l2) sty ts =
+    "Levels mismatch. Level " ++ style red sty ts l1 ++ " does not match level " ++ style red sty ts l2
 
 
 declInTwoModules :: Span -> Span -> String

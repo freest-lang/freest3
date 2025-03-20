@@ -35,6 +35,9 @@ instance Style E.Exp where
 instance Style K.Kind where
   style f sty _ = f sty . show
 
+instance Style T.Level where
+  style f sty _ = f sty . show
+
 instance Style Variable where
   style f sty _ = {-quote . -} f sty . show
 
