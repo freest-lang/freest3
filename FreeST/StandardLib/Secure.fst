@@ -533,6 +533,7 @@ secureSendInfiniteInt msg sc =
     let secureState = (key, chaChaState) in
     --Encrypt and send message
     let msg = xorBitI msg stream in
+    -- print @(String, InfiniteInt) $ ("Sending: ", msg);
     (send msg c, secureState)
 
 secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (InfiniteInt, (a, SecureChannelState))
@@ -548,6 +549,7 @@ secureReceiveInfiniteInt sc =
     let (stream, chaChaState) = _multipleChacha20 key chaChaState size in
     let secureState = (key, chaChaState) in
     --Decrypt message
+    -- print @(String, InfiniteInt) $ ("Received: ", msg);
     let msg = xorBitI msg stream in
     --Decode sign
     let msg = _decodeSign msg in
@@ -605,6 +607,10 @@ _floatToBit : Float -> InfiniteInt
 _floatToBit value =
     if value >=. 0.0 && value <=. 0.0 then --Why is there no ==. ??????
         0i
+    else if value >=. (1.0 /. 0.0) && value <=. (1.0 /. 0.0) then
+        (shiftLI 2047i 52)
+    else if value >=. (-1.0 /. 0.0) && value <=. (-1.0 /. 0.0) then
+        (shiftLI 4095i 52)
     else
         let sign = integerToInfinite $ abs $ (floor(value/.(absF value)) - 1) / 2 in --Purely arythmetic way to obtain sign bit
         let value = absF value in
@@ -618,6 +624,10 @@ _bitToFloat : InfiniteInt -> Float
 _bitToFloat bits = 
     if bits ==i 0i then
         0.0
+    else if (shiftRI bits 52) ==i 2047i then
+        1.0 /. 0.0
+    else if (shiftRI bits 52) ==i 4095i then
+        -1.0 /. 0.0
     else
         let mantissa = 1.0 +. (_getMantissa bits 0.0 52) in
         let exponent = fromInteger $ infiniteToInteger $ (modI (shiftRI bits 52) (2i ^i 11i)) -i 1023i in
@@ -632,6 +642,32 @@ secureReceiveFloat sc =
     let (msg, sc) = secureReceiveInfiniteInt @a sc in
     (_bitToFloat msg, sc)
 
+
+--Bool:
+
+secureSendBool : Bool -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendBool msg sc = 
+    if msg then 
+        secureSendInfiniteInt 1i @a sc
+    else
+        secureSendInfiniteInt 0i @a sc
+
+secureReceiveBool : forall a . (SecureReceive ; a, SecureChannelState) -> (Bool, (a, SecureChannelState))
+secureReceiveBool sc = 
+    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    if msg ==i 1i then
+        (True, sc)
+    else
+        (False, sc)
+
+--Entity:
+secureSendEntity : () -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendEntity msg sc = secureSendInfiniteInt 0i @a sc
+
+secureReceiveEntity : forall a . (SecureReceive ; a, SecureChannelState) -> ((), (a, SecureChannelState))
+secureReceiveEntity sc = 
+    let (msg, sc) = secureReceiveInfiniteInt @a sc in
+    ((), sc)
 
 --String:
 --TODO: hard to do until strings can be treversed/iterated over
