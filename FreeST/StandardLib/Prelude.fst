@@ -517,7 +517,7 @@ runServer handle state c =
 type OutStream : 1S = +{ PutChar : !Char ; OutStream
                        , PutStr  : !String ; OutStream
                        , PutStrLn: !String ; OutStream
-                       , SWait   : Wait
+                       , SClose   : Wait
                        }
 
 -- | Unrestricted session type for the `OutStream` type.
@@ -525,7 +525,7 @@ type OutStreamProvider : *A = *?OutStream
 
 -- | Closes an `OutStream` channel endpoint. Behaves as a `close`.
 hCloseOut : OutStream -> ()
-hCloseOut c = c |> select SWait |> wait
+hCloseOut c = c |> select SClose |> wait
 
 __hGenericPut : forall a:*T . (OutStream -> !a ; OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
@@ -585,11 +585,11 @@ hPrint_ x c = __hGenericPut_ @a (hPrint @a) x c
 -- | The `InStream` type describes input streams (such as `stdin` and read
 -- | files). `GetChar` reads a single character, `GetLine` reads a line, and
 -- | `IsEOF` checks for the EOF (End-Of-File) token, i.e., if an input stream
--- | reached the end. Operations in this channel end with the `SWait` option.
+-- | reached the end. Operations in this channel end with the `SClose` option.
 type InStream : 1S = +{ GetChar: ?Char   ; InStream
                       , GetLine: ?String ; InStream
                       , IsEOF  : ?Bool   ; InStream
-                      , SWait  : Wait
+                      , SClose  : Wait
                       }
 
 -- | Unrestricted session type for the `OutStream` type.
@@ -597,7 +597,7 @@ type InStreamProvider : *A = *?InStream
 
 -- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
-hCloseIn c = c |> select SWait |> wait
+hCloseIn c = c |> select SClose |> wait
 
 __hGenericGet : forall a:*T . (InStream -> ?a ; InStream) -> InStream -> (a, InStream)
 __hGenericGet sel c = receive $ sel c
@@ -708,7 +708,7 @@ __runPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrOut printer |> __runPrinter ()
 __runPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrOut (s ^^ "\n")) printer |> __runPrinter ()
-__runPrinter _ (SWait printer) =
+__runPrinter _ (SClose printer) =
   close printer
 
 __runStdout  : ()
@@ -734,7 +734,7 @@ __runErrPrinter _ (PutStr printer) =
   readApply @String @dualof OutStream __putStrErr printer |> __runErrPrinter ()
 __runErrPrinter _ (PutStrLn printer) =
   readApply @String @dualof OutStream (\s:String -> __putStrErr (s ^^ "\n")) printer |> __runErrPrinter ()
-__runErrPrinter _ (SWait printer) =
+__runErrPrinter _ (SClose printer) =
   close printer
 
 __runStderr : ()
@@ -769,7 +769,7 @@ __runReader _ (GetLine reader) =
   __runReader () $ send (__getLine ()) reader
 __runReader _ (IsEOF reader) =
   __runReader () $ send False reader -- stdin is always open
-__runReader _ (SWait reader) =
+__runReader _ (SClose reader) =
   close reader
 
 __runStdin : ()
