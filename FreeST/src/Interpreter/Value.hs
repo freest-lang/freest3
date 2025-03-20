@@ -20,9 +20,9 @@ import Typing.Phase (Defs)
 
 data Value =
     Unit
-  | Integer Int
+  | Int Int
   | Float Double
-  | InfiniteInt Integer
+  | Integer Integer
   | Character Char
   | Label String -- to be sent on channels
   | String String
@@ -43,9 +43,9 @@ type Channel = (ChannelEnd, ChannelEnd)
 
 instance Show Value where
   show Unit           = "()"
-  show (Integer     i )  = show i
+  show (Int         i )  = show i
   show (Float       f )  = show f
-  show (InfiniteInt ii)  = show ii
+  show (Integer ii)  = show ii
   show (Character   c )  = show c
   show (String      s )  = s
   show (Label       s )  = s

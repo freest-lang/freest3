@@ -175,7 +175,7 @@ instance Show T.Type where
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Float _      ) = (maxRator, "Float")
-  unparse (T.InfiniteInt _) = (maxRator, "InfiniteInt")
+  unparse (T.Integer _    ) = (maxRator, "Integer")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
@@ -245,7 +245,7 @@ instance Unparse Exp where
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Float _ i) = (maxRator, show i)
-  unparse (E.InfiniteInt _ i) = (maxRator, show i)
+  unparse (E.Integer _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable

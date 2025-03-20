@@ -133,7 +133,7 @@ tokens :-
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Float       { \p s -> TokenFloatT (internalPos p)}
-  InfiniteInt { \p s -> TokenInfiniteIntT (internalPos p)}
+  Integer { \p s -> TokenIntegerT (internalPos p)}
   Char				{ \p s -> TokenCharT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
@@ -161,7 +161,7 @@ tokens :-
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
   ([\-\+]?@numspc@decimal"."@decimal@exponent?|@numspc@decimal@exponent) { \p s -> TokenFloat (internalPos p) (read $ filter (/= '_') s)}
-  ([\-\+]?[0-9]+)i             { \p s -> TokenInfiniteInt (internalPos p) (read $ init s) }
+  ([\-\+]?[0-9]+)i             { \p s -> TokenInteger (internalPos p) (read $ init s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -174,7 +174,7 @@ data Token =
     TokenNL Span
   | TokenIntT Span
   | TokenFloatT Span
-  | TokenInfiniteIntT Span
+  | TokenIntegerT Span
   | TokenCharT Span
   | TokenStringT Span
   | TokenUnit Span
@@ -217,7 +217,7 @@ data Token =
   | TokenUnA Span
   | TokenInt Span Int
   | TokenFloat Span Double
-  | TokenInfiniteInt Span Integer
+  | TokenInteger Span Integer
   | TokenChar Span Char
   | TokenString Span String
   | TokenLet Span
@@ -273,7 +273,7 @@ instance Show Token where
   show (TokenNL _) = "\\n"
   show (TokenIntT _) = "Int"
   show (TokenFloatT _) = "Float"
-  show (TokenInfiniteIntT _) = "InfiniteInt"
+  show (TokenIntegerT _) = "Integer"
   show (TokenCharT _) = "Char"
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
@@ -316,7 +316,7 @@ instance Show Token where
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
   show (TokenFloat _ i) = show i 
-  show (TokenInfiniteInt _ i) = show i 
+  show (TokenInteger _ i) = show i 
   show (TokenChar _ c) = show c
   show (TokenString _ s) = s
   show (TokenLet _) = "let"
@@ -412,7 +412,7 @@ instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
   getSpan (TokenFloatT p) = p
-  getSpan (TokenInfiniteIntT p) = p
+  getSpan (TokenIntegerT p) = p
   getSpan (TokenCharT p) = p
   getSpan (TokenUnit p) = p
   getSpan (TokenStringT p) = p
@@ -455,7 +455,7 @@ instance Located Token where
   -- getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
   getSpan (TokenFloat p _) = p
-  getSpan (TokenInfiniteInt p _) = p
+  getSpan (TokenInteger p _) = p
   getSpan (TokenChar p _) = p
   getSpan (TokenString p _) = p
   getSpan (TokenLet p) = p

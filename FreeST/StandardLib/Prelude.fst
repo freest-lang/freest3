@@ -57,9 +57,9 @@ odd : Int -> Bool
 (>=) : Int -> Int -> Bool
 shiftL : Int -> Int -> Int
 shiftR : Int -> Int -> Int
-andBit : Int -> Int -> Int
-orBit : Int -> Int -> Int
-xorBit : Int -> Int -> Int
+land : Int -> Int -> Int
+lor : Int -> Int -> Int
+lxor : Int -> Int -> Int
 
 -- Float
 (+.) : Float -> Float -> Float
@@ -101,39 +101,39 @@ log1mexp: Float -> Float
 fromInteger: Int -> Float
 
 -- Infinite Int
-(+i) : InfiniteInt -> InfiniteInt -> InfiniteInt
-(-i) : InfiniteInt -> InfiniteInt -> InfiniteInt
-(*i) : InfiniteInt -> InfiniteInt -> InfiniteInt
-(/i) : InfiniteInt -> InfiniteInt -> InfiniteInt
-divI : InfiniteInt -> InfiniteInt -> InfiniteInt
-(^i) : InfiniteInt -> InfiniteInt -> InfiniteInt
-modI : InfiniteInt -> InfiniteInt -> InfiniteInt
-remI : InfiniteInt -> InfiniteInt -> InfiniteInt
-maxI : InfiniteInt -> InfiniteInt -> InfiniteInt
-minI : InfiniteInt -> InfiniteInt -> InfiniteInt
-quotI : InfiniteInt -> InfiniteInt -> InfiniteInt
-gcdI : InfiniteInt -> InfiniteInt -> InfiniteInt
-lcmI : InfiniteInt -> InfiniteInt -> InfiniteInt
-subtractI : InfiniteInt -> InfiniteInt -> InfiniteInt
-succI : InfiniteInt -> InfiniteInt
-predI : InfiniteInt -> InfiniteInt
-absI : InfiniteInt -> InfiniteInt
-negateI : InfiniteInt -> InfiniteInt
-evenI : InfiniteInt -> Bool
-oddI : InfiniteInt -> Bool
-(==i) : InfiniteInt -> InfiniteInt -> Bool
-(/=i) : InfiniteInt -> InfiniteInt -> Bool
-(<i) : InfiniteInt -> InfiniteInt -> Bool
-(>i) : InfiniteInt -> InfiniteInt -> Bool
-(<=i) : InfiniteInt -> InfiniteInt -> Bool
-(>=i) : InfiniteInt -> InfiniteInt -> Bool
-shiftLI : InfiniteInt -> Int -> InfiniteInt
-shiftRI : InfiniteInt -> Int -> InfiniteInt
-andBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
-orBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
-xorBitI : InfiniteInt -> InfiniteInt -> InfiniteInt
-integerToInfinite : Int -> InfiniteInt
-infiniteToInteger : InfiniteInt -> Int
+(+i) : Integer -> Integer -> Integer
+(-i) : Integer -> Integer -> Integer
+(*i) : Integer -> Integer -> Integer
+(/i) : Integer -> Integer -> Integer
+divI : Integer -> Integer -> Integer
+(^i) : Integer -> Integer -> Integer
+modI : Integer -> Integer -> Integer
+remI : Integer -> Integer -> Integer
+maxI : Integer -> Integer -> Integer
+minI : Integer -> Integer -> Integer
+quotI : Integer -> Integer -> Integer
+gcdI : Integer -> Integer -> Integer
+lcmI : Integer -> Integer -> Integer
+subtractI : Integer -> Integer -> Integer
+succI : Integer -> Integer
+predI : Integer -> Integer
+absI : Integer -> Integer
+negateI : Integer -> Integer
+evenI : Integer -> Bool
+oddI : Integer -> Bool
+(==i) : Integer -> Integer -> Bool
+(/=i) : Integer -> Integer -> Bool
+(<i) : Integer -> Integer -> Bool
+(>i) : Integer -> Integer -> Bool
+(<=i) : Integer -> Integer -> Bool
+(>=i) : Integer -> Integer -> Bool
+shiftLI : Integer -> Int -> Integer
+shiftRI : Integer -> Int -> Integer
+landI : Integer -> Integer -> Integer
+lorI : Integer -> Integer -> Integer
+lxorI : Integer -> Integer -> Integer
+intToInteger : Int -> Integer
+integerToInt : Integer -> Int
 
 -- Bool
 (&&) : Bool -> Bool -> Bool

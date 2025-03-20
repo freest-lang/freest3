@@ -54,7 +54,7 @@ synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type ->
 -- Functional types
 synthetise' _ _ (T.Int          p) = return $ K.ut p
 synthetise' _ _ (T.Float        p) = return $ K.ut p
-synthetise' _ _ (T.InfiniteInt  p) = return $ K.ut p
+synthetise' _ _ (T.Integer      p) = return $ K.ut p
 synthetise' _ _ (T.Char         p) = return $ K.ut p
 synthetise' _ _ (T.String       p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =

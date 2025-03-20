@@ -31,7 +31,7 @@ instance Eq T.Type where
 instance Equiv T.Type where
   equiv _ T.Int{} T.Int{} = True
   equiv _ T.Float{} T.Float{} = True
-  equiv _ T.InfiniteInt{} T.InfiniteInt{} = True
+  equiv _ T.Integer{} T.Integer{} = True
   equiv _ T.Char{} T.Char{} = True
   equiv _ T.String{} T.String{} = True
   equiv v (T.Arrow _ m1 t1 u1) (T.Arrow _ m2 t2 u2) =

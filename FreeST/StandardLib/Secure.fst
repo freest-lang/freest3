@@ -5,7 +5,7 @@ import List
 
 ----- Modular Exponentiation -----
 
-_modExp : InfiniteInt -> InfiniteInt -> InfiniteInt -> InfiniteInt
+_modExp : Integer -> Integer -> Integer -> Integer
 _modExp b e m = 
     if e ==i 0i then 
         1i
@@ -24,25 +24,25 @@ _modExp b e m =
 --  ██████  ██ ██      ██      ██ ███████       ██   ██ ███████ ███████ ███████ ██      ██ ██   ██ ██   ████ 
 
 
-type DHProtocol = !InfiniteInt ; ?InfiniteInt
+type DHProtocol = !Integer ; ?Integer
 
-data Key = Key InfiniteInt  -- 256-bit
+data Key = Key Integer  -- 256-bit
 
 --8192-bit MODP group 18
-_dhP : InfiniteInt
+_dhP : Integer
 _dhP = 68171758476213495590643433084986531271759695309573263235881319185384385557674102439283279615552301110607010260567277060576543672042167353921249641611589827099759815373182646127543631281741314565457020738998902204967231262491310725795783783049784656429244984173561484961967249196407582242419973594946800739429994964183747405442971310357276197966718707884764158104700573267312586099453009222736430034928817707948384625935945930820319750986019930643497543625725884857580157971216801032457458333593944673574522525767607563684739648600967529279953296804207522649084724787612195175422263607098738741914645097619238328447106496924704452040775305936491843260905103268987718680085388156790453979273532133189443896052343062485984002920853239202462209596271775929553414982455918395215636680261863909033790451686705760043324045915933869183540411008141310762080019823231026185722122135090386984943357470309444794098585129592582456002575080219759641815274328607981268105257466267717528269137758126557117498820994251686491762873082385488730053187415605901056747044556560150308610986856182325459772201715941636488490479320970659359714988717520108307866816821009130332898895914296591024879475191128227138086669293956659118949975532739032108101571041195513818810483465657497025265512391425864443585891353148751079869810957758427910917581708563586301897105038951021059341956636980402390581605400836264440381028184599630585971267814830779433087194626769096715786560129644339884489089868936000805734334699917401287732627181269460305815405985087770871167883752365501932268283954605283352502039852443798406398221404956404606149293305776309154934233362524236421338611655298136881804242486186977076164290033373913707654134680188215768243140771030452255415899755865868664300363323597447629772697152280904844241955882490102366731357635413114450115342754879407377583554363024903414099182575081761602430505168713042908502824540598074881897103746444487643789756656866563996478864339776660187994830128180901836802609305337393169233940810850334954844734351233176485825993422195110091742991582981694723362766532450396825990637199710300836720425733904633221862633140406646325438770987356673794087934079714925391623657263106674731411202754711280639483814428913435548956637991855491756776477498248950567351547380031249267224462049204226698902680800602929639266448277227648036766258697622677257592622880796582843040065889927455946187061208465381880645326934704804407788209945307399546272072143428648959i
 
-_dhG : InfiniteInt
+_dhG : Integer
 _dhG = 2i
 
 --8192-bit to 256-bit key, doing this to somewhat keep the "full output" of DH, rather then just mod by 256
-_reduceKey : InfiniteInt -> Key
+_reduceKey : Integer -> Key
 _reduceKey n =
-    let n = xorBitI (shiftRI n 4096) (modI n (2i ^i 4096i)) in    --8192 -> 4096
-    let n = xorBitI (shiftRI n 2048) (modI n (2i ^i 2048i)) in    --4096 -> 2048
-    let n = xorBitI (shiftRI n 1024) (modI n (2i ^i 1024i)) in    --2048 -> 1024
-    let n = xorBitI (shiftRI n 512)  (modI n (2i ^i 512i)) in     --1024 -> 512
-      Key $ xorBitI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
+    let n = lxorI (shiftRI n 4096) (modI n (2i ^i 4096i)) in    --8192 -> 4096
+    let n = lxorI (shiftRI n 2048) (modI n (2i ^i 2048i)) in    --4096 -> 2048
+    let n = lxorI (shiftRI n 1024) (modI n (2i ^i 1024i)) in    --2048 -> 1024
+    let n = lxorI (shiftRI n 512)  (modI n (2i ^i 512i)) in     --1024 -> 512
+      Key $ lxorI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
 
 
 dhA : forall a . DHProtocol ; a -> (a, Key)
@@ -71,15 +71,15 @@ dhB c0 =
 --   ██████ ██   ██ ██   ██  ██████ ██   ██ ██   ██ ███████  ██████    
 
 
-data Nonce = Nonce InfiniteInt                  -- 96-bit
+data Nonce = Nonce Integer                  -- 96-bit
 data ChachaState = ChachaState (Nonce, Int)     -- Nonce + Counter
-data Stream = Stream InfiniteInt                -- 512-bit
+data Stream = Stream Integer                -- 512-bit
 data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
 
-_getNonce : Nonce -> InfiniteInt
+_getNonce : Nonce -> Integer
 _getNonce (Nonce nonceValue) = nonceValue
 
-_getStream : Stream -> InfiniteInt
+_getStream : Stream -> Integer
 _getStream (Stream streamValue) = streamValue
 
 _newNonce : () -> Nonce
@@ -94,16 +94,16 @@ _clampTo32 : Int -> Int
 _clampTo32 x = mod x (2 ^ 32)
 
 _bitRotation32 : Int -> Int -> Int
-_bitRotation32 value shift = orBit (shiftL value shift) (shiftR value (32 - shift))
+_bitRotation32 value shift = lor (shiftL value shift) (shiftR value (32 - shift))
 
 -- Chacha Rounds
 
 _quarterRound : Int -> Int -> Int -> Int -> (Int, Int, Int, Int)
 _quarterRound a b c d =
-    let a = _clampTo32 (a + b) in let d = xorBit a d in let d = _clampTo32 (_bitRotation32 d 16) in
-    let c = _clampTo32 (c + d) in let b = xorBit b c in let b = _clampTo32 (_bitRotation32 b 12) in
-    let a = _clampTo32 (a + b) in let d = xorBit a d in let d = _clampTo32 (_bitRotation32 d 8) in
-    let c = _clampTo32 (c + d) in let b = xorBit b c in let b = _clampTo32 (_bitRotation32 b 7) in
+    let a = _clampTo32 (a + b) in let d = lxor a d in let d = _clampTo32 (_bitRotation32 d 16) in
+    let c = _clampTo32 (c + d) in let b = lxor b c in let b = _clampTo32 (_bitRotation32 b 12) in
+    let a = _clampTo32 (a + b) in let d = lxor a d in let d = _clampTo32 (_bitRotation32 d 8) in
+    let c = _clampTo32 (c + d) in let b = lxor b c in let b = _clampTo32 (_bitRotation32 b 7) in
     (a, b, c, d)
 
 _columnRound : Block -> Block
@@ -151,12 +151,12 @@ _chachaN block n =
 
 -- ChaCha Block and Stream building assinting function
 
-_splitTo32Bit : InfiniteInt -> Int -> [Int]
+_splitTo32Bit : Integer -> Int -> [Int]
 _splitTo32Bit value i =
     if i == 0 then
         []
     else
-        let part = infiniteToInteger $ modI value (2i ^i 32i) in
+        let part = integerToInt $ modI value (2i ^i 32i) in
         (_splitTo32Bit (shiftRI value 32) (i-1)) ++ [part]
 
 _popHead : [Int] -> (Int, [Int])
@@ -191,7 +191,7 @@ _chacha20 (Key keyValue) (ChachaState nonceCounter) =
     let block = _chachaN block 20 in
 
     -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
-    let stream = foldr @InfiniteInt (\x : Int y : InfiniteInt -> (shiftLI y 32) +i (integerToInfinite x)) 0i (_blockToList block) in
+    let stream = foldr @Integer (\x : Int y : Integer -> (shiftLI y 32) +i (intToInteger x)) 0i (_blockToList block) in
 
     (Stream stream, ChachaState (Nonce nonceValue, counter + 1))
 
@@ -205,7 +205,7 @@ _multipleChacha20 key chachaState size =
         let streamLValue = _getStream streamL in
         let (streamR, chachaState) = _chacha20 key chachaState in
         let streamRValue = _getStream streamR in
-        (Stream (orBitI (shiftLI streamLValue 512) streamRValue), chachaState)
+        (Stream (lorI (shiftLI streamLValue 512) streamRValue), chachaState)
 
 
 
@@ -243,14 +243,14 @@ establishSecureChannelB c =
 ---- Secure Send and Receive ----
 
 --Encodes values sign into the least significant bit, shifting everyrhing else
-_encodeSign : InfiniteInt -> InfiniteInt
+_encodeSign : Integer -> Integer
 _encodeSign value =
     if value <i 0i then
-        orBitI (shiftLI (value *i -1i) 1) 1i
+        lorI (shiftLI (value *i -1i) 1) 1i
     else
         shiftLI value 1
 
-_decodeSign : InfiniteInt -> InfiniteInt
+_decodeSign : Integer -> Integer
 _decodeSign value =
     if oddI value then
         -1i *i (shiftRI value 1)
@@ -258,7 +258,7 @@ _decodeSign value =
         shiftRI value 1
 
 --Finds value's bit size in multiples of 512
-_calculateSize : InfiniteInt -> Int
+_calculateSize : Integer -> Int
 _calculateSize value =
     if value ==i 0i then
         0
@@ -283,9 +283,9 @@ secureWait ck =
 
 --Send/Recive Bits:
 
-data Bits = Bits InfiniteInt
+data Bits = Bits Integer
 
-_getBits : Bits -> InfiniteInt
+_getBits : Bits -> Integer
 _getBits (Bits bits) = bits
 
 
@@ -303,7 +303,7 @@ _secureSend (Bits bits) sc =
     let (stream, chachaState) = _multipleChacha20 key chachaState size in
     let secureState = SecureChannelState (key, chachaState) in
     --Encrypt and send message
-    let bits = xorBitI bits (_getStream stream) in
+    let bits = lxorI bits (_getStream stream) in
     let msg = (Bits bits) in
     -- print @(String, Bits) $ ("Sending: ", msg); --TODO: Remove this line
     (send msg c, secureState)
@@ -324,20 +324,20 @@ _secureReceive sc =
     let (stream, chachaState) = _multipleChacha20 key chachaState size in
     let secureState = SecureChannelState (key, chachaState) in
     --Decrypt message
-    let bits = xorBitI bits (_getStream stream) in
+    let bits = lxorI bits (_getStream stream) in
     --Decode sign
     let bits = _decodeSign bits in
     (Bits bits, (c, secureState))
 
 
---InfiniteInt:
+--Integer:
 
 type SecureSendInfiniteInt = SecureSend
-secureSendInfiniteInt : InfiniteInt -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendInfiniteInt : Integer -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
 secureSendInfiniteInt msg sc = _secureSend (Bits msg) @a sc
 
 type SecureReceiveInfiniteInt = SecureReceive
-secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (InfiniteInt, (a, SecureChannelState))
+secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (Integer, (a, SecureChannelState))
 secureReceiveInfiniteInt sc = 
     let (bits, sc) = _secureReceive @a sc in
     let msg = _getBits bits in
@@ -348,33 +348,33 @@ secureReceiveInfiniteInt sc =
 
 type SecureSendInt = SecureSend
 secureSendInt : Int -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendInt msg sc = _secureSend (Bits $ integerToInfinite msg) @a sc
+secureSendInt msg sc = _secureSend (Bits $ intToInteger msg) @a sc
 
 type SecureReceiveInt = SecureReceive
 secureReceiveInt : forall a . (SecureReceive ; a, SecureChannelState) -> (Int, (a, SecureChannelState))
 secureReceiveInt sc = 
     let (bits, sc) = _secureReceive @a sc in
     let msg = _getBits bits in
-    (infiniteToInteger msg, sc)
+    (integerToInt msg, sc)
 
 
 --Char
 
 type SecureSendChar = SecureSend
 secureSendChar : Char -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendChar msg sc = _secureSend (Bits (integerToInfinite (ord msg))) @a sc
+secureSendChar msg sc = _secureSend (Bits (intToInteger (ord msg))) @a sc
 
 type SecureReceiveChar = SecureReceive
 secureReceiveChar : forall a . (SecureReceive ; a, SecureChannelState) -> (Char, (a, SecureChannelState))
 secureReceiveChar sc = 
     let (bits, sc) = _secureReceive @a sc in
     let msg = _getBits bits in
-    (chr (infiniteToInteger msg), sc)
+    (chr (integerToInt msg), sc)
 
 
 --Float:
 
-_addMantissa : InfiniteInt -> Float -> Int -> InfiniteInt
+_addMantissa : Integer -> Float -> Int -> Integer
 _addMantissa bits mantissa i = 
     if i <= 0 then
         bits
@@ -386,7 +386,7 @@ _addMantissa bits mantissa i =
         else
             _addMantissa bits mantissa (i-1)
 
-_getMantissa : InfiniteInt -> Float -> Int -> Float
+_getMantissa : Integer -> Float -> Int -> Float
 _getMantissa bits mantissa i =
     --let (bits, i) = removeZeros bits i in
     if i <= 0 then
@@ -397,7 +397,7 @@ _getMantissa bits mantissa i =
         else
             _getMantissa (shiftRI bits 1) (mantissa /. 2.0) (i-1)
 
--- From Float to IEEE 754 format in InfiniteInt
+-- From Float to IEEE 754 format in Integer
 _floatToBits : Float -> Bits
 _floatToBits value =
     if value >=. 0.0 && value <=. 0.0 then --Why is there no ==. ??????
@@ -407,14 +407,14 @@ _floatToBits value =
     else if value >=. (-1.0 /. 0.0) && value <=. (-1.0 /. 0.0) then
         Bits (shiftLI 4095i 52)
     else
-        let sign = integerToInfinite $ abs $ (floor(value/.(absF value)) - 1) / 2 in --Purely arythmetic way to obtain sign bit
+        let sign = intToInteger $ abs $ (floor(value/.(absF value)) - 1) / 2 in --Purely arythmetic way to obtain sign bit
         let value = absF value in
         let exponent = fromInteger $ floor $ logBase 2.0 value in
         let mantissa = (value /. (2.0 ** exponent)) -. 1.0 in
-        let exponent = integerToInfinite $ (truncate exponent) + 1023 in
-        Bits $ _addMantissa (orBitI exponent (shiftLI sign 11)) mantissa 52
+        let exponent = intToInteger $ (truncate exponent) + 1023 in
+        Bits $ _addMantissa (lorI exponent (shiftLI sign 11)) mantissa 52
 
--- From IEEE 754 format in InfiniteInt to Float
+-- From IEEE 754 format in Integer to Float
 _bitsToFloat : Bits -> Float
 _bitsToFloat (Bits bits) = 
     if bits ==i 0i then
@@ -425,8 +425,8 @@ _bitsToFloat (Bits bits) =
         -1.0 /. 0.0
     else
         let mantissa = 1.0 +. (_getMantissa bits 0.0 52) in
-        let exponent = fromInteger $ infiniteToInteger $ (modI (shiftRI bits 52) (2i ^i 11i)) -i 1023i in
-        let sign = fromInteger $ infiniteToInteger $ shiftRI bits 63 in
+        let exponent = fromInteger $ integerToInt $ (modI (shiftRI bits 52) (2i ^i 11i)) -i 1023i in
+        let sign = fromInteger $ integerToInt $ shiftRI bits 63 in
         (-1.0**sign) *. mantissa *. (2.0**exponent)
 
 type SecureSendFloat = SecureSend

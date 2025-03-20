@@ -13,7 +13,7 @@ isVal E.Var{}         = True
 isVal E.Unit{}        = True
 isVal E.Int{}         = True
 isVal E.Float{}       = True
-isVal E.InfiniteInt{} = True
+isVal E.Integer{}     = True
 isVal E.Char{}        = True
 isVal E.String{}      = True
 -- | λm x:T . e

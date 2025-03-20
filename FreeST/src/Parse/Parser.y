@@ -45,7 +45,7 @@ import           Paths_FreeST ( getDataFileName )
   and         {TokenAnd _}
   Int         {TokenIntT _}
   Float       {TokenFloatT _}
-  InfiniteInt {TokenInfiniteIntT _}
+  Integer     {TokenIntegerT _}
   Char        {TokenCharT _}
   String      {TokenStringT _}
   '()'        {TokenUnit _}
@@ -106,7 +106,7 @@ import           Paths_FreeST ( getDataFileName )
   LA          {TokenLinA _}
   INT         {TokenInt _ _ }
   FLOAT       {TokenFloat _ _}
-  INFINITEINT {TokenInfiniteInt _ _}
+  INTEGER     {TokenInteger _ _}
   CHAR        {TokenChar _ _}
   STR         {TokenString _ _}
   let         {TokenLet _}
@@ -303,7 +303,7 @@ App :: { E.Exp }
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
   | FLOAT                          {% let (TokenFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
-  | INFINITEINT                    {% let (TokenInfiniteInt p x) = $1 in flip E.InfiniteInt x `fmap` liftModToSpan p }
+  | INTEGER                        {% let (TokenInteger p x) = $1 in flip E.Integer x `fmap` liftModToSpan p }
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -417,7 +417,7 @@ Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
   | Float                         {% T.Float `fmap` mkSpan $1}
-  | InfiniteInt                   {% T.InfiniteInt `fmap` mkSpan $1}
+  | Integer                       {% T.Integer `fmap` mkSpan $1}
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}

@@ -40,9 +40,9 @@ instance Equiv T.Type where
   equiv _ T.Float{} T.Float{} = TVL.True
   equiv _ T.Float{} _         = TVL.False
   equiv _ _         T.Float{} = TVL.False
-  equiv _ T.InfiniteInt{} T.InfiniteInt{} = TVL.True
-  equiv _ T.InfiniteInt{} _               = TVL.False
-  equiv _ _               T.InfiniteInt{} = TVL.False
+  equiv _ T.Integer{} T.Integer{} = TVL.True
+  equiv _ T.Integer{} _               = TVL.False
+  equiv _ _               T.Integer{} = TVL.False
   equiv _ T.Char{} T.Char{} = TVL.True
   equiv _ T.Char{} _        = TVL.False
   equiv _ _        T.Char{} = TVL.False

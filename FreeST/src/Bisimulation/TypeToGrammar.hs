@@ -88,7 +88,7 @@ fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{} = Just t
 fatTerminal t@T.Float{} = Just t
-fatTerminal t@T.InfiniteInt{} = Just t
+fatTerminal t@T.Integer{} = Just t
 fatTerminal t@T.Char{} = Just t
 fatTerminal t@T.String{} = Just t
 -- This one would preclude multiplicity subtyping (apply when disabled?)

@@ -129,10 +129,10 @@ evalAndPrint' x ctx s = do
 
 
 eval :: Variable -> Types -> Ctx -> Defs -> E.Exp -> IO Value
-eval _ _ _   _ (E.Int         _ i   ) = return $ Integer i
+eval _ _ _   _ (E.Int         _ i   ) = return $ Int i
 eval _ _ _   _ (E.Unit        _     ) = return Unit
 eval _ _ _   _ (E.Float       _ f   ) = return $ Float f
-eval _ _ _   _ (E.InfiniteInt _ ii  ) = return $ InfiniteInt ii       
+eval _ _ _   _ (E.Integer _ ii  ) = return $ Integer ii       
 eval _ _ _   _ (E.Char        _ c   ) = return $ Character c
 eval _ _ _   _ (E.String      _ s   ) = return $ String s
 eval _ _ ctx eenv (E.TypeAbs _ (Bind _ _ _ e)) = return $ TypeAbs e ctx eenv 

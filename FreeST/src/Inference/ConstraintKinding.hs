@@ -26,7 +26,7 @@ cg _ _ (T.Rec p (Bind _ a (K.Kind _ Un K.Session) (T.Labelled _ (T.Choice _) m))
   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ K.ua p
 cg _ _ (T.Int s) = return $ K.ut s 
 cg _ _ (T.Float s) = return $ K.ut s
-cg _ _ (T.InfiniteInt s) = return $ K.ut s 
+cg _ _ (T.Integer s) = return $ K.ut s 
 cg _ _ (T.Char s) = return $ K.ut s 
 cg _ _ (T.String s) = return $ K.ut s 
 cg _ _ (T.Skip s) = return $ K.us s 
