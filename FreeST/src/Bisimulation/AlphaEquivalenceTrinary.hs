@@ -46,7 +46,7 @@ instance Equiv T.Type where
   equiv _ T.String{} T.String{} = TVL.True
   equiv _ T.String{} _          = TVL.False
   equiv _ _          T.String{} = TVL.False
-  equiv v (T.Arrow _ m1 t1 u1) (T.Arrow _ m2 t2 u2) = fromBool(m1 == m2) &&& equiv v t1 t2 &&& equiv v u1 u2
+  equiv v (T.Arrow _ m1 l1 l2 t1 u1) (T.Arrow _ m2 l3 l4 t2 u2) = fromBool(m1 == m2) &&& fromBool(l1 == l3) &&& fromBool(l2 == l4) &&& equiv v t1 t2 &&& equiv v u1 u2
   equiv _ T.Arrow{} _         = TVL.False
   equiv _ _         T.Arrow{} = TVL.False
   equiv v (T.Labelled _ s1 m1) (T.Labelled _ s2 m2) =

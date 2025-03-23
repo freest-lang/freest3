@@ -81,7 +81,7 @@ ctyping kEnv (E.Abs s m b) = do
   weaken (var b) k u
   when (isAbs (body b)) $ addConstraint $ KindC k (K.Kind s (mult t) K.Top)
   removeFromSignatures (var b)  
-  return (T.Arrow s m (binder b) t, Map.delete (var b) u)
+  return (T.Arrow s m T.Bottom T.Bottom (binder b) t, Map.delete (var b) u) --maybe change this?
   where
     isAbs E.Abs{} = True
     isAbs (E.TypeAbs _ b) = isAbs $ body b
@@ -130,7 +130,7 @@ ctyping kEnv (E.Pair s e1 e2) = do
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity
-mult (T.Arrow _ m _ _) = m
+mult (T.Arrow _ m _ _ _ _) = m
 mult (T.Forall _ b) = mult (body b)
 mult t = error $ show t    
 
@@ -143,7 +143,7 @@ ctypingMap kEnv (xs, e) state = do
   where
     returnType :: [Variable] -> T.Type -> T.Type
     returnType [] t                  = t
-    returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
+    returnType (_:xs) (T.Arrow _ _ _ _ _ t2) = returnType xs t2
     returnType _ t = t
 
 (∪) :: Ord k => Map.Map k a -> Map.Map k a -> Map.Map k a

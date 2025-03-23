@@ -93,7 +93,7 @@ canonical :: T.Type -> T.Type
 canonical (T.Semi _ T.Skip{} u) = canonical u
 canonical (T.Semi _ t T.Skip{}) = canonical t 
 canonical (T.Semi s t u) = T.Semi s (canonical t) (canonical u)
-canonical (T.Arrow s m t u) = T.Arrow s m (canonical t) (canonical u)
+canonical (T.Arrow s m l1 l2 t u) = T.Arrow s m l1 l2 (canonical t) (canonical u)
 canonical (T.Labelled s sort tm) = T.Labelled s sort (Map.map canonical tm)    
 canonical (T.Message s l p t) = T.Message s l p (canonical t)
 canonical (T.Forall s (Bind s1 a k t)) = T.Forall s (Bind s1 a k (canonical t))

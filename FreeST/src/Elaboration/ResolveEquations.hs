@@ -28,8 +28,8 @@ solveAll =
 
 solveEq :: Visited -> Variable -> T.Type -> ElabState T.Type
 solveEq v f (T.Labelled p s tm) = T.Labelled p s <$> mapM (solveEq v f) tm
-solveEq v f (T.Arrow p m t1 t2) =
-  T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
+solveEq v f (T.Arrow p m l1 l2 t1 t2) =
+  T.Arrow p m l1 l2 <$> solveEq v f t1 <*> solveEq v f t2
 solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
 solveEq v f (T.Message p l pol t) = T.Message p l pol <$> solveEq v f t
 solveEq v f t@(T.Var p x)
@@ -62,7 +62,7 @@ clean (T.Rec p (Bind p' y k t))
   | y `T.isFreeIn` t = T.Rec p $ Bind p' y k (clean t)
   | otherwise      = clean t
 clean (T.Labelled p s tm) = T.Labelled p s $ Map.map clean tm
-clean (T.Arrow p m t1 t2) = T.Arrow p m (clean t1) (clean t2)
+clean (T.Arrow p m l1 l2 t1 t2) = T.Arrow p m l1 l2 (clean t1) (clean t2)
 clean (T.Semi p t1 t2) = T.Semi p (clean t1) (clean t2) 
 clean (T.Message p l pol t) = T.Message p l pol (clean t)
 clean (T.Forall p (Bind p1 y k t)) = T.Forall p $ Bind p1 y k (clean t)

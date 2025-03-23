@@ -86,8 +86,8 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp :: E.Exp -> [Variable] -> T.Type -> ElabState E.Exp
   buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
-  buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
+  buildExp e (b : bs) (T.Arrow _ m l1 l2 t1 t2) =
+    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2 --levels not in use here, could be wrong
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
     E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t

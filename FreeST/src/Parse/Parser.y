@@ -400,28 +400,20 @@ Op :: { Variable }
 
 Type :: { T.Type }
   -- Functional types
-  : Int                           {% T.Int `fmap` mkSpan $1 }
-  | Float                         {% T.Float `fmap` mkSpan $1}
-  | Char                          {% T.Char `fmap` mkSpan $1 }
-  | String                        {% T.String `fmap` mkSpan $1 }
-  | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
-  | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
-  | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
+  : Int                                                   {% T.Int `fmap` mkSpan $1 }
+  | Float                                                 {% T.Float `fmap` mkSpan $1}
+  | Char                                                  {% T.Char `fmap` mkSpan $1 }
+  | String                                                {% T.String `fmap` mkSpan $1 }
+  | '()'                                                  {% mkSpan $1 >>= \s -> pure $ T.unit s}
+  | Type Arrow '[' Level ',' Level ']' Type %prec ARROW   {% mkSpanSpan $1 $8 >>= \s -> pure $ T.Arrow s $2 $4 $6 $1 $8 }
+  | '(' Type ',' TupleType ')'                            {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
+  | '[' Int ']'                                           {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
   | Skip                             {% T.Skip `fmap` mkSpan $1 }
   | Close                            {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
   | Wait                             {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
   | Type ';' Type                    {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
-  | Polarity Type %prec MSG          {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $2 }       
-  -- | Polarity Level Type %prec MSG    
-  --   {% do
-  --       let (Span _ p1 _) = (fst $1)
-  --       let (Span _ _ p2) = (fst $2)
-  --       m <- modulePath
-  --       let span = (Span m p1 p2)
-  --       mkSpanFromSpan span $3 >>= \s -> pure $ T.Message s T.Bottom (snd $1) $3 }       
-  -- | LeveledPolarity Type %prec MSG   {% mkSpanSpan (fst(fst $1)) $2 >>= \s -> pure $ T.Message s (snd $1) (snd(fst $1)) $2 }   
+  | Polarity Level Type %prec MSG    {% mkSpanFromSpan (fst $1) $3 >>= \s -> pure $ T.Message s $2 (snd $1) $3 }        
   -- Structural records and variants (testing purposes)
   -- | '{' FieldList '}'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Record $2 }    
   -- | '<' FieldList '>'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Variant $2 }                           
@@ -429,19 +421,13 @@ Type :: { T.Type }
                                      >> mkSpanFromSpan (fst $1) $4
                                      >>= \s -> pure $ T.Labelled s (T.Choice (snd $1)) $3 } 
   -- Star types
-  | '*' Polarity Type %prec MSG 
+  | '*' Polarity Level Type %prec MSG 
     {% do
         p <- mkSpan $1
         tVar <- freshTVar p
         -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
         return (T.Rec p $ Bind p tVar (K.us p) $
-          T.Semi p (uncurry T.Message ((fst $2), T.Bottom) (snd $2) $3) (T.Var p tVar)) }
-  -- | '*' LeveledPolarity Type %prec MSG 
-  -- {% do
-  --     p <- mkSpan $1
-  --     tVar <- freshTVar p
-  --     return (T.Rec p $ Bind p tVar (K.us p) $
-  --       T.Semi p (uncurry T.Message ((fst (fst $2)), (snd $2)) (snd(fst $2)) $3) (T.Var p tVar)) }
+          T.Semi p (uncurry T.Message ((fst $2), $3) (snd $2) $4) (T.Var p tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
         p <- mkSpan $1
@@ -478,63 +464,16 @@ Polarity :: { (Span, T.Polarity) }
   : '!' { (getSpan $1, T.Out) }
   | '?' { (getSpan $1, T.In) }
 
--- Polarity :: { (Span, T.Polarity) }
---   : '!' Level 
---     {% do
---         let (Span _ p1 _) = getSpan $1
---         let (Span _ _ p2) = (fst $2)
---         m <- modulePath
---         return ((Span m p1 p2), T.Out) }
---   | '?' Level 
---     {% do
---         let (Span _ p1 _) = getSpan $1
---         let (Span _ _ p2) = (fst $2)
---         m <- modulePath
---         return ((Span m p1 p2), T.In) }
-
--- LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
---    : '!' Level { (((fst $2), T.Out), (snd $2)) }
---    | '?' Level { (((fst $2), T.In), (snd $2)) }
-
--- LeveledPolarity :: { ((Span, T.Polarity), T.Level) }
---    : '!' Level { ((getSpan $1, T.Out), $2) }
---    | '?' Level { ((getSpan $1, T.In), $2) }
-
--- Polarity :: { (Span, T.Polarity) }
---    : '!' Level { (getSpan $1, T.Out) }
---    | '?' Level { (getSpan $1, T.In) }
-
 ChoiceView :: { (Span, T.View) }
   : '+' { (getSpan $1, T.Internal) }
   | '&' { (getSpan $1, T.External) }
 
--- LEVELS 
-
-Level :: { (Span, T.Level) }
-  : top { (getSpan $1, T.Top) }
-  | bot { (getSpan $1, T.Bottom) }
-  | LOWER_ID { (getSpan $1, T.Literal (getText $1)) }
-
--- Level :: { T.Level }
---   : top { T.Top }
---   | bot { T.Bottom }
---   | LOWER_ID { T.Literal (getText $1) }
-
--- Arrow :: { (Multiplicity, (T.Level, T.Level)) }
---   : '->' '[' Level ',' Level ']' { (Un, ((snd $3), (snd $5))) }
---   | '1->' '[' Level ',' Level ']' { (Lin, ((snd $3), (snd $5))) }
-
--- Polarity :: { (Span, (T.Polarity, T.Level)) }
---   : '!' Level { (getSpan $1, (T.Out, (snd $2))) }
---   | '?' Level { (getSpan $1, (T.In, (snd $2))) }
-
--- Polarity :: { (T.Polarity, T.Level) }
---   : '!' Level { (T.Out, (snd $2)) }
---   | '?' Level { (T.In, (snd $2)) }
-
--- ChoiceView :: { (Span, (T.View, T.Level)) }
---   : '+' Level { (getSpan $1, (T.Internal, (snd $2))) }
---   | '&' Level { (getSpan $1, (T.External, (snd $2))) }
+Level :: { T.Level }
+  : top { T.Top }
+  | bot { T.Bottom }
+  | INT { do 
+            let (TokenInt p x) = $1
+            T.Num x }
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
@@ -723,6 +662,5 @@ parseAndImport initial = do
 -- Error Handling
 parseError :: [Token] -> ParseState a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan
-parseError (x:_) = lift . Left $ ParseError (getSpan x) (show x)
-
+parseError (x:xs) = lift . Left $ ParseError (getSpan x) (show x)
 }

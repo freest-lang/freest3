@@ -155,8 +155,8 @@ tokens :-
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 --Levels
-  bot                           { \p s -> TokenBottom (internalPos p) }
-  top                           { \p s -> TokenTop (internalPos p) }
+  bot     { \p s -> TokenBottom (internalPos p) }
+  top     { \p s -> TokenTop (internalPos p) }
 
 {
 
