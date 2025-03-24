@@ -28,6 +28,14 @@ data Result = Valid
             | Ended
             | Invalid String
 
+{-
+    Representation of the several type of messages that can be received. The Int, Float, Char and Bool are simple types
+    that don't need any extra information. The Str type is a string that needs to be received with the length of the string.
+    The LLabel type is a label that needs to be received with the length of the label identification, the label identification 
+    and the label itself. The Finish type helps to identify the end of the communication. The Error type is used to identify
+    an error message that needs to be sent to both parties.
+-}
+
 data MessageType = Simple   T.Type B.ByteString
                  | Str      B.ByteString
                  | LLabel   B.ByteString Word8 B.ByteString
@@ -35,7 +43,14 @@ data MessageType = Simple   T.Type B.ByteString
                  | Error    String
     deriving Show
 
+{-
+    First it will get the tag of the message. The tag is the first byte of the message. Then it will check the tag and 
+    according to the tag it will get the rest of the message. The rest of the message depends on the tag.
 
+    First parameter  -> The handle to receive the rest of the message
+    Second parameter -> The tag of the message
+    Return           -> The type of the message
+-}
 extractMessage :: Handle -> B.ByteString -> IO MessageType
 extractMessage hdl tagB = 
     let tag = B.head tagB in
@@ -75,74 +90,23 @@ extractMessage hdl tagB =
                 return (labelList, B.head label, B.concat [tagB, lenBytes, labelList, label])
 
 {-
-    Receives the rest of the message. The rest of the message depends on the type received
-
-    First parameter  -> The handle to receive the rest of the message
-    Second parameter -> The first byte of the message. (Could be changed to the type instead of the byte 
-                        to improve the readability of the code)
-    Return           -> The rest of the message
--}
-getRestOfMessage :: Handle -> Word8 -> IO B.ByteString
-getRestOfMessage hdl n =
-    case n of
-        2 -> B.hGetNonBlocking hdl 4
-        3 -> B.hGetNonBlocking hdl 4
-        4 -> B.hGetNonBlocking hdl 1
-        7 -> return B.empty
-        _ -> return B.empty
-
-{- 
-    Checks the type receive with the type in the state machine. If the type is was invalid the error
-    message is returned. If the type is valid it will see if the type receive is the end type. 
-    If it is the end type it will return Ended, the rest can be ignored. If it is not the end type it 
-    will return Valid with the rest of the type of the state machine.
-
-    First parameter  -> Type received 
-    Second parameter -> The current state of the state machine
-    Return           -> (Result, T.Type) where Result is the result of the comparison and 
-                        T.Type is the rest of the state machine
--}
--- checkAgainstSM :: T.Type -> T.Type -> (Result, T.Type)
--- checkAgainstSM t sm = case compareTypes n_sm t Nothing of
---     Left errorMsg -> (Invalid errorMsg, T.Skip defaultSpan)
---     Right rest -> do 
---         if itEnded t then (Ended, rest) else (Valid, rest)
---     where
---         n_sm = normalise sm
---         itEnded (T.End _ _) = True
---         itEnded _ = False
-
-checkAgainstSM :: T.Type -> T.Type -> T.Polarity -> (Result, T.Type)
-checkAgainstSM t sm p = 
-    let typeOfMessage = FSM.Normal t p in
-    case FSM.check typeOfMessage sm of
-        Left errorMsg -> (Invalid errorMsg, T.Skip defaultSpan)
-        Right rest -> do 
-            if itEnded t then (Ended, rest) else (Valid, rest)
-    where
-        itEnded (T.End _ _) = True
-        itEnded _ = False
-
-{-
-    Handles the messages received. First it's going to get the current state of the state machine and it will check if the
-    tag is recognised and get the correspondent type (Tag is the first byte of the message). If it is not recognised it will
-    return Invalid with the error message. If it is recognised it will get the rest of the message and then check if the type is
-    valid. Then it will see the possible outcomes. If the type is valid it will return Valid with the rest of the message. If the
-    type is the end type it will return Ended with the rest of the message (It don't contain nothing relevant).
-    If the type is invalid it will return Invalid with the error message. 
+    Handles the messages receive. First it will take the current state of the state machine. Then it will extract the message
+    and compare it with the state machine. If the message is valid it will return the message to be sent to the other party.
+    If the message is invalid it will return the error message to be sent to both parties. If the message is the end type
+    it will close the handle.
 
     First parameter  -> The handle that send the message
-    Second parameter -> The message received
+    Second parameter -> The message received (Tag)
     Third parameter  -> The polarity of the message
     Fourth parameter -> The state machine
     Return           -> (Result, B.ByteString) where Result is the result of the comparison and B.ByteString is
                         the message to be sent to the other side if everything is ok. 
 -}
 
-handleMessages' :: Handle -> B.ByteString -> T.Polarity -> T.View -> StateMachine -> IO (Result, B.ByteString)
-handleMessages' hdl msg p v sm = do
+handleMessages' :: Handle -> B.ByteString -> T.Polarity -> StateMachine -> IO (Result, B.ByteString)
+handleMessages' hdl tag p sm = do
     sm' <- takeMVar sm
-    result <- extractMessage hdl msg
+    result <- extractMessage hdl tag
     case result of
         Simple t msg -> do
             case FSM.check (FSM.Normal t p) sm' of
@@ -167,7 +131,7 @@ handleMessages' hdl msg p v sm = do
                     return (Invalid errorMsg, B.empty)
                 Right _ -> do
                     hClose hdl
-                    return (Ended, msg)
+                    return (Ended, tag)
         Error errorMsg -> do
             putStrLn errorMsg
             return (Invalid errorMsg, B.empty)
@@ -176,13 +140,17 @@ handleMessages' hdl msg p v sm = do
             let b = BC.split '|' choiceId' 
             let listOfVariables = map (\s -> Variable defaultSpan (BC.unpack s) (-1)) b
             let variable = Variable defaultSpan (BC.unpack (b !! fromIntegral label)) (-1)
-            case FSM.check (FSM.Label listOfVariables variable v) sm' of
+            case FSM.check (FSM.Label listOfVariables variable (getView p)) sm' of
                 Left errorMsg -> do
                     putStrLn errorMsg
                     return (Invalid errorMsg, B.empty)
                 Right rest -> do
                     putMVar sm rest
                     return (Valid, msg)
+    where 
+        getView :: T.Polarity -> T.View
+        getView T.Out = T.Internal
+        getView T.In = T.External
 
 encodeStringWithLength :: String -> B.ByteString
 encodeStringWithLength str = 
@@ -258,8 +226,8 @@ nonBlockingReceive hdl1 hdl2 sm = loop
 
         case (B.null h1Tag, B.null h2Tag) of
             (True, True)   -> threadDelay 100000 >> putStrLn "Looping" >> loop
-            (False, _)     -> handleMessages' hdl1 h1Tag T.Out T.Internal sm >>= handleResult hdl2
-            (_, False)     -> handleMessages' hdl2 h2Tag T.In T.External sm >>= handleResult hdl1
+            (False, _)     -> handleMessages' hdl1 h1Tag T.Out sm >>= handleResult hdl2
+            (_, False)     -> handleMessages' hdl2 h2Tag T.In  sm >>= handleResult hdl1
     handleResult :: Handle -> (Result, B.ByteString)  -> IO ()
     handleResult hdl (Valid, msg) = B.hPut hdl msg >> loop
     handleResult hdl (Ended, msg) = B.hPut hdl msg >> hClose hdl
