@@ -9,7 +9,7 @@ import Data.Word (Word8, Word32)
 import Syntax.Base (defaultSpan, Variable(..))
 import qualified Syntax.Type as T
 import Parse.Parser (parseType)
-import qualified Monitor.FSM as FSM
+import qualified FSM
 import System.IO
 import System.Posix.Types
 import Foreign.C (getErrno)
