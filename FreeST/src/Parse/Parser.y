@@ -308,6 +308,7 @@ Primary :: { E.Exp }
   | '(' Exp ')'                    { $2 } -- TODO: fix the span to include the parenthesis
 
 
+--it might be necessary to add levels here
 Abs :: { (Multiplicity, E.Exp) }
   : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs
@@ -406,6 +407,7 @@ Type :: { T.Type }
   | String                                                {% T.String `fmap` mkSpan $1 }
   | '()'                                                  {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow '[' Level ',' Level ']' Type %prec ARROW   {% mkSpanSpan $1 $8 >>= \s -> pure $ T.Arrow s $2 $4 $6 $1 $8 }
+  -- | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 T.Bottom T.Bottom $1 $3 }
   | '(' Type ',' TupleType ')'                            {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
   | '[' Int ']'                                           {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types

@@ -145,6 +145,8 @@ tokens :-
   of				{ \p s -> TokenOf (internalPos p) }
   (forall|∀)                    { \p s -> TokenForall (internalPos p) }
   dualof			{ \p s -> TokenDualof (internalPos p) }
+  bot     { \p s -> TokenBottom (internalPos p) }
+  top     { \p s -> TokenTop (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
@@ -154,9 +156,7 @@ tokens :-
 -- Identifiers
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
---Levels
-  bot     { \p s -> TokenBottom (internalPos p) }
-  top     { \p s -> TokenTop (internalPos p) }
+
 
 {
 

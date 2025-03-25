@@ -29,116 +29,116 @@ module Prelude where
 -- Signatures for the builtin operators
 
 -- Int
-(+) : Int ->[0,0] Int ->[0,0] Int
-(-) : Int -> Int -> Int
-(*) : Int -> Int -> Int
-(/) : Int -> Int -> Int
-div : Int -> Int -> Int
-(^) : Int -> Int -> Int
-mod : Int -> Int -> Int
-rem : Int -> Int -> Int
-max : Int -> Int -> Int
-min : Int -> Int -> Int
-quot : Int -> Int -> Int
-gcd : Int -> Int -> Int
-lcm : Int -> Int -> Int
-subtract : Int -> Int -> Int
-succ : Int -> Int
-pred : Int -> Int
-abs : Int -> Int
-negate : Int -> Int
-even : Int -> Bool
-odd : Int -> Bool
-(==) : Int -> Int -> Bool
-(/=) : Int -> Int -> Bool
-(<) : Int -> Int -> Bool
-(>) : Int -> Int -> Bool
-(<=) : Int -> Int -> Bool
-(>=) : Int -> Int -> Bool
+(+) : Int ->[top,bot] Int ->[top,bot] Int
+(-) : Int ->[top,bot] Int ->[top,bot] Int
+(*) : Int ->[top,bot] Int ->[top,bot] Int
+(/) : Int ->[top,bot] Int ->[top,bot] Int
+div : Int ->[top,bot] Int ->[top,bot] Int
+(^) : Int ->[top,bot] Int ->[top,bot] Int
+mod : Int ->[top,bot] Int ->[top,bot] Int
+rem : Int ->[top,bot] Int ->[top,bot] Int
+max : Int ->[top,bot] Int ->[top,bot] Int
+min : Int ->[top,bot] Int ->[top,bot] Int
+quot : Int ->[top,bot] Int ->[top,bot] Int
+gcd : Int ->[top,bot] Int ->[top,bot] Int
+lcm : Int ->[top,bot] Int ->[top,bot] Int
+subtract : Int ->[top,bot] Int ->[top,bot] Int
+succ : Int ->[top,bot] Int
+pred : Int ->[top,bot] Int
+abs : Int ->[top,bot] Int
+negate : Int ->[top,bot] Int
+even : Int ->[top,bot] Bool
+odd : Int ->[top,bot] Bool
+(==) : Int ->[top,bot] Int ->[top,bot] Bool
+(/=) : Int ->[top,bot] Int ->[top,bot] Bool
+(<) : Int ->[top,bot] Int ->[top,bot] Bool
+(>) : Int ->[top,bot] Int ->[top,bot] Bool
+(<=) : Int ->[top,bot] Int ->[top,bot] Bool
+(>=) : Int ->[top,bot] Int ->[top,bot] Bool
 
 -- Float
-(+.) : Float -> Float -> Float
-(-.) : Float -> Float -> Float
-(*.) : Float -> Float -> Float
-(/.) : Float -> Float -> Float
-(>.) : Float -> Float -> Bool
-(<.) : Float -> Float -> Bool
-(>=.) : Float -> Float -> Bool
-(<=.) : Float -> Float -> Bool
-absF : Float -> Float
-negateF : Float -> Float
-maxF : Float -> Float -> Float
-minF : Float -> Float -> Float
-truncate : Float -> Int
-round : Float -> Int
-ceiling : Float -> Int
-floor : Float -> Int
-recip : Float -> Float
+(+.) : Float ->[top,bot] Float ->[top,bot] Float
+(-.) : Float ->[top,bot] Float ->[top,bot] Float
+(*.) : Float ->[top,bot] Float ->[top,bot] Float
+(/.) : Float ->[top,bot] Float ->[top,bot] Float
+(>.) : Float ->[top,bot] Float ->[top,bot] Bool
+(<.) : Float ->[top,bot] Float ->[top,bot] Bool
+(>=.) : Float ->[top,bot] Float ->[top,bot] Bool
+(<=.) : Float ->[top,bot] Float ->[top,bot] Bool
+absF : Float ->[top,bot] Float
+negateF : Float ->[top,bot] Float
+maxF : Float ->[top,bot] Float ->[top,bot] Float
+minF : Float ->[top,bot] Float ->[top,bot] Float
+truncate : Float ->[top,bot] Int
+round : Float ->[top,bot] Int
+ceiling : Float ->[top,bot] Int
+floor : Float ->[top,bot] Int
+recip : Float ->[top,bot] Float
 pi : Float
-exp : Float -> Float
-log : Float -> Float
-sqrt : Float -> Float
-(**) : Float -> Float -> Float
-logBase : Float -> Float -> Float
-sin : Float -> Float
-cos : Float -> Float
-tan : Float -> Float
-asin: Float -> Float
-acos: Float -> Float
-atan: Float -> Float
-sinh: Float -> Float
-cosh: Float -> Float
-tanh: Float -> Float
-log1p: Float -> Float
-expm1: Float -> Float
-log1pexp: Float -> Float
-log1mexp: Float -> Float
-fromInteger: Int -> Float
+exp : Float ->[top,bot] Float
+log : Float ->[top,bot] Float
+sqrt : Float ->[top,bot] Float
+(**) : Float ->[top,bot] Float ->[top,bot] Float
+logBase : Float ->[top,bot] Float ->[top,bot] Float
+sin : Float ->[top,bot] Float
+cos : Float ->[top,bot] Float
+tan : Float ->[top,bot] Float
+asin: Float ->[top,bot] Float
+acos: Float ->[top,bot] Float
+atan: Float ->[top,bot] Float
+sinh: Float ->[top,bot] Float
+cosh: Float ->[top,bot] Float
+tanh: Float ->[top,bot] Float
+log1p: Float ->[top,bot] Float
+expm1: Float ->[top,bot] Float
+log1pexp: Float ->[top,bot] Float
+log1mexp: Float ->[top,bot] Float
+fromInteger: Int ->[top,bot] Float
 
 -- Bool
-(&&) : Bool -> Bool -> Bool
-(||) : Bool -> Bool -> Bool
+(&&) : Bool ->[top,bot] Bool ->[top,bot] Bool
+(||) : Bool ->[top,bot] Bool ->[top,bot] Bool
 
 -- Char
-ord : Char -> Int
-chr : Int -> Char
+ord : Char ->[top,bot] Int
+chr : Int ->[top,bot] Char
 
 -- String
-(^^) : String -> String -> String
-show : forall a:*T . a -> String
--- read : ∀ a . String -> a
-readBool : String -> Bool
-readInt : String -> Int
-readChar : String -> Char
+(^^) : String ->[top,bot] String ->[top,bot] String
+show : forall a:*T . a ->[top,bot] String
+-- read : ∀ a . String ->[top,bot] a
+readBool : String ->[top,bot] Bool
+readInt : String ->[top,bot] Int
+readChar : String ->[top,bot] Char
 
 -- Internal Prints
-__putStrOut : String -> ()
-__putStrErr : String -> ()
+__putStrOut : String ->[top,bot] ()
+__putStrErr : String ->[top,bot] ()
 
 -- Internal Gets
-__getChar : () -> Char
-__getLine : () -> String
-__getContents : () -> String
+__getChar : () ->[top,bot] Char
+__getLine : () ->[top,bot] String
+__getContents : () ->[top,bot] String
 
 -- Fork
-fork : forall a:*T. (() 1-> a) -> ()
+fork : forall a:*T. (() 1->[top,bot] a) ->[top,bot] ()
 
 -- Error & Undefined
-error : forall a:*T . String -> a
+error : forall a:*T . String ->[top,bot] a
 undefined : forall a:*T . a
 
 -- Session operations
 -- | Creates two endpoints of a channels of the given type.
-new : forall a:1A . () -> (a, dualof a)
+new : forall a:1A . () ->[top,bot] (a, dualof a)
 -- | Sends a value on a channel. Returns the continuation channel
-send : forall a:1T . a -> forall b:1S . !100a; b 1-> b
+send : forall a:1T . a ->[top,bot] forall b:1S . !100a; b 1->[100,100] b
 -- | Receives a value on a channel. Returns the received value and 
 -- | the continuation channel.
-receive : forall a:1T b:1S . ?200a ; b -> (a, b)
+receive : forall a:1T b:1S . ?200a ; b ->[top,200] (a, b)
 -- | Closes a channel.
-close : Close -> ()
+close : Close ->[top,bot] () --n,n or top,n
 -- | Waits for a channel to be closed.
-wait : Wait -> ()
+wait : Wait ->[top,bot] () --n,n or top,n
 
 -- Files 
 -- | File paths
@@ -147,12 +147,12 @@ type FilePath = String
 data FileHandle = FileHandle ()
 -- Internal IOMode for opening files
 data IOMode = ReadMode | WriteMode | AppendMode
-__openFile : FilePath -> IOMode -> FileHandle
-__putFileStr : FileHandle -> String -> ()
-__readFileChar : FileHandle -> Char
-__readFileLine : FileHandle -> String
-__isEOF : FileHandle -> Bool
-__closeFile : FileHandle -> ()
+__openFile : FilePath ->[top,bot] IOMode ->[top,bot] FileHandle
+__putFileStr : FileHandle ->[top,bot] String ->[top,bot] ()
+__readFileChar : FileHandle ->[top,bot] Char
+__readFileLine : FileHandle ->[top,bot] String
+__isEOF : FileHandle ->[top,bot] Bool
+__closeFile : FileHandle ->[top,bot] ()
 
 
 
@@ -171,16 +171,16 @@ __closeFile : FileHandle -> ()
 data Bool = True | False 
 
 -- | Boolean complement
-not : Bool -> Bool 
+not : Bool ->[top,bot] Bool 
 not True  = False 
 not False = True 
 
 -- | Extracts the first element from a pair, discarding the second.
-fst : forall a:1T b:*T . (a, b) -> a
+fst : forall a:1T b:*T . (a, b) ->[top,bot] a
 fst p = let (x,_) = p in x
 
 -- | Extracts the second element from a pair, discarding the first.
-snd : forall a:*T b:1T . (a, b) -> b
+snd : forall a:*T b:1T . (a, b) ->[top,bot] b
 snd p = let (_,y) = p in y
 
 -- | The identity function. Will return the exact same value.
@@ -188,7 +188,7 @@ snd p = let (_,y) = p in y
 -- | id 5       -- 5
 -- | id "Hello" -- "Hello"
 -- | ```
-id : forall a:*T . a -> a
+id : forall a:*T . a ->[top,bot] a
 id x = x
 
 -- | Swaps the order of parameters to a function
@@ -201,7 +201,7 @@ id x = x
 -- |  flippedTest : Bool -> Int -> Bool
 -- |  flippedTest = flip @Int @Bool @Bool test
 -- |  ```
-flip : forall a:*T b:*T c:*T . (a -> b -> c) -> b -> a -> c
+flip : forall a:*T b:*T c:*T . (a ->[top,bot] b ->[top,bot] c) ->[top,bot] b ->[top,bot] a ->[top,bot] c
 flip f x y = f y x
 
 -- | Application operator. Takes a function and an argument, and applies 
@@ -211,7 +211,7 @@ flip f x y = f y x
 -- | ```
 -- | f $ g $ h x = f (g (h x))
 -- | ```
-($) : forall a:*T b:*T. (a -> b) -> a -> b 
+($) : forall a:*T b:*T. (a ->[top,bot] b) ->[top,bot] a ->[top,bot] b 
 ($) f x = f x
 
 -- | Reverse application operator. Provides notational convenience, especially
@@ -221,7 +221,7 @@ flip f x y = f y x
 -- | f c = c |> send 5 |> send True |> close
 -- | ```
 -- | Its binding precedence is higher than `$`.
-(|>) : forall a:*T b:*T. a -> (a -> b) -> b
+(|>) : forall a:*T b:*T. a ->[top,bot] (a ->[top,bot] b) ->[top,bot] b
 (|>) x f = f x
 
 -- | Sequential composition. Takes two expressions, evaluates the former and
@@ -231,8 +231,8 @@ flip f x y = f y x
 -- | ```
 -- | evaluates to 4.
 -- | Its binding precedence is rather low.
-(;) : forall a:*T b:*T . a -> b -> b
-(;) x y = (\_:a -> y) x
+(;) : forall a:*T b:*T . a ->[top,bot] b ->[top,bot] b
+(;) x y = (\_:a -> y) x --TODO
 
 -- | Applies the function passed as the second argument to the third one and
 -- | uses the predicate in the first argument to evaluate the result, if it comes
@@ -244,7 +244,7 @@ flip f x y = f y x
 -- | firstPowerGreaterThan : Int -> Int
 -- | firstPowerGreaterThan limit = until @Int (> limit) (*2) 1
 -- | ```  
-until : forall a:*T . (a -> Bool) -> (a -> a) -> a -> a
+until : forall a:*T . (a ->[top,bot] Bool) ->[top,bot] (a ->[top,bot] a) ->[top,bot] a ->[top,bot] a
 until p f x = if p x then x else until @a p f (f x)
 
 -- | Converts a function that receives a pair into a function that receives its
@@ -259,7 +259,7 @@ until p f x = if p x then x else until @a p f (f x)
 -- | sum : Int -> Int -> Int
 -- | sum = curry @Int @Int @Int sumPair
 -- | ```
-curry : forall a:*T b:*T c:*T . ((a, b) -> c) -> a -> b -> c
+curry : forall a:*T b:*T c:*T . ((a, b) ->[top,bot] c) ->[top,bot] a ->[top,bot] b ->[top,bot] c
 curry f x y = f (x, y)
 
 -- | Converts a function that receives its arguments one at a time into a
@@ -270,19 +270,19 @@ curry f x y = f (x, y)
 -- | sumPair : (Int, Int) -> Int
 -- | sumPair = uncurry @Int @Int @Int (+)
 -- | ```
-uncurry : forall a:*T b:*T c:*T . (a -> b -> c) -> ((a, b) -> c)
+uncurry : forall a:*T b:*T c:*T . (a ->[top,bot] b ->[top,bot] c) ->[top,bot] ((a, b) ->[top,bot] c)
 uncurry f p = f (fst@a @b p) (snd @a @b p)
 
 -- | Swaps the components of a pair. The expression `swap (1, True)` evaluates to
 -- | `(True, 1)`.
-swap : forall a:*T b:*T . (a, b) -> (b, a)
+swap : forall a:*T b:*T . (a, b) ->[top,bot] (b, a)
 swap x = let (a, b) = x in (b, a)
 
 -- | Fixed-point Z combinator
-fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
+fix : forall a:*T . ((a ->[top,bot] a) ->[top,bot] (a ->[top,bot] a)) ->[top,bot] (a ->[top,bot] a)
 fix f =
-  (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
-  (\x:(rec b:*T . b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b:*T . b ->[top,bot] (a ->[top,bot] a)) -> f (\z:a -> x x z)) --TODO
+  (\x:(rec b:*T . b ->[top,bot] (a ->[top,bot] a)) -> f (\z:a -> x x z)) --TODO
 
 --  $$$$$$\  
 -- $$ ___$$\ 
@@ -303,7 +303,7 @@ type Diverge = ()
 -- diverge = diverge
 
 -- | Discards an unrestricted value
-sink : forall a:*T . a -> ()
+sink : forall a:*T . a ->[top,bot] ()
 sink _ = ()
 
 -- | Executes a thunk n times, sequentially
@@ -314,7 +314,7 @@ sink _ = ()
 -- |   -- print "Hello!" 5 times sequentially
 -- |   repeat @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
-repeat : forall a:*T . Int -> (() -> a) -> ()
+repeat : forall a:*T . Int ->[top,bot] (() ->[top,bot] a) ->[top,bot] ()
 repeat n thunk =
   if n <= 0
   then ()
@@ -331,8 +331,8 @@ repeat n thunk =
 -- |   -- print "Hello!" 5 times in parallel
 -- |   parallel @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
-parallel : forall a:*T . Int -> (() -> a) -> ()
-parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
+parallel : forall a:*T . Int ->[top,bot] (() ->[top,bot] a) ->[top,bot] ()
+parallel n thunk = repeat @() n (\_:() -> fork @a thunk) --TODO
 
 -- type Consumer a = a 1-> ()
 
@@ -349,7 +349,7 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 -- |   -- send a string through the channel (and close it)
 -- |   s |> send "Hello!" |> close
 -- | ```
-readApply : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?300a ; b 1-> b
+readApply : forall a:*T b:1S . (a ->[top,bot] ()) {- Consumer a -} ->[top,bot] ?280a ; b 1->[top,280] b --priority?
 readApply f c =
   let (x, c) = receive c in
   f x;
@@ -368,7 +368,7 @@ readApply f c =
 -- |   -- send a string through the channel (and close it)
 -- |   s |> send "Hello!" |> close
 -- | ```
-receiveAndWait : forall a:1T . ?400a ; Wait -> a 
+receiveAndWait : forall a:1T . ?260a ; Wait ->[top,bot] a --priority?
 receiveAndWait c =
   let (x, c) = receive c in 
   wait c;
@@ -376,7 +376,7 @@ receiveAndWait c =
 
 -- | As in receiveAndWait only that the type is Wait and the function closes the
 -- | channel rather the waiting for the channel to be closed.
-receiveAndClose : forall a:1T . ?450a ; Close -> a 
+receiveAndClose : forall a:1T . ?270a ; Close ->[top,bot] a 
 receiveAndClose c =
   let (x, c) = receive c in 
   close c;
@@ -384,20 +384,20 @@ receiveAndClose c =
 
 -- | Sends a value on a given channel and then waits for the channel to be
 -- | closed. Returns ().
-sendAndWait : forall a:1T . a -> !500a ; Wait 1-> ()
+sendAndWait : forall a:1T . a ->[top,bot] !160a ; Wait 1->[top,bot] ()
 sendAndWait x c = c |> send x |> wait
 
 -- | Sends a value on a given channel and then closes the channel.
 -- | Returns ().
-sendAndClose : forall a:1T . a -> !450a ; Close 1-> ()
+sendAndClose : forall a:1T . a ->[top,bot] !170a ; Close 1->[top,bot] ()
 sendAndClose x c = c |> send x |> close
 
 -- | Receives a value from a star channel. Unrestricted version of `receive`.
-receive_ : forall a:1T . *?250a -> a
+receive_ : forall a:1T . *?250a ->[top,250] a
 receive_ c = c |> receive |> fst @a @*?251a
 
 -- | Sends a value on a star channel. Unrestricted version of `send`.
-send_ : forall a:1T . a -> *!150a 1-> ()
+send_ : forall a:1T . a ->[top,bot] *!150a 1->[150,150] ()
 send_ x c = c |> send x |> sink @*!151a
 
 -- -- | Session initiation. Accepts a request for a linear session on a shared
