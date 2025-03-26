@@ -1,5 +1,5 @@
-type X = !1();Close
-type Y = !2();Close
+type X = !1();Close 2
+type Y = !3();Close 4
 
 server : dualof X ->[top,bot] Y 1->[top,bot] ()
 server x y = 

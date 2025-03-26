@@ -65,7 +65,7 @@ toGrammar' (T.Labelled _  s l m) = do -- Can't test this type directly
   getLHS $ Map.insert (Labelled s) [bottom] $ Map.mapKeys (Label s . intern) ms
 -- Session Types
 toGrammar' (T.Skip _)        = return []
-toGrammar' (T.End _ p)       = getLHS $ Map.singleton (End p) [bottom]
+toGrammar' (T.End _ p _)       = getLHS $ Map.singleton (End p) [bottom]
 toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ l p t) = do
   xs <- toGrammar t

@@ -50,6 +50,6 @@ normalise t = t
 
 append :: Span -> T.Type -> T.Type -> T.Type
 append _ t               (T.Skip _) = t
-append p (T.End _ pol)   _          = T.End p pol
+append p (T.End _ pol l)   _          = T.End p pol l
 append p (T.Semi p1 t u) v          = T.Semi p1 t (append p u v)
 append p t               u          = T.Semi p t u

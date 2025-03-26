@@ -134,7 +134,7 @@ instance Show Label where
   show ArrowD = "->d"
   show ArrowR = "->r"
   show Arrow1 = "->1"
-  show (End p) = show (T.End defaultSpan p)
+  show (End p) = show (T.End defaultSpan p T.Bottom)
   show (Label (T.Choice v) l) = show v ++ show l 
   show (Label s l) = show (Labelled s) ++ show l 
   show (Labelled T.Record) = "{}"

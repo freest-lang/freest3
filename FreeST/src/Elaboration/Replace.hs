@@ -67,7 +67,7 @@ changePos s (T.Arrow _ p l1 l2 t u  ) = T.Arrow s p l1 l2 t u
 changePos s (T.Labelled _ st l m) = T.Labelled s st l m
   -- Session Types
 changePos s (T.Skip _         ) = T.Skip s
-changePos s (T.End _ p        ) = T.End s p
+changePos s (T.End _ p l      ) = T.End s p l
 changePos s (T.Semi _ t u     ) = T.Semi s t u
 changePos s (T.Message _ l p t  ) = T.Message s l p t
   -- Polymorphism and recursive types

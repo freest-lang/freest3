@@ -412,8 +412,8 @@ Type :: { T.Type }
   | '[' Int ']'                                           {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
   | Skip                             {% T.Skip `fmap` mkSpan $1 }
-  | Close                            {% mkSpan $1 >>= \s -> pure $ T.End s T.Out }
-  | Wait                             {% mkSpan $1 >>= \s -> pure $ T.End s T.In }
+  | Close LocatedLevel               {% mkSpanFromSpan2 $1 (fst $2) >>= \s -> pure $ T.End s T.Out (snd $2) }
+  | Wait LocatedLevel                {% mkSpanFromSpan2 $1 (fst $2) >>= \s -> pure $ T.End s T.In (snd $2) }
   | Type ';' Type                    {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Level Type %prec MSG    {% mkSpanFromSpan (fst $1) $3 >>= \s -> pure $ T.Message s $2 (snd $1) $3 }        
   -- Structural records and variants (testing purposes)
@@ -476,6 +476,13 @@ Level :: { T.Level }
   | INT { do 
             let (TokenInt p x) = $1
             T.Num x }
+
+LocatedLevel :: { (Span, T.Level) }
+  : top { (getSpan $1, T.Top) }
+  | bot { (getSpan $1, T.Bottom) }
+  | INT { do 
+            let (TokenInt p x) = $1
+            (p, T.Num x) } 
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }

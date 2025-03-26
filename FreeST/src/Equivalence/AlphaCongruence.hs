@@ -41,7 +41,7 @@ instance Equiv T.Type where
     Map.size m1 == Map.size m2 &&
     Map.isSubmapOfBy (equiv v) m1 m2
   equiv _ T.Skip{} T.Skip{} = True
-  equiv _ (T.End _ p1) (T.End _ p2) = p1 == p2
+  equiv _ (T.End _ p1 l1) (T.End _ p2 l2) = p1 == p2 && l1 == l2
   equiv v (T.Semi _ t1 u1) (T.Semi _ t2 u2) = equiv v t1 t2 && equiv v u1 u2
   equiv v (T.Message _ l1 p1 t1) (T.Message _ l2 p2 t2) = p1 == p2 && l1 == l2 && equiv v t1 t2
   equiv v (T.Forall _ b1) (T.Forall _ b2) = equiv v b1 b2

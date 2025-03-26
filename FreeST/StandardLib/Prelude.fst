@@ -136,9 +136,9 @@ send : forall a:1T . a ->[top,bot] forall b:1S . !100a; b 1->[100,100] b
 -- | the continuation channel.
 receive : forall a:1T b:1S . ?200a ; b ->[top,200] (a, b)
 -- | Closes a channel.
-close : Close ->[top,bot] () --n,n or top,n
+close : Close 300 ->[top,bot] () --n,n or top,n
 -- | Waits for a channel to be closed.
-wait : Wait ->[top,bot] () --n,n or top,n
+wait : Wait 400 ->[top,bot] () --n,n or top,n
 
 -- Files 
 -- | File paths
@@ -368,7 +368,7 @@ readApply f c =
 -- |   -- send a string through the channel (and close it)
 -- |   s |> send "Hello!" |> close
 -- | ```
-receiveAndWait : forall a:1T . ?260a ; Wait ->[top,bot] a --priority?
+receiveAndWait : forall a:1T . ?260a ; Wait 261 ->[top,bot] a
 receiveAndWait c =
   let (x, c) = receive c in 
   wait c;
@@ -376,7 +376,7 @@ receiveAndWait c =
 
 -- | As in receiveAndWait only that the type is Wait and the function closes the
 -- | channel rather the waiting for the channel to be closed.
-receiveAndClose : forall a:1T . ?270a ; Close ->[top,bot] a 
+receiveAndClose : forall a:1T . ?270a ; Close 271 ->[top,bot] a 
 receiveAndClose c =
   let (x, c) = receive c in 
   close c;
@@ -384,12 +384,12 @@ receiveAndClose c =
 
 -- | Sends a value on a given channel and then waits for the channel to be
 -- | closed. Returns ().
-sendAndWait : forall a:1T . a ->[top,bot] !160a ; Wait 1->[top,bot] ()
+sendAndWait : forall a:1T . a ->[top,bot] !160a ; Wait 161 1->[top,bot] ()
 sendAndWait x c = c |> send x |> wait
 
 -- | Sends a value on a given channel and then closes the channel.
 -- | Returns ().
-sendAndClose : forall a:1T . a ->[top,bot] !170a ; Close 1->[top,bot] ()
+sendAndClose : forall a:1T . a ->[top,bot] !170a ; Close 171 1->[top,bot] ()
 sendAndClose x c = c |> send x |> close
 
 -- | Receives a value from a star channel. Unrestricted version of `receive`.

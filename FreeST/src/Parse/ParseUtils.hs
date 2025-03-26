@@ -52,6 +52,12 @@ mkSpanFromSpan (Span _ p1 _) a = do
   m <- modulePath
   return $ Span m p1 p2
 
+mkSpanFromSpan2 :: Located a => a -> Span -> ParseState Span
+mkSpanFromSpan2 a (Span _ _ p2) = do
+  let (Span _ p1 _) = getSpan a
+  m <- modulePath
+  return $ Span m p1 p2
+
 liftModToSpan :: Span -> ParseState Span
 liftModToSpan (Span _ p1 p2) = do
   m <- modulePath

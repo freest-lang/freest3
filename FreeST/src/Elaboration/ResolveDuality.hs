@@ -88,7 +88,7 @@ solveType _ t                = pure t
 solveDual :: Visited -> T.Type -> ElabState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
-solveDual _ (T.End p pol)       = pure (T.End p (dualof pol))
+solveDual _ (T.End p pol l)       = pure (T.End p (dualof pol) l)
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
 solveDual v (T.Message p l pol t) = T.Message p l (dualof pol) <$> solveType v t
 solveDual v (T.Labelled p (T.Choice pol) l m) =
@@ -129,7 +129,7 @@ changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol l1 l2 t u) = T.Arrow p pol l1 l2 t u
 changePos p (T.Labelled _ s l m ) = T.Labelled p s l m
 changePos p (T.Skip _         ) = T.Skip p
-changePos p (T.End _ pol      ) = T.End p pol
+changePos p (T.End _ pol l    ) = T.End p pol l
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ l pol b) = T.Message p l pol b
 changePos p (T.Rec    _ xs    ) = T.Rec p xs

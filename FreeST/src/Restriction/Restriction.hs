@@ -21,10 +21,10 @@ instance Leveled T.Type where
     level (T.Arrow _ _ l1 _ _ _) = l1
     level (T.Labelled _ _ l _) = l
     level (T.Skip _) = T.Top
-    -- level (T.End _ l _) = l
+    level (T.End _ _ l) = l
     level (T.Semi _ t1 t2) = level t1
     level (T.Message _ l _ _) = l
-    -- level (T.Forall _ (T.Bind _ k t)) = 
-    -- level (T.Rec _ (T.Bind _ k t)) = not supported yet
+    -- level (T.Forall _ (T.Bind _ k t)) = T.Bottom 
+    -- level (T.Rec _ (T.Bind _ k t)) = T.Bottom
     level (T.Var _ _) = T.Bottom
     level (T.Dualof _ t) = level t

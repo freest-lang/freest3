@@ -49,7 +49,7 @@ data Type =
   | Labelled Span Sort Level TypeMap
   -- Session Types
   | Skip Span
-  | End Span Polarity --will also need a level 
+  | End Span Polarity Level 
   | Semi Span Type Type
   | Message Span Level Polarity Type
   -- Polymorphism and recursive types
@@ -75,7 +75,7 @@ instance Located Type where
   getSpan (Arrow p _ _ _ _ _ ) = p
   getSpan (Labelled p _ _ _) = p
   getSpan (Skip p        ) = p
-  getSpan (End p _       ) = p
+  getSpan (End p _ _     ) = p
   getSpan (Semi p _ _    ) = p
   getSpan (Message p _ _ _ ) = p
   getSpan (Forall p _    ) = p

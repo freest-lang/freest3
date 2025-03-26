@@ -22,7 +22,7 @@ class Duality t where
 
 instance Duality T.Type where 
   -- Session Types
-  dualof (T.End p pol) = T.End p (dualof pol)
+  dualof (T.End p pol l) = T.End p (dualof pol) l
   dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
   dualof (T.Message p l pol t) = T.Message p l (dualof pol) t
   dualof (T.Labelled p (T.Choice v) l m) =
