@@ -47,7 +47,7 @@ instance KindSubs K.Kind where
 
 instance KindSubs T.Type where
   substitute subs (T.Arrow s m l1 l2 t1 t2) = T.Arrow s m l1 l2 (substitute subs t1) (substitute subs t2)
-  substitute subs (T.Labelled s sort m) = T.Labelled s sort (Map.map (substitute subs) m)
+  substitute subs (T.Labelled s sort l m) = T.Labelled s sort l (Map.map (substitute subs) m)
   substitute subs (T.Semi s t1 t2) = T.Semi s (substitute subs t1) (substitute subs t2)
   substitute subs (T.Message s l p t) = T.Message s l p (substitute subs t)
   substitute subs (T.Forall s b) = T.Forall s (substitute subs b)

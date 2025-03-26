@@ -22,7 +22,7 @@ constraintKinding kEnv = cg (Map.keysSet kEnv) kEnv
 cg :: K.PolyVars -> K.KindEnv -> T.Type -> InfState K.Kind
 cg pEnv kEnv (T.Rec p (Bind _ a k@(K.Kind _ Un K.Session) t@(T.Semi _ T.Message{} (T.Var _ b))))
   | a == b  = cg pEnv (Map.insert a k kEnv) t $> K.ua p
-cg _ _ (T.Rec p (Bind _ a (K.Kind _ Un K.Session) (T.Labelled _ (T.Choice _) m)))
+cg _ _ (T.Rec p (Bind _ a (K.Kind _ Un K.Session) (T.Labelled _ (T.Choice _) _ m)))
   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m = return $ K.ua p
 cg _ _ (T.Int s) = return $ K.ut s 
 cg _ _ (T.Float s) = return $ K.ut s 
@@ -32,7 +32,7 @@ cg _ _ (T.Skip s) = return $ K.us s
 cg _ _ (T.End s _) = return $ K.la s 
 cg pEnv kEnv (T.Message s _ _ t) = cg pEnv kEnv t $> K.ls s
 cg pEnv kEnv (T.Dualof s t) = cg pEnv kEnv t $> K.ls s
-cg pEnv kEnv (T.Labelled s T.Choice{} m) = do
+cg pEnv kEnv (T.Labelled s T.Choice{} _ m) = do
   kl <- foldM (\acc t -> cg pEnv kEnv t >>= \k -> return $ k : acc) [] m
   mapM_ (\k -> addConstraint (KindC k (K.ls (getSpan k)))) kl
   pk <- freshPKVar s
@@ -48,9 +48,9 @@ cg pEnv kEnv (T.Semi s t1 t2) = do
   pk <- freshPKVar s
   addConstraint (PKMeetC pk [k1,k2]) 
   return $ K.Kind s (MultVar mv) (K.PKVar pk)
-cg _ _ (T.Labelled s T.Record m) | Map.null m = return $ K.ut s -- Unit
+cg _ _ (T.Labelled s T.Record _ m) | Map.null m = return $ K.ut s -- Unit
 cg pEnv kEnv (T.Arrow s m l1 l2 t1 t2) = cg pEnv kEnv t1 >>  cg pEnv kEnv t2 $> K.Kind s m K.Top --might also have to change this
-cg pEnv kEnv (T.Labelled s _ m) = do
+cg pEnv kEnv (T.Labelled s _ _ m) = do
   kl <- foldM (\acc t -> cg pEnv kEnv t >>= \k -> return $ k : acc) [] m
   mv <- freshMultVar s
   addConstraint (MultC mv kl)

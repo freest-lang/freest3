@@ -22,8 +22,8 @@ class DefaultTypeOp a where
 instance DefaultTypeOp T.Type where
   getDefault m (T.Arrow p mu l1 l2 t u) =
      lookupPos m p $ T.Arrow p mu l1 l2 (getDefault m t) (getDefault m u)
-  getDefault m (T.Labelled p s cm) =
-    lookupPos m p $ T.Labelled p s $ getDefault m cm
+  getDefault m (T.Labelled p s l cm) =
+    lookupPos m p $ T.Labelled p s l $ getDefault m cm
   -- getDefault m (T.Semi p t u) =
   --   lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
   getDefault m (T.Message p l pol t) =

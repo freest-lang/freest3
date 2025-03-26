@@ -60,7 +60,7 @@ toGrammar' (T.Arrow _ m _ _ t u) = do
   ys <- toGrammar u
   getLHS $ Map.fromList $
     [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | m == Lin]
-toGrammar' (T.Labelled _  s m) = do -- Can't test this type directly
+toGrammar' (T.Labelled _  s l m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.insert (Labelled s) [bottom] $ Map.mapKeys (Label s . intern) ms
 -- Session Types
@@ -121,7 +121,7 @@ type SubstitutionList = [(T.Type, Variable)]
 collect :: SubstitutionList -> T.Type -> TransState ()
   -- Functional Types
 collect σ (T.Arrow _ _ _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Labelled _ _ m) = tMapM_ (collect σ) m
+collect σ (T.Labelled _ _ _ m) = tMapM_ (collect σ) m
   -- Session Types
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 collect σ (T.Message _ _ _ t) = collect σ t

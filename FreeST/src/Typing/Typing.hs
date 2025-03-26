@@ -179,8 +179,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Labelled p T.Variant
-    (Map.map (T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
+  return $ T.Labelled p T.Variant T.Bottom --change this
+    (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
@@ -228,7 +228,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Labelled p T.Record $
+  return $ T.Labelled p T.Record T.Bottom $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -341,7 +341,7 @@ buildMap p fm tm = do
 buildAbstraction :: MonadState (FreestS a) m => T.TypeMap -> Variable -> ([Variable], E.Exp)
                  -> m ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
+  Just (T.Labelled _ T.Record _ rtm) -> let n = Map.size rtm in
     if n /= length xs
       then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))

@@ -19,8 +19,7 @@ instance Leveled T.Type where
     level (T.Char _) = T.Bottom
     level (T.String _) = T.Bottom
     level (T.Arrow _ _ l1 _ _ _) = l1
-    level (T.Labelled _ _ _) = T.Bottom --placeholder
-    -- level (T.Labelled _ l _ _) = l
+    level (T.Labelled _ _ l _) = l
     level (T.Skip _) = T.Top
     -- level (T.End _ l _) = l
     level (T.Semi _ t1 t2) = level t1

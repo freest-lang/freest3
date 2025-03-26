@@ -53,8 +53,8 @@ ctyping kEnv (E.App s (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkSelect s = d
 ctyping kEnv (E.App _ (E.Var s x) e) | x == mkCollect s = do
   (t,u) <- ctyping kEnv e
   tm <- Extract.outChoiceMap e t  
-  return (T.Labelled s T.Variant
-    (Map.map (T.Labelled s T.Record . Map.singleton (head mkTupleLabels s)) tm), u)
+  return (T.Labelled s T.Variant T.Bottom
+    (Map.map (T.Labelled s T.Record T.Bottom . Map.singleton (head mkTupleLabels s)) tm), u)
 ctyping kEnv (E.App _ (E.Var s x) e) | x == mkReceive s = do
   (t,u) <- ctyping kEnv e
   (t1, t2) <- Extract.input e t
@@ -126,7 +126,7 @@ ctyping kEnv (E.Pair s e1 e2) = do
   let (l0:l1:_) = mkTupleLabels
   let m = Map.insert (l0 defaultSpan) t (Map.singleton (l1 defaultSpan) u)
   merge u1 u2
-  return (T.Labelled s T.Record m, u1 ∪ u2) 
+  return (T.Labelled s T.Record T.Bottom m, u1 ∪ u2) 
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

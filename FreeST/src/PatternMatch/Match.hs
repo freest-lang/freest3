@@ -207,12 +207,12 @@ findCons c (t:ts)
   | otherwise = findCons c ts                                           -- if not continue searching
 
 consAndNumber :: T.Type -> [(Variable,Int)]
-consAndNumber (T.Labelled _ T.Variant tm) = 
-  map (\(v, T.Labelled _ _ tm) -> (v, Map.size tm)) (Map.toList tm)
+consAndNumber (T.Labelled _ T.Variant _ tm) = 
+  map (\(v, T.Labelled _ _ _ tm) -> (v, Map.size tm)) (Map.toList tm)
 
 -- retuns the data type constructors
 getKeys :: T.Type -> [Variable]
-getKeys (T.Labelled _ T.Variant tm) = Map.keys tm
+getKeys (T.Labelled _ T.Variant _ tm) = Map.keys tm
 getKeys _ = []
 
 -- replace Variables -----------------------------------------------

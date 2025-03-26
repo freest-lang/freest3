@@ -46,7 +46,7 @@ data Type =
   | Char Span
   | String Span
   | Arrow Span Multiplicity Level Level Type Type
-  | Labelled Span Sort TypeMap --will also need a level
+  | Labelled Span Sort Level TypeMap
   -- Session Types
   | Skip Span
   | End Span Polarity --will also need a level 
@@ -73,7 +73,7 @@ instance Located Type where
   getSpan (Char p        ) = p
   getSpan (String p      ) = p
   getSpan (Arrow p _ _ _ _ _ ) = p
-  getSpan (Labelled p _ _) = p
+  getSpan (Labelled p _ _ _) = p
   getSpan (Skip p        ) = p
   getSpan (End p _       ) = p
   getSpan (Semi p _ _    ) = p
@@ -85,7 +85,7 @@ instance Located Type where
 
 -- Derived forms
 tuple :: Span -> [Type] -> Type
-tuple s ts = Labelled s Record tupleTypeMap
+tuple s ts = Labelled s Record Bottom tupleTypeMap
   where tupleTypeMap =
           Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
 
@@ -96,7 +96,7 @@ unit s = tuple s []
 free :: Type -> Set.Set Variable
   -- Functional Types
 free (Arrow _ _ _ _ t u) = free t `Set.union` free u
-free (Labelled _ _ m) =
+free (Labelled _ _ _ m) =
   Map.foldr (\t acc -> free t `Set.union` acc) Set.empty m
   -- Session Types
 free (Semi _ t u) = free t `Set.union` free u

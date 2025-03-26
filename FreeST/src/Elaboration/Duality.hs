@@ -25,8 +25,8 @@ instance Duality T.Type where
   dualof (T.End p pol) = T.End p (dualof pol)
   dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
   dualof (T.Message p l pol t) = T.Message p l (dualof pol) t
-  dualof (T.Labelled p (T.Choice v) m) =
-    T.Labelled p (T.Choice $ dualof v) (Map.map dualof m)
+  dualof (T.Labelled p (T.Choice v) l m) =
+    T.Labelled p (T.Choice $ dualof v) l (Map.map dualof m)
   dualof (T.Var p x)              = T.Dualof p $ T.Var p x
   dualof (T.Dualof _ (T.Var p x)) = T.Var p x
   dualof (T.Dualof _ t) = dualof t
@@ -55,7 +55,7 @@ instance Cosubs T.Type where
   cosubs t x (T.Arrow p m l1 l2 t1 t2 ) = T.Arrow p m l1 l2 (cosubs t x t1) (cosubs t x t2)
   -- Session types
   cosubs t x (T.Semi   p t1 t2  ) = T.Semi p (cosubs t x t1) (cosubs t x t2)
-  cosubs t x (T.Labelled p s  m   ) = T.Labelled p s (Map.map (cosubs t x) m)
+  cosubs t x (T.Labelled p s l m   ) = T.Labelled p s l (Map.map (cosubs t x) m)
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
   cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
@@ -76,7 +76,7 @@ class Subs t x u where
   
 instance Subs T.Type Variable T.Type where
   -- Labelled
-  subs t x (T.Labelled p s m   ) = T.Labelled p s (Map.map (subs t x) m)
+  subs t x (T.Labelled p s l m   ) = T.Labelled p s l (Map.map (subs t x) m)
   -- Functional types
   subs t x (T.Message p l pol t1) = T.Message p l pol (subs t x t1)
   subs t x (T.Arrow p m l1 l2 t1 t2 ) = T.Arrow p m l1 l2 (subs t x t1) (subs t x t2)

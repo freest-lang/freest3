@@ -205,7 +205,7 @@ NonSigDecl :: { () }
       let a = fst $2
       checkDupTypeDecl a
       mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
-      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
+      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant T.Bottom (typeListToRcdType $4))
     }
 
 Decl :: { () }
@@ -226,7 +226,7 @@ Decl :: { () }
       let a = fst $2
       checkDupTypeDecl a
       mapM_ (uncurry addToSignatures) (typeListsToUnArrows a $4) -- fixed in elaboration
-      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
+      uncurry addToTypes $2 (T.Labelled (getSpan a) T.Variant T.Bottom (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }
@@ -419,9 +419,9 @@ Type :: { T.Type }
   -- Structural records and variants (testing purposes)
   -- | '{' FieldList '}'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Record $2 }    
   -- | '<' FieldList '>'         {% mkSpanFromSpan (getSpan $1) $3 >>= \s -> pure $ T.Labelled s T.Variant $2 }                           
-  | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)
-                                     >> mkSpanFromSpan (fst $1) $4
-                                     >>= \s -> pure $ T.Labelled s (T.Choice (snd $1)) $3 } 
+  | ChoiceView Level '{' FieldList '}'  {% addToPEnvChoices (Map.keys $4)
+                                     >> mkSpanFromSpan (fst $1) $5
+                                     >>= \s -> pure $ T.Labelled s (T.Choice (snd $1)) $2 $4 } 
   -- Star types
   | '*' Polarity Level Type %prec MSG 
     {% do
@@ -430,14 +430,14 @@ Type :: { T.Type }
         -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
         return (T.Rec p $ Bind p tVar (K.us p) $
           T.Semi p (uncurry T.Message ((fst $2), $3) (snd $2) $4) (T.Var p tVar)) }
-  | '*' ChoiceView '{' LabelList '}'
+  | '*' ChoiceView Level '{' LabelList '}'
     {% do
         p <- mkSpan $1
         tVar <- freshTVar p
         -- let tVar = mkVar p "a" -- This should work if rename comes right after parsing
-        let tMap = Map.map ($ (T.Var p tVar)) $4
+        let tMap = Map.map ($ (T.Var p tVar)) $5
         return (T.Rec p $ Bind p tVar (K.us p) $
-            T.Labelled (fst $2) (T.Choice (snd $2)) tMap) }
+            T.Labelled (fst $2) (T.Choice (snd $2)) $3 tMap) }
 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }

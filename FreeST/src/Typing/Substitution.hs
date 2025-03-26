@@ -41,7 +41,7 @@ class Subs a where
 instance Subs T.Type where
   -- Functional types
   subs t a (T.Arrow s m l1 l2 t1 t2) = T.Arrow s m l1 l2 (subs t a t1) (subs t a t2)
-  subs t a (T.Labelled s k m) = T.Labelled s k (Map.map (subs t a) m)
+  subs t a (T.Labelled s k l m) = T.Labelled s k l (Map.map (subs t a) m)
   -- Session types
   subs t a (T.Semi s t1 t2) = T.Semi s (subs t a t1) (subs t a t2)
   subs t a (T.Message s l pol t1) = T.Message s l pol (subs t a t1)
@@ -74,7 +74,7 @@ class Cosubs a where
 instance Cosubs T.Type where
   -- Functional types
   cosubs t a (T.Arrow s m l1 l2 t1 t2 ) = T.Arrow s m l1 l2 (cosubs t a t1) (cosubs t a t2)
-  cosubs t a (T.Labelled s k m) = T.Labelled s k (Map.map (cosubs t a) m)
+  cosubs t a (T.Labelled s k l m) = T.Labelled s k l (Map.map (cosubs t a) m)
   -- Session types
   cosubs t a (T.Semi s t1 t2) = T.Semi s (cosubs t a t1) (cosubs t a t2)
   cosubs t a (T.Message s l pol t1) = T.Message s l pol (cosubs t a t1)

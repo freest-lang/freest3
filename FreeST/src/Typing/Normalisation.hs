@@ -42,7 +42,7 @@ normalise (T.Semi p t u)
   | terminated t = normalise u
   | otherwise    = append p (normalise t) u
 normalise (T.Message s l p t) = T.Semi s (T.Message s l p t) (T.Skip s)
-normalise (T.Labelled s c@T.Choice{}  m) = T.Semi s (T.Labelled s c m) (T.Skip s)
+normalise (T.Labelled s c@T.Choice{} l m) = T.Semi s (T.Labelled s c l m) (T.Skip s)
   -- recursive types
 normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)
 normalise t@T.Dualof{} = internalError "Typing.Normalisation.normalise" t

@@ -14,7 +14,7 @@ class Replace t where
   replace :: t -> ElabState t
 
 instance Replace T.Type where
-  replace (  T.Labelled p s m ) = T.Labelled p s <$> replace m
+  replace (  T.Labelled p s l m ) = T.Labelled p s l <$> replace m
   replace (  T.Message p l pol t) = T.Message p l pol <$> replace t
   replace (  T.Arrow p m l1 l2 t1 t2  ) = T.Arrow p m l1 l2 <$> replace t1 <*> replace t2
   replace (  T.Semi   p t1  t2) = T.Semi p <$> replace t1 <*> replace t2
@@ -64,7 +64,7 @@ changePos s (T.Char _         ) = T.Char s
 changePos s (T.String _       ) = T.String s
 changePos s (T.Arrow _ p l1 l2 t u  ) = T.Arrow s p l1 l2 t u
 -- changePos s (T.Arrow _ pol t u) = T.Arrow s pol (changePos s t) (changePos s u)
-changePos s (T.Labelled _ st m) = T.Labelled s st m
+changePos s (T.Labelled _ st l m) = T.Labelled s st l m
   -- Session Types
 changePos s (T.Skip _         ) = T.Skip s
 changePos s (T.End _ p        ) = T.End s p

@@ -30,10 +30,10 @@ isDatatypeContructor c = not . Map.null . Map.filter (isInDatatype . snd)
  where
   isInDatatype :: T.Type -> Bool
   isInDatatype (T.Rec _ (Bind _ _ _ t)) =  isInDatatype t
-  isInDatatype (T.Labelled _ T.Variant m) = c `Map.member` m
+  isInDatatype (T.Labelled _ T.Variant _ m) = c `Map.member` m
   isInDatatype _                = False
 
 isDatatype :: T.Type -> Bool
 isDatatype (T.Rec _ (Bind _ _ _ t)) =  isDatatype t
-isDatatype (T.Labelled _ T.Variant _) = True 
+isDatatype (T.Labelled _ T.Variant _ _) = True 
 isDatatype _                = False

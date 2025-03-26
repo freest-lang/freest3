@@ -198,10 +198,10 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.Labelled _ T.Variant m) | isBool  = (maxRator, "Bool")
+  unparse (T.Labelled _ T.Variant _ m) | isBool  = (maxRator, "Bool")
     where isBool = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
-  unparse (T.Labelled _ T.Record m) = -- Currently all our Records are tuples
+  unparse (T.Labelled _ T.Variant _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Record l m) = -- Currently all our Records are tuples
     (maxRator, "(" ++ showTupleType m ++ ")")
     -- | Map.null m = (maxRator, "()")
     -- | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
@@ -209,14 +209,14 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
-  unparse (T.Labelled _ (T.Choice v) m) =
-    (maxRator, show v ++ "{" ++ showChoice m ++ "}")
+  unparse (T.Labelled _ (T.Choice v) l m) =
+    (maxRator, show v ++ show l ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
     (maxRator, "*" ++ show t)
-  unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
-    (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
+  unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) l m))) | K.isUn k = -- *+{}  *&{}
+    (maxRator, "*" ++ show v ++ show l ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
@@ -227,7 +227,7 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Labelled _ _ t) = 
+  showAsSequence (T.Labelled _ _ _ t) = 
     let fs = unwords (map (show . snd) $ Map.toList t) in
     if null fs then fs else " " ++ fs
   showAsSequence _ = ""
