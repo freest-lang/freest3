@@ -152,6 +152,13 @@ handleMessages' hdl tag p sm = do
         getView T.Out = T.Internal
         getView T.In = T.External
 
+{-
+    Encodes a string with the length of the string. The length is encoded as a 4-byte big-endian ByteString. 
+    The string is encoded as a ByteString. The tag is a single byte that represents the type of the message.
+
+    First parameter  -> The string to be encoded
+    Return           -> The encoded string
+-}
 encodeStringWithLength :: String -> B.ByteString
 encodeStringWithLength str = 
     let strLength = fromIntegral (length str + 1) :: Word32
