@@ -33,10 +33,9 @@ send v c = do
   C.writeChan (snd c) v
   return c
 
-wait :: Value -> Value
-wait (Chan c) =
-  IOValue $ C.readChan (fst c)
-
+wait :: Value -> IO Value
+wait (Chan c) = C.readChan (fst c) $> Unit
+ 
 close :: Value -> IO Value
 close (Chan c) = do
   C.writeChan (snd c) Unit
@@ -52,7 +51,7 @@ initialCtx = Map.fromList
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
-  , (var "wait", PrimitiveFun wait)
+  , (var "wait", PrimitiveFun (IOValue . wait))
   , (var "close", PrimitiveFun (IOValue . close))
   -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
