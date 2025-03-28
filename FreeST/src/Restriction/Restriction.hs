@@ -1,5 +1,5 @@
 module Restriction.Restriction
-    ( Inequality(..)
+    ( Inequality
     , Leveled(..)
     )
 where
