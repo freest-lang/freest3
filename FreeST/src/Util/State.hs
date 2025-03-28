@@ -22,7 +22,7 @@ import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
-type Inequalities = Set.Set [R.Inequality]
+type Inequalities = Set.Set R.Inequality
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -262,3 +262,8 @@ debugM :: S.MonadState (FreestS a) m => String -> m ()
 debugM err = do
   i <- getNextIndex
   traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
+
+-- | LEVELS
+
+getInequalities :: S.MonadState (FreestS a) m => m Inequalities
+getInequalities = S.gets inequalities
