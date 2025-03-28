@@ -38,7 +38,7 @@ data Result = Valid
 
 data MessageType = Simple   T.Type B.ByteString
                  | Str      B.ByteString
-                 | LLabel   B.ByteString Word8 B.ByteString
+                 | LLabel   String B.ByteString
                  | Finish
                  | Error    String
     deriving Show
@@ -61,7 +61,7 @@ extractMessage hdl tagB =
         3 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Float defaultSpan) originalMessage
         4 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Char defaultSpan)  originalMessage
         5 -> getFromStringMessage hdl >>= \originalMessage -> return $ Str originalMessage
-        6 -> getFromLabelMessage hdl  >>= \(choiceId, label, originalMessage) -> return $ LLabel choiceId label originalMessage
+        6 -> getFromLabelMessage hdl  >>= \(label, originalMessage) -> return $ LLabel label originalMessage
         7 -> return Finish
         _ -> return $ Error "The tag was not recognised"
         where
@@ -81,13 +81,13 @@ extractMessage hdl tagB =
                 str <- B.hGetNonBlocking hdl length
                 return $ B.concat [tagB, lenBytes, str]
 
-            getFromLabelMessage :: Handle -> IO (B.ByteString, Word8, B.ByteString)
+            getFromLabelMessage :: Handle -> IO (String, B.ByteString)
             getFromLabelMessage hdl = do
                 lenBytes <- B.hGetNonBlocking hdl 4
                 let length = B.foldl' (\acc w -> acc `shiftL` 8 .|. fromIntegral w) 0 lenBytes 
-                labelList <- B.hGetNonBlocking hdl length
-                label <- B.hGetNonBlocking hdl 1
-                return (labelList, B.head label, B.concat [tagB, lenBytes, labelList, label])
+                bytes <- B.hGetNonBlocking hdl length
+                let label = (BC.unpack . B.init) bytes
+                return (label, B.concat [tagB, lenBytes, bytes])
 
 {-
     Handles the messages receive. First it will take the current state of the state machine. Then it will extract the message
@@ -135,12 +135,8 @@ handleMessages' hdl tag p sm = do
         Error errorMsg -> do
             putStrLn errorMsg
             return (Invalid errorMsg, B.empty)
-        LLabel choiceId label msg -> do
-            let choiceId' = B.take (B.length choiceId - 1) choiceId -- remove the \0
-            let b = BC.split '|' choiceId' 
-            let listOfVariables = map (\s -> Variable defaultSpan (BC.unpack s) (-1)) b
-            let variable = Variable defaultSpan (BC.unpack (b !! fromIntegral label)) (-1)
-            case FSM.check (FSM.Label listOfVariables variable (getView p)) sm' of
+        LLabel label msg -> do
+            case FSM.check (FSM.Label (Variable defaultSpan label (-1)) (getView p)) sm' of
                 Left errorMsg -> do
                     putStrLn errorMsg
                     return (Invalid errorMsg, B.empty)

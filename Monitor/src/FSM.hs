@@ -11,7 +11,7 @@ import Equivalence.AlphaCongruence
 
 data TypeOfMessage  = Normal T.Type T.Polarity
                     | Finish T.Type
-                    | Label [B.Variable] B.Variable T.View
+                    | Label  B.Variable T.View
 
 check :: TypeOfMessage -> T.Type -> Either String T.Type
 
@@ -25,24 +25,23 @@ check (Normal t T.In) sm = case input sm of
 
 check (Finish (T.End _ p)) sm = end sm p
 
-check (Label choiceId label T.Internal) sm = case inChoiceMap sm of
-    Right m ->       
-      let res = all (`Map.member` m) choiceId in 
-      if res  && Map.size m == length choiceId then
-        Right $ m Map.! label
-      else
-        Left "Label not found" 
+check (Label label T.Internal) sm = case inChoiceMap sm of
+    Right m ->
+      case label `Map.lookup` m of
+        Just a ->
+          Right a
+        Nothing ->
+          Left $ "Label not found " ++ show label
     Left x -> Left x
 
-check (Label choiceId label T.External) sm = case outChoiceMap sm of
-    Right m ->       
-      let res = all (`Map.member` m) choiceId in 
-      if res  && Map.size m == length choiceId then
-        Right $ m Map.! label
-      else
-        Left "Label not found" 
+check (Label label T.External) sm = case outChoiceMap sm of
+    Right m ->
+      case label `Map.lookup` m of
+        Just a ->
+          Right a
+        Nothing ->
+          Left $ "Label not found " ++ show label
     Left x -> Left x
-
 
 check _ b = Left $ "Not implemented " ++ show b
 

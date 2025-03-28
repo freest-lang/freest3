@@ -1,1 +1,1 @@
-!String; ?String ; Close
+!Bool; ?Bool ; Close
