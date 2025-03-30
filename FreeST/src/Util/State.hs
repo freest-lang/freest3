@@ -22,7 +22,7 @@ import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
-type Inequalities = Set.Set R.Inequality
+type Inequalities = Set.Set (Span, R.Inequality)
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -267,3 +267,9 @@ debugM err = do
 
 getInequalities :: S.MonadState (FreestS a) m => m Inequalities
 getInequalities = S.gets inequalities
+
+-- addInequality :: S.MonadState (FreestS a) m => R.Inequality -> m ()
+-- addInequality i = S.modify (\s -> s { inequalities = Set.insert i (inequalities s) })
+
+addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
+addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (span, inequality) (inequalities s) })

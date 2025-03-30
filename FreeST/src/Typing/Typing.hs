@@ -49,6 +49,7 @@ import           Control.Monad.State ( evalState, MonadState (get), evalStateT, 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
+import qualified Data.Set as Set
 
 
 typeCheck :: TypingState ()
@@ -156,11 +157,12 @@ synthetise kEnv (E.Var _ x) =
       return (s, level s)
 -- Unary let
 synthetise kEnv (E.UnLet _ x e1 e2) = do
-  (t1, _) <- synthetise kEnv e1
+  (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
-  (t2, _) <- synthetise kEnv e2
+  (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  return (t2, level t2)
+  addInequality (getSpan t1) (l1, l2)
+  return (t2, l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
@@ -178,10 +180,11 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkSelect p = do
-    (t, _) <- synthetise kEnv e
+    (t, l) <- synthetise kEnv e
     m <- Extract.inChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
-    return (t1, level t1) --might not be right
+    addInequality (getSpan t) (l, level t1)
+    return (t1, level t1)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, _) <- synthetise kEnv e
@@ -195,6 +198,8 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, _)        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
+  addInequality (getSpan t) (level t, level u1)
+  addInequality (getSpan t) (level t, level u2)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return (T.tuple p [u1, u2], level $ T.tuple p [u1, u2])
   -- Send e1 e2
@@ -202,6 +207,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, _)     <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
+  addInequality (getSpan t) (level t, level u1)
+  addInequality (getSpan t) (level t, level u2)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return (u2, level u2)
@@ -213,9 +220,10 @@ synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
-  (t, _)      <- synthetise kEnv e1
+  (t, l1)      <- synthetise kEnv e1
   (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
+  addInequality (getSpan t) (l1, level u2)
   return (u2, level u2)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -227,7 +235,7 @@ synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   (u, _)                           <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
-  return (Rename.subs t y u', level $ Rename.subs t y u')
+  return (Rename.subs t y u', level $ Rename.subs t y u') --maybe Bottom instead
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   (u, _)                            <- synthetise kEnv e
@@ -236,22 +244,24 @@ synthetise kEnv (E.TypeApp _ e t) = do
   return (Rename.subs t y u', level $ Rename.subs t y u')
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
-  (t1, _) <- synthetise kEnv e1
-  (t2, _) <- synthetise kEnv e2
+  (t1, l1) <- synthetise kEnv e1
+  (t2, l2) <- synthetise kEnv e2
+  addInequality (getSpan t1) (l1, l2) --change this
   let l1 = level t1
   let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
   return (T.Labelled p T.Record l1 $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), l2)
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
-  (t1, _)    <- synthetise kEnv e1
+  (t1, l1)    <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
-  t2 <- synthetise kEnv e2
+  (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  return t2
+  addInequality (getSpan t1) (l1, l2)
+  return (t2, l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, _) <- synthetise kEnv e
@@ -299,13 +309,14 @@ checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> TypingState ()
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 l = do
-  (t1, _)  <- synthetise kEnv e1
+  (t1, l1)  <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
   checkAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
+  addInequality (getSpan t1) (l1, level t2)
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm Extract.datatypeMap
 -- Abs elimination. It seems that we cannot do checkAgainst for we
@@ -320,13 +331,15 @@ checkAgainst kEnv e t = do
   sub <- subtyping <$> getRunOpts
   case t of 
     t@(T.Arrow _ Lin _ _ t1 t2) | not sub -> do 
-      (t3, _) <- synthetise kEnv e
+      (t3, l3) <- synthetise kEnv e
       (_, u1, u2) <- Extract.function e t3 
       compareTypes e u1 t1 
       compareTypes e u2 t2  
+      addInequality (getSpan t) (l3, level t)
     _ -> do 
-      (t4, _) <- synthetise kEnv e
+      (t4, l4) <- synthetise kEnv e
       compareTypes e t t4
+      addInequality (getSpan t) (l4, level t)
     --compare levels
 
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
@@ -373,20 +386,26 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' (x : xs, e) (t:ts) =
     E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
 
+-- checkInequalities :: TypingState ()
+-- checkInequalities = do
+--   ineq <- getInequalities
+--   forM_ ineq $ \(l1, l2) -> do
+--     unless (isValidIneq l1 l2) $
+--       addError (LevelMismatch defaultSpan l1 l2) --need a span for this error but don't have one
+
 checkInequalities :: TypingState ()
 checkInequalities = do
   ineq <- getInequalities
-  forM_ ineq $ \(l1, l2) -> do
-    unless (l1 `isValidIneq` l2) $
-      addError (LevelMismatch defaultSpan l1 l2) --need a span for this error but don't have one
+  forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
+    unless (isValidIneq l1 l2) $
+      addError (LevelMismatch span l1 l2) -- Use the span from the inequality
 
--- Helper function to compare levels
 isValidIneq :: T.Level -> T.Level -> Bool
 isValidIneq T.Top T.Top = True
-isValidIneq T.Top _ = False
-isValidIneq _ T.Top = True
+isValidIneq T.Top _ = True
+isValidIneq _ T.Top = False
 isValidIneq T.Bottom T.Bottom = True
-isValidIneq _ T.Bottom = False
-isValidIneq T.Bottom _ = True
-isValidIneq (T.Num n1) (T.Num n2) = n1 <= n2
-isValidIneq _ _ = False
+isValidIneq _ T.Bottom = True
+isValidIneq T.Bottom _ = False
+isValidIneq (T.Num n1) (T.Num n2) = n1 < n2 -- <= or < ?
+--isValidIneq _ _ = False

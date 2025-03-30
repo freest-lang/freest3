@@ -22,7 +22,7 @@ instance Leveled T.Type where
     level (T.Labelled _ (T.Choice _) l _) = l
     level (T.Labelled _ T.Record _ _) = T.Bottom --is this top or bot?
     level (T.Labelled _ T.Variant _ _) = T.Bottom --is this top or bot?
-    level (T.Skip _) = T.Top
+    level (T.Skip _) = T.Bottom --T.Top
     level (T.End _ _ l) = l
     level (T.Semi _ t1 t2) = level t1
     level (T.Message _ l _ _) = l
