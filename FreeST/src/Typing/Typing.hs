@@ -235,7 +235,7 @@ synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   (u, _)                           <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
-  return (Rename.subs t y u', level $ Rename.subs t y u') --maybe Bottom instead
+  return (Rename.subs t y u', level $ Rename.subs t y u')
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   (u, _)                            <- synthetise kEnv e
@@ -246,7 +246,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   (t2, l2) <- synthetise kEnv e2
-  addInequality (getSpan t1) (l1, l2) --change this
+  -- addInequality (getSpan t1) (l1, l2) --change this
   let l1 = level t1
   let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
   return (T.Labelled p T.Record l1 $
@@ -260,7 +260,8 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  addInequality (getSpan t1) (l1, l2)
+  -- addInequality (getSpan t1) (l1, l2)
+  addInequality (getSpan t1) (l1, level t2)
   return (t2, l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do

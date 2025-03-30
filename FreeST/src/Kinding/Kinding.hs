@@ -32,6 +32,7 @@ import           Util.State
 import           Kinding.Contractive
 import           Kinding.Norm
 import           Kinding.Subkind ( (<:), join, meet )
+import           Restriction.Restriction
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor
@@ -58,9 +59,10 @@ synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m l1 l2 t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p m K.Top
-synthetise' s kEnv (T.Labelled p t _ m) | t == T.Variant || t == T.Record = do
+synthetise' s kEnv (T.Labelled p t l m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
+  addInequality p (l, level m)
   return $ K.Kind p n K.Top
 -- Shared session types
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var _ b))))
@@ -75,11 +77,14 @@ synthetise' s kEnv (T.Semi p t u) = do
   ~k2@(K.Kind _ mu vu) <- synthetise' s kEnv u
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t k1))
   unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u k2))
+  addInequality p (level t, level u)
   return $ K.Kind p (join mt mu) (meet vt vu)
-synthetise' s kEnv (T.Message p _ _ t) =
+synthetise' s kEnv (T.Message p l _ t) = do
+  addInequality p (l, level t)
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
-synthetise' s kEnv (T.Labelled _ T.Choice{} _ m) = do
+synthetise' s kEnv (T.Labelled p T.Choice{} l m) = do
   ks <- tMapM (checkAgainstSession' s kEnv) m
+  addInequality p (l, level m)
   return $ Map.foldr (\(K.Kind _ _ v1) (K.Kind p _ v2) -> K.Kind p K.Lin (meet v1 v2))
              (snd $ Map.elemAt 0 ks) ks
 --  Map.foldl (flip meet) (K.ua p) <$> tMapM (checkAgainstSession' s kEnv) m
