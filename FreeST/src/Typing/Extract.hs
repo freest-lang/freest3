@@ -76,7 +76,7 @@ input = message T.In "an input"
 message :: MonadState (FreestS a) m => T.Polarity -> String -> E.Exp -> T.Type -> m (T.Type, T.Type)
 message pol msg e t =
   case normalise t of
-    T.Semi _ (T.Message _ _ pol' u) v | pol == pol' -> return (u, v)
+    T.Semi _ (T.Message _ l pol' u) v | pol == pol' -> return (u, v)
     u -> addError (ExtractError (getSpan e) msg e u) $>
            (omission $ getSpan u, T.Skip $ getSpan u)
 

@@ -83,6 +83,6 @@ fixConsTypes = do
   where
     fixConsType :: K.KindEnv -> K.Multiplicity -> T.Type -> InfState T.Type
     fixConsType kEnv m (T.Arrow s _ l1 l2 t u) = do
-      (K.Kind _ m' _) <- synthetise kEnv t
+      (K.Kind _ m' _, _) <- synthetise kEnv t
       T.Arrow s m l1 l2 t <$> fixConsType kEnv (SK.join m m') u
     fixConsType _ _ t = pure t

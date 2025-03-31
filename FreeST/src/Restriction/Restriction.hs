@@ -5,6 +5,7 @@ module Restriction.Restriction
     ( Inequality
     , Leveled(..)
     , incrementLevel
+    , joinLevels
     )
 where
 
@@ -41,13 +42,13 @@ instance Leveled T.TypeMap where
     level tm
         | Map.null tm = T.Bottom
         | otherwise = foldr joinLevels T.Bottom (map level (Map.elems tm))
-      where
-        joinLevels :: T.Level -> T.Level -> T.Level
-        joinLevels T.Top _ = T.Top
-        joinLevels _ T.Top = T.Top
-        joinLevels T.Bottom l = l
-        joinLevels l T.Bottom = l
-        joinLevels (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
+
+joinLevels :: T.Level -> T.Level -> T.Level
+joinLevels T.Top _ = T.Top
+joinLevels _ T.Top = T.Top
+joinLevels T.Bottom l = l
+joinLevels l T.Bottom = l
+joinLevels (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
 
 incrementLevel :: T.Level -> T.Level
 incrementLevel (T.Num n) = T.Num (n + 1)

@@ -97,7 +97,7 @@ checkDefs sigs xs = do
         Just e  -> do 
           when (length xs > 1 && not (isVal e)) 
             (addError (MutualDefNotValue (getSpan x) x e))
-          k <-  K.synthetise Map.empty t 
+          (k, _) <-  K.synthetise Map.empty t 
           when (K.isLin k && Map.member x sigs) $ removeFromSignatures x
           checkAgainst Map.empty e t      
           when (Map.member x sigs) $ addToSignatures x t
@@ -109,7 +109,7 @@ checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
   where
     checkBody t = do
       sigs <- getSignatures
-      k <-  K.synthetise Map.empty t 
+      (k, _) <-  K.synthetise Map.empty t 
       when (K.isLin k && Map.member f sigs) (removeFromSignatures f)
       checkAgainst Map.empty e t      
       when (Map.member f sigs) $ addToSignatures f t
@@ -122,7 +122,7 @@ checkMainFunction = do
   if main `Map.member` sigs
     then do
       let t = sigs Map.! main
-      k <- K.synthetise Map.empty t
+      (k, _) <- K.synthetise Map.empty t
       when (K.isLin k) $
         let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main sigs) sigs in
         addError (UnrestrictedMainFun sp main t k)
@@ -146,23 +146,25 @@ synthetise _ (E.String p _) = return $ (T.String p, level $ T.String p)
 synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
-      k <- K.synthetise kEnv s
+      (k, l) <- K.synthetise kEnv s
       when (K.isLin k) $ removeFromSignatures x
-      return (s, level s)
+      return (s, l)
     Nothing -> do
       let p = getSpan x
           s = omission p
       addError (VarOrConsNotInScope p x)
       addToSignatures x s
-      return (s, level s)
+      return (s, T.Bottom)
 -- Unary let
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  addInequality (getSpan t1) (l1, l2)
-  return (t2, l2)
+  -- -- addInequality (getSpan t1) (l1, l2)
+  -- return (t2, l2)
+  -- addInequality (getSpan t2) (l1, level t2)
+  return (t2, joinLevels l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
@@ -175,7 +177,8 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
   let l1 = level t1 in
     let l2 = level t2 in
-      return (T.Arrow p mult l1 l2 t1 t2, level $ T.Arrow p mult l1 l2 t1 t2)
+      -- return (T.Arrow p mult l1 l2 t1 t2, level $ T.Arrow p mult l1 l2 t1 t2)
+      return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -184,34 +187,37 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     m <- Extract.inChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     addInequality (getSpan t) (l, level t1)
-    return (t1, level t1)
+    -- return (t1, level t1)
+    return (t1, T.Bottom)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, _) <- synthetise kEnv e
   tm <- Extract.outChoiceMap e t
-  let l = level $ T.Labelled p T.Variant T.Bottom $
-           Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm
+  -- let l = level $ T.Labelled p T.Variant T.Bottom $
+  --          Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm
+  -- return (T.Labelled p T.Variant T.Bottom
+  --         (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm), l)
   return (T.Labelled p T.Variant T.Bottom
-          (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm), l)
+          (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm), T.Bottom)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
-  (t, _)        <- synthetise kEnv e
+  (t, l)        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  addInequality (getSpan t) (level t, level u1)
-  addInequality (getSpan t) (level t, level u2)
+  addInequality (getSpan t) (l, level u1)
+  -- addInequality (getSpan t) (l, level u2)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return (T.tuple p [u1, u2], level $ T.tuple p [u1, u2])
+  return (T.tuple p [u1, u2], l)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
-  (t, _)     <- synthetise kEnv e2
+  (t, l)     <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  addInequality (getSpan t) (level t, level u1)
-  addInequality (getSpan t) (level t, level u2)
+  addInequality (getSpan t) (l, level u1)
+  -- addInequality (getSpan t) (l, level u2)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
-  return (u2, level u2)
+  return (u2, l)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   s <- get
@@ -223,7 +229,7 @@ synthetise kEnv (E.App _ e1 e2) = do
   (t, l1)      <- synthetise kEnv e1
   (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
-  addInequality (getSpan t) (l1, level u2)
+  -- addInequality (getSpan t) (l1, level u2)
   return (u2, level u2)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -235,18 +241,20 @@ synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   (u, _)                           <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
-  return (Rename.subs t y u', level $ Rename.subs t y u')
+  -- return (Rename.subs t y u', level $ Rename.subs t y u')
+  return (Rename.subs t y u', T.Bottom)
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   (u, _)                            <- synthetise kEnv e
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
-  return (Rename.subs t y u', level $ Rename.subs t y u')
+  -- return (Rename.subs t y u', level $ Rename.subs t y u')
+  return (Rename.subs t y u', T.Bottom)
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   (t2, l2) <- synthetise kEnv e2
-  -- addInequality (getSpan t1) (l1, l2) --change this
+  -- -- addInequality (getSpan t1) (l1, l2) --change this
   let l1 = level t1
   let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
   return (T.Labelled p T.Record l1 $
@@ -260,9 +268,10 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  -- addInequality (getSpan t1) (l1, l2)
-  addInequality (getSpan t1) (l1, level t2)
-  return (t2, l2)
+  -- -- addInequality (getSpan t1) (l1, l2)
+  -- return (t2, l2)
+  -- addInequality (getSpan t1) (l1, level t2)
+  return (t2, joinLevels l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, _) <- synthetise kEnv e
@@ -273,7 +282,8 @@ synthetise kEnv (E.Case p e fm) = do
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
-  return (t, level t)
+  -- return (t, level t)
+  return (t, T.Bottom)
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -296,7 +306,7 @@ difference :: K.KindEnv -> Variable -> TypingState ()
 difference kEnv x = do
   getFromSignatures x >>= \case
     Just t -> do
-      k <- K.synthetise kEnv t
+      (k, _) <- K.synthetise kEnv t
       when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
   removeFromSignatures x
@@ -340,7 +350,7 @@ checkAgainst kEnv e t = do
     _ -> do 
       (t4, l4) <- synthetise kEnv e
       compareTypes e t t4
-      addInequality (getSpan t) (l4, level t)
+      -- addInequality (getSpan t) (l4, level t)
     --compare levels
 
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
