@@ -204,8 +204,9 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
+  let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l, level u1)
-  -- addInequality (getSpan t) (l, level u2)
+  addInequality (getSpan t) (l, level u3)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return (T.tuple p [u1, u2], l)
   -- Send e1 e2
@@ -213,8 +214,9 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
+  let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l, level u1)
-  -- addInequality (getSpan t) (l, level u2)
+  addInequality (getSpan t) (l, level u3)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return (u2, l)
