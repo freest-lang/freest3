@@ -163,8 +163,15 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   difference kEnv x
   -- -- addInequality (getSpan t1) (l1, l2)
   -- return (t2, l2)
+  case t2 of
+    T.Semi _ (T.Skip _) t -> do
+      addInequality (getSpan t2) (l1, level t)
+      return (t2, joinLevels l1 (level t))
+    _ -> do
+      addInequality (getSpan t2) (l1, level t2)
+      return (t2, joinLevels l1 l2)
   -- addInequality (getSpan t2) (l1, level t2)
-  return (t2, joinLevels l1 l2)
+  -- return (t2, joinLevels l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
@@ -272,8 +279,13 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   difference kEnv y
   -- -- addInequality (getSpan t1) (l1, l2)
   -- return (t2, l2)
-  -- addInequality (getSpan t1) (l1, level t2)
-  return (t2, joinLevels l1 l2)
+  case t2 of
+    T.Semi _ (T.Skip _) t -> do
+      addInequality (getSpan t1) (l1, level t)
+      return (t2, joinLevels l1 (level t))
+    _ -> do
+      addInequality (getSpan t1) (l1, level t2)
+      return (t2, joinLevels l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, _) <- synthetise kEnv e
