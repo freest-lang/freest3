@@ -177,15 +177,14 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
-  (t2, _) <- synthetise kEnv e
+  (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
   let l1 = level t1 in
-    let l2 = level t2 in
+    return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
       -- return (T.Arrow p mult l1 l2 t1 t2, level $ T.Arrow p mult l1 l2 t1 t2)
-      return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -198,14 +197,14 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     return (t1, T.Bottom)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
-  (t, _) <- synthetise kEnv e
+  (t, l) <- synthetise kEnv e
   tm <- Extract.outChoiceMap e t
   -- let l = level $ T.Labelled p T.Variant T.Bottom $
   --          Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm
   -- return (T.Labelled p T.Variant T.Bottom
   --         (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm), l)
-  return (T.Labelled p T.Variant T.Bottom
-          (Map.map (T.Labelled p T.Record T.Bottom . Map.singleton (head mkTupleLabels p)) tm), T.Bottom)
+  return (T.Labelled p T.Variant l
+          (Map.map (T.Labelled p T.Record l . Map.singleton (head mkTupleLabels p)) tm), l)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
@@ -263,11 +262,13 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   (t2, l2) <- synthetise kEnv e2
-  -- -- addInequality (getSpan t1) (l1, l2) --change this
+  -- addInequality (getSpan t1) (l1, l2) --change this
+  -- addInequality (getSpan t1) (l1, level t1)
+  addInequality (getSpan t2) (l2, level t1)
   let l1 = level t1
   let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
   return (T.Labelled p T.Record l1 $
-    Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), l2)
+    Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), l1)
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t1, l1)    <- synthetise kEnv e1
@@ -362,10 +363,13 @@ checkAgainst kEnv e t = do
       compareTypes e u2 t2  
       addInequality (getSpan t) (l3, level t)
     _ -> do 
-      (t4, l4) <- synthetise kEnv e
-      compareTypes e t t4
-      -- addInequality (getSpan t) (l4, level t)
-    --compare levels
+      (t1, l1) <- synthetise kEnv e
+      compareTypes e t t1
+      if l1 == T.Bottom && (level t) == T.Top
+        then addInequality (getSpan t) (T.Top, level t)
+          -- internalError ("checkAgainst " ++ " " ++ show (getSpan t1) ++ " " ++ show t1 ++ " ") t
+        else addInequality (getSpan t) (l1, level t)
+      -- addInequality (getSpan t) (l1, level t)
 
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
 compareTypes e t u = do 
@@ -432,5 +436,5 @@ isValidIneq _ T.Top = False
 isValidIneq T.Bottom T.Bottom = True
 isValidIneq _ T.Bottom = True
 isValidIneq T.Bottom _ = False
-isValidIneq (T.Num n1) (T.Num n2) = n1 < n2 -- <= or < ?
+isValidIneq (T.Num n1) (T.Num n2) = n1 <= n2 -- <= or < ?
 --isValidIneq _ _ = False
