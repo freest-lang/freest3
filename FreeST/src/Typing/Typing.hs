@@ -178,7 +178,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
-  let l1 = level t1 in
+  let l1 = joinLevels (level t1) (level t2) in
     return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
