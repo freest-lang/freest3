@@ -190,7 +190,9 @@ evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 evalVar :: Variable -> Types -> Ctx -> Defs -> Variable -> IO Value
 evalVar name tEnv ctx eenv x
-  | isDatatypeContructor x tEnv = return $ Cons x []
+  | isDatatypeContructor x tEnv = do
+    print $ "axxx " ++ show x
+    return $ Cons x []
   | Map.member x eenv           = eval x tEnv ctx eenv (eenv Map.! x)
   | Map.member x ctx            = return $ ctx Map.! x
   | x == mkFork defaultSpan     = return Fork

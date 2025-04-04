@@ -3,6 +3,7 @@ module Interpreter.Builtin where
 
 import           Interpreter.Value
 import           Syntax.Base
+import           Interpreter.Test 
 
 import qualified Control.Concurrent.Chan as C
 import           Data.Char ( ord, chr )
@@ -10,36 +11,80 @@ import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
 import           Data.Bifunctor (Bifunctor(bimap))
--- import Numeric (Floating(log1p, expm1, log1pexp, log1mexp))
 import GHC.Float
+import qualified Network.Socket as NS
+import qualified Network.Socket.ByteString as NSB
+import qualified Data.ByteString as B
+import qualified Data.List.NonEmpty as NE
+import qualified Data.Binary as Bin
+import qualified Data.ByteString.Char8 as BC 
+import           Data.Word (Word32, Word8)
 
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
 
-new :: IO Channel
+new :: IO (ChannelEnd, ChannelEnd)
 new = do
   c1 <- C.newChan
   c2 <- C.newChan
-  return ((c1, c2), (c2, c1))
+  return (Left (c1, c2), Left (c2, c1))
+
+-- newHc :: Either (Pair NS.HostName, NS.ServiceName) ((NS.HostName, NS.ServiceName), String)  -> IO ChannelEnd
+newHcServer :: Value -> IO ChannelEnd
+newHcServer (Pair (String host) (String port)) = NS.withSocketsDo $ do
+    let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
+    addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
+    sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
+    NS.bind sock (NS.addrAddress addr)
+    NS.listen sock 1
+    putStrLn $ "Listening at port " ++ show port
+    (conn1, _) <- NS.accept sock
+    return $ Right conn1
+
+newHcClient :: Value -> IO ChannelEnd
+newHcClient (Pair (Pair (String host) (String port)) (String sv_addr)) = NS.withSocketsDo $ do
+    let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
+    addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
+    sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
+    NS.connect sock (NS.addrAddress addr)
+    let len = fromIntegral (length sv_addr) :: Word8
+    let bytes = toStrict1 (Bin.encode len) <> BC.pack sv_addr
+    NSB.send sock bytes
+    return $ Right sock
+
 
 receive :: ChannelEnd -> IO (Value, ChannelEnd)
-receive c = do
+receive (Left c) = do
   v <- C.readChan (fst c)
-  return (v, c)
+  return (v, Left  c)
+
+receive (Right c) = do
+  bytes <- NSB.recv c 1
+  v <- deserialize (B.head bytes) c
+  return (v, Right c)
 
 send :: Value -> ChannelEnd -> IO ChannelEnd
-send v c = do
+send v (Left c) = do
   C.writeChan (snd c) v
-  return c
+  return $ Left c
+
+send v (Right c) = do
+  NSB.send c (serialize v) -- Improve this to catch errors in the socket
+  return $ Right c
 
 wait :: Value -> IO Value
-wait (Chan c) = C.readChan (fst c) $> Unit
- 
+wait (Chan (Left c)) = C.readChan (fst c) $> Unit
+
+wait (Chan (Right c)) = NSB.recv c 1 >> NS.close c $> Unit
+
 close :: Value -> IO Value
-close (Chan c) = do
+close (Chan (Left c)) = do
   C.writeChan (snd c) Unit
   return Unit
+
+close (Chan (Right c)) = do
+  NSB.send c (B.singleton 7) >> NS.close c $> Unit
 
 ------------------------------------------------------------  
 -- SETUP, builtin functions
@@ -49,6 +94,8 @@ initialCtx :: Ctx
 initialCtx = Map.fromList
   [ -- Communication primitives
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
+  , (var "newHcServer", PrimitiveFun (\info -> IOValue $ Chan <$> newHcServer info))
+  , (var "newHcClient", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient info))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "wait", PrimitiveFun (IOValue . wait))

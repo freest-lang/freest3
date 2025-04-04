@@ -1,8 +1,9 @@
 module Interpreter.Value
   ( Value(..)
   , Ctx
-  , Channel -- Do we need this one?
+  -- , Channel -- Do we need this one?
   , ChannelEnd
+  , HalfChannel
   )
 where
 
@@ -13,10 +14,12 @@ import           Syntax.MkName
 
 import qualified Control.Concurrent.Chan as C
 import qualified Data.Map.Strict as Map
+import qualified Network.Socket as NS
 
 
 import System.IO (Handle)
 import Typing.Phase (Defs)
+import Parse.Parser (ty)
 
 data Value =
     Unit
@@ -36,9 +39,9 @@ data Value =
   | Handle Handle
 
 type Ctx = Map.Map Variable Value
-
-type ChannelEnd = (C.Chan Value, C.Chan Value)
-type Channel = (ChannelEnd, ChannelEnd)
+type HalfChannel = NS.Socket
+type ChannelEnd = Either (C.Chan Value, C.Chan Value) HalfChannel
+-- type Channel = (ChannelEnd, ChannelEnd) 
 
 instance Show Value where
   show Unit           = "()"

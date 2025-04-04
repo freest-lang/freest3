@@ -1,1 +1,1 @@
-!Bool; ?Bool ; Close
+!Int ; Close
