@@ -259,7 +259,7 @@ instance Unparse Exp where
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m (T.Bottom, T.Bottom))
+  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m (T.Top, T.Bottom))
   unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where

@@ -53,10 +53,10 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m (K.Kind, T.Level)
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ (K.ut p, T.Bottom)
-synthetise' _ _ (T.Float  p) = return $ (K.ut p, T.Bottom)
-synthetise' _ _ (T.Char   p) = return $ (K.ut p, T.Bottom)
-synthetise' _ _ (T.String p) = return $ (K.ut p, T.Bottom)
+synthetise' _ _ (T.Int    p) = return $ (K.ut p, T.Top)
+synthetise' _ _ (T.Float  p) = return $ (K.ut p, T.Top)
+synthetise' _ _ (T.Char   p) = return $ (K.ut p, T.Top)
+synthetise' _ _ (T.String p) = return $ (K.ut p, T.Top)
 synthetise' s kEnv (T.Arrow p m l1 l2 t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> (K.Kind p m K.Top, l1)
 synthetise' s kEnv (T.Labelled p t l m) | t == T.Variant || t == T.Record = do
@@ -77,7 +77,7 @@ synthetise' s kEnv (T.Semi p t u) = do
   ~k2@(K.Kind _ mu vu, _) <- synthetise' s kEnv u
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t (fst k1)))
   unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u (fst k2)))
-  addInequality p (level t, level u)
+  -- addInequality p (level t, level u)
   return $ (K.Kind p (join mt mu) (meet vt vu), level t)
 synthetise' s kEnv (T.Message p l _ t) = do
   addInequality p (l, level t)

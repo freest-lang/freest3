@@ -141,7 +141,7 @@ synthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
 synthetise _ (E.Int  p _  ) = return $ (T.Int p, level $ T.Int p)
 synthetise _ (E.Float p _ ) = return $ (T.Float p, level $ T.Float p)
 synthetise _ (E.Char p _  ) = return $ (T.Char p, level $ T.Char p)
-synthetise _ (E.Unit p    ) = return $ (T.unit p, T.Bottom)
+synthetise _ (E.Unit p    ) = return $ (T.unit p, T.Top)
 synthetise _ (E.String p _) = return $ (T.String p, level $ T.String p)
 synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
@@ -161,13 +161,13 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   addToSignatures x t1
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  case t2 of
-    T.Semi _ (T.Skip _) t -> do
-      addInequality (getSpan t2) (l1, level t)
-      return (t2, joinLevels l1 (level t))
-    _ -> do
-      addInequality (getSpan t2) (l1, level t2)
-      return (t2, joinLevels l1 l2)
+  -- case t2 of
+  --   T.Semi _ (T.Skip _) t -> do
+  --     addInequality (getSpan t2) (l1, level t)
+  --     return (t2, joinLevels l1 (level t))
+  --   _ -> do
+  addInequality (getSpan t2) (l1, level t2)
+  return (t2, joinLevels l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
@@ -200,9 +200,10 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  let (T.Semi _ _ u3) = u2
+  -- let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l, level u1)
-  addInequality (getSpan t) (l, level u3)
+  addInequality (getSpan t) (l, level u2)
+  -- addInequality (getSpan t) (l, level u3)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return (T.tuple p [u1, u2], l)
   -- Send e1 e2
@@ -210,9 +211,10 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  let (T.Semi _ _ u3) = u2
+  -- let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l, level u1)
-  addInequality (getSpan t) (l, level u3)
+  addInequality (getSpan t) (l, level u2)
+  -- addInequality (getSpan t) (l, level u3)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return (u2, l)
@@ -234,8 +236,8 @@ synthetise kEnv (E.App _ e1 e2) = do
   --   then internalError ("synthetise " ++ show l2 ++ " " ++ show l3 ++ " ") u1
     -- else return (u2, joinLevels l1 $ joinLevels l2 l4)
 
-  -- addInequality (getSpan t) (l1, level u1)
-  -- addInequality (getSpan t) (l2, l3)
+  addInequality (getSpan t) (l1, level u1)
+  addInequality (getSpan t) (l2, l3)
   return (u2, joinLevels l1 $ joinLevels l2 l4)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -272,13 +274,13 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  case t2 of
-    T.Semi _ (T.Skip _) t -> do
-      addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
-      return (t2, joinLevels l1 (level t))
-    _ -> do
-      addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
-      return (t2, joinLevels l1 l2)
+  -- case t2 of
+  --   T.Semi _ (T.Skip _) t -> do
+  --     addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
+  --     return (t2, joinLevels l1 (level t))
+  --   _ -> do
+  addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
+  return (t2, joinLevels l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, _) <- synthetise kEnv e
@@ -362,13 +364,13 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  case t2 of
-    T.Semi _ (T.Skip _) t -> do
-      addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
-      return (joinLevels l1 (level t))
-    _ -> do
-      addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
-      return (joinLevels l1 l2)
+  -- case t2 of
+  --   T.Semi _ (T.Skip _) t -> do
+  --     addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
+  --     return (joinLevels l1 (level t))
+  --   _ -> do
+      -- addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
+  return (joinLevels l1 l2)
 leveledCheckAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
   case t of 
@@ -444,10 +446,10 @@ checkInequalities = do
 
 isValidIneq :: T.Level -> T.Level -> Bool
 isValidIneq T.Top T.Top = True
-isValidIneq T.Top _ = True
-isValidIneq _ T.Top = False
+isValidIneq T.Top _ = False
+isValidIneq _ T.Top = True
 isValidIneq T.Bottom T.Bottom = True
-isValidIneq _ T.Bottom = True
-isValidIneq T.Bottom _ = False
+isValidIneq _ T.Bottom = False
+isValidIneq T.Bottom _ = True
 isValidIneq (T.Num n1) (T.Num n2) = n1 < n2 -- <= or < ?
 --isValidIneq _ _ = False

@@ -56,7 +56,7 @@ function2 e t =
   case normalise t of
     (T.Arrow _ m l1 l2 u v) -> return (m, l1, l2, u, v)
     u -> let p = getSpan e in
-      addError (ExtractError p "an arrow" e u) $> (Un, T.Bottom, T.Bottom, omission p, omission p)
+      addError (ExtractError p "an arrow" e u) $> (Un, T.Top, T.Bottom, omission p, omission p)
 
 pair :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Type, T.Type)
 pair e t =

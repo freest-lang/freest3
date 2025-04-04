@@ -81,7 +81,7 @@ ctyping kEnv (E.Abs s m b) = do
   weaken (var b) k u
   when (isAbs (body b)) $ addConstraint $ KindC k (K.Kind s (mult t) K.Top)
   removeFromSignatures (var b)  
-  return (T.Arrow s m T.Bottom T.Bottom (binder b) t, Map.delete (var b) u) --maybe change this?
+  return (T.Arrow s m T.Top T.Bottom (binder b) t, Map.delete (var b) u)
   where
     isAbs E.Abs{} = True
     isAbs (E.TypeAbs _ b) = isAbs $ body b

@@ -96,7 +96,7 @@ typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun
  where -- Convert a list of types and a final type constructor to a type
   typeToFun []       = T.Var (getSpan a) a
-  typeToFun (t : ts) = T.Arrow (getSpan t) Un T.Bottom T.Bottom t (typeToFun ts) --might have the levels here
+  typeToFun (t : ts) = T.Arrow (getSpan t) Un T.Top T.Bottom t (typeToFun ts) --might have the levels here
 
 
 typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
