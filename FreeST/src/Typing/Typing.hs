@@ -148,7 +148,8 @@ synthetise kEnv (E.Var _ x) =
     Just s -> do
       (k, l) <- K.synthetise kEnv s
       when (K.isLin k) $ removeFromSignatures x
-      return (s, l)
+      -- return (s, l)
+      return (s, T.Bottom)
     Nothing -> do
       let p = getSpan x
           s = omission p
@@ -279,7 +280,14 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   --     addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
   --     return (t2, joinLevels l1 (level t))
   --   _ -> do
-  addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
+
+  -- if l1 /= T.Top && l1 /= T.Bottom || (level t1) /= T.Top && (level t1) /= T.Bottom || (level t2) /= T.Top && (level t2) /= T.Bottom
+  --   then internalError ("synthetise " ++ show l1 ++ " " ++ show (level t1) ++ show (level t2) ++ " " ++ show t1) t2
+  --   else do
+  -- if ((level u1) /= T.Top && (level u1) /= T.Bottom || (level u2) /= T.Top && (level u2) /= T.Bottom)
+  --   then internalError ("synthetise " ++ show (level u1) ++ " " ++ show (level u2)) t2
+  --   else do 
+  addInequality (getSpan t2) (l1, joinLevels (level u1) (level u2))
   return (t2, joinLevels l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do

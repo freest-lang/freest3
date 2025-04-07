@@ -34,7 +34,7 @@ instance Leveled T.Type where
     level (T.Message _ l _ _) = l
     level (T.Forall _ _) = T.Top 
     level (T.Rec _ _) = T.Top
-    level (T.Var _ _) = T.Top --check these 3
+    level (T.Var _ _) = T.Top --T.Bottom --check these 3
     level (T.Dualof _ t) = level t
 
 instance Leveled T.TypeMap where
@@ -42,9 +42,16 @@ instance Leveled T.TypeMap where
         | Map.null tm = T.Top
         | otherwise = foldr joinLevels T.Top (map level (Map.elems tm))
 
+-- joinLevels :: T.Level -> T.Level -> T.Level
+-- joinLevels T.Bottom _ = T.Bottom
+-- joinLevels _ T.Bottom = T.Bottom
+-- joinLevels T.Top l = l
+-- joinLevels l T.Top = l
+-- joinLevels (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
+
 joinLevels :: T.Level -> T.Level -> T.Level
-joinLevels T.Bottom _ = T.Bottom
-joinLevels _ T.Bottom = T.Bottom
-joinLevels T.Top l = l
-joinLevels l T.Top = l
-joinLevels (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
+joinLevels T.Top _ = T.Top
+joinLevels _ T.Top = T.Top
+joinLevels T.Bottom l = l
+joinLevels l T.Bottom = l
+joinLevels (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
