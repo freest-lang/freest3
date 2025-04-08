@@ -207,7 +207,7 @@ initialCtx = Map.fromList
   -- Id  
   , (var "id", PrimitiveFun id)
   -- System time (seed for rng)
-  , (var "getSystemTime", PrimitiveFun (\_ -> IOValue $ fmap (Int . truncate . (* 10^9)) getPOSIXTime))
+  , (var "getSystemTime", PrimitiveFun (\_ -> IOValue $ fmap (Integer . truncate . (* 10^9)) getPOSIXTime))
   -- Undefined
 --  , (var "undefined", PrimitiveFun undefined)
   -- Error

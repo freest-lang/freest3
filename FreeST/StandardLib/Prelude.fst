@@ -162,7 +162,7 @@ __getLine : () -> String
 __getContents : () -> String
 
 -- System time
-getSystemTime : () -> Int
+getSystemTime : () -> Integer
 
 -- Fork
 fork : forall a:*T. (() 1-> a) -> ()
