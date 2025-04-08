@@ -19,11 +19,18 @@ _modExp b e m =
         modI (b *i _modExp b (e -i 1i) m) m
 
 
+----- Hashing -----
+
+_hash256 : Integer -> Integer
+_hash256 value = fst @Integer @RNGState $ nextN64Bits 4 $ RNGState (1, value)
+
+
 --  ██████  ███████  █████  
 --  ██   ██ ██      ██   ██ 
 --  ██████  ███████ ███████ 
 --  ██   ██      ██ ██   ██ 
 --  ██   ██ ███████ ██   ██ 
+
 
 -- Creating and Storing Keys
 
@@ -144,12 +151,20 @@ getKeyFromFile filePath =
     let key = readInteger _key in
     (AsymmetricKey modulus key)
 
-asymEncrypt : Integer -> Key -> Integer
-asymEncrypt msg (AsymmetricKey modulus key) = _modExp msg key modulus
-asymEncrypt _ _ = error @Integer "Asymmetric Encryption/Decryption does not use symmetric/session keys."
+_asymEncrypt : Integer -> Key -> Integer
+_asymEncrypt msg (AsymmetricKey modulus key) = _modExp msg key modulus
+_asymEncrypt _ _ = error @Integer "Asymmetric Encryption/Decryption does not use symmetric/session keys."
 
-asymDecrypt : Integer -> Key -> Integer
-asymDecrypt = asymEncrypt
+_asymDecrypt : Integer -> Key -> Integer
+_asymDecrypt = _asymEncrypt
+
+data Signature = Signature Integer
+
+_sign : Integer -> Key -> Signature
+_sign value key = (Signature $ _asymEncrypt (_hash256 value) key)
+
+_checkSignature : Signature -> Integer -> Key -> Bool
+_checkSignature (Signature signature) value key = (_hash256 value) ==i (_asymDecrypt signature key)
 
 
 
@@ -170,15 +185,6 @@ _dhP = 6817175847621349559064343308498653127175969530957326323588131918538438555
 _dhG : Integer
 _dhG = 2i
 
---8192-bit to 256-bit key, doing this to somewhat keep the "full output" of DH, rather then just mod by 256
-_reduceKey : Integer -> Key
-_reduceKey n =
-    let n = lxorI (shiftRI n 4096) (modI n (2i ^i 4096i)) in    --8192 -> 4096
-    let n = lxorI (shiftRI n 2048) (modI n (2i ^i 2048i)) in    --4096 -> 2048
-    let n = lxorI (shiftRI n 1024) (modI n (2i ^i 1024i)) in    --2048 -> 1024
-    let n = lxorI (shiftRI n 512)  (modI n (2i ^i 512i)) in     --1024 -> 512
-      SessionKey $ lxorI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
-
 -- Unsigend DH versions
 dhA : forall a . DHProtocol ; a -> (a, Key)
 dhA c =
@@ -186,7 +192,7 @@ dhA c =
     let aShared = _modExp _dhG aSecret _dhP in
     let c = send aShared c in
     let (bShared, c) = receive c in
-    (c, _reduceKey $ _modExp bShared aSecret _dhP)
+    (c, (SessionKey $ _hash256 $ _modExp bShared aSecret _dhP))
 
 dhB : forall a . dualof DHProtocol ; a -> (a, Key)
 dhB c =
@@ -194,32 +200,54 @@ dhB c =
     let (aShared, c) = receive c in
     let bShared = (_modExp _dhG bSecret _dhP) in
     let c = send bShared c in
-    (c, _reduceKey $ _modExp aShared bSecret _dhP)
+    (c, (SessionKey $ _hash256 $ _modExp aShared bSecret _dhP))
 
 -- Sigend DH versions
+_appendSignature : Integer -> Signature -> Integer
+_appendSignature value (Signature signature) = lorI (shiftLI value 256) signature
+
+_separateSignature : Integer -> (Integer, Signature)
+_separateSignature value = (shiftRI value 256, (Signature (modI value (2i ^i 256i))))
+
 signedDHA : forall a . Key -> Key -> DHProtocol ; a -> (a, Key)
 -- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
 -- signedDHA _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
 signedDHA piKey puKey c =
+    --Clacualte a and A
     let (aSecret, rng) = nextN64Bits 4 (newRNGState ()) in
     let aShared = _modExp _dhG aSecret _dhP in
-    --let aShared = asymEncrypt aShared piKey in
-    let c = send aShared c in
-    let (bShared, c) = receive c in
-    --let bShared = asymDecrypt bShared puKey in
-    (c, _reduceKey $ _modExp bShared aSecret _dhP)
+    --Send A along its signature
+    let aSignature = _sign aShared piKey in
+    let aSharedSigned = _appendSignature aShared aSignature in
+    let c = send aSharedSigned c in
+    --Get B and its signature
+    let (bSharedSigned, c) = receive c in
+    let (bShared, bSignature) = _separateSignature bSharedSigned in
+    --CheckSignature
+    if _checkSignature bSignature bShared puKey then
+        (c, (SessionKey $ _hash256 $ _modExp bShared aSecret _dhP))
+    else
+        error @(a, Key) "Signature did not match shared value."
 
 signedDHB : forall a . Key -> Key -> dualof DHProtocol ; a -> (a, Key)
--- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
--- signedDHA _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHB (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHB _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
 signedDHB piKey puKey c =
+    --Clacualte b and B
     let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
-    let (aShared, c) = receive c in
-    --let aShared = asymDecrypt aShared puKey in
-    let bShared = (_modExp _dhG bSecret _dhP) in
-    --let bShared = asymEncrypt bShared piKey in
-    let c = send bShared c in
-    (c, _reduceKey $ _modExp aShared bSecret _dhP)
+    let bShared = _modExp _dhG bSecret _dhP in
+    --Get A and its signature
+    let (aSharedSigned, c) = receive c in
+    let (aShared, aSignature) = _separateSignature aSharedSigned in
+    --Send B along its signature
+    let bSignature = _sign bShared piKey in
+    let bSharedSigned = _appendSignature bShared bSignature in
+    let c = send bSharedSigned c in
+    --CheckSignature
+    if _checkSignature aSignature aShared puKey then
+        (c, (SessionKey $ _hash256 $ _modExp aShared bSecret _dhP))
+    else
+        error @(a, Key) "Signature did not match shared value."
 
 
 
