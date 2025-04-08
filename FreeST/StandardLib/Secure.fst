@@ -2,6 +2,10 @@ module Secure where
 
 import Random
 import List
+import File
+
+
+data Key = SessionKey Integer | AsymmetricKey Integer Integer-- Modulus PiKey/PuKey
 
 ----- Modular Exponentiation -----
 
@@ -11,8 +15,141 @@ _modExp b e m =
         1i
     else if evenI e then
         _modExp (modI (b *i b) m) (e /i 2i) m
-    else 
+    else
         modI (b *i _modExp b (e -i 1i) m) m
+
+
+--  ██████  ███████  █████  
+--  ██   ██ ██      ██   ██ 
+--  ██████  ███████ ███████ 
+--  ██   ██      ██ ██   ██ 
+--  ██   ██ ███████ ██   ██ 
+
+-- Creating and Storing Keys
+
+--3072-bit key, so 1536-bit p and q
+
+_millerRabinLoop2 : Integer -> Integer -> Integer -> Bool
+_millerRabinLoop2 x d n =
+    if d ==i (n -i 1i) then
+        False
+    else
+        let x = modI (x ^i 2i) n in
+        let d = d *i 2i in
+        if x ==i (n -i 1i) then
+            True
+        else if x ==i 1i then
+            False
+        else
+            _millerRabinLoop2 x d n
+
+_millerRabinLoop1 : Integer -> Integer -> Int -> RNGState -> (Bool, RNGState)
+_millerRabinLoop1 d n k rng =
+    if k == 0 then
+        (True, rng)
+    else
+        let (a, rng) = nextN64Bits 24 rng in -- 24*64 = 1536 bits
+        let a = 2i +i (modI a (n -i 3i)) in
+        let x =  _modExp a d n in
+        if x ==i 1i || x ==i (n -i 1i) then
+            (True, rng)
+        else if _millerRabinLoop2 x d n then
+            _millerRabinLoop1 d n (k - 1) rng
+        else
+            (False, rng)
+
+_decompose : Integer -> Integer
+_decompose n =
+    if oddI n then
+        n
+    else
+        _decompose (n /i 2i)
+
+_millerRabin : Integer -> Int -> RNGState -> (Bool, RNGState)
+_millerRabin n k rng =
+    if evenI n then
+        (False, rng)
+    else
+        let d = _decompose (n -i 1i) in
+        _millerRabinLoop1 d n k rng
+
+_generatePrime : RNGState -> (Integer, RNGState)
+_generatePrime rng =
+    let (n, rng) = nextN64Bits 24 rng in -- 24*64 = 1536 bits
+    let (isPrime, rng) = _millerRabin n 20 rng in
+    if isPrime then
+        (n, rng)
+    else
+        _generatePrime rng
+
+_modInverseLoop : Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> Integer
+_modInverseLoop a m t new_t r new_r =
+    if new_r ==i 0i then
+        modI t m
+    else
+        let quotient = divI r new_r in
+        _modInverseLoop a m new_t (t -i quotient *i new_t) new_r (r -i quotient *i new_r)
+
+_modInverse : Integer -> Integer -> Integer
+_modInverse a m = _modInverseLoop a m 0i 1i m a
+
+
+generateRSAKeyPair : String -> ()
+generateRSAKeyPair filePath =
+    --Finding p and q
+    let rng = newRNGState () in
+    print @String "Finding Large Prime p, this might take a while...";
+    let (p, rng) = _generatePrime rng in
+    print @(String, Integer) ("Prime p", p);
+    print @String "Finding Large Prime q, this might take a while...";
+    let (q, rng) = _generatePrime rng in
+    print @(String, Integer) ("Prime q", q);
+    --Calculating Keys
+    print @String "Calculating keys";
+    let n = p *i q in
+    let phi_n = (p -i 1i) *i (q -i 1i) in
+    let e = 65537i in --Could happen to not be coprime with phi_n, but it's unlikely
+    let d = _modInverse e phi_n in
+    print @(String, Integer) ("Modulus", n);
+    print @(String, Integer) ("Private exponent", d);
+    print @(String, Integer) ("Public exponent", e);
+    --Writing Keys to Files
+    print @String "Creating key files";
+    let piFile = openWriteFile $ filePath ^^ ".priv" in
+    let puFile = openWriteFile $ filePath ^^ ".pub" in
+    --Writing Modulus n
+    let piFile = hPrint @Integer n piFile in
+    let puFile = hPrint @Integer n puFile in
+    --Writing Private exponent
+    let piFile = hPrint @Integer d piFile in
+    --Writing Public exponent
+    let puFile = hPrint @Integer e puFile in
+    --Closing Files
+    hCloseOut piFile;
+    hCloseOut puFile;
+    ()
+
+-- Reading and Using keys
+
+getKeyFromFile : FilePath -> Key
+getKeyFromFile filePath =
+    let file = openReadFile filePath in
+    --Reading values
+    let (_modulus, file) = hGetLine file in
+    let (_key, file) = hGetLine file in
+    --Closing Streams/Files
+    hCloseIn file;
+    --Converting Strings to Integers
+    let modulus = readInteger _modulus in
+    let key = readInteger _key in
+    (AsymmetricKey modulus key)
+
+asymEncrypt : Integer -> Key -> Integer
+asymEncrypt msg (AsymmetricKey modulus key) = _modExp msg key modulus
+asymEncrypt _ _ = error @Integer "Asymmetric Encryption/Decryption does not use symmetric/session keys."
+
+asymDecrypt : Integer -> Key -> Integer
+asymDecrypt = asymEncrypt
 
 
 
@@ -25,8 +162,6 @@ _modExp b e m =
 
 
 type DHProtocol = !Integer ; ?Integer
-
-data Key = Key Integer  -- 256-bit
 
 --8192-bit MODP group 18
 _dhP : Integer
@@ -42,24 +177,49 @@ _reduceKey n =
     let n = lxorI (shiftRI n 2048) (modI n (2i ^i 2048i)) in    --4096 -> 2048
     let n = lxorI (shiftRI n 1024) (modI n (2i ^i 1024i)) in    --2048 -> 1024
     let n = lxorI (shiftRI n 512)  (modI n (2i ^i 512i)) in     --1024 -> 512
-      Key $ lxorI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
+      SessionKey $ lxorI (shiftRI n 256)  (modI n (2i ^i 256i))        --512 -> 256
 
-
+-- Unsigend DH versions
 dhA : forall a . DHProtocol ; a -> (a, Key)
-dhA c0 =
+dhA c =
     let (aSecret, rng) = nextN64Bits 4 (newRNGState ()) in
     let aShared = _modExp _dhG aSecret _dhP in
-    let c1 = send aShared c0 in
-    let (bShared, c2) = receive c1 in
-    (c2, _reduceKey $ _modExp bShared aSecret _dhP)
+    let c = send aShared c in
+    let (bShared, c) = receive c in
+    (c, _reduceKey $ _modExp bShared aSecret _dhP)
 
 dhB : forall a . dualof DHProtocol ; a -> (a, Key)
-dhB c0 =
+dhB c =
     let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
-    let (aShared, c1) = receive c0 in
+    let (aShared, c) = receive c in
     let bShared = (_modExp _dhG bSecret _dhP) in
-    let c2 = send bShared c1 in
-    (c2, _reduceKey $ _modExp aShared bSecret _dhP)
+    let c = send bShared c in
+    (c, _reduceKey $ _modExp aShared bSecret _dhP)
+
+-- Sigend DH versions
+signedDHA : forall a . Key -> Key -> DHProtocol ; a -> (a, Key)
+-- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHA _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
+signedDHA piKey puKey c =
+    let (aSecret, rng) = nextN64Bits 4 (newRNGState ()) in
+    let aShared = _modExp _dhG aSecret _dhP in
+    --let aShared = asymEncrypt aShared piKey in
+    let c = send aShared c in
+    let (bShared, c) = receive c in
+    --let bShared = asymDecrypt bShared puKey in
+    (c, _reduceKey $ _modExp bShared aSecret _dhP)
+
+signedDHB : forall a . Key -> Key -> dualof DHProtocol ; a -> (a, Key)
+-- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHA _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
+signedDHB piKey puKey c =
+    let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
+    let (aShared, c) = receive c in
+    --let aShared = asymDecrypt aShared puKey in
+    let bShared = (_modExp _dhG bSecret _dhP) in
+    --let bShared = asymEncrypt bShared piKey in
+    let c = send bShared c in
+    (c, _reduceKey $ _modExp aShared bSecret _dhP)
 
 
 
@@ -176,7 +336,9 @@ _blockToList (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) = c0:
 -- ChaCha Block and Stream building
 
 _chacha20 : Key -> ChachaState -> (Stream, ChachaState)
-_chacha20 (Key keyValue) (ChachaState nonceCounter) =
+_chacha20 (AsymmetricKey _ _) _ =
+    error @(Stream, ChachaState) "Chacha20 does not use asymmetric keys."
+_chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     let (nonce, counter) = nonceCounter in
     let nonceValue = _getNonce nonce in
 
@@ -233,12 +395,24 @@ establishSecureChannelA c =
     let c = send nonce c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
-establishSecureChannelB : dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
+establishSecureChannelB : forall a . dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureChannelB c =
     let (c, key) = dhB @(?Nonce ; a) c in
     let (nonce, c) = receive c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
+establishSecureAuthenticatedChannelA : forall a . Key -> Key -> EstablishSecureChannel ; a -> (a, SecureChannelState)
+establishSecureAuthenticatedChannelA piKey puKey c =
+    let (c, key) = signedDHA @(!Nonce ; a) piKey puKey c in
+    let nonce = _newNonce () in
+    let c = send nonce c in
+    (c, SecureChannelState (key, ChachaState (nonce, 0)))
+
+establishSecureAuthenticatedChannelB : forall a . Key -> Key -> dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
+establishSecureAuthenticatedChannelB piKey puKey c =
+    let (c, key) = signedDHB @(?Nonce ; a) piKey puKey c in
+    let (nonce, c) = receive c in
+    (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
 ---- Secure Send and Receive ----
 
