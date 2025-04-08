@@ -13,18 +13,17 @@ module Random where
 _clampTo64 : Integer -> Integer
 _clampTo64 x = modI x (2i ^i 64i)
 
-_squaresRNG : Int -> Int -> Int
+_squaresRNG : Integer -> Integer -> Int
 _squaresRNG ctr key =
-    let ctrI = intToInteger ctr in let keyI = intToInteger key in
-    let x = _clampTo64 (ctrI *i keyI) in let y = x in let z = _clampTo64 (y +i keyI) in                           --x, y and z
-    let x = _clampTo64 (_clampTo64 (x *i x) +i y) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in  --round 1
-    let x = _clampTo64 (_clampTo64 (x *i x) +i z) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in  --round 2
-    let x = _clampTo64 (_clampTo64 (x *i x) +i y) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in  --round 3
-    let t = _clampTo64 (_clampTo64 (x *i x) +i z) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in  --round 4
-    integerToInt $ lxorI t (_clampTo64 (shiftLI (_clampTo64 (_clampTo64 (x *i x) +i y)) 32))                --round 5
+    let x = _clampTo64 (ctr *i key) in let y = x in let z = _clampTo64 (y +i key) in                               --x, y and z
+    let x = _clampTo64 (_clampTo64 (x *i x) +i y) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in     --round 1
+    let x = _clampTo64 (_clampTo64 (x *i x) +i z) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in     --round 2
+    let x = _clampTo64 (_clampTo64 (x *i x) +i y) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in     --round 3
+    let t = _clampTo64 (_clampTo64 (x *i x) +i z) in let x = lorI (_clampTo64 (shiftLI x 32)) (shiftRI x 32) in     --round 4
+    integerToInt $ lxorI t (_clampTo64 (shiftLI (_clampTo64 (_clampTo64 (x *i x) +i y)) 32))                        --round 5
 
 
-data RNGState = RNGState (Int, Int)
+data RNGState = RNGState (Int, Integer)
 
 --Creates new rng state
 newRNGState : () -> RNGState
@@ -34,7 +33,7 @@ newRNGState u = RNGState (1, getSystemTime u)
 nextInt64 : RNGState -> (Int, RNGState)
 nextInt64 (RNGState ctrKey) =
     let (ctr, key) = ctrKey in
-    let n = _squaresRNG ctr key in
+    let n = _squaresRNG (intToInteger ctr) key in
     (n, RNGState (n, key))
 
 --Gets the next Int between min and max, inclusive, exclusive, respectively
