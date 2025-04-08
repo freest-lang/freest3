@@ -149,6 +149,7 @@ show : forall a:*T . a -> String
 -- read : ∀ a . String -> a
 readBool : String -> Bool
 readInt : String -> Int
+readInteger : String -> Integer
 readChar : String -> Char
 
 -- Internal Prints

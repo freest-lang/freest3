@@ -176,6 +176,7 @@ initialCtx = Map.fromList
   -- Read
   , (var "readBool", PrimitiveFun (\(String s) -> boolean (read s)))
   , (var "readInt" , PrimitiveFun (\(String s) -> Int (read s)))
+  , (var "readInteger" , PrimitiveFun (\(String s) -> Integer (read s)))
   , (var "readChar", PrimitiveFun (\(String (c : _)) -> Character c))
   -- Print to stdout
   , (var "__putStrOut", PrimitiveFun (\v -> IOValue $ putStr (show v) $> Unit))
