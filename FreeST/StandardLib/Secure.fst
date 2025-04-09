@@ -216,8 +216,6 @@ _separateSignature : Integer -> (Integer, Signature)
 _separateSignature value = (shiftRI value 3072, (Signature (modI value (2i ^i 3072i))))
 
 signedDHA : forall a . Key -> Key -> DHProtocol ; a -> (a, Key)
--- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
--- signedDHA _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
 signedDHA piKey puKey c =
     --Clacualte a and A
     let (aSecret, rng) = nextN64Bits 4 (newRNGState ()) in
@@ -237,8 +235,6 @@ signedDHA piKey puKey c =
         (c, (SessionKey -1i))
 
 signedDHB : forall a . Key -> Key -> dualof DHProtocol ; a -> (a, Key)
--- signedDHB (SessionKey _) _ _ = error @() "Private Key is a Symmetric key. Expected an Asymmetric key."
--- signedDHB _ (SessionKey _) _ = error @() "Public Key is a Symmetric key. Expected an Asymmetric key."
 signedDHB piKey puKey c =
     --Clacualte b and B
     let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
@@ -269,7 +265,7 @@ signedDHB piKey puKey c =
 
 
 data Nonce = Nonce Integer                  -- 96-bit
-data ChachaState = ChachaState (Nonce, Int)     -- Nonce + Counter
+data ChachaState = ChachaState (Nonce, Int) -- Nonce + Counter
 data Stream = Stream Integer                -- 512-bit
 data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
 
@@ -420,34 +416,36 @@ _multipleChacha20 key chachaState size =
 
 data SecureChannelState = SecureChannelState (Key, ChachaState)
 
-type EstablishSecureChannel = DHProtocol ; !Nonce
+type ShareChachaNonce = !Nonce
+
+type EstablishSecureChannel = DHProtocol ; ShareChachaNonce
 
 _getSecureChannelState : SecureChannelState -> (Key, ChachaState)
 _getSecureChannelState (SecureChannelState keyChachaState) = keyChachaState
 
 establishSecureChannelA : forall a . EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureChannelA c =
-    let (c, key) = dhA @(!Nonce ; a) c in
+    let (c, key) = dhA @(ShareChachaNonce ; a) c in
     let nonce = _newNonce () in
     let c = send nonce c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
 establishSecureChannelB : forall a . dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureChannelB c =
-    let (c, key) = dhB @(?Nonce ; a) c in
+    let (c, key) = dhB @(dualof ShareChachaNonce ; a) c in
     let (nonce, c) = receive c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
 establishSecureAuthenticatedChannelA : forall a . Key -> Key -> EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureAuthenticatedChannelA piKey puKey c =
-    let (c, key) = signedDHA @(!Nonce ; a) piKey puKey c in
+    let (c, key) = signedDHA @(ShareChachaNonce ; a) piKey puKey c in
     let nonce = _newNonce () in
     let c = send nonce c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
 establishSecureAuthenticatedChannelB : forall a . Key -> Key -> dualof EstablishSecureChannel ; a -> (a, SecureChannelState)
 establishSecureAuthenticatedChannelB piKey puKey c =
-    let (c, key) = signedDHB @(?Nonce ; a) piKey puKey c in
+    let (c, key) = signedDHB @(dualof ShareChachaNonce ; a) piKey puKey c in
     let (nonce, c) = receive c in
     (c, SecureChannelState (key, ChachaState (nonce, 0)))
 
