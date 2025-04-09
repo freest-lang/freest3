@@ -4,7 +4,8 @@
 module Restriction.Restriction
     ( Inequality
     , Leveled(..)
-    , joinLevels
+    , minLevel
+    , maxLevel
     )
 where
 
@@ -40,18 +41,18 @@ instance Leveled T.Type where
 instance Leveled T.TypeMap where
     level tm
         | Map.null tm = T.Top
-        | otherwise = foldr joinLevels T.Top (map level (Map.elems tm))
+        | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
 
--- joinLevels :: T.Level -> T.Level -> T.Level
--- joinLevels T.Bottom _ = T.Bottom
--- joinLevels _ T.Bottom = T.Bottom
--- joinLevels T.Top l = l
--- joinLevels l T.Top = l
--- joinLevels (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
+minLevel :: T.Level -> T.Level -> T.Level
+minLevel T.Bottom _ = T.Bottom
+minLevel _ T.Bottom = T.Bottom
+minLevel T.Top l = l
+minLevel l T.Top = l
+minLevel (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
 
-joinLevels :: T.Level -> T.Level -> T.Level
-joinLevels T.Top _ = T.Top
-joinLevels _ T.Top = T.Top
-joinLevels T.Bottom l = l
-joinLevels l T.Bottom = l
-joinLevels (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
+maxLevel :: T.Level -> T.Level -> T.Level
+maxLevel T.Top _ = T.Top
+maxLevel _ T.Top = T.Top
+maxLevel T.Bottom l = l
+maxLevel l T.Bottom = l
+maxLevel (T.Num n1) (T.Num n2) = T.Num (max n1 n2)

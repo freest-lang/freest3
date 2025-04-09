@@ -25,7 +25,9 @@ module Typing.Extract
   , inChoiceMap
   , datatypeMap
   , choiceBranch -- for select C e
-  , function2
+  , leveledFunction
+  , leveledOutput
+  , leveledInput
   )
 where
 
@@ -49,14 +51,6 @@ function e t =
     (T.Arrow _ m _ _ u v) -> return (m, u, v)
     u -> let p = getSpan e in
       addError (ExtractError p "an arrow" e u) $> (Un, omission p, omission p)
-
--- to also extract levels
-function2 :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (Multiplicity, T.Level, T.Level, T.Type, T.Type)
-function2 e t =
-  case normalise t of
-    (T.Arrow _ m l1 l2 u v) -> return (m, l1, l2, u, v)
-    u -> let p = getSpan e in
-      addError (ExtractError p "an arrow" e u) $> (Un, T.Top, T.Bottom, omission p, omission p)
 
 pair :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Type, T.Type)
 pair e t =
@@ -112,3 +106,24 @@ choiceBranch p tm a t = case tm Map.!? a of
   Just t -> return t
   Nothing -> addError (BranchNotInScope p a t) $> omission p
 
+-- alternative functions to also extract levels
+
+leveledFunction :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (Multiplicity, T.Level, T.Level, T.Type, T.Type)
+leveledFunction e t =
+  case normalise t of
+    (T.Arrow _ m l1 l2 u v) -> return (m, l1, l2, u, v)
+    u -> let p = getSpan e in
+      addError (ExtractError p "an arrow" e u) $> (Un, T.Top, T.Bottom, omission p, omission p)
+
+leveledOutput :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Level, T.Type, T.Type)
+leveledOutput = leveledMessage T.Out "an output"
+
+leveledInput :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Level, T.Type, T.Type)
+leveledInput = leveledMessage T.In "an input"
+
+leveledMessage :: MonadState (FreestS a) m => T.Polarity -> String -> E.Exp -> T.Type -> m (T.Level, T.Type, T.Type)
+leveledMessage pol msg e t =
+  case normalise t of
+    T.Semi _ (T.Message _ l pol' u) v | pol == pol' -> return (l, u, v)
+    u -> addError (ExtractError (getSpan e) msg e u) $>
+           (T.Top, omission $ getSpan u, T.Skip $ getSpan u)

@@ -136,9 +136,9 @@ send : forall a:1T . a ->[top,bot] forall b:1S . !100a; b 1->[100,100] b
 -- | the continuation channel.
 receive : forall a:1T b:1S . ?200a ; b ->[top,200] (a, b)
 -- | Closes a channel.
-close : Close 300 ->[top,bot] () --n,n or top,n
+close : Close 300 ->[300,bot] () --n,n or top,n
 -- | Waits for a channel to be closed.
-wait : Wait 400 ->[top,bot] () --n,n or top,n
+wait : Wait 400 ->[400,bot] () --n,n or top,n
 
 -- Files 
 -- | File paths
