@@ -22,7 +22,7 @@ _modExp b e m =
 ----- Hashing -----
 
 _hash256 : Integer -> Integer
-_hash256 value = fst @Integer @RNGState $ nextN64Bits 4 $ RNGState (1, value)
+_hash256 value = fst @Integer @RNGState $ nextN64Bits 4 $ RNGState (1, value) --Not a good hash, but a nice shortcut
 
 
 --  ██████  ███████  █████  
@@ -103,7 +103,7 @@ _modInverse a m = _modInverseLoop a m 0i 1i m a
 
 generateRSAKeyPair : String -> ()
 generateRSAKeyPair filePath =
-    --Finding p and q
+    --Finding p and q --TODO: Add paralelism to this to speed up the process?
     let rng = newRNGState () in
     print @String "Finding Large Prime p, this might take a while...";
     let (p, rng) = _generatePrime rng in
@@ -120,21 +120,27 @@ generateRSAKeyPair filePath =
     print @(String, Integer) ("Modulus", n);
     print @(String, Integer) ("Private exponent", d);
     print @(String, Integer) ("Public exponent", e);
-    --Writing Keys to Files
-    print @String "Creating key files";
-    let piFile = openWriteFile $ filePath ^^ ".priv" in
-    let puFile = openWriteFile $ filePath ^^ ".pub" in
-    --Writing Modulus n
-    let piFile = hPrint @Integer n piFile in
-    let puFile = hPrint @Integer n puFile in
-    --Writing Private exponent
-    let piFile = hPrint @Integer d piFile in
-    --Writing Public exponent
-    let puFile = hPrint @Integer e puFile in
-    --Closing Files
-    hCloseOut piFile;
-    hCloseOut puFile;
-    ()
+    if (shiftRI n 3069) ==i 0i then --Up to 3 leading 0s are accepted (something like 12.5% of happening ig), up to 3069-bits can be encrypted
+        print @String "Modulus too small, restarting";
+        print @String "------------------//------------------";
+        generateRSAKeyPair filePath
+    else
+        --Writing Keys to Files
+        print @String "Creating key files";
+        let piFile = openWriteFile $ filePath ^^ ".priv" in
+        let puFile = openWriteFile $ filePath ^^ ".pub" in
+        --Writing Modulus n
+        let piFile = hPrint @Integer n piFile in
+        let puFile = hPrint @Integer n puFile in
+        --Writing Private exponent
+        let piFile = hPrint @Integer d piFile in
+        --Writing Public exponent
+        let puFile = hPrint @Integer e puFile in
+        --Closing Files
+        hCloseOut piFile;
+        hCloseOut puFile;
+        print @String $ "RSA Keypair sucsessfully created on " ^^ filePath;
+        ()
 
 -- Reading and Using keys
 
@@ -204,10 +210,10 @@ dhB c =
 
 -- Sigend DH versions
 _appendSignature : Integer -> Signature -> Integer
-_appendSignature value (Signature signature) = lorI (shiftLI value 256) signature
+_appendSignature value (Signature signature) = lorI (shiftLI value 3072) signature
 
 _separateSignature : Integer -> (Integer, Signature)
-_separateSignature value = (shiftRI value 256, (Signature (modI value (2i ^i 256i))))
+_separateSignature value = (shiftRI value 3072, (Signature (modI value (2i ^i 3072i))))
 
 signedDHA : forall a . Key -> Key -> DHProtocol ; a -> (a, Key)
 -- signedDHA (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
@@ -227,11 +233,12 @@ signedDHA piKey puKey c =
     if _checkSignature bSignature bShared puKey then
         (c, (SessionKey $ _hash256 $ _modExp bShared aSecret _dhP))
     else
-        error @(a, Key) "Signature did not match shared value."
+        error @() "Signature did not match shared value."; --TODO: doesnt seem right
+        (c, (SessionKey -1i))
 
 signedDHB : forall a . Key -> Key -> dualof DHProtocol ; a -> (a, Key)
--- signedDHB (SessionKey _) _ _ = error @(a, Key) "Private Key is a Symmetric key. Expected an Asymmetric key."
--- signedDHB _ (SessionKey _) _ = error @(a, Key) "Public Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHB (SessionKey _) _ _ = error @() "Private Key is a Symmetric key. Expected an Asymmetric key."
+-- signedDHB _ (SessionKey _) _ = error @() "Public Key is a Symmetric key. Expected an Asymmetric key."
 signedDHB piKey puKey c =
     --Clacualte b and B
     let (bSecret, rng) = nextN64Bits 4 (newRNGState ()) in
@@ -247,7 +254,9 @@ signedDHB piKey puKey c =
     if _checkSignature aSignature aShared puKey then
         (c, (SessionKey $ _hash256 $ _modExp aShared bSecret _dhP))
     else
-        error @(a, Key) "Signature did not match shared value."
+        error @() "Signature did not match shared value."; --TODO: doesnt seem right
+        (c, (SessionKey -1i))
+
 
 
 
