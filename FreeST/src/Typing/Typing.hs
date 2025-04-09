@@ -158,31 +158,11 @@ synthetise kEnv (E.Var _ x) =
       return (s, T.Bottom)
 -- Unary let
 synthetise kEnv (E.UnLet p x e1 e2) = do
-  -- let f = if (moduleName (getSpan e1) /= "Prelude")
-  --     then tracedSynthetise
-  --     else synthetise
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  -- case t2 of
-  --   T.Semi _ (T.Skip _) t -> do
-  --     addInequality (getSpan t2) (l1, level t)
-  --     return (t2, joinLevels l1 (level t))
-  --   _ -> do
   addInequality (getSpan t2) (l1, level t2)
---   if (moduleName (getSpan e1) /= "Prelude" && (show e1) /= "wait x")
---   -- then internalError ("synthetise " ++ show l1 ++ " " ++ show (getSpan e1)) t1
---   -- then internalError ("synthetise " ++ show l2 ++ " " ++ show (minLevel (level u1) (level u2)) ++ " " ++ show (getSpan e2)) t1
---   then do
---     -- internalError ("synthetise " ++ show l1 ++ " " ++ show l2 ++ " " ++ show t1 ++ " " ++ show (getSpan e2) ++ " " ++ show e1 ++ "|||" ++ show e2) t2
---     internalError ("synthetise " ++ show (maxLevel l1 l2) ++ " " ++ show (level t2)) t2
-
--- -- internalError ("synthetise " ++ show l1 ++ " " ++ show e1 ++ " " ++ show u1 ++ " " ++ show (level u1) ++ " " ++ show u2 ++ " " ++ show (level u2)) t1
--- -- internalError ("synthetise " ++ show l2 ++ " " ++ show e2) t2
---   else return (t2, maxLevel l1 l2)
-
-
   return (t2, maxLevel l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -214,38 +194,24 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
           (Map.map (T.Labelled p T.Record l . Map.singleton (head mkTupleLabels p)) tm), maxLevel l (level t))
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
-  let f = if (moduleName (getSpan e) /= "Prelude")
-        then tracedSynthetise
-        else synthetise
   (t, l)        <- synthetise kEnv e
-  -- (t, l)        <- synthetiseVar kEnv e
   (l1, u1, u2) <- Extract.leveledInput e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  -- let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l1, level u2)
-  -- if (moduleName (getSpan e) /= "Prelude")
-  --   then internalError ("synthetise " ++ show l1 ++ " " ++ show u1 ++ " " ++ show (level u1) ++ " " ++ show u2) t
-  --   else return (T.tuple p [u1, u2], l1)
-  return (T.tuple p [u1, u2], l1)
-
-  -- addInequality (getSpan t) (l, level u3)
+  updateContext l1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
+  return (T.tuple p [u1, u2], l1)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
-  -- (t, l)     <- synthetiseVar kEnv e2
   (l1, u1, u2) <- Extract.leveledOutput e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  -- if (moduleName (getSpan e1) /= "Prelude")
-  --   then internalError ("synthetise send " ++ show l1 ++ " " ++ show u1 ++ " " ++ show (level u1) ++ " " ++ show u2 ++ " " ++ show e1) t
-  --   else return (u2, l1)
-  -- let (T.Semi _ _ u3) = u2
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l1, level u2)
-  -- addInequality (getSpan t) (l, level u3)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
+  updateContext l1
   return (u2, l1)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
@@ -259,17 +225,8 @@ synthetise kEnv (E.App _ e1 e2) = do
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
   -- checkAgainst kEnv e2 u1
   l2 <- leveledCheckAgainst kEnv e2 u1
-  -- if not (isValidIneq l1 (level u1))
-  --   then internalError ("synthetise " ++ show l1 ++ " " ++ show (level u1) ++ " " ++ show u1) t
-  -- if not (isValidIneq l2 l3)
-  --   then internalError ("synthetise " ++ show l2 ++ " " ++ show l3 ++ " ") u1
-    -- else return (u2, joinLevels l1 $ joinLevels l2 l4)
-
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l2, l3)
-  -- if((joinLevels l1 $ joinLevels l2 l4) /= T.Top && (joinLevels l1 $ joinLevels l2 l4) /= T.Bottom)
-  --   then internalError ("synthetise " ++ show (joinLevels l1 $ joinLevels l2 l4)) t
-  --   else return (u2, joinLevels l1 $ joinLevels l2 l4)
   return (u2, maxLevel l1 $ maxLevel l2 l4)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -299,55 +256,16 @@ synthetise kEnv (E.Pair p e1 e2) = do
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), maxLevel l1 l2)
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
-  -- let f = if (moduleName (getSpan e1) /= "Prelude")
-  --         then tracedSynthetise
-  --         else synthetise
   (t1, l1) <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
+  resetContext
   (t2, l2) <- synthetise kEnv e2
-  -- if (moduleName (getSpan e2) /= "Prelude")
-  --   then internalError ("synthetise " ++ show (maxLevel l1 l2) ++ " " ++ show (minLevel l2 (minLevel (level u1) (level u2)))) t1
-  --   else return (t1, l1)
   difference kEnv x
   difference kEnv y
-  -- if (moduleName (getSpan e1) /= "Prelude")
-  --   -- then internalError ("synthetise " ++ show l1 ++ " " ++ show (getSpan e1)) t1
-  --   -- then internalError ("synthetise " ++ show l2 ++ " " ++ show (minLevel (level u1) (level u2)) ++ " " ++ show (getSpan e2)) t1
-  --   then do
-  --     let (T.Semi _ (T.Skip _) w) = u2
-  --     internalError ("synthetise " ++ show u1 ++ " " ++ show u2 ++ " " ++ show (level w) ++ " " ++ show (getSpan e2) ++ " " ++ show t1 ++ " " ++ show e2) t2
-
-  -- -- internalError ("synthetise " ++ show l1 ++ " " ++ show e1 ++ " " ++ show u1 ++ " " ++ show (level u1) ++ " " ++ show u2 ++ " " ++ show (level u2)) t1
-  -- -- internalError ("synthetise " ++ show l2 ++ " " ++ show e2) t2
-  --   else return (t2, minLevel l1 l2)
-  -- case t2 of
-  --   T.Semi _ (T.Skip _) t -> do
-  --     addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
-  --     return (t2, joinLevels l1 (level t))
-  --   _ -> do
-
-  -- if l1 /= T.Top && l1 /= T.Bottom || (level t1) /= T.Top && (level t1) /= T.Bottom || (level t2) /= T.Top && (level t2) /= T.Bottom
-  --   then internalError ("synthetise " ++ show l1 ++ " " ++ show (level t1) ++ show (level t2) ++ " " ++ show t1) t2
-  --   else do
-  -- if ((level u1) /= T.Top && (level u1) /= T.Bottom || (level u2) /= T.Top && (level u2) /= T.Bottom)
-  --   then internalError ("synthetise " ++ show (level u1) ++ " " ++ show (level u2)) t2
-  --   else do 
-
-
-  -- addInequality (getSpan t2) (l1, minLevel (level u1) (level u2))
-  if l2 == T.Bottom
-    then do
-      let l3 = minLevel (level u1) (level u2)
-      addInequality (getSpan t2) (l1, l3)
-    else do
-      let l3 = minLevel l2 (minLevel (level u1) (level u2))
-      -- if (moduleName (getSpan e2) /= "Prelude")
-      --   then internalError ("synthetise " ++ show e2 ++  " " ++ show u2 ++ " " ++ show (level u1) ++ " " ++ show (level u2) ++ " " ++ show e2) t2
-        -- else addInequality (getSpan t2) (l1, l3)
-      -- addInequality (getSpan t2) (l1, minLevel l2 (minLevel (level u1) (level u2)))
-      addInequality (getSpan t2) (l1, l3)
+  l3 <- getContext
+  addInequality (getSpan t2) (l1, minLevel l3 (minLevel (level u1) (level u2)))
   return (t2, maxLevel l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
@@ -361,42 +279,28 @@ synthetise kEnv (E.Case p e fm) = do
   setSignatures v
   return (t, T.Bottom)
 
-tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
-tracedSynthetise kEnv e = do
-  let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
-  case e of
-    E.Int _ _       -> logRule "E.Int"
-    E.Float _ _     -> logRule "E.Float"
-    E.Char _ _      -> logRule "E.Char"
-    E.Unit _        -> logRule "E.Unit"
-    E.String _ _    -> logRule "E.String"
-    E.Var _ _       -> logRule "E.Var"
-    E.UnLet _ _ _ _ -> logRule "E.UnLet"
-    E.Abs _ _ _     -> logRule "E.Abs"
-    E.Pair _ _ _    -> logRule "E.Pair"
-    E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
-    (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
-    (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
-    E.App _ _ _     -> logRule "E.App"
-    E.TypeApp _ _ _ -> logRule "E.TypeApp"
-    E.TypeAbs _ _   -> logRule "E.TypeAbs"
-    E.Case _ _ _    -> logRule "E.Case"
-    _               -> logRule "Unknown expression"
-  synthetise kEnv e
-
-synthetiseVar :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
-synthetiseVar kEnv (E.Var _ x) = do
-  getFromSignatures x >>= \case
-    Just s -> do
-      (k, l) <- K.synthetise kEnv s
-      when (K.isLin k) $ removeFromSignatures x
-      return (s, l)
-    Nothing -> do
-      let p = getSpan x
-          s = omission p
-      addError (VarOrConsNotInScope p x)
-      addToSignatures x s
-      return (s, T.Bottom)
+-- tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
+-- tracedSynthetise kEnv e = do
+--   let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
+--   case e of
+--     E.Int _ _       -> logRule "E.Int"
+--     E.Float _ _     -> logRule "E.Float"
+--     E.Char _ _      -> logRule "E.Char"
+--     E.Unit _        -> logRule "E.Unit"
+--     E.String _ _    -> logRule "E.String"
+--     E.Var _ _       -> logRule "E.Var"
+--     E.UnLet _ _ _ _ -> logRule "E.UnLet"
+--     E.Abs _ _ _     -> logRule "E.Abs"
+--     E.Pair _ _ _    -> logRule "E.Pair"
+--     E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
+--     (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
+--     (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
+--     E.App _ _ _     -> logRule "E.App"
+--     E.TypeApp _ _ _ -> logRule "E.TypeApp"
+--     E.TypeAbs _ _   -> logRule "E.TypeAbs"
+--     E.Case _ _ _    -> logRule "E.Case"
+--     _               -> logRule "Unknown expression"
+--   synthetise kEnv e
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -469,12 +373,6 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  -- case t2 of
-  --   T.Semi _ (T.Skip _) t -> do
-  --     addInequality (getSpan t2) (l1, joinLevels (level t1) (level t))
-  --     return (joinLevels l1 (level t))
-  --   _ -> do
-      -- addInequality (getSpan t2) (l1, joinLevels (level t1) (level t2))
   return (maxLevel l1 l2)
 leveledCheckAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
@@ -535,19 +433,12 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' (x : xs, e) (t:ts) =
     E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
 
--- checkInequalities :: TypingState ()
--- checkInequalities = do
---   ineq <- getInequalities
---   forM_ ineq $ \(l1, l2) -> do
---     unless (isValidIneq l1 l2) $
---       addError (LevelMismatch defaultSpan l1 l2) --need a span for this error but don't have one
-
 checkInequalities :: TypingState ()
 checkInequalities = do
   ineq <- getInequalities
   forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
     unless (isValidIneq l1 l2) $
-      addError (LevelMismatch span l1 l2) -- Use the span from the inequality
+      addError (LevelMismatch span l1 l2)
 
 isValidIneq :: T.Level -> T.Level -> Bool
 isValidIneq T.Top T.Top = True
@@ -556,5 +447,4 @@ isValidIneq _ T.Top = True
 isValidIneq T.Bottom T.Bottom = True
 isValidIneq _ T.Bottom = False
 isValidIneq T.Bottom _ = True
-isValidIneq (T.Num n1) (T.Num n2) = n1 < n2 -- <= or < ?
---isValidIneq _ _ = False
+isValidIneq (T.Num n1) (T.Num n2) = n1 < n2

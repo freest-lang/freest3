@@ -32,6 +32,7 @@ data FreestS a = FreestS
   , typenames :: TypeOpsEnv -- TODO: Remove with the new errors 
   , extra :: XExtra a
   , inequalities :: Inequalities
+  , context :: T.Level
   }
 
 type family XExtra a
@@ -51,6 +52,7 @@ initial ext = FreestS {
   , typenames = Map.empty
   , extra = ext
   , inequalities = Set.empty
+  , context = T.Top
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -66,6 +68,7 @@ initialS = FreestS {
   , typenames = Map.empty
   , extra = void
   , inequalities = Set.empty
+  , context = T.Top
   }
 
 -- | AST
@@ -268,8 +271,17 @@ debugM err = do
 getInequalities :: S.MonadState (FreestS a) m => m Inequalities
 getInequalities = S.gets inequalities
 
--- addInequality :: S.MonadState (FreestS a) m => R.Inequality -> m ()
--- addInequality i = S.modify (\s -> s { inequalities = Set.insert i (inequalities s) })
-
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
 addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (span, inequality) (inequalities s) })
+
+getContext :: S.MonadState (FreestS a) m => m T.Level
+getContext = S.gets context
+
+resetContext :: S.MonadState (FreestS a) m => m ()
+resetContext = S.modify (\s -> s { context = T.Top })
+
+updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+updateContext l = do
+  currentContext <- getContext
+  let newContext = R.minLevel currentContext l
+  S.modify (\s -> s { context = newContext })
