@@ -1,4 +1,4 @@
-type X = !2();!1();Close 3
+type X = !3();!2();Close 1
 
 server : dualof X ->[3,1] ()
 server x = 

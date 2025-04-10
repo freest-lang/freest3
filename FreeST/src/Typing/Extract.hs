@@ -28,6 +28,7 @@ module Typing.Extract
   , leveledFunction
   , leveledOutput
   , leveledInput
+  , leveledEnd
   )
 where
 
@@ -39,6 +40,7 @@ import           Typing.Normalisation ( normalise )
 import           Typing.Phase
 import           Util.Error
 import           Util.State
+import           Restriction.Restriction
 
 import           Control.Monad.State
 import           Data.Functor
@@ -106,7 +108,7 @@ choiceBranch p tm a t = case tm Map.!? a of
   Just t -> return t
   Nothing -> addError (BranchNotInScope p a t) $> omission p
 
--- alternative functions to also extract levels
+-- LEVELS
 
 leveledFunction :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (Multiplicity, T.Level, T.Level, T.Type, T.Type)
 leveledFunction e t =
@@ -127,3 +129,9 @@ leveledMessage pol msg e t =
     T.Semi _ (T.Message _ l pol' u) v | pol == pol' -> return (l, u, v)
     u -> addError (ExtractError (getSpan e) msg e u) $>
            (T.Top, omission $ getSpan u, T.Skip $ getSpan u)
+
+leveledEnd :: MonadState (FreestS a) m => E.Exp -> T.Type -> m T.Level
+leveledEnd e t =
+  case normalise t of
+    T.End _ _ l -> return l
+    u -> addError (ExtractError (getSpan e) "an end" e u) $> T.Top

@@ -201,7 +201,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   addInequality (getSpan t) (l1, level u2)
   updateContext l1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return (T.tuple p [u1, u2], l1)
+  return (T.tuple p [u1, u2], maxLevel l l1)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
@@ -212,18 +212,25 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   updateContext l1
-  return (u2, l1)
+  return (u2, maxLevel l l1)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   s <- get
   (u, _) <- liftIO $ evalStateT (synthetise kEnv e) s
   (_, _, t) <- Extract.function e u
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
+  -- close/wait e
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
+  (t, l) <- synthetise kEnv e
+  l1 <- Extract.leveledEnd e t
+  void $ K.checkAgainst kEnv (K.lt defaultSpan) t
+  addInequality (getSpan t) (l, l1)
+  updateContext l1
+  return (T.unit p, l1)
 -- Application, general case
-synthetise kEnv (E.App _ e1 e2) = do
-  (t, l1)      <- synthetise kEnv e1
+synthetise kEnv (E.App p e1 e2) = do
+  (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
-  -- checkAgainst kEnv e2 u1
   l2 <- leveledCheckAgainst kEnv e2 u1
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l2, l3)
