@@ -192,7 +192,7 @@ instance Unparse T.Type where
   unparse (T.End _ T.In _ ) = (maxRator, "Wait")
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
-  unparse (T.Message _ l p t) = (msgRator, show p ++ show l ++ m)
+  unparse (T.Message _ l p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m l1 l2 t u) = (arrowRator, l ++ spaced (showArrow m (l1,l2)) ++ r)
    where

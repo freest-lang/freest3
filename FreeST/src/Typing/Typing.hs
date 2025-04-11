@@ -396,6 +396,17 @@ leveledCheckAgainst kEnv e t = do
       return l1
 
 
+-- compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
+-- compareTypes e t u = do 
+--   sub <- subtyping <$> getRunOpts
+--   timeout_ms   <- subTimeout_ms <$> getRunOpts
+--   let cmp = if sub then subtype else equivalent 
+--   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
+--   case checkAttempt of 
+--     Just checks -> unless checks 
+--                  $ addError (TypeMismatch (getSpan e) t u e)
+--     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
+
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
 compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
@@ -403,8 +414,10 @@ compareTypes e t u = do
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 
-    Just checks -> unless checks 
-                 $ addError (TypeMismatch (getSpan e) t u e)
+    Just checks -> do
+      unless checks $ do
+        internalError ("compareTypes: type mismatch" ++ " " ++ show t) u
+        addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
