@@ -13,10 +13,6 @@ mathClient x c0 =
     x |> send () |> close;
     i
 
--- mathClient : MathService ->[1,5] Int
--- mathClient c =
---   c |> select Negate |> send 5 |> receiveAndClose @Int
-
 mathServer : dualof CheckIn ->[top,bot] dualof MathService 1->[1,8] ()
 mathServer x (Negate c1) =
     let (_,x) = receive x in
@@ -28,14 +24,6 @@ mathServer x (IsZero c1) =
     wait x;
     let (i, c2) = receive c1 in
     c2 |> send (i == 0) |> wait
-
--- mathServer : dualof MathService ->[1,5] ()
--- mathServer (Negate c1) =
---       let (i, c2) = receive c1 in
---       sendAndWait @Int (-i) c2
--- mathServer (IsZero c1) =
---       let (i, c2) = receive c1 in
---       sendAndWait @Bool (i == 0) c2
 
 main : Int
 main =
