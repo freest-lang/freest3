@@ -29,6 +29,9 @@ module Typing.Extract
   , leveledOutput
   , leveledInput
   , leveledEnd
+  , leveledOutChoiceMap
+  , leveledInChoiceMap
+  , leveledChoiceMap
   )
 where
 
@@ -135,3 +138,16 @@ leveledEnd e t =
   case normalise t of
     T.End _ _ l -> return l
     u -> addError (ExtractError (getSpan e) "an end" e u) $> T.Top
+
+leveledOutChoiceMap :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Level, T.TypeMap)
+leveledOutChoiceMap = leveledChoiceMap T.External "an external choice (&)"
+
+leveledInChoiceMap :: MonadState (FreestS a) m => E.Exp -> T.Type -> m (T.Level, T.TypeMap)
+leveledInChoiceMap = leveledChoiceMap T.Internal "an internal choice (+)"
+
+leveledChoiceMap :: MonadState (FreestS a) m => T.View -> String -> E.Exp -> T.Type -> m (T.Level, T.TypeMap)
+leveledChoiceMap view msg e t =
+  case normalise t of
+    (T.Semi _ (T.Labelled _ (T.Choice view') l m) u) | view == view' ->
+      return (l, (Map.map (\v -> T.Semi (getSpan v) v u) m))
+    u -> addError (ExtractError (getSpan e) msg e u) $> (T.Top, Map.empty)

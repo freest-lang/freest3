@@ -334,71 +334,71 @@ repeat n thunk =
 parallel : forall a:*T . Int ->[top,bot] (() ->[top,bot] a) ->[top,bot] ()
 parallel n thunk = repeat @() n (\_:() -> fork @a thunk) --TODO
 
--- type Consumer a = a 1-> ()
+-- -- type Consumer a = a 1-> ()
 
--- | Receives a value from a linear channel and applies a function to it.
--- | Discards the result and returns the continuation channel.
--- | 
--- | ```
--- | main : ()
--- | main =
--- |   -- create channel endpoints
--- |   let (c, s) = new @(?String ; Wait) () in
--- |   -- fork a thread that prints the received value (and closes the channel)
--- |   fork (\_:() 1-> c |> readApply @String @End putStrLn |> wait);
--- |   -- send a string through the channel (and close it)
--- |   s |> send "Hello!" |> close
--- | ```
-readApply : forall a:*T b:1S . (a ->[top,bot] ()) {- Consumer a -} ->[top,bot] ?280a ; b 1->[top,280] b --priority?
-readApply f c =
-  let (x, c) = receive c in
-  f x;
-  c
+-- -- | Receives a value from a linear channel and applies a function to it.
+-- -- | Discards the result and returns the continuation channel.
+-- -- | 
+-- -- | ```
+-- -- | main : ()
+-- -- | main =
+-- -- |   -- create channel endpoints
+-- -- |   let (c, s) = new @(?String ; Wait) () in
+-- -- |   -- fork a thread that prints the received value (and closes the channel)
+-- -- |   fork (\_:() 1-> c |> readApply @String @End putStrLn |> wait);
+-- -- |   -- send a string through the channel (and close it)
+-- -- |   s |> send "Hello!" |> close
+-- -- | ```
+-- readApply : forall a:*T b:1S . (a ->[top,bot] ()) {- Consumer a -} ->[top,bot] ?280a ; b 1->[top,280] b --priority?
+-- readApply f c =
+--   let (x, c) = receive c in
+--   f x;
+--   c
 
--- | Receives a value from a channel that continues to `Wait`, closes the 
--- | continuation and returns the value.
--- | 
--- | ```
--- | main : ()
--- | main =
--- |   -- create channel endpoints
--- |   let (c, s) = new @(?String ; Wait) () in
--- |   -- fork a thread that prints the received value (and closes the channel)
--- |   fork (\_:() 1-> c |> receiveAndWait @String |> putStrLn);
--- |   -- send a string through the channel (and close it)
--- |   s |> send "Hello!" |> close
--- | ```
-receiveAndWait : forall a:1T . ?260a ; Wait 261 ->[top,bot] a
-receiveAndWait c =
-  let (x, c) = receive c in 
-  wait c;
-  x
+-- -- | Receives a value from a channel that continues to `Wait`, closes the 
+-- -- | continuation and returns the value.
+-- -- | 
+-- -- | ```
+-- -- | main : ()
+-- -- | main =
+-- -- |   -- create channel endpoints
+-- -- |   let (c, s) = new @(?String ; Wait) () in
+-- -- |   -- fork a thread that prints the received value (and closes the channel)
+-- -- |   fork (\_:() 1-> c |> receiveAndWait @String |> putStrLn);
+-- -- |   -- send a string through the channel (and close it)
+-- -- |   s |> send "Hello!" |> close
+-- -- | ```
+-- receiveAndWait : forall a:1T . ?260a ; Wait 261 ->[top,bot] a
+-- receiveAndWait c =
+--   let (x, c) = receive c in 
+--   wait c;
+--   x
 
--- | As in receiveAndWait only that the type is Wait and the function closes the
--- | channel rather the waiting for the channel to be closed.
-receiveAndClose : forall a:1T . ?270a ; Close 271 ->[top,bot] a 
-receiveAndClose c =
-  let (x, c) = receive c in 
-  close c;
-  x
+-- -- | As in receiveAndWait only that the type is Wait and the function closes the
+-- -- | channel rather the waiting for the channel to be closed.
+-- receiveAndClose : forall a:1T . ?270a ; Close 271 ->[top,bot] a 
+-- receiveAndClose c =
+--   let (x, c) = receive c in 
+--   close c;
+--   x
 
--- | Sends a value on a given channel and then waits for the channel to be
--- | closed. Returns ().
-sendAndWait : forall a:1T . a ->[top,bot] !160a ; Wait 161 1->[top,bot] ()
-sendAndWait x c = c |> send x |> wait
+-- -- | Sends a value on a given channel and then waits for the channel to be
+-- -- | closed. Returns ().
+-- sendAndWait : forall a:1T . a ->[top,bot] !160a ; Wait 161 1->[top,bot] ()
+-- sendAndWait x c = c |> send x |> wait
 
--- | Sends a value on a given channel and then closes the channel.
--- | Returns ().
-sendAndClose : forall a:1T . a ->[top,bot] !170a ; Close 171 1->[top,bot] ()
-sendAndClose x c = c |> send x |> close
+-- -- | Sends a value on a given channel and then closes the channel.
+-- -- | Returns ().
+-- sendAndClose : forall a:1T . a ->[top,bot] !170a ; Close 171 1->[top,bot] ()
+-- sendAndClose x c = c |> send x |> close
 
--- | Receives a value from a star channel. Unrestricted version of `receive`.
-receive_ : forall a:1T . *?250a ->[top,250] a
-receive_ c = c |> receive |> fst @a @*?251a
+-- -- | Receives a value from a star channel. Unrestricted version of `receive`.
+-- receive_ : forall a:1T . *?250a ->[top,250] a
+-- receive_ c = c |> receive |> fst @a @*?251a
 
--- | Sends a value on a star channel. Unrestricted version of `send`.
-send_ : forall a:1T . a ->[top,bot] *!150a 1->[150,150] ()
-send_ x c = c |> send x |> sink @*!151a
+-- -- | Sends a value on a star channel. Unrestricted version of `send`.
+-- send_ : forall a:1T . a ->[top,bot] *!150a 1->[150,150] ()
+-- send_ x c = c |> send x |> sink @*!151a
 
 -- -- | Session initiation. Accepts a request for a linear session on a shared
 -- -- | channel. The requester uses a conventional `receive` to obtain the channel

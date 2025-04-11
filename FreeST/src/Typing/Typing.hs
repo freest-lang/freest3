@@ -181,17 +181,17 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkSelect p = do
     (t, l) <- synthetise kEnv e
-    m <- Extract.inChoiceMap e t
+    (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
-    addInequality (getSpan t) (l, level t1)
+    addInequality (getSpan t) (l1, level t1)
     return (t1, T.Bottom)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
-  tm <- Extract.outChoiceMap e t
-  -- addInequality (getSpan t) (l, level tm)
-  return (T.Labelled p T.Variant l
-          (Map.map (T.Labelled p T.Record l . Map.singleton (head mkTupleLabels p)) tm), maxLevel l (level t))
+  (l1, tm) <- Extract.leveledOutChoiceMap e t
+  addInequality (getSpan t) (l, level tm)
+  return (T.Labelled p T.Variant l1
+          (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), maxLevel l l1)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
