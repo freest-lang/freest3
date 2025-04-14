@@ -139,11 +139,11 @@ checkLinearity = do
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ (T.Int p, level $ T.Int p)
-synthetise _ (E.Float p _ ) = return $ (T.Float p, level $ T.Float p)
-synthetise _ (E.Char p _  ) = return $ (T.Char p, level $ T.Char p)
-synthetise _ (E.Unit p    ) = return $ (T.unit p, T.Top)
-synthetise _ (E.String p _) = return $ (T.String p, level $ T.String p)
+synthetise _ (E.Int  p _  ) = return $ (T.Int p, T.Bottom)
+synthetise _ (E.Float p _ ) = return $ (T.Float p, T.Bottom)
+synthetise _ (E.Char p _  ) = return $ (T.Char p, T.Bottom)
+synthetise _ (E.Unit p    ) = return $ (T.unit p, T.Bottom)
+synthetise _ (E.String p _) = return $ (T.String p, T.Bottom)
 synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
@@ -286,28 +286,28 @@ synthetise kEnv (E.Case p e fm) = do
   setSignatures v
   return (t, T.Bottom)
 
--- tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
--- tracedSynthetise kEnv e = do
---   let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
---   case e of
---     E.Int _ _       -> logRule "E.Int"
---     E.Float _ _     -> logRule "E.Float"
---     E.Char _ _      -> logRule "E.Char"
---     E.Unit _        -> logRule "E.Unit"
---     E.String _ _    -> logRule "E.String"
---     E.Var _ _       -> logRule "E.Var"
---     E.UnLet _ _ _ _ -> logRule "E.UnLet"
---     E.Abs _ _ _     -> logRule "E.Abs"
---     E.Pair _ _ _    -> logRule "E.Pair"
---     E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
---     (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
---     (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
---     E.App _ _ _     -> logRule "E.App"
---     E.TypeApp _ _ _ -> logRule "E.TypeApp"
---     E.TypeAbs _ _   -> logRule "E.TypeAbs"
---     E.Case _ _ _    -> logRule "E.Case"
---     _               -> logRule "Unknown expression"
---   synthetise kEnv e
+tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
+tracedSynthetise kEnv e = do
+  let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
+  case e of
+    E.Int _ _       -> logRule "E.Int"
+    E.Float _ _     -> logRule "E.Float"
+    E.Char _ _      -> logRule "E.Char"
+    E.Unit _        -> logRule "E.Unit"
+    E.String _ _    -> logRule "E.String"
+    E.Var _ _       -> logRule "E.Var"
+    E.UnLet _ _ _ _ -> logRule "E.UnLet"
+    E.Abs _ _ _     -> logRule "E.Abs"
+    E.Pair _ _ _    -> logRule "E.Pair"
+    E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
+    (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
+    (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
+    E.App _ _ _     -> logRule "E.App"
+    E.TypeApp _ _ _ -> logRule "E.TypeApp"
+    E.TypeAbs _ _   -> logRule "E.TypeAbs"
+    E.Case _ _ _    -> logRule "E.Case"
+    _               -> logRule "Unknown expression"
+  synthetise kEnv e
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -396,17 +396,6 @@ leveledCheckAgainst kEnv e t = do
       return l1
 
 
--- compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
--- compareTypes e t u = do 
---   sub <- subtyping <$> getRunOpts
---   timeout_ms   <- subTimeout_ms <$> getRunOpts
---   let cmp = if sub then subtype else equivalent 
---   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
---   case checkAttempt of 
---     Just checks -> unless checks 
---                  $ addError (TypeMismatch (getSpan e) t u e)
---     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
-
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
 compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
@@ -414,10 +403,8 @@ compareTypes e t u = do
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 
-    Just checks -> do
-      unless checks $ do
-        internalError ("compareTypes: type mismatch" ++ " " ++ show t) u
-        addError (TypeMismatch (getSpan e) t u e)
+    Just checks -> unless checks 
+                 $ addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
