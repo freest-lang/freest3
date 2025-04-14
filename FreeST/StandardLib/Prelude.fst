@@ -135,6 +135,8 @@ newHcServer : forall a:1A . (String, String) -> a
 
 newHcClient : forall a:1A . ((String, String), String) -> a
 
+newHcClient1 : forall a:1A . (String, String) -> a
+
 
 -- | Sends a value on a channel. Returns the continuation channel
 send : forall a:1T . a -> forall b:1S . !a ; b 1-> b

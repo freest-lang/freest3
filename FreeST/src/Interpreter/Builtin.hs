@@ -3,7 +3,7 @@ module Interpreter.Builtin where
 
 import           Interpreter.Value
 import           Syntax.Base
-import           Interpreter.Test 
+import           Interpreter.Serialize 
 
 import qualified Control.Concurrent.Chan as C
 import           Data.Char ( ord, chr )
@@ -53,6 +53,13 @@ newHcClient (Pair (Pair (String host) (String port)) (String sv_addr)) = NS.with
     NSB.send sock bytes
     return $ Right sock
 
+newHcClient1 :: Value -> IO ChannelEnd
+newHcClient1 (Pair (String host) (String port)) = NS.withSocketsDo $ do
+    let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
+    addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
+    sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
+    NS.connect sock (NS.addrAddress addr)
+    return $ Right sock
 
 receive :: ChannelEnd -> IO (Value, ChannelEnd)
 receive (Left c) = do
@@ -96,6 +103,7 @@ initialCtx = Map.fromList
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
   , (var "newHcServer", PrimitiveFun (\info -> IOValue $ Chan <$> newHcServer info))
   , (var "newHcClient", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient info))
+  , (var "newHcClient1", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient1 info))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "wait", PrimitiveFun (IOValue . wait))

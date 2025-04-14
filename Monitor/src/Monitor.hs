@@ -55,20 +55,19 @@ extractMessage :: Handle -> B.ByteString -> IO MessageType
 extractMessage hdl tagB = 
     let tag = B.head tagB in
     case tag of
-        0 -> return $ Simple (T.unit defaultSpan) tagB
-        1 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Var defaultSpan (Variable defaultSpan "Bool" (-1))) originalMessage
+        1 -> return $ Simple (T.unit defaultSpan) tagB
         2 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Int defaultSpan)   originalMessage
         3 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Float defaultSpan) originalMessage
         4 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Char defaultSpan)  originalMessage
         5 -> getFromStringMessage hdl >>= \originalMessage -> return $ Str originalMessage
         6 -> getFromLabelMessage hdl  >>= \(label, originalMessage) -> return $ LLabel label originalMessage
         7 -> return Finish
+        
         _ -> return $ Error "The tag was not recognised"
         where
             getRestOfMessage :: Handle -> Word8 -> IO B.ByteString
             getRestOfMessage hdl n =
                 case n of
-                    1 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
                     2 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
                     3 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
                     4 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
@@ -262,8 +261,7 @@ main = do
     case parseType "" session_type of
         Left e -> print e
         Right t -> do
-            let nt = normalise t
-            state_machine <- newMVar nt
+            state_machine <- newMVar t
             sock1 <- createSocket "127.0.0.1" "8080"
             (host, port) <- receiveAddress sock1
 

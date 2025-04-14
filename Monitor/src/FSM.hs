@@ -60,7 +60,7 @@ message :: T.Polarity -> T.Type -> Either String (T.Type, T.Type)
 message pol t =
   case normalise t of
     T.Semi _ (T.Message _ pol' u) v | pol == pol' -> Right (u, v)
-    u -> Left $ "Mistake on the direction of the message " ++ show pol
+    u -> Left "Mistake on the direction of the message"
 
 outChoiceMap :: T.Type -> Either String T.TypeMap
 outChoiceMap = choiceMap T.External 
