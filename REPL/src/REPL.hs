@@ -153,7 +153,7 @@ parseOpt s (Just xs)
                           }
                   (v,ctx') <- liftS $ evalAndPrint' it' ctx st'
                   let it = mkVar defaultSpan "it"
-                  lift $ put (typingToRepl (Map.insert it v ctx') st{ast=addSignature it t(ast st)})
+                  lift $ put (typingToRepl (Map.insert it v ctx') st{ast=addSignature it (fst t) (ast st)})
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
