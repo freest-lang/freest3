@@ -31,7 +31,7 @@ check (Label label T.Internal) sm = case inChoiceMap sm of
         Just a ->
           Right a
         Nothing ->
-          Left $ "Label not found " ++ show label
+          Left $ "Label not found " ++ show label ++ " in " ++ show m
     Left x -> Left x
 
 check (Label label T.External) sm = case outChoiceMap sm of
@@ -40,7 +40,7 @@ check (Label label T.External) sm = case outChoiceMap sm of
         Just a ->
           Right a
         Nothing ->
-          Left $ "Label not found " ++ show label
+          Left $ "Label not found " ++ show label  ++ " in " ++ show m
     Left x -> Left x
 
 check _ b = Left $ "Not implemented " ++ show b
@@ -60,7 +60,7 @@ message :: T.Polarity -> T.Type -> Either String (T.Type, T.Type)
 message pol t =
   case normalise t of
     T.Semi _ (T.Message _ pol' u) v | pol == pol' -> Right (u, v)
-    u -> Left "Mistake on the direction of the message"
+    u -> Left $ "Mistake on the direction of the message " ++ show pol ++ show u
 
 outChoiceMap :: T.Type -> Either String T.TypeMap
 outChoiceMap = choiceMap T.External 

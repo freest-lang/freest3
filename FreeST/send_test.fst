@@ -34,8 +34,10 @@ writeTree tree writer =
 
 main : ()
 main =
-  let c = newHcClient @(dualof TreeChannel) (("127.0.0.1", "8080"), "127.0.0.1:8081") in
-  writeTree aTree c;
+  -- let c = newHcClient1 @(!Bool;Close) ("127.0.0.1", "8081") in
+  let c = newHcClient @(!Bool;Close) (("127.0.0.1", "8080"), "127.0.0.1:8081") in
+  let c1 = send True c in
+  close c1;
   ()
 
 

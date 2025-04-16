@@ -25,11 +25,12 @@ readTree r =
   wait r;
   tree
 
-main : Tree
+main : Bool
 main =
-  let c = newHcServer @TreeChannel ("127.0.0.1", "8081") in
-  let res = readTree c in
-  res
+  let c = newHcServer @(?Bool; Wait) ("127.0.0.1", "8081") in
+  let (t, c1) = receive c in
+  wait c1;
+  t
 
 -- main : Tree
 -- main =

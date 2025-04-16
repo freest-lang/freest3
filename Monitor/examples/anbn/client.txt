@@ -1,0 +1,1 @@
++{A: rec x . +{A: x ; +{B: Skip}, B: Skip}} ; Close

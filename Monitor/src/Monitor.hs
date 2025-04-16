@@ -62,16 +62,18 @@ extractMessage hdl tagB =
         5 -> getFromStringMessage hdl >>= \originalMessage -> return $ Str originalMessage
         6 -> getFromLabelMessage hdl  >>= \(label, originalMessage) -> return $ LLabel label originalMessage
         7 -> return Finish
+        99 -> getRestOfMessage hdl tag >>= \originalMessage -> return $ Simple (T.Var defaultSpan (Variable defaultSpan "Bool" (-1))) originalMessage
         
         _ -> return $ Error "The tag was not recognised"
         where
             getRestOfMessage :: Handle -> Word8 -> IO B.ByteString
             getRestOfMessage hdl n =
                 case n of
-                    2 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
-                    3 -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
-                    4 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
-                    _ -> return B.empty -- Never going to happen
+                    2  -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
+                    3  -> B.hGetNonBlocking hdl 4 >>= \rest -> return $ B.concat [tagB, rest]
+                    4  -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
+                    99 -> B.hGetNonBlocking hdl 1 >>= \rest -> return $ B.concat [tagB, rest]
+                    _  -> return B.empty -- Never going to happen
 
             getFromStringMessage :: Handle -> IO B.ByteString
             getFromStringMessage hdl = do
@@ -257,25 +259,28 @@ receiveAddress sock = do
 main :: IO ()
 main = do
     args <- getArgs
-    session_type <- readFile $ head args
-    case parseType "" session_type of
-        Left e -> print e
-        Right t -> do
-            state_machine <- newMVar t
-            sock1 <- createSocket "127.0.0.1" "8080"
-            (host, port) <- receiveAddress sock1
+    if length args < 2 then
+        error "Usage: monitor <session_type_file_path> -client/-server"
+    else do
+        session_type <- readFile $ head args
+        case parseType "" session_type of
+            Left e -> print e
+            Right t -> do
+                state_machine <- newMVar t
+                sock1 <- createSocket "127.0.0.1" "8080"
+                (host, port) <- receiveAddress sock1
 
-            sock2 <- connectTo host port
+                sock2 <- connectTo host port
 
-            hdl1 <- socketToHandle sock1 ReadWriteMode
-            hSetBuffering hdl1 NoBuffering
+                hdl1 <- socketToHandle sock1 ReadWriteMode
+                hSetBuffering hdl1 NoBuffering
 
-            hdl2 <- socketToHandle sock2 ReadWriteMode
-            hSetBuffering hdl2 NoBuffering
-            
-            if (args !! 1) == "-client" then
-                nonBlockingReceive hdl1 hdl2 state_machine
-            else 
-                nonBlockingReceive hdl2 hdl1 state_machine
+                hdl2 <- socketToHandle sock2 ReadWriteMode
+                hSetBuffering hdl2 NoBuffering
+                
+                if (args !! 1) == "-client" then
+                    nonBlockingReceive hdl1 hdl2 state_machine
+                else 
+                    nonBlockingReceive hdl2 hdl1 state_machine
 
-            putStrLn "Ended"
+                putStrLn "Ended"

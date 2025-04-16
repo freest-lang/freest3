@@ -25,6 +25,8 @@ class Serializable a where
 
 instance Serializable Value where
     serialize :: Value -> BC.ByteString
+    serialize (Cons (Variable _ "False" _) []) = B.singleton 99 <> B.singleton 0
+    serialize (Cons (Variable _ "True" _) [])  = B.singleton 99 <> B.singleton 1
     serialize d@(Cons _ _) = let bytes = serialize' d in
         let len = fromIntegral (B.length bytes) :: Word32 in
         let lenBytes = toStrict1 (Bin.encode len) in
@@ -69,6 +71,12 @@ instance Serializable Value where
         s <- NSB.recv hc len
         return (Label $ BC.unpack (B.init s))
     
+    deserialize 99 hc = do
+        c <- B.head <$> NSB.recv hc 1 
+        if c == 0
+            then return (Cons (Variable defaultSpan "False" (-1)) [])
+            else return (Cons (Variable defaultSpan "True" (-1)) [])
+
     deserialize _ _ = error "Not implemented"
    
 
