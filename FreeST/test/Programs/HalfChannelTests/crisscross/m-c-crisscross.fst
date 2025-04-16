@@ -15,14 +15,8 @@ writer w1 w2 =
   w1 |> send 'c' |> close; 
   w2 |> send False |> close 
 
-reader : ?Char;Wait -> ?Bool;Wait 1-> Bool
-reader r1 r2 =
-  receiveAndWait @Char r1;
-  receiveAndWait @Bool r2 
-
-main : Bool
+main : ()
 main =
-  let (w1, r1) = new @(!Char;Close) () in
-  let (w2, r2) = new @(!Bool;Close) () in
-  fork @() (\_:()1-> writer w1 w2);
-  reader r1 r2
+  let c1 = newHcClient @(!Char;Close) (("127.0.0.1", "8080"), "127.0.0.1:8081") in
+  let c2 = newHcClient @(!Bool;Close) (("127.0.0.1", "8083"), "127.0.0.1:8082") in
+  writer c1 c2 

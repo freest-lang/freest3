@@ -18,6 +18,7 @@ import Data.Binary.Put (runPut, putWord32be)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Bits (shiftL, (.|.))
 import System.Environment (getArgs)
+import Control.Exception (try, SomeException)
 {-
     Result represents the result of the comparison between the type received and the type in the state machine.
     Valid   -> The type received was valid 
@@ -196,12 +197,25 @@ createSocket host port = withSocketsDo $ do
     Return           -> The connection socket
 -}
 connectTo :: HostName -> ServiceName -> IO Socket
-connectTo host port = withSocketsDo $ do
-    let hints = defaultHints { addrFlags = [], addrSocketType = Stream }
-    addr <- NE.head <$> getAddrInfo (Just hints) (Just host) (Just port)
-    sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-    connect sock (addrAddress addr)
-    return sock
+connectTo host port = withSocketsDo $ retryConnect 3
+  where
+    retryConnect :: Int -> IO Socket
+    retryConnect 0 = error "Failed to connect after 3 attempts."
+    retryConnect n = do
+        result <- try connectOnce :: IO (Either SomeException Socket)
+        case result of
+            Right sock -> return sock
+            Left _ -> do
+                threadDelay 1000000  -- 1 second in microseconds
+                retryConnect (n - 1)
+
+    connectOnce :: IO Socket
+    connectOnce = do
+        let hints = defaultHints { addrFlags = [], addrSocketType = Stream }
+        addr <- NE.head <$> getAddrInfo (Just hints) (Just host) (Just port)
+        sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+        connect sock (addrAddress addr)
+        return sock
 
 {-
     It represents what a state machine is. It is a mutable variable that contains a type.
@@ -256,18 +270,29 @@ receiveAddress sock = do
             let (host, port) = BC.break (== ':') msg
             return (BC.unpack host, BC.unpack $ BC.tail port)
 
+splitOnce :: String -> (String, String)
+splitOnce [] = ("", "")
+splitOnce str = go str ""
+  where
+    go [] acc = (acc, "")
+    go (c:cs) acc
+      | c == ':' = (acc, cs)
+      | otherwise  = go cs (acc ++ [c])
+
 main :: IO ()
 main = do
     args <- getArgs
-    if length args < 2 then
-        error "Usage: monitor <session_type_file_path> -client/-server"
+    if length args /= 3 then
+        error "Usage: monitor <session_type_file_path> <host:port> -client/-server"
     else do
         session_type <- readFile $ head args
+        let (host, port) = splitOnce . head . tail $ args
+        let view = head . tail . tail $ args
         case parseType "" session_type of
             Left e -> print e
             Right t -> do
                 state_machine <- newMVar t
-                sock1 <- createSocket "127.0.0.1" "8080"
+                sock1 <- createSocket host port
                 (host, port) <- receiveAddress sock1
 
                 sock2 <- connectTo host port
@@ -278,7 +303,7 @@ main = do
                 hdl2 <- socketToHandle sock2 ReadWriteMode
                 hSetBuffering hdl2 NoBuffering
                 
-                if (args !! 1) == "-client" then
+                if view == "-c" then
                     nonBlockingReceive hdl1 hdl2 state_machine
                 else 
                     nonBlockingReceive hdl2 hdl1 state_machine
