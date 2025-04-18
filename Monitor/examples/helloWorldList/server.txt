@@ -1,0 +1,1 @@
+(rec x . &{Done: Skip, More: ?Char ; x}) ; Wait

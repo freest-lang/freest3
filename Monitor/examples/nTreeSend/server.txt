@@ -1,0 +1,1 @@
+(rec x . &{Node : ?Int ; rec y . &{Cons: x ; y, Nil : Skip }, Empty: Skip }) ; Wait

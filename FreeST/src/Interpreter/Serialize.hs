@@ -12,12 +12,20 @@ import           Data.Word (Word32, Word8)
 import           GHC.Float (castFloatToWord32, double2Float, float2Double, castWord32ToFloat)
 import qualified Interpreter.Value as V
 import Debug.Trace (trace)
+import Data.Int (Int32)
+import Data.Bits (shiftL, (.|.))
 
 import          Control.Monad (void) -- REMOVE
 import Data.Fixed (Uni)
 
 toStrict1 :: BL.ByteString -> B.ByteString
 toStrict1 = B.concat . BL.toChunks
+
+byteStringToSignedInt32 :: B.ByteString -> Int
+byteStringToSignedInt32 bs = fromIntegral $ foldl combine 0 (B.unpack bs)
+  where
+    combine :: Int32 -> Word8 -> Int32
+    combine acc byte = (acc `shiftL` 8) .|. fromIntegral byte
 
 class Serializable a where
     serialize :: a -> B.ByteString
@@ -48,8 +56,8 @@ instance Serializable Value where
 
     deserialize 1 hc = return Unit
     deserialize 2 hc = do
-        v <- fmap BL.fromStrict (NSB.recv hc 4)
-        return (Integer $ fromIntegral (Bin.decode v :: Word32))
+        v <- NSB.recv hc 4
+        return $ Integer $ byteStringToSignedInt32 v
     
     deserialize 3 hc = do
         f <- fmap BL.fromStrict (NSB.recv hc 4)
