@@ -16,14 +16,22 @@ philosopher id left right =
     close left;
     close right
 
-fork_ : dualof Hand ->[top,bot] dualof Hand 1->[1,3] ()
+unitaryFork : dualof Hand ->[1,3] ()
+unitaryFork f =
+    let (_,f) = receive f in
+    let f = send () f in
+    wait f
+
+fork_ : dualof Hand ->[1,3] dualof Hand 1->[1,3] ()
 fork_ left right =
-    let (_,right) = receive right in
-    let right = send () right in
-    wait right;
-    let (_,left) = receive left in
-    let left = send () left in
-    wait left
+    unitaryFork right;
+    unitaryFork left
+    -- let (_,right) = receive right in
+    -- let right = send () right in
+    -- wait right;
+    -- let (_,left) = receive left in
+    -- let left = send () left in
+    -- wait left
 
 main : ()
 main =

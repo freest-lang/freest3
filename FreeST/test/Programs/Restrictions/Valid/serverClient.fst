@@ -3,8 +3,8 @@ type Y = !2();Close 4
 
 server : dualof X ->[top,bot] Y 1->[1,4] ()
 server x y = 
-    let y = send () y in
     let (_,x) = receive x in
+    let y = send () y in
     wait x;
     close y
 

@@ -160,9 +160,12 @@ synthetise kEnv (E.Var _ x) =
 synthetise kEnv (E.UnLet p x e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
+  newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  addInequality (getSpan t2) (l1, level t2)
+  l3 <- getContext
+  popContext
+  addInequality (getSpan t1) (l1, l3)
   return (t2, maxLevel l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -267,12 +270,14 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
-  resetContext
+  -- resetContext
+  newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
   l3 <- getContext
-  addInequality (getSpan t2) (l1, minLevel l3 (minLevel (level u1) (level u2)))
+  popContext
+  addInequality (getSpan t1) (l1, minLevel l3 (minLevel (level u1) (level u2)))
   return (t2, maxLevel l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do

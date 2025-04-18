@@ -32,7 +32,7 @@ data FreestS a = FreestS
   , typenames :: TypeOpsEnv -- TODO: Remove with the new errors 
   , extra :: XExtra a
   , inequalities :: Inequalities
-  , context :: T.Level
+  , context :: [T.Level]
   }
 
 type family XExtra a
@@ -52,7 +52,7 @@ initial ext = FreestS {
   , typenames = Map.empty
   , extra = ext
   , inequalities = Set.empty
-  , context = T.Top
+  , context = []
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -68,7 +68,7 @@ initialS = FreestS {
   , typenames = Map.empty
   , extra = void
   , inequalities = Set.empty
-  , context = T.Top
+  , context = []
   }
 
 -- | AST
@@ -274,14 +274,45 @@ getInequalities = S.gets inequalities
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
 addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (span, inequality) (inequalities s) })
 
+-- getContext :: S.MonadState (FreestS a) m => m T.Level
+-- getContext = S.gets context
+
+getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
+getContextStack = S.gets context
+
 getContext :: S.MonadState (FreestS a) m => m T.Level
-getContext = S.gets context
+getContext = do
+  ctx <- S.gets context
+  case ctx of
+    (x:_) -> return x
+    []      -> return T.Top
+
+-- resetContext :: S.MonadState (FreestS a) m => m ()
+-- resetContext = S.modify (\s -> s { context = T.Top })
 
 resetContext :: S.MonadState (FreestS a) m => m ()
-resetContext = S.modify (\s -> s { context = T.Top })
+resetContext = S.modify (\s -> s { context = [T.Top] })
+
+-- updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- updateContext l = do
+--   currentContext <- getContext
+--   let newContext = R.minLevel currentContext l
+--   S.modify (\s -> s { context = newContext })
 
 updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
-updateContext l = do
-  currentContext <- getContext
-  let newContext = R.minLevel currentContext l
-  S.modify (\s -> s { context = newContext })
+updateContext l = do 
+  currentContext <- getContextStack
+  case currentContext of
+    (x:xs) -> do
+      let newTop = R.minLevel x l
+      S.modify (\s -> s { context = newTop : xs })
+    [] -> pushContext l
+
+newContext :: S.MonadState (FreestS a) m => m ()
+newContext = pushContext T.Top
+
+pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+pushContext l = S.modify (\s -> s { context = l : context s })
+
+popContext :: S.MonadState (FreestS a) m => m ()
+popContext = S.modify (\s -> s { context = tail (context s) })
