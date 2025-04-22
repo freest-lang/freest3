@@ -1,8 +1,7 @@
-type BoolServer = &{ And: Skip; ?Bool; ?Bool; !Bool
-                        , Or : Skip; ?Bool; ?Bool; !Bool
-                        , Not: Skip; ?Bool; !Bool
-                        }
-                        ; Wait
+type BoolServer = &{  And: Skip ; ?Bool ; ?Bool ; !Bool
+                    , Or : Skip ; ?Bool ; ?Bool ; !Bool
+                    , Not: Skip ; ?Bool ; !Bool
+                  } ; Wait
 
 boolServer :  BoolServer -> ()
 boolServer c =

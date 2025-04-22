@@ -1,8 +1,8 @@
 type BoolServer = &{ And : ?Bool; ?Bool; !Bool; BoolServer
-                        , Or  : ?Bool; ?Bool; !Bool; BoolServer
-                        , Not : ?Bool; !Bool; BoolServer
-                        , Done: Wait
-                        }
+                   , Or  : ?Bool; ?Bool; !Bool; BoolServer
+                   , Not : ?Bool; !Bool; BoolServer
+                   , Done: Wait
+                   }
 
 
 boolServer : BoolServer -> ()
@@ -20,8 +20,6 @@ boolServer c =
       boolServer c,
     Not c ->
       let (n, c) = receive c in
-      -- let c = send c (not n) in
-      -- boolServer c,
       (boolServer (send (not n) c)),
     Done c -> wait c
   }
