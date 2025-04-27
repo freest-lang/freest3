@@ -14,9 +14,6 @@ listSum c =
             (x+rest,c)
     }
 
-aCons : IntList
-aCons = Cons 5 (Cons 4 (Cons 3 (Cons 2 (Cons 1 Nil))))
-
 main : ()
 main =
     let (_, c) = newHcServer @(IntListS ; Wait) ("127.0.0.1", "8081") |>
