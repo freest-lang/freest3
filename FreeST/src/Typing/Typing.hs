@@ -51,6 +51,8 @@ import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
 import qualified Data.Set as Set
 
+import System.Process
+
 import Debug.Trace (trace)
 
 
@@ -447,10 +449,15 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
 
 checkInequalities :: TypingState ()
 checkInequalities = do
+  -- testFunction
   ineq <- getInequalities
   forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
     unless (isValidIneq l1 l2) $
       addError (LevelMismatch span l1 l2)
+
+testFunction :: TypingState ()
+testFunction = liftIO $ callProcess "python" ["FreeST/src/Restriction/test.py"]
+
 
 isValidIneq :: T.Level -> T.Level -> Bool
 isValidIneq T.Top T.Top = True

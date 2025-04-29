@@ -3,7 +3,7 @@ type Fork = !1();?2();Close 3
 philosopher : Int ->[top,bot] Fork ->[top,bot] dualof Fork 1->[1,3] ()
 philosopher id left right = 
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
-    if(even id) 
+    if even id 
     then
         let left = send () left in
         let (_,left) = receive left in
