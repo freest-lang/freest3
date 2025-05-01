@@ -7,22 +7,14 @@ bot = Int('bot')
 top = Int('top')
 value = Function('value', Levels, IntSort())
 
-# def get_val(l):
-#     match l:
-#         case "top":
-#             return top
-#         case "bot":
-#             return bot
-#         case _:
-#             return value(Const(l, Levels))
-
 def get_val(l):
-    if l == "top":
-        return top
-    elif l == "bot":
-        return bot
-    else:
-        return value(Const(l, Levels))
+    match l:
+        case "top":
+            return top
+        case "bot":
+            return bot
+        case _:
+            return value(Const(l, Levels))
 
 def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
     if l1 not in z3_consts and l1 != "top" and l1 != "bot": 
@@ -32,7 +24,6 @@ def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
     constraint = get_val(l1) < get_val(l2)
 
     solver.assert_and_track(constraint, name)  
-    solver_constraints.append(constraint)
     return constraint
 
 def check_inequalities(inequalities, file_path):
@@ -47,7 +38,6 @@ def check_inequalities(inequalities, file_path):
         bot < top
     ]
     solver.add(*truths)
-    solver_constraints.extend(truths)
 
     for i, ineq in enumerate(inequalities):
         span = ineq["span"]
@@ -73,22 +63,22 @@ def check_inequalities(inequalities, file_path):
                 for c in unsat_core
             ])
 
+            constraints_to_remove = []
             for constraint_id in constraint_map.keys():
                 if constraint_id in [str(c) for c in unsat_core]:
-                    c = constraint_map[constraint_id]["constraint"]
-                    solver = rebuild_solver_without_constraint(constraint_map, solver_constraints, c, truths)
-                    solver_constraints.remove(c)
+                    solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
+                    constraints_to_remove.append(constraint_id)
+            for constraint_id in constraints_to_remove:
+                constraint_map.pop(constraint_id)
 
         return unsat_constraints
 
-def rebuild_solver_without_constraint(constraint_map, solver_constraints, constraint_to_remove, truths):
+def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
     new_solver = Solver()
-    for constraint in solver_constraints:
-        if str(constraint) != str(constraint_to_remove): 
-            if str(constraint) in [str(c) for c in truths]:
-                new_solver.add(constraint)
-            else:
-                new_solver.assert_and_track(constraint, get_constraint_id(constraint, constraint_map))
+    new_solver.add(*truths)
+    for id, constraint in constraint_map.items():
+        if id != constraint_to_remove: 
+            new_solver.assert_and_track(constraint["constraint"], id)
     return new_solver
 
 def get_constraint_id(constraint, constraint_map):

@@ -28,6 +28,11 @@ dependencies:
   - control-bool >= 0.2.1
   - extra >= 1.7.9       # TODO, replace control-bool and its occurrences, there's no point on having both
   - process
+  - bytestring
+  - aeson
+  - aeson-pretty
+  - text 
+  - split
 
 library:
   source-dirs: src

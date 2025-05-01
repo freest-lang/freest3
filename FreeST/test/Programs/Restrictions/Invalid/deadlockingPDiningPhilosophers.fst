@@ -7,7 +7,6 @@ philosopher id left right =
     let right = send () right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    sleep 1000;
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right

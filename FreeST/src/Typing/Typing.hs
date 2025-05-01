@@ -42,6 +42,7 @@ import           Util.State hiding (void)
 import           Util.Warning
 import           Parse.Unparser () -- debug
 import           Restriction.Restriction
+import           Restriction.Utils
 
 import           Control.Exception (evaluate)
 import           Control.Monad
@@ -451,6 +452,7 @@ checkInequalities :: TypingState ()
 checkInequalities = do
   -- testFunction
   ineq <- getInequalities
+  liftIO $ writeInequalitiesToFile ineq
   forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
     unless (isValidIneq l1 l2) $
       addError (LevelMismatch span l1 l2)

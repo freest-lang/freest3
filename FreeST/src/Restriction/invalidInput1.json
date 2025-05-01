@@ -1,9 +1,0 @@
-[
-  {"span": "span1", "l1": "a", "l2": "b"},
-  {"span": "span2", "l1": "b", "l2": "a"},
-  {"span": "span3", "l1": "c", "l2": "a"},
-  {"span": "span4", "l1": "c", "l2": "b"},
-  {"span": "span5", "l1": "bot", "l2": "a"},
-  {"span": "span6", "l1": "top", "l2": "d"},
-  {"span": "span7", "l1": "c", "l2": "c"}
-]
