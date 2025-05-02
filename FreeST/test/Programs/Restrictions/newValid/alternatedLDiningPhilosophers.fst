@@ -1,7 +1,7 @@
 type FirstFork = !1();?2();Close 5
-type LastFork = !3();?4();Close 6
+type SecondFork = !3();?4();Close 6
 
-evenPhilosopher : Int ->[top,bot] FirstFork ->[top,bot] dualof LastFork 1->[1,3] ()
+evenPhilosopher : Int ->[top,bot] FirstFork ->[top,bot] dualof SecondFork 1->[1,3] ()
 evenPhilosopher id left right = 
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
@@ -12,7 +12,7 @@ evenPhilosopher id left right =
     close left;
     wait right
 
-oddPhilosopher : Int ->[top,bot] LastFork ->[top,bot] dualof FirstFork 1->[1,3] ()
+oddPhilosopher : Int ->[top,bot] SecondFork ->[top,bot] dualof FirstFork 1->[1,3] ()
 oddPhilosopher id left right = 
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let (_,right) = receive right in
@@ -25,9 +25,9 @@ oddPhilosopher id left right =
 
 main : ()
 main = 
-    let (fw1, fr1) = new @LastFork () in
+    let (fw1, fr1) = new @SecondFork () in
     let (fw2, fr2) = new @FirstFork () in
-    let (fw3, fr3) = new @LastFork () in
+    let (fw3, fr3) = new @SecondFork () in
     let (fw4, fr4) = new @FirstFork () in
     fork @() (\_:()1-> oddPhilosopher 1 fw1 fr4);
     fork @() (\_:()1-> evenPhilosopher 2 fw2 fr1);
