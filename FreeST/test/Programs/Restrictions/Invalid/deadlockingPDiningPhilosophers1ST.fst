@@ -1,9 +1,6 @@
 type Hand = !1();?2();Close 3
 
-type FirstHand = !1();?3();Close 5
-type SecondHand = !2();?4();Close 6
-
-philosopher : Int ->[top,bot] FirstHand 1->[top,bot] SecondHand 1->[1,6] ()
+philosopher : Int ->[top,bot] Hand 1->[top,bot] Hand 1->[1,3] ()
 philosopher id left right =
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
@@ -14,7 +11,7 @@ philosopher id left right =
     close left;
     close right
 
-fork_ : dualof SecondHand ->[top,bot] dualof FirstHand 1->[1,6] ()
+fork_ : dualof Hand ->[top,bot] dualof Hand 1->[1,3] ()
 fork_ left right =
     let (_,right) = receive right in
     let right = send () right in
