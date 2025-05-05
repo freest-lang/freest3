@@ -1,12 +1,12 @@
 type X = !3();?1();Close 4
 
-server : dualof X ->[3,1] ()
+server : dualof X ->[1,4] ()
 server x = 
     let (_,x) = receive x in
     let x = send () x in
     wait x
 
-client : X ->[3,1] ()
+client : X ->[1,4] ()
 client x = 
     let x = send () x in
     let (_,x) = receive x in

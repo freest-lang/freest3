@@ -3,6 +3,9 @@ type Hand = !1();?2();Close 3
 type FirstHand = !1();?3();Close 5
 type SecondHand = !2();?4();Close 6
 
+type FirstFork = !1();?2();Close 3
+type SecondFork = !4();?5();Close 6
+
 philosopher : Int ->[top,bot] FirstHand 1->[top,bot] SecondHand 1->[1,6] ()
 philosopher id left right =
     putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -14,11 +17,11 @@ philosopher id left right =
     close left;
     close right
 
-unitaryFork : dualof Hand ->[1,6] ()
-unitaryFork f =
-    let (_,f) = receive f in
-    let f = send () f in
-    wait f
+-- unitaryFork : dualof Hand ->[1,6] ()
+-- unitaryFork f =
+--     let (_,f) = receive f in
+--     let f = send () f in
+--     wait f
 
 -- fork_ : dualof Hand ->[top,bot] dualof Hand 1->[1,3] ()
 -- fork_ left right =
@@ -29,15 +32,30 @@ unitaryFork f =
 --     let left = send () left in
 --     wait left
 
-fork_ : dualof SecondHand ->[top,bot] dualof FirstHand 1->[1,6] ()
+--we can cheat it using First/Second Fork, but we could do the same in the
+--deadlocking version. It's just avoiding the solver so it's not a real solution.
+fork_ : dualof SecondFork ->[top,bot] dualof FirstFork 1->[1,6] ()
 fork_ left right =
-    unitaryFork right;
-    unitaryFork left
+    let (_,right) = receive right in
+    let right = send () right in
+    wait right;
+    let (_,left) = receive left in
+    let left = send () left in
+    wait left
+    -- unitaryFork right;
+    -- unitaryFork left
 
-oppositeFork : dualof FirstHand ->[top,bot] dualof SecondHand 1->[1,6] ()
+oppositeFork : dualof FirstFork ->[top,bot] dualof SecondFork 1->[1,6] ()
 oppositeFork left right =
-    unitaryFork left;
-    unitaryFork right
+    let (_,left) = receive left in
+    let left = send () left in
+    wait left;
+    let (_,right) = receive right in
+    let right = send () right in
+    wait right
+    
+    -- unitaryFork left;
+    -- unitaryFork right
 
 main : ()
 main =

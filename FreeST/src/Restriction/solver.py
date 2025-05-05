@@ -8,13 +8,12 @@ top = Int('top')
 value = Function('value', Levels, IntSort())
 
 def get_val(l):
-    match l:
-        case "top":
-            return top
-        case "bot":
-            return bot
-        case _:
-            return value(Const(l, Levels))
+    if l == "top":
+        return top
+    elif l == "bot":
+        return bot
+    else:
+        return value(Const(l, Levels))
 
 def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
     if l1 not in z3_consts and l1 != "top" and l1 != "bot": 
@@ -99,22 +98,16 @@ def get_constraint_id(constraint, constraint_map):
             return key
     
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_files = [f for f in os.listdir(script_dir) if f.endswith(".json")]
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ineq.json")
 
-    for json_file in json_files:
-        file_path = os.path.join(script_dir, json_file)
+    with open(file_path, "r") as file:
+        input_data = file.read()
 
-        with open(file_path, "r") as file:
-            input_data = file.read()
+    inequalities = json.loads(input_data)
+    unsat_constraints = check_inequalities(inequalities, file_path)
 
-        inequalities = json.loads(input_data)
-        unsat_constraints = check_inequalities(inequalities, file_path)
-
+    with open(file_path, "w") as file:
         if unsat_constraints:
-            for constraint in unsat_constraints:
-                span = constraint["span"]
-                l1 = constraint["l1"]
-                l2 = constraint["l2"]
-                file_path = constraint["file_path"]
-                print(f"Level \033[31m{l1}\033[0m does not precede level \033[31m{l2}\033[0m at {file_path}:{span}")
+            json.dump(unsat_constraints, file, indent=4)
+        else:
+            file.write("")

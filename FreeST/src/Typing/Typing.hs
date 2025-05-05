@@ -42,7 +42,7 @@ import           Util.State hiding (void)
 import           Util.Warning
 import           Parse.Unparser () -- debug
 import           Restriction.Restriction
-import           Restriction.Utils
+import           Restriction.Solver
 
 import           Control.Exception (evaluate)
 import           Control.Monad
@@ -51,8 +51,6 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
 import qualified Data.Set as Set
-
-import System.Process
 
 import Debug.Trace (trace)
 
@@ -294,28 +292,28 @@ synthetise kEnv (E.Case p e fm) = do
   setSignatures v
   return (t, T.Bottom)
 
-tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
-tracedSynthetise kEnv e = do
-  let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
-  case e of
-    E.Int _ _       -> logRule "E.Int"
-    E.Float _ _     -> logRule "E.Float"
-    E.Char _ _      -> logRule "E.Char"
-    E.Unit _        -> logRule "E.Unit"
-    E.String _ _    -> logRule "E.String"
-    E.Var _ _       -> logRule "E.Var"
-    E.UnLet _ _ _ _ -> logRule "E.UnLet"
-    E.Abs _ _ _     -> logRule "E.Abs"
-    E.Pair _ _ _    -> logRule "E.Pair"
-    E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
-    (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
-    (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
-    E.App _ _ _     -> logRule "E.App"
-    E.TypeApp _ _ _ -> logRule "E.TypeApp"
-    E.TypeAbs _ _   -> logRule "E.TypeAbs"
-    E.Case _ _ _    -> logRule "E.Case"
-    _               -> logRule "Unknown expression"
-  synthetise kEnv e
+-- tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
+-- tracedSynthetise kEnv e = do
+--   let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
+--   case e of
+--     E.Int _ _       -> logRule "E.Int"
+--     E.Float _ _     -> logRule "E.Float"
+--     E.Char _ _      -> logRule "E.Char"
+--     E.Unit _        -> logRule "E.Unit"
+--     E.String _ _    -> logRule "E.String"
+--     E.Var _ _       -> logRule "E.Var"
+--     E.UnLet _ _ _ _ -> logRule "E.UnLet"
+--     E.Abs _ _ _     -> logRule "E.Abs"
+--     E.Pair _ _ _    -> logRule "E.Pair"
+--     E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
+--     (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
+--     (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
+--     E.App _ _ _     -> logRule "E.App"
+--     E.TypeApp _ _ _ -> logRule "E.TypeApp"
+--     E.TypeAbs _ _   -> logRule "E.TypeAbs"
+--     E.Case _ _ _    -> logRule "E.Case"
+--     _               -> logRule "Unknown expression"
+--   synthetise kEnv e
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -450,22 +448,24 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
 
 checkInequalities :: TypingState ()
 checkInequalities = do
-  -- testFunction
-  ineq <- getInequalities
-  liftIO $ writeInequalitiesToFile ineq
-  forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
-    unless (isValidIneq l1 l2) $
+  getInequalities >>= liftIO . solveInequalities >>= \ineq ->
+    forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
       addError (LevelMismatch span l1 l2)
 
-testFunction :: TypingState ()
-testFunction = liftIO $ callProcess "python" ["FreeST/src/Restriction/test.py"]
+  -- solvedIneqs <- liftIO $ solveInequalities ineq
+  -- forM_ (Set.toList solvedIneqs) $ \(span, (l1, l2)) -> do
+  --   addError (LevelMismatch span l1 l2)
 
+  -- ineq <- getInequalities
+  -- forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
+  --   unless (isValidIneq l1 l2) $
+  --     addError (LevelMismatch span l1 l2)
 
-isValidIneq :: T.Level -> T.Level -> Bool
-isValidIneq T.Top T.Top = True
-isValidIneq T.Top _ = False
-isValidIneq _ T.Top = True
-isValidIneq T.Bottom T.Bottom = True
-isValidIneq _ T.Bottom = False
-isValidIneq T.Bottom _ = True
-isValidIneq (T.Num n1) (T.Num n2) = n1 < n2
+-- isValidIneq :: T.Level -> T.Level -> Bool
+-- isValidIneq T.Top T.Top = True
+-- isValidIneq T.Top _ = False
+-- isValidIneq _ T.Top = True
+-- isValidIneq T.Bottom T.Bottom = True
+-- isValidIneq _ T.Bottom = False
+-- isValidIneq T.Bottom _ = True
+-- isValidIneq (T.Num n1) (T.Num n2) = n1 < n2

@@ -19,6 +19,7 @@ unitaryFork f =
     let f = send () f in
     wait f
 
+--deadlock still happens if both branches are the same, not caught
 fork_ : dualof SecondHand ->[top,bot] dualof FirstHand 1->[1,6] ()
 fork_ left right =
     let (id,right) = receive right in
