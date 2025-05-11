@@ -187,13 +187,13 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (t, l) <- synthetise kEnv e
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
+    updateContext l1
     addInequality (getSpan t) (l1, level t1)
     return (t1, T.Bottom)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
   (l1, tm) <- Extract.leveledOutChoiceMap e t
-  addInequality (getSpan t) (l, level tm)
   return (T.Labelled p T.Variant l1
           (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), maxLevel l l1)
   -- Receive e
@@ -238,6 +238,7 @@ synthetise kEnv (E.App p e1 e2) = do
   l2 <- leveledCheckAgainst kEnv e2 u1
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l2, l3)
+  -- updateContext l3
   return (u2, maxLevel l1 $ maxLevel l2 l4)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -271,7 +272,6 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
-  -- resetContext
   newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
@@ -282,45 +282,63 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   return (t2, maxLevel l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
-  (t1, _) <- synthetise kEnv e
+  (t1, l1) <- synthetise kEnv e
   fm'  <- buildMap p fm =<< Extract.datatypeMap e t1
   sigs <- getSignatures
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
+  l2 <- getGlobalContext
+  resetGlobalContext
+  addInequality (getSpan t1) (l1, l2)
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
   return (t, T.Bottom)
 
--- tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
--- tracedSynthetise kEnv e = do
---   let logRule msg = trace ("Synthetising e1: " ++ msg) (return ())
---   case e of
---     E.Int _ _       -> logRule "E.Int"
---     E.Float _ _     -> logRule "E.Float"
---     E.Char _ _      -> logRule "E.Char"
---     E.Unit _        -> logRule "E.Unit"
---     E.String _ _    -> logRule "E.String"
---     E.Var _ _       -> logRule "E.Var"
---     E.UnLet _ _ _ _ -> logRule "E.UnLet"
---     E.Abs _ _ _     -> logRule "E.Abs"
---     E.Pair _ _ _    -> logRule "E.Pair"
---     E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
---     (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
---     (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
---     E.App _ _ _     -> logRule "E.App"
---     E.TypeApp _ _ _ -> logRule "E.TypeApp"
---     E.TypeAbs _ _   -> logRule "E.TypeAbs"
---     E.Case _ _ _    -> logRule "E.Case"
---     _               -> logRule "Unknown expression"
---   synthetise kEnv e
+customTrace :: E.Exp -> String -> TypingState ()
+customTrace e msg = do
+  if moduleName (getSpan e) /= "Prelude"
+    then trace (msg ++ " || " ++ show e) return()
+    else trace "" return()
+
+tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
+tracedSynthetise kEnv e = do
+  if moduleName (getSpan e) == "Prelude"
+    then do
+      synthetise kEnv e
+    else do
+      let logRule msg = trace ("Synthetising e: " ++ msg ++ " " ++ show e) (return ())
+      case e of
+        E.Int _ _       -> logRule "E.Int"
+        E.Float _ _     -> logRule "E.Float"
+        E.Char _ _      -> logRule "E.Char"
+        E.Unit _        -> logRule "E.Unit"
+        E.String _ _    -> logRule "E.String"
+        E.Var _ _       -> logRule "E.Var"
+        E.UnLet _ _ _ _ -> logRule "E.UnLet"
+        E.Abs _ _ _     -> logRule "E.Abs"
+        E.Pair _ _ _    -> logRule "E.Pair"
+        E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
+        (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkSelect p -> logRule "E.App (Select)"
+        (E.App _ (E.Var p x) e) | x == mkCollect p -> logRule "E.App (Collect)"
+        (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
+        (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
+        (E.App p fork@(E.Var _ x) e) | x == mkFork p -> logRule "E.App (Fork)"
+        (E.App p (E.Var _ x) e) | x == mkClose p -> logRule "E.App (Close)"
+        (E.App p (E.Var _ x) e) | x == mkWait p -> logRule "E.App (Wait)"
+        E.App _ _ _     -> logRule "E.App"
+        E.TypeApp _ _ _ -> logRule "E.TypeApp " 
+        E.TypeAbs _ _   -> logRule "E.TypeAbs"
+        E.Case _ _ _    -> logRule "E.Case"
+        _               -> logRule "Unknown expression"
+      synthetise kEnv e
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
               -> TypingState ([T.Type], [Signatures])
 synthetiseMap kEnv sigs (xs, e) state = do
   (ts, envs) <- state
-  (t, _)     <- synthetise kEnv e
+  (t, l)     <- synthetise kEnv e
   env        <- getSignatures
   setSignatures sigs
   return (returnType xs t : ts, env : envs)
