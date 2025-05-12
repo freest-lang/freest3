@@ -235,8 +235,11 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
 synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
+  newContext
   l2 <- leveledCheckAgainst kEnv e2 u1
-  addInequality (getSpan t) (l1, level u1)
+  l <- getContext
+  popContext
+  addInequality (getSpan t) (l1, l)
   addInequality (getSpan t) (l2, l3)
   -- updateContext l3
   return (u2, maxLevel l1 $ maxLevel l2 l4)
@@ -285,10 +288,11 @@ synthetise kEnv (E.Case p e fm) = do
   (t1, l1) <- synthetise kEnv e
   fm'  <- buildMap p fm =<< Extract.datatypeMap e t1
   sigs <- getSignatures
+  resetGlobalContext
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
   l2 <- getGlobalContext
-  resetGlobalContext
+  resetGlobalContext --technically unnecessary but it's cleaner to keep it as top
   addInequality (getSpan t1) (l1, l2)
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs

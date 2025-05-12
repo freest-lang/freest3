@@ -29,7 +29,7 @@ mathClient c =
 --     let (i, c2) = receive c1 in
 --     c2 |> send (i == 0) |> wait
 
-mathServer : dualof MathService ->[1,5] ()
+mathServer : dualof MathService ->[3,8] ()
 mathServer (Negate c1) =
       let (i, c2) = receive c1 in
       sendAndWait @Int (-i) c2
