@@ -19,6 +19,8 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Bits (shiftL, (.|.))
 import System.Environment (getArgs)
 import Control.Exception (try, SomeException)
+import           Debug.Trace (trace)
+
 {-
     Result represents the result of the comparison between the type received and the type in the state machine.
     Valid   -> The type received was valid 

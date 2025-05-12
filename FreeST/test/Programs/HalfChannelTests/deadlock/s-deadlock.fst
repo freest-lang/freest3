@@ -6,12 +6,6 @@ does not deadlock with buffers of size 2.
 
 -}
 
-writer : !Char;!Char;Close -> !Bool;!Bool;Close 1-> ()
-writer w1 w2 =
-  let w1 = send 'c' w1 |> send 'd' in
-  let w2 = send True w2 |> send False in 
-  close w1; close w2 
-
 reader : ?Char;?Char;Wait -> ?Bool;?Bool;Wait 1-> Bool
 reader r1 r2 =
   let (x, r2) = receive r2 in
@@ -23,7 +17,6 @@ reader r1 r2 =
 
 main : Bool
 main =
-  let (w1, r1) = new @(!Char;!Char;Close) () in
-  let (w2, r2) = new @(!Bool;!Bool;Close) () in
-  fork @() (\_:()1-> writer w1 w2);
-  reader r1 r2
+  let c1 = newHcServer @(?Char ; ?Char ; Wait) ("127.0.0.1", "8081") in
+  let c2 = newHcServer @(?Bool ; ?Bool ; Wait) ("127.0.0.1", "8082") in
+  reader c1 c2

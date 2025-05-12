@@ -1,0 +1,1 @@
+(rec x . &{LeafC: Skip, NodeC: rec y . +{Value: ?Int ; y, Left: x ; y, Right: x ; y, Exit: Skip } }) ; Wait

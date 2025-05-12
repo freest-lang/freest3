@@ -55,35 +55,10 @@ exploreNode c x l r =
       c
   }
 
--- The server. Compute the product of the values in a tree;
--- explicitely request the values; stop as soon a zero is received
-server : dualof XploreTreeChan ;a -> Int 1-> (a, Int)
-server c1 n =
-  match c1 with {
-    LeafC c1 ->
-      (c1, n),
-    NodeC c1 ->
-      serverNode @a c1 n
-  }
-
-and serverNode : dualof XploreNodeChan;a -> Int 1-> (a, Int)
-serverNode c n =
-  let (m, c) = receive (select Value c) in
-  if m == 0
-  then (select Exit c, 0)
-  else
-    let c = select Left c in
-    let (c, m) = server @(dualof XploreNodeChan ; a) c (m * n) in
-    let (c, k) = server @(dualof XploreNodeChan ; a) (select Right c) m in
-    (select Exit c, k)
-
 aTree : Tree
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
-main : Int
+main : ()
 main =
-  let (writer, reader) = new @(XploreTreeChan;Close) () in
-  fork @() (\_:()1-> exploreTree @Close writer aTree |> close);
-  let (reader, n) = server @Wait reader 1 in
-  wait reader;
-  n
+  let c = newHcClient1 @(XploreTreeChan;Close) ("127.0.0.1", "8081") in
+  exploreTree @Close c aTree |> close

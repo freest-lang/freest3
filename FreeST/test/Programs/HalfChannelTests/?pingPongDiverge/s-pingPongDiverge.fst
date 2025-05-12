@@ -11,4 +11,6 @@ pong c =
   ping (n + 1) c
 
 main : ()
-main = forkWith @Pong @Diverge (ping 0) |> pong
+main = 
+  newHcServer @Pong ("127.0.0.1", "8081") |>
+  pong

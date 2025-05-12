@@ -12,6 +12,6 @@ pong c =
 
 main : ()
 main = 
-  newHcClient1 @Ping @Diverge ("127.0.0.1", "8081") |>
+  newHcClient1 @Ping("127.0.0.1", "8081") |>
   ping 0
 

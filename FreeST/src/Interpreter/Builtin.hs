@@ -13,6 +13,7 @@ import           System.IO
 import           Data.Bifunctor (Bifunctor(bimap))
 import GHC.Float
 import qualified Network.Socket as NS
+import Control.Exception (try, SomeException)
 import qualified Network.Socket.ByteString as NSB
 import qualified Data.ByteString as B
 import qualified Data.List.NonEmpty as NE
@@ -44,10 +45,7 @@ newHcServer (Pair (String host) (String port)) = NS.withSocketsDo $ do
 
 newHcClient :: Value -> IO ChannelEnd
 newHcClient (Pair (Pair (String host) (String port)) (String sv_addr)) = NS.withSocketsDo $ do
-    let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
-    addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
-    sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
-    NS.connect sock (NS.addrAddress addr)
+    sock <- connectWithRetries host port 3 
     let len = fromIntegral (length sv_addr) :: Word8
     let bytes = toStrict1 (Bin.encode len) <> BC.pack sv_addr
     NSB.send sock bytes
@@ -55,11 +53,32 @@ newHcClient (Pair (Pair (String host) (String port)) (String sv_addr)) = NS.with
 
 newHcClient1 :: Value -> IO ChannelEnd
 newHcClient1 (Pair (String host) (String port)) = NS.withSocketsDo $ do
-    let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
-    addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
-    sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
-    NS.connect sock (NS.addrAddress addr)
+    sock <- connectWithRetries host port 3
     return $ Right sock
+newHcClient1 _ = error "newHcClient1: Invalid argument"
+
+connectWithRetries :: String -> String -> Int -> IO HalfChannel
+connectWithRetries host port retriesLeft = do
+        result <- try connectOnce :: IO (Either SomeException HalfChannel)
+        case result of
+            Right channel -> return channel
+            Left err -> 
+                if retriesLeft > 1
+                    then do
+                        putStrLn $ "Connection failed: " ++ show err ++ ". Retrying... (" ++ show (retriesLeft - 1) ++ " retries left)"
+                        connectWithRetries host port (retriesLeft - 1)
+                    else do
+                        putStrLn $ "Connection failed after retries: " ++ show err
+                        error "Failed to connect to server"
+    where
+        connectOnce :: IO HalfChannel
+        connectOnce = do
+            let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
+            addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
+            sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
+            NS.connect sock (NS.addrAddress addr)
+            return sock
+
 
 receive :: ChannelEnd -> IO (Value, ChannelEnd)
 receive (Left c) = do

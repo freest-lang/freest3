@@ -15,6 +15,8 @@ back the sum of the integer values under (and including) that node.
 
 -}
 
+-- demora a compilar
+
 data Tree = Leaf | Node Int Tree Tree
 
 type TreeC = +{LeafC: Skip, NodeC: !Int;TreeC;TreeC;?Int}

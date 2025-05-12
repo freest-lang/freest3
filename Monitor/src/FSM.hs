@@ -7,6 +7,8 @@ import Parse.Lexer (scanTokens)
 import Typing.Normalisation (normalise)
 import qualified Data.Map.Strict               as Map
 import Data.Maybe (isNothing, isJust)
+import           Debug.Trace (trace)
+
 import Equivalence.AlphaCongruence
 
 data TypeOfMessage  = Normal T.Type T.Polarity
@@ -71,7 +73,8 @@ inChoiceMap = choiceMap T.Internal
 choiceMap :: T.View -> T.Type -> Either String T.TypeMap
 choiceMap view t =
   case normalise t of
-    (T.Semi _ (T.Labelled _ (T.Choice view') m) u) | view == view' ->
+    (T.Semi _ (T.Labelled _ (T.Choice view') m) u) ->
+      if view /= view' then Left $ "View mismatch " ++ show view ++ " " ++ show view' else
       Right $ Map.map (\v -> T.Semi B.defaultSpan v u) m
     u -> Left $ "Expected a choice type but got " ++ show u
 
