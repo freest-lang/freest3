@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -15,7 +16,7 @@ import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
-import System.Directory (removeFile)
+import System.Directory (removeFile, canonicalizePath)
 import System.Environment (getExecutablePath)
 import System.FilePath ((</>), takeDirectory)
 import System.Process
@@ -74,14 +75,10 @@ deserializeInequalities contents =
         Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
         Nothing      -> error "Failed to parse inequalities from JSON"
 
--- inequalitiesFilePath :: FilePath
--- inequalitiesFilePath = "FreeST/src/Restriction/ineq.json"
-
 inequalitiesFilePath :: IO FilePath
 inequalitiesFilePath = do
-    exePath <- getExecutablePath
-    let exeDir = takeDirectory exePath
-    return $ exeDir </> "../../../../FreeST/src/Restriction/ineq.json"
+    let relativePath = "FreeST" </> takeDirectory __FILE__ </> "ineq.json"
+    canonicalizePath relativePath
 
 writeInequalitiesToFile :: Inequalities -> IO ()
 writeInequalitiesToFile ineqs = do
