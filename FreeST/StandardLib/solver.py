@@ -1,4 +1,5 @@
-import os
+# import os
+import sys
 import json
 from z3 import *
 
@@ -83,7 +84,8 @@ def get_constraint_id(constraint, constraint_map):
             return key
     
 if __name__ == "__main__":
-    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ineq.json")
+    # file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ineq.json")
+    file_path = sys.argv[1]
 
     with open(file_path, "r") as file:
         input_data = file.read()

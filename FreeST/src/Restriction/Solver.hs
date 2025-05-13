@@ -10,15 +10,15 @@ import qualified Syntax.Type as T
 import qualified Restriction.Restriction as R
 import           Parse.Unparser
 import           Util.State
+import Paths_FreeST (getDataFileName)
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
-import System.Directory (removeFile, canonicalizePath)
-import System.Environment (getExecutablePath)
-import System.FilePath ((</>), takeDirectory)
+import System.Directory (removeFile, getCurrentDirectory)
+import System.FilePath ((</>))
 import System.Process
 import Control.Monad.State (liftIO)
 
@@ -77,8 +77,8 @@ deserializeInequalities contents =
 
 inequalitiesFilePath :: IO FilePath
 inequalitiesFilePath = do
-    let relativePath = "FreeST" </> takeDirectory __FILE__ </> "ineq.json"
-    canonicalizePath relativePath
+    currentDir <- getCurrentDirectory
+    return $ currentDir </> "ineq.json"
 
 writeInequalitiesToFile :: Inequalities -> IO ()
 writeInequalitiesToFile ineqs = do
@@ -97,15 +97,15 @@ readInequalitiesFromFile = do
             let ineqs = deserializeInequalities contents
             ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
 
-removeInequalitiesFile :: IO ()
-removeInequalitiesFile = do
-    filePath <- inequalitiesFilePath
-    removeFile filePath
+getPythonSolverPath :: IO FilePath
+getPythonSolverPath = getDataFileName "solver.py"
   
 solveInequalities :: Inequalities -> IO Inequalities
 solveInequalities ineqs = do
     writeInequalitiesToFile ineqs
-    liftIO $ callProcess "python" ["FreeST/src/Restriction/solver.py"]
+    ineqPath <- inequalitiesFilePath
+    solverPath <- getPythonSolverPath
+    liftIO $ callProcess "python" [solverPath, ineqPath]
     ineqs <- readInequalitiesFromFile
-    removeInequalitiesFile
+    removeFile ineqPath
     return ineqs
