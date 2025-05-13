@@ -16,6 +16,8 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import System.Directory (removeFile)
+import System.Environment (getExecutablePath)
+import System.FilePath ((</>), takeDirectory)
 import System.Process
 import Control.Monad.State (liftIO)
 
@@ -72,28 +74,41 @@ deserializeInequalities contents =
         Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
         Nothing      -> error "Failed to parse inequalities from JSON"
 
-inequalitiesFilePath :: FilePath
-inequalitiesFilePath = "FreeST/src/Restriction/ineq.json"
+-- inequalitiesFilePath :: FilePath
+-- inequalitiesFilePath = "FreeST/src/Restriction/ineq.json"
+
+inequalitiesFilePath :: IO FilePath
+inequalitiesFilePath = do
+    exePath <- getExecutablePath
+    let exeDir = takeDirectory exePath
+    return $ exeDir </> "../../../../FreeST/src/Restriction/ineq.json"
 
 writeInequalitiesToFile :: Inequalities -> IO ()
 writeInequalitiesToFile ineqs = do
     let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
     let serialized = encodePretty $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList filteredIneqs)
-    BL.writeFile inequalitiesFilePath serialized
+    filePath <- inequalitiesFilePath
+    BL.writeFile filePath serialized
 
 readInequalitiesFromFile :: IO Inequalities
 readInequalitiesFromFile = do
-    contents <- BL.readFile inequalitiesFilePath
+    filePath <- inequalitiesFilePath
+    contents <- BL.readFile filePath
     if BL.null contents
         then return Set.empty
         else do
             let ineqs = deserializeInequalities contents
             ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
+
+removeInequalitiesFile :: IO ()
+removeInequalitiesFile = do
+    filePath <- inequalitiesFilePath
+    removeFile filePath
   
 solveInequalities :: Inequalities -> IO Inequalities
 solveInequalities ineqs = do
     writeInequalitiesToFile ineqs
     liftIO $ callProcess "python" ["FreeST/src/Restriction/solver.py"]
     ineqs <- readInequalitiesFromFile
-    removeFile inequalitiesFilePath
+    removeInequalitiesFile
     return ineqs

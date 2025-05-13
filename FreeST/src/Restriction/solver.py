@@ -52,8 +52,6 @@ def check_inequalities(inequalities, file_path):
     else:
         while solver.check() == unsat:
             unsat_core = solver.unsat_core()
-            # print(solver)
-            # print(unsat_core)
             unsat_constraints.extend([
                 {
                     "span": constraint_map[str(c)]["span"],
@@ -64,23 +62,10 @@ def check_inequalities(inequalities, file_path):
                 for c in unsat_core
             ])
 
-            # constraints_to_remove = []
             for c in unsat_core:
                 constraint_id = str(c)
                 constraint_map.pop(constraint_id)
                 solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
-
-
-
-            # for constraint_id in constraint_map.keys():
-            #     if constraint_id in [str(c) for c in unsat_core]:
-            #         solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
-            #         print("NEW")
-            #         print(solver)
-            #         constraints_to_remove.append(constraint_id)
-            # for constraint_id in constraints_to_remove:
-            #     print(constraint_id)
-            #     constraint_map.pop(constraint_id)
 
         return unsat_constraints
 
