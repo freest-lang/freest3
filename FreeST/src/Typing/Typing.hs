@@ -292,6 +292,7 @@ synthetise kEnv (E.Case p e fm) = do
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
   l2 <- getGlobalContext
+  popContext
   resetGlobalContext --technically unnecessary but it's cleaner to keep it as top
   addInequality (getSpan t1) (l1, l2)
   mapM_ (compareTypes e t) ts
@@ -478,10 +479,13 @@ checkInequalities = do
   -- forM_ (Set.toList solvedIneqs) $ \(span, (l1, l2)) -> do
   --   addError (LevelMismatch span l1 l2)
 
-  -- ineq <- getInequalities
-  -- forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
-  --   unless (isValidIneq l1 l2) $
-  --     addError (LevelMismatch span l1 l2)
+--   ineq <- getInequalities
+--   forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
+--     unless ((isValidIneq l1 l2) || (isFromPrelude span)) $
+--       addError (LevelMismatch span l1 l2)
+
+-- isFromPrelude :: Span -> Bool
+-- isFromPrelude s = moduleName s == "Prelude" || moduleName s == "<default>"
 
 -- isValidIneq :: T.Level -> T.Level -> Bool
 -- isValidIneq T.Top T.Top = True

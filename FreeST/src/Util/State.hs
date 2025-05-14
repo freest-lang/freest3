@@ -327,5 +327,7 @@ popContext = do
       globalCtx <- getGlobalContext
       let newGlobalCtx = R.minLevel x globalCtx
       S.modify (\s -> s { globalContext = newGlobalCtx })
-    [] -> S.modify (\s -> s { globalContext = T.Top })
-  S.modify (\s -> s { context = tail (context s) })
+      S.modify (\s -> s { context = xs })
+    [] -> do
+      S.modify (\s -> s { globalContext = T.Top })
+      S.modify (\s -> s { context = [] })
