@@ -45,6 +45,7 @@ runPythonFile :: FilePath -> FilePath -> IO ()
 runPythonFile solverPath ineqPath = do
     -- py <- isPythonInstalled
     -- when (not py) installPython
+    -- installZ3Lib --commenting this because it's slow and was causing problems for my colleague
+                    --using a venv is the best approach, but it's extremely slow
     pyCmd <- getPythonCommand
-    installZ3Lib
     callProcess pyCmd [solverPath, ineqPath]
