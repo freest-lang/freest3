@@ -10,6 +10,7 @@ import qualified Syntax.Type as T
 import qualified Restriction.Restriction as R
 import           Parse.Unparser
 import           Util.State
+import           Restriction.Setup
 import Paths_FreeST (getDataFileName)
 
 import Data.Aeson
@@ -105,7 +106,8 @@ solveInequalities ineqs = do
     writeInequalitiesToFile ineqs
     ineqPath <- inequalitiesFilePath
     solverPath <- getPythonSolverPath
-    liftIO $ callProcess "python" [solverPath, ineqPath]
+    runPythonFile solverPath ineqPath
+    -- liftIO $ callProcess "python" [solverPath, ineqPath]
     ineqs <- readInequalitiesFromFile
     removeFile ineqPath
     return ineqs

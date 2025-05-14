@@ -36,7 +36,7 @@ instance Leveled T.Type where
     level (T.Forall _ _) = T.Top 
     level (T.Rec _ _) = T.Top
     -- level (T.Rec _ (Bind _ _ _ t)) = level t
-    level (T.Var _ _) = T.Top --T.Bottom --check these 3
+    level (T.Var _ _) = T.Top
     level (T.Dualof _ t) = level t
 
 instance Leveled T.TypeMap where
