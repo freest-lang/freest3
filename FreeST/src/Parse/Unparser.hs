@@ -188,11 +188,11 @@ instance Unparse T.Type where
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
-  unparse (T.End _ T.Out _) = (maxRator, "Close")
-  unparse (T.End _ T.In _ ) = (maxRator, "Wait")
+  unparse (T.End _ T.Out l) = (maxRator, "Close " ++ show l)
+  unparse (T.End _ T.In l ) = (maxRator, "Wait " ++ show l)
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dualof " ++ show a)
-  unparse (T.Message _ l p t) = (msgRator, show p ++ m)
+  unparse (T.Message _ l p t) = (msgRator, show p ++ show l ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m l1 l2 t u) = (arrowRator, l ++ spaced (showArrow m (l1,l2)) ++ r)
    where

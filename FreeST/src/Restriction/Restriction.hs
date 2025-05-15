@@ -6,14 +6,17 @@ module Restriction.Restriction
     , Leveled(..)
     , minLevel
     , maxLevel
+    , equalLevels
     )
 where
 
 import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
+import           Parse.Unparser
 
 import qualified Data.Map.Strict as Map
+import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
 
@@ -35,7 +38,6 @@ instance Leveled T.Type where
     level (T.Message _ l _ _) = l
     level (T.Forall _ _) = T.Top 
     level (T.Rec _ _) = T.Top
-    -- level (T.Rec _ (Bind _ _ _ t)) = level t
     level (T.Var _ _) = T.Top
     level (T.Dualof _ t) = level t
 
@@ -43,6 +45,24 @@ instance Leveled T.TypeMap where
     level tm
         | Map.null tm = T.Top
         | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
+
+equalLevels :: T.Type -> T.Type -> Bool
+equalLevels (T.Arrow _ _ l1 _ t1 t2) (T.Arrow _ _ l2 _ u1 u2) =
+    l1 == l2 && equalLevels t1 u1 && equalLevels t2 u2
+equalLevels (T.Labelled _ (T.Choice _) l1 m1) (T.Labelled _ (T.Choice _) l2 m2) =
+    l1 == l2 && isTypeMapLevelEqual m1 m2
+equalLevels (T.End _ _ l1) (T.End _ _ l2) =
+    l1 == l2
+equalLevels (T.Semi _ t1 t2) (T.Semi _ u1 u2) =
+    equalLevels t1 u1 && equalLevels t2 u2
+equalLevels (T.Message _ l1 _ _) (T.Message _ l2 _ _) =
+    l1 == l2
+equalLevels t1 t2 = True
+
+isTypeMapLevelEqual :: (Ord k, Eq k) => Map.Map k T.Type -> Map.Map k T.Type -> Bool
+isTypeMapLevelEqual m1 m2 =
+    Map.keysSet m1 == Map.keysSet m2 &&
+    and [equalLevels t1 t2 | (k, t1) <- Map.toList m1, let t2 = m2 Map.! k]
 
 minLevel :: T.Level -> T.Level -> T.Level
 minLevel T.Bottom _ = T.Bottom

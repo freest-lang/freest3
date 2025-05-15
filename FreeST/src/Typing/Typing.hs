@@ -294,6 +294,7 @@ synthetise kEnv (E.Case p e fm) = do
   l2 <- getGlobalContext
   popContext
   resetGlobalContext --technically unnecessary but it's cleaner to keep it as top
+  -- customTrace e (show l1 ++ " " ++ show l2)
   addInequality (getSpan t1) (l1, l2)
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -432,7 +433,7 @@ compareTypes e t u = do
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 
-    Just checks -> unless checks 
+    Just checks -> unless (checks && equalLevels t u)
                  $ addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 

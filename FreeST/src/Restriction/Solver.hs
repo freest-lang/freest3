@@ -118,9 +118,6 @@ getPythonSolverPath :: IO FilePath
 getPythonSolverPath = do
     path <-getRestrictionModulePath 
     return $ path </> "solver.py"
-
--- getPythonSolverPath :: IO FilePath
--- getPythonSolverPath = getDataFileName "solver.py"
   
 solveInequalities :: Inequalities -> IO Inequalities
 solveInequalities ineqs = do

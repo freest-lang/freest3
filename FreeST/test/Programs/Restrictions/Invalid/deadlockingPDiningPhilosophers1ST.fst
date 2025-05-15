@@ -1,17 +1,22 @@
 type Hand = !1();?2();Close 3
 
-philosopher : Int ->[top,bot] Hand 1->[top,bot] Hand 1->[1,3] ()
+sleep : Int ->[top,bot] ()
+sleep n = if n == 0 then () else sleep (n-1)
+
+philosopher : Int ->[1,bot] Hand 1->[1,bot] Hand 1->[1,3] ()
 philosopher id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
     let right = send () right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
-fork_ : dualof Hand ->[top,bot] dualof Hand 1->[1,3] ()
+fork_ : dualof Hand ->[1,bot] dualof Hand 1->[1,3] ()
 fork_ left right =
     let (_,right) = receive right in
     let right = send () right in
@@ -38,7 +43,8 @@ main =
     fork @() (\_ : () 1-> philosopher 2 p3 p2);
     fork @() (\_ : () 1-> philosopher 3 p5 p4);
     philosopher 4 p7 p6;
-    print @String "Done!"
+    sleep 500
+    -- print @String "Done!"
 
 -- type Hand = !1Int;?2();Close 3
 

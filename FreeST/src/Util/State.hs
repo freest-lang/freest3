@@ -292,10 +292,10 @@ getGlobalContext = do
   gctx <- S.gets globalContext
   ctx <- getContext
   ctxStack <- getContextStack
-  if gctx == T.Top && (length ctxStack == 1)
+  if gctx == T.Top && length ctxStack == 1
     then do
-      S.modify (\s -> s { globalContext = ctx })
-      return ctx
+      S.modify (\s -> s { globalContext = (R.minLevel ctx gctx) })
+      return (R.minLevel ctx gctx)
     else return gctx
 
 resetGlobalContext :: S.MonadState (FreestS a) m => m ()
@@ -306,9 +306,15 @@ updateContext l = do
   currentContext <- getContextStack
   case currentContext of
     (x:xs) -> do
-      let newTop = R.minLevel x l
+      let newTop = R.minLevel x l 
       S.modify (\s -> s { context = newTop : xs })
-    [] -> pushContext l
+    [] -> do
+      gctx <- getGlobalContext
+      if gctx == T.Top
+        then do
+          S.modify (\s -> s { globalContext = l })
+          pushContext l
+        else pushContext l
 
 newContext :: S.MonadState (FreestS a) m => m ()
 newContext = pushContext T.Top

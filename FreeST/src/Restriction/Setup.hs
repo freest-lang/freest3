@@ -48,13 +48,14 @@ setupVenv modulePath = do
     let venvPath = modulePath </> "venv"
     pyCmd <- getPythonCommand
     venvExists <- doesDirectoryExist venvPath
-    when (not venvExists) $ callProcess pyCmd ["-m", "venv", venvPath]
+    when (not venvExists) $ do
+        print "Creating virtual environment for solver..."
+        callProcess pyCmd ["-m", "venv", venvPath]
     return venvPath
 
 setupZ3Lib :: FilePath -> IO ()
 setupZ3Lib venvPath = do
     pipPath <- getPipPath venvPath
-    pythonPath <- getPythonPath venvPath
     (exitCode, _, _) <- readProcessWithExitCode pipPath ["show", "z3-solver"] ""
     when (exitCode /= ExitSuccess) $ callProcess pipPath ["install", "-q", "z3-solver"]
 
