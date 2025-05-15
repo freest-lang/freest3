@@ -1,0 +1,4 @@
+rec x . !Int 
+
+type Ping = !Int ; Pong
+type Pong = ?Int ; Ping

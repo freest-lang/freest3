@@ -1,0 +1,1 @@
+rec x . +{NodeC: !Int ; x, LeafC: x, EndOfStreamC: Close}
