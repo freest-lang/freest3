@@ -36,7 +36,6 @@ resolver: lts-18.24
 packages:
 - FreeST
 - REPL
-- Monitor
 #- TACAS2020
 #- TACAS2020-TEST
 #- SGBisim

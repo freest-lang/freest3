@@ -1,1 +1,0 @@
-(rec x . &{Push: ?Int ; (rec y . &{Push: ?Int; y ; y, Pop: !Int}) ; x,  Stop: Skip}) ; Wait

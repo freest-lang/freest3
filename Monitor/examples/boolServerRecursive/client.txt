@@ -1,1 +1,0 @@
-rec x. +{And: Skip; !Bool; !Bool ; ?Bool ; x, Or : Skip; !Bool; !Bool; ?Bool ; x, Not: Skip; !Bool; ?Bool ; x, Done: Close} 
