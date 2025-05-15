@@ -18,7 +18,6 @@ isPythonInstalled = do
     (exitCode, _, _) <- readProcessWithExitCode pyCmd ["--version"] ""
     return $ exitCode == ExitSuccess
 
--- Install Python if not installed
 installPython :: IO ()
 installPython
     | os == "mingw32" = do
@@ -30,22 +29,40 @@ installPython
         callProcess "sudo" ["apt-get", "install", "-y", "python3", "python3-venv"]
         putStrLn "Python installed successfully."
 
-isZ3LibInstalled :: IO Bool
-isZ3LibInstalled = do
-    (exitCode, _, _) <- readProcessWithExitCode "pip" ["show", "z3-solver"] ""
-    return $ exitCode == ExitSuccess
+getPipPath :: FilePath -> IO FilePath
+getPipPath venvPath = do
+    let pipPath = if os == "mingw32"
+        then venvPath </> "Scripts" </> "pip.exe"
+        else venvPath </> "bin" </> "pip"
+    return pipPath
 
-installZ3Lib :: IO ()
-installZ3Lib = do
-    z3 <- isZ3LibInstalled
-    when (not z3) $ do
-        callProcess "pip" ["install", "-q", "z3-solver"]
+getPythonPath :: FilePath -> IO FilePath
+getPythonPath venvPath = do
+    let pythonPath = if os == "mingw32"
+        then venvPath </> "Scripts" </> "python.exe"
+        else venvPath </> "bin" </> "python"
+    return pythonPath
 
-runPythonFile :: FilePath -> FilePath -> IO ()
-runPythonFile solverPath ineqPath = do
-    -- py <- isPythonInstalled
-    -- when (not py) installPython
-    -- installZ3Lib --commenting this because it's slow and was causing problems for my colleague
-                    --using a venv is the best approach, but it's extremely slow
+setupVenv :: FilePath -> IO FilePath
+setupVenv modulePath = do
+    let venvPath = modulePath </> "venv"
     pyCmd <- getPythonCommand
+    venvExists <- doesDirectoryExist venvPath
+    when (not venvExists) $ callProcess pyCmd ["-m", "venv", venvPath]
+    return venvPath
+
+setupZ3Lib :: FilePath -> IO ()
+setupZ3Lib venvPath = do
+    pipPath <- getPipPath venvPath
+    pythonPath <- getPythonPath venvPath
+    (exitCode, _, _) <- readProcessWithExitCode pipPath ["show", "z3-solver"] ""
+    when (exitCode /= ExitSuccess) $ callProcess pipPath ["install", "-q", "z3-solver"]
+
+runPythonFile :: FilePath -> FilePath -> FilePath -> IO ()
+runPythonFile solverPath ineqPath modulePath = do
+    -- py <- isPythonInstalled
+    -- when (not py) installPython --for now I'll just assume that everyone has python installed for the sake of efficiency
+    venvPath <- setupVenv modulePath
+    setupZ3Lib venvPath
+    pyCmd <- getPythonPath venvPath 
     callProcess pyCmd [solverPath, ineqPath]

@@ -27,6 +27,9 @@ dist
 dist-*
 .stack-work/
 
+# Python Solver
+/FreeST/src/Restriction/venv
+
 # Test files (gen)
 # FreeST/test/Programs/*/*/*
 # !FreeST/test/Programs/*/*/*.fst

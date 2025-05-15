@@ -11,7 +11,7 @@ import qualified Restriction.Restriction as R
 import           Parse.Unparser
 import           Util.State
 import           Restriction.Setup
-import Paths_FreeST (getDataFileName)
+import Paths_FreeST (getLibDir)
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
@@ -19,9 +19,10 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import System.Directory (removeFile, getCurrentDirectory)
-import System.FilePath ((</>))
+import System.FilePath ((</>), splitPath, joinPath)
 import System.Process
 import Control.Monad.State (liftIO)
+import Data.List (isPrefixOf)
 
 data InequalityEntry = InequalityEntry
     { span       :: Span
@@ -76,11 +77,6 @@ deserializeInequalities contents =
         Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
         Nothing      -> error "Failed to parse inequalities from JSON"
 
-inequalitiesFilePath :: IO FilePath
-inequalitiesFilePath = do
-    currentDir <- getCurrentDirectory
-    return $ currentDir </> "ineq.json"
-
 writeInequalitiesToFile :: Inequalities -> IO ()
 writeInequalitiesToFile ineqs = do
     let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
@@ -98,16 +94,41 @@ readInequalitiesFromFile = do
             let ineqs = deserializeInequalities contents
             ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
 
+getSourcePath :: IO FilePath
+getSourcePath = do
+    libPath <- getLibDir
+    let parts = splitPath libPath
+        (before, after) = break (isPrefixOf "freest3") parts
+        srcPath = case after of
+                    []     -> before
+                    (x:_)  -> before ++ [x]
+    return $ joinPath srcPath
+
+getRestrictionModulePath :: IO FilePath
+getRestrictionModulePath = do
+    src <- getSourcePath
+    return $ src </> "FreeST" </> "src" </> "Restriction"
+
+inequalitiesFilePath :: IO FilePath
+inequalitiesFilePath = do
+    path <- getRestrictionModulePath
+    return $ path </> "ineq.json"
+
 getPythonSolverPath :: IO FilePath
-getPythonSolverPath = getDataFileName "solver.py"
+getPythonSolverPath = do
+    path <-getRestrictionModulePath 
+    return $ path </> "solver.py"
+
+-- getPythonSolverPath :: IO FilePath
+-- getPythonSolverPath = getDataFileName "solver.py"
   
 solveInequalities :: Inequalities -> IO Inequalities
 solveInequalities ineqs = do
     writeInequalitiesToFile ineqs
     ineqPath <- inequalitiesFilePath
     solverPath <- getPythonSolverPath
-    runPythonFile solverPath ineqPath
-    -- liftIO $ callProcess "python" [solverPath, ineqPath]
+    modulePath <- getRestrictionModulePath
+    runPythonFile solverPath ineqPath modulePath
     ineqs <- readInequalitiesFromFile
     removeFile ineqPath
     return ineqs

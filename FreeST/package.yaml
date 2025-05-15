@@ -12,7 +12,6 @@ data-files:
   - Prelude.fst
   - List.fst
   - File.fst
-  - solver.py #for the solver
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
