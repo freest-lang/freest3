@@ -1,0 +1,287 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           FreeST
+version:        3.2.0
+author:         Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
+maintainer:     Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
+copyright:      2020 authors
+license:        BSD3
+build-type:     Simple
+data-files:
+    Prelude.fst
+    List.fst
+    File.fst
+data-dir:       StandardLib
+
+library
+  exposed-modules:
+      FreeST
+      Paths_FreeST
+      Bisimulation.Grammar
+      Bisimulation.Bisimulation
+      Bisimulation.SubtypingSimulation
+      Elaboration.ResolveDuality
+      Elaboration.Elaboration
+      Syntax.Base
+      Syntax.AST
+      Syntax.Type
+      Syntax.Expression
+      Syntax.Kind
+      Syntax.Program
+      Syntax.MkName
+      Parse.ParseUtils
+      Parse.Read
+      Parse.Unparser
+      Util.Error
+      Util.Warning
+      Util.State
+      Util.CmdLine
+      Util.GetTOps
+      Parse.Lexer
+      Parse.Parser
+      Typing.Typing
+      Typing.Normalisation
+      Typing.Rename
+      Typing.Substitution
+      Typing.Phase
+      Kinding.Subkind
+      Kinding.Terminated
+      Kinding.Contractive
+      Kinding.Kinding
+      Interpreter.Builtin
+      Interpreter.Eval
+      Interpreter.Value
+      Parse.Phase
+      PatternMatch.Phase
+      Elaboration.Phase
+      Elaboration.Replace
+      PatternMatch.PatternMatch
+      Equivalence.TypeEquivalence
+      Equivalence.Subtyping
+      Equivalence.AlphaCongruence
+      Inference.Inference
+  other-modules:
+      Bisimulation.AlphaEquivalenceTrinary
+      Bisimulation.Minimal
+      Bisimulation.Norm
+      Bisimulation.ThreeValuedLogic
+      Bisimulation.TypeToGrammar
+      Elaboration.Duality
+      Elaboration.ResolveEquations
+      Inference.Constraint
+      Inference.ConstraintKinding
+      Inference.ConstraintTyping
+      Inference.Phase
+      Inference.Unification
+      Interpreter.Serialize
+      Kinding.Norm
+      PatternMatch.Match
+      Syntax.Value
+      Typing.Extract
+      Util.Message
+  hs-source-dirs:
+      src
+  build-tools:
+      alex
+    , happy
+  build-depends:
+      array <=0.5.4.0
+    , base >=4.7 && <5
+    , binary
+    , bytestring >=0.10.12.0
+    , containers >=0.5.9
+    , control-bool >=0.2.1
+    , directory >=1.3.2.0
+    , extra >=1.7.9
+    , filepath >=1.4.2
+    , mtl >=2.2.1
+    , network
+    , optparse-applicative >=0.16.1.0
+  default-language: Haskell2010
+
+executable freest
+  main-is: FreeST.hs
+  other-modules:
+      Bisimulation.AlphaEquivalenceTrinary
+      Bisimulation.Bisimulation
+      Bisimulation.Grammar
+      Bisimulation.Minimal
+      Bisimulation.Norm
+      Bisimulation.SubtypingSimulation
+      Bisimulation.ThreeValuedLogic
+      Bisimulation.TypeToGrammar
+      Elaboration.Duality
+      Elaboration.Elaboration
+      Elaboration.Phase
+      Elaboration.Replace
+      Elaboration.ResolveDuality
+      Elaboration.ResolveEquations
+      Equivalence.AlphaCongruence
+      Equivalence.Subtyping
+      Equivalence.TypeEquivalence
+      Inference.Constraint
+      Inference.ConstraintKinding
+      Inference.ConstraintTyping
+      Inference.Inference
+      Inference.Phase
+      Inference.Unification
+      Interpreter.Builtin
+      Interpreter.Eval
+      Interpreter.Serialize
+      Interpreter.Value
+      Kinding.Contractive
+      Kinding.Kinding
+      Kinding.Norm
+      Kinding.Subkind
+      Kinding.Terminated
+      Parse.Lexer
+      Parse.Parser
+      Parse.ParseUtils
+      Parse.Phase
+      Parse.Read
+      Parse.Unparser
+      PatternMatch.Match
+      PatternMatch.PatternMatch
+      PatternMatch.Phase
+      Syntax.AST
+      Syntax.Base
+      Syntax.Expression
+      Syntax.Kind
+      Syntax.MkName
+      Syntax.Program
+      Syntax.Type
+      Syntax.Value
+      Typing.Extract
+      Typing.Normalisation
+      Typing.Phase
+      Typing.Rename
+      Typing.Substitution
+      Typing.Typing
+      Util.CmdLine
+      Util.Error
+      Util.GetTOps
+      Util.Message
+      Util.State
+      Util.Warning
+      Paths_FreeST
+  hs-source-dirs:
+      src
+  ghc-options: -main-is FreeST -threaded -rtsopts -with-rtsopts=-N
+  build-tools:
+      alex
+    , happy
+  build-depends:
+      array <=0.5.4.0
+    , base >=4.7 && <5
+    , binary
+    , bytestring >=0.10.12.0
+    , containers >=0.5.9
+    , control-bool >=0.2.1
+    , directory >=1.3.2.0
+    , extra >=1.7.9
+    , filepath >=1.4.2
+    , mtl >=2.2.1
+    , network
+    , optparse-applicative >=0.16.1.0
+  default-language: Haskell2010
+
+test-suite programs
+  type: exitcode-stdio-1.0
+  main-is: ProgSpec.hs
+  other-modules:
+      CompilerInvalidSpec
+      CompilerValidSpec
+      SpecUtils
+      Paths_FreeST
+  hs-source-dirs:
+      test/Programs
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      FreeST
+    , HUnit >=1.6.0.0
+    , array <=0.5.4.0
+    , base >=4.7 && <5
+    , binary
+    , bytestring >=0.10.12.0
+    , containers >=0.5.9
+    , control-bool >=0.2.1
+    , directory >=1.3.2.0
+    , extra >=1.7.9
+    , filepath >=1.4.2
+    , hspec >=2.7.1
+    , mtl >=2.2.1
+    , network
+    , optparse-applicative >=0.16.1.0
+    , silently >=1.2.5.1
+    , split >=0.2.3.3
+  default-language: Haskell2010
+
+test-suite units
+  type: exitcode-stdio-1.0
+  main-is: UnitSpec.hs
+  other-modules:
+      Equivalence.SingleTestSpec
+      Equivalence.TestEquivalenceInvalidSpec
+      Equivalence.TestEquivalenceValidSpec
+      SpecUtils
+      Subtyping.TestSubInvalidSpec
+      Subtyping.TestSubValidSpec
+      Validation.TestExpressionInvalidSpec
+      Validation.TestExpressionValidSpec
+      Validation.TestSubKindValidSpec
+      Validation.TestTypesInvalidSpec
+      Validation.TestTypesValidSpec
+      Paths_FreeST
+  hs-source-dirs:
+      test/UnitTests
+  build-depends:
+      FreeST
+    , array <=0.5.4.0
+    , base >=4.7 && <5
+    , binary
+    , bytestring >=0.10.12.0
+    , containers >=0.5.9
+    , control-bool >=0.2.1
+    , directory >=1.3.2.0
+    , extra >=1.7.9
+    , filepath >=1.4.2
+    , hspec >=2.7.1
+    , hspec-discover >=2.7.1
+    , hspec-expectations >=0.8.2
+    , mtl >=2.2.1
+    , network
+    , optparse-applicative >=0.16.1.0
+    , split >=0.2.3.3
+  default-language: Haskell2010
+
+test-suite valid-types-quick
+  type: exitcode-stdio-1.0
+  main-is: QuickCheckSpec.hs
+  other-modules:
+      ArbitraryTypes
+      TestInvalidTypes
+      TestValidTypes
+      Paths_FreeST
+  hs-source-dirs:
+      test/QuickCheck
+  build-depends:
+      FreeST
+    , QuickCheck
+    , array <=0.5.4.0
+    , base >=4.7 && <5
+    , binary
+    , bytestring >=0.10.12.0
+    , containers >=0.5.9
+    , control-bool >=0.2.1
+    , directory >=1.3.2.0
+    , extra >=1.7.9
+    , filepath >=1.4.2
+    , hspec
+    , mtl >=2.2.1
+    , network
+    , optparse-applicative >=0.16.1.0
+  default-language: Haskell2010
