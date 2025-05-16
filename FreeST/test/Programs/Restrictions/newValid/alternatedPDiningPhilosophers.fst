@@ -3,34 +3,47 @@ type Hand = !1Int;?2();Close 3
 type FirstHand = !1Int;?3();Close 5
 type SecondHand = !2Int;?4();Close 6
 
-philosopher : Int ->[top,bot] FirstHand 1->[top,bot] SecondHand 1->[1,6] ()
+sleep : Int ->[top,bot] ()
+sleep n = if n == 0 then () else sleep (n-1)
+
+philosopher : Int ->[1,bot] FirstHand 1->[1,bot] SecondHand 1->[2,6] ()
 philosopher id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send id left in
     let right = send id right in
     let (_,left) = receive left in
     let (_,right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
-unitaryFork : !3();Wait 6->[3,6] ()
-unitaryFork f =
-    let f = send () f in
-    wait f
+-- unitaryFork : !3();Wait 6->[3,6] ()
+-- unitaryFork f =
+--     let f = send () f in
+--     wait f
 
 --deadlock still happens if both branches are the same, not caught
-fork_ : dualof SecondHand ->[top,bot] dualof FirstHand 1->[1,6] ()
+fork_ : dualof SecondHand ->[1,bot] dualof FirstHand 1->[1,2] ()
 fork_ left right =
     let (id,right) = receive right in
     let (_,left) = receive left in
     if(even id) 
     then
-        unitaryFork left;
-        unitaryFork right
+        let left = send () left in
+        wait left;
+        let right = send () right in
+        wait right
+        -- unitaryFork left;
+        -- unitaryFork right
     else
-        unitaryFork right;
-        unitaryFork left
+        let right = send () right in
+        wait right;
+        let left = send () left in
+        wait left
+        -- unitaryFork right;
+        -- unitaryFork left
 
 main : ()
 main =
@@ -50,5 +63,6 @@ main =
     fork @() (\_ : () 1-> philosopher 2 p3 p2);
     fork @() (\_ : () 1-> philosopher 3 p5 p4);
     philosopher 4 p7 p6;
-    print @String "Done!"
+    sleep 500
+    -- print @String "Done!"
 

@@ -1,25 +1,32 @@
 type FirstFork = !1();?2();Close 5
 type SecondFork = !3();?4();Close 6
 
-evenPhilosopher : Int ->[top,bot] FirstFork ->[top,bot] dualof SecondFork 1->[1,3] ()
+sleep : Int ->[top,bot] ()
+sleep n = if n == 0 then () else sleep (n-1)
+
+evenPhilosopher : Int ->[1,bot] FirstFork ->[1,bot] dualof SecondFork 1->[3,6] ()
 evenPhilosopher id left right = 
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
     let (_,left) = receive left in
     let (_,right) = receive right in
     let right = send () right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     wait right
 
-oddPhilosopher : Int ->[top,bot] SecondFork ->[top,bot] dualof FirstFork 1->[1,3] ()
+oddPhilosopher : Int ->[1,bot] SecondFork ->[1,bot] dualof FirstFork 1->[1,6] ()
 oddPhilosopher id left right = 
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let (_,right) = receive right in
     let right = send () right in
     let left = send () left in
     let (_,left) = receive left in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     wait right;
     close left
 
@@ -33,4 +40,5 @@ main =
     fork @() (\_:()1-> evenPhilosopher 2 fw2 fr1);
     fork @() (\_:()1-> oddPhilosopher 3 fw3 fr2);
     evenPhilosopher 4 fw4 fr3;
-    print @String "Done!"
+    sleep 500
+    -- print @String "Done!"

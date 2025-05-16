@@ -7,36 +7,45 @@ type Hand4 = !10();?11();Close 12
 type Hand5 = !13();?14();Close 15
 type Hand6 = !16();?17();Close 18
 
+sleep : Int ->[top,bot] ()
+sleep n = if n == 0 then () else sleep (n-1)
+
 philosopher1 : Int ->[top,bot] Hand1 1->[top,bot] Hand6 1->[1,18] ()
 philosopher1 id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
     let right = send () right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
 philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[4,9] ()
 philosopher2 id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
     let right = send () right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
 philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[10,15] ()
 philosopher3 id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send () left in
     let right = send () right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
@@ -91,4 +100,5 @@ main =
     fork @() (\_ : () 1-> philosopher1 1 p1 p6);
     fork @() (\_ : () 1-> philosopher2 2 p3 p2);
     philosopher3 3 p5 p4;
-    print @String "Done!"
+    sleep 500
+    -- print @String "Done!"

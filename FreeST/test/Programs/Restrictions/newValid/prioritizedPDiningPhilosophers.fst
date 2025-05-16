@@ -3,14 +3,19 @@ type Hand = !1Int;?2();Close 3
 type FirstHand = !1Int;?3();Close 5
 type SecondHand = !2Int;?4();Close 6
 
+sleep : Int ->[top,bot] ()
+sleep n = if n == 0 then () else sleep (n-1)
+
 philosopher : Int ->[top,bot] FirstHand 1->[top,bot] SecondHand 1->[1,6] ()
 philosopher id left right =
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
     let left = send id left in
     let right = send id right in
     let (_, left) = receive left in
     let (_, right) = receive right in
-    putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
+    sleep 500;
+    -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     close right
 
@@ -45,5 +50,6 @@ main =
     fork @() (\_ : () 1-> philosopher 1 p1 p6);
     fork @() (\_ : () 1-> philosopher 2 p3 p2);
     philosopher 3 p5 p4;
-    print @String "Done!"
+    sleep 500
+    -- print @String "Done!"
 
