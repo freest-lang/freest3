@@ -1,5 +1,3 @@
-type Hand = !100();?101();Close 102
-
 type Hand1 = !1();?2();Close 3
 type Hand2 = !4();?5();Close 6
 type Hand3 = !7();?8();Close 9
@@ -49,12 +47,6 @@ philosopher3 id left right =
     close left;
     close right
 
--- unitaryFork : dualof Hand ->[1,18] ()
--- unitaryFork f =
---     let (_,f) = receive f in
---     let f = send () f in
---     wait f
-
 fork1 : dualof Hand2 ->[1,bot] dualof Hand1 1->[1,6] ()
 fork1 left right =
     let (_,right) = receive right in
@@ -63,8 +55,6 @@ fork1 left right =
     let (_,left) = receive left in
     let left = send () left in
     wait left
-    -- unitaryFork right;
-    -- unitaryFork left
 
 fork2 : dualof Hand4 ->[7,bot] dualof Hand3 1->[7,12] ()
 fork2 left right =
@@ -74,8 +64,6 @@ fork2 left right =
     let (_,left) = receive left in
     let left = send () left in
     wait left
-    -- unitaryFork right;
-    -- unitaryFork left
 
 fork3 : dualof Hand6 ->[13,bot] dualof Hand5 1->[13,18] ()
 fork3 left right =
@@ -85,8 +73,6 @@ fork3 left right =
     let (_,left) = receive left in
     let left = send () left in
     wait left
-    -- unitaryFork right;
-    -- unitaryFork left
 
 main : ()
 main =
