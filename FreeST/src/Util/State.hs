@@ -23,6 +23,7 @@ import           Debug.Trace
 type Warnings = [WarningType]
 type Errors = [ErrorType]
 type Inequalities = Set.Set (Span, R.Inequality)
+type ContextSet = Set.Set T.Level
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -33,7 +34,10 @@ data FreestS a = FreestS
   , extra :: XExtra a
   , inequalities :: Inequalities
   , context :: [T.Level]
+  , context' :: [ContextSet]
   , globalContext :: T.Level
+  , globalContext' :: ContextSet
+  , levelVarCounter :: Int
   }
 
 type family XExtra a
@@ -54,7 +58,10 @@ initial ext = FreestS {
   , extra = ext
   , inequalities = Set.empty
   , context = []
+  , context' = []
   , globalContext = T.Top
+  , globalContext' = Set.empty
+  , levelVarCounter = 1000
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -71,7 +78,10 @@ initialS = FreestS {
   , extra = void
   , inequalities = Set.empty
   , context = []
+  , context' = []
   , globalContext = T.Top
+  , globalContext' = Set.empty
+  , levelVarCounter = 0
   }
 
 -- | AST
@@ -277,8 +287,14 @@ getInequalities = S.gets inequalities
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
 addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (span, inequality) (inequalities s) })
 
+addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
+addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
+
 getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 getContextStack = S.gets context
+
+getContextStack' :: S.MonadState (FreestS a) m => m [ContextSet]
+getContextStack' = S.gets context'
 
 getContext :: S.MonadState (FreestS a) m => m T.Level
 getContext = do
@@ -286,6 +302,13 @@ getContext = do
   case ctx of
     (x:_) -> return x
     []      -> return T.Top
+
+getContext' :: S.MonadState (FreestS a) m => m ContextSet
+getContext' = do
+  ctx <- S.gets context'
+  case ctx of
+    (x:_) -> return x
+    []      -> return Set.empty
 
 getGlobalContext :: S.MonadState (FreestS a) m => m T.Level
 getGlobalContext = do
@@ -298,13 +321,27 @@ getGlobalContext = do
       return (R.minLevel ctx gctx)
     else return gctx
 
+getGlobalContext' :: S.MonadState (FreestS a) m => m ContextSet
+getGlobalContext' = do
+  gctx <- S.gets globalContext'
+  ctx <- getContext'
+  ctxStack <- getContextStack'
+  if gctx == Set.empty && length ctxStack == 1
+    then do
+      S.modify (\s -> s { globalContext' = ctx })
+      return ctx
+    else return gctx
+
 resetGlobalContext :: S.MonadState (FreestS a) m => m ()
 resetGlobalContext = S.modify (\s -> s { globalContext = T.Top })
 
+resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
+resetGlobalContext' = S.modify (\s -> s { globalContext' = Set.empty })
+
 updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext l = do 
-  currentContext <- getContextStack
-  case currentContext of
+  ctxStack <- getContextStack
+  case ctxStack of
     (x:xs) -> do
       let newTop = R.minLevel x l 
       S.modify (\s -> s { context = newTop : xs })
@@ -316,24 +353,87 @@ updateContext l = do
           pushContext l
         else pushContext l
 
+updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
+updateContext' l = do
+  ctxStack <- getContextStack'
+  case ctxStack of
+    (x:xs) -> do
+      let newTop = Set.insert l x
+      S.modify (\s -> s { context' = newTop : xs })
+    [] -> do
+      gctx <- getGlobalContext'
+      if gctx == Set.empty
+        then do
+          S.modify (\s -> s { globalContext' = Set.singleton l })
+          pushContext' l
+        else pushContext' l
+
 newContext :: S.MonadState (FreestS a) m => m ()
 newContext = pushContext T.Top
 
+newContext' :: S.MonadState (FreestS a) m => m ()
+newContext' = S.modify (\s -> s { context' = Set.empty : context' s })
+
 pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushContext l = S.modify (\s -> s { context = l : context s })
+
+pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
+pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
 
 -- popContext :: S.MonadState (FreestS a) m => m ()
 -- popContext = S.modify (\s -> s { context = tail (context s) })
 
 popContext :: S.MonadState (FreestS a) m => m ()
 popContext = do
-  currentContext <- getContextStack
-  case currentContext of
+  ctxStack <- getContextStack
+  case ctxStack of
     (x:xs) -> do
-      globalCtx <- getGlobalContext
-      let newGlobalCtx = R.minLevel x globalCtx
-      S.modify (\s -> s { globalContext = newGlobalCtx })
+      gctx <- getGlobalContext
+      let newGctx = R.minLevel x gctx
+      S.modify (\s -> s { globalContext = newGctx })
       S.modify (\s -> s { context = xs })
     [] -> do
-      S.modify (\s -> s { globalContext = T.Top })
+      -- S.modify (\s -> s { globalContext = T.Top })
       S.modify (\s -> s { context = [] })
+
+popContext' :: S.MonadState (FreestS a) m => m ()
+popContext' = do
+  ctxStack <- getContextStack'
+  case ctxStack of
+    (x:xs) -> do
+      gctx <- getGlobalContext'
+      S.modify (\s -> s { globalContext' = Set.union x gctx })
+      S.modify (\s -> s { context' = xs })
+    [] -> do
+      -- S.modify (\s -> s { globalContext' = Set.empty })
+      S.modify (\s -> s { context' = [] })
+
+getLevelVarCounter :: S.MonadState (FreestS a) m => m Int
+getLevelVarCounter = S.gets levelVarCounter
+
+incrementLevelVarCounter :: S.MonadState (FreestS a) m => m ()
+incrementLevelVarCounter = do
+  n <- S.gets levelVarCounter
+  S.modify (\s -> s { levelVarCounter = n + 1 })
+
+-- minLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+-- minLevel' span ls = do
+--   n <- S.gets levelVarCounter
+--   let newLevel = T.Num n
+--   S.modify (\s -> s { levelVarCounter = n + 1 })
+--   mapM_ (\l -> addInequality span (newLevel, l)) ls
+--   return newLevel
+
+-- maxLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+-- maxLevel' span ls = do
+--   n <- S.gets levelVarCounter
+--   let newLevel = T.Num n
+--   S.modify (\s -> s { levelVarCounter = n + 1 })
+--   mapM_ (\l -> addInequality span (l, newLevel)) ls
+--   return newLevel
+
+-- typeMapLevel :: Span -> T.TypeMap -> T.Level
+-- typeMapLevel span tm
+--   | Map.null tm = T.Top
+--   | otherwise = 
+  

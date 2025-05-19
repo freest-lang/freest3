@@ -14,8 +14,10 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
 import           Parse.Unparser
+-- import           Restriction.Ordering
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
@@ -45,6 +47,11 @@ instance Leveled T.TypeMap where
     level tm
         | Map.null tm = T.Top
         | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
+
+-- instance Leveled T.TypeMap where
+--     level tm
+--         | Map.null tm = T.Top
+--         | otherwise = minLevel' (getSpan tm) (map level (Map.elems tm))
 
 equalLevels :: T.Type -> T.Type -> Bool
 equalLevels (T.Arrow _ _ l1 _ t1 t2) (T.Arrow _ _ l2 _ u1 u2) =

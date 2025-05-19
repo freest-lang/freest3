@@ -308,7 +308,6 @@ Primary :: { E.Exp }
   | '(' Exp ')'                    { $2 } -- TODO: fix the span to include the parenthesis
 
 
---it might be necessary to add levels here
 Abs :: { (Multiplicity, E.Exp) }
   : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs

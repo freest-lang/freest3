@@ -76,7 +76,7 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
-    -- * Check the set of level inequalities
+    -- * Check if set of inequalities is valid
     checkInequalities
     
   -- Get the state again to join the error messages
@@ -161,12 +161,14 @@ synthetise kEnv (E.Var _ x) =
 synthetise kEnv (E.UnLet p x e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
-  newContext
+  newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  l3 <- getContext
-  popContext
-  addInequality (getSpan t1) (l1, l3)
+  -- l3 <- getContext
+  ls <- getContext'
+  popContext'
+  -- addInequality (getSpan t1) (l1, l3)
+  addInequalities (getSpan t1) l1 ls
   return (t2, maxLevel l1 l2)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -187,7 +189,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (t, l) <- synthetise kEnv e
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
-    updateContext l1
+    updateContext' l1
     addInequality (getSpan t) (l1, level t1)
     return (t1, T.Bottom)
   -- Collect e
@@ -203,7 +205,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
   addInequality (getSpan t) (l1, level u1)
   addInequality (getSpan t) (l1, level u2)
-  updateContext l1
+  updateContext' l1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return (T.tuple p [u1, u2], maxLevel l l1)
   -- Send e1 e2
@@ -215,7 +217,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   addInequality (getSpan t) (l1, level u2)
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
-  updateContext l1
+  updateContext' l1
   return (u2, maxLevel l l1)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
@@ -229,17 +231,19 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   l1 <- Extract.leveledEnd e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan t) (l, l1)
-  updateContext l1
+  updateContext' l1
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
-  newContext
+  newContext'
   l2 <- leveledCheckAgainst kEnv e2 u1
-  l <- getContext
-  popContext
-  addInequality (getSpan t) (l1, l)
+  -- l <- getContext
+  ls <- getContext'
+  popContext'
+  -- addInequality (getSpan t) (l1, l)
+  addInequalities (getSpan t) l1 ls
   addInequality (getSpan t) (l2, l3)
   -- updateContext l3
   return (u2, maxLevel l1 $ maxLevel l2 l4)
@@ -275,27 +279,34 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
-  newContext
+  newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  l3 <- getContext
-  popContext
-  addInequality (getSpan t1) (l1, minLevel l3 (minLevel (level u1) (level u2)))
+  -- l3 <- getContext
+  ls <- getContext'
+  popContext'
+  -- addInequality (getSpan t1) (l1, minLevel l3 (minLevel (level u1) (level u2)))
+  addInequalities (getSpan t1) l1 ls
+  addInequality (getSpan t1) (l1, level u1)
+  addInequality (getSpan t1) (l1, level u2)
   return (t2, maxLevel l1 l2)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, l1) <- synthetise kEnv e
   fm'  <- buildMap p fm =<< Extract.datatypeMap e t1
   sigs <- getSignatures
-  resetGlobalContext
+  resetGlobalContext'
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  l2 <- getGlobalContext
-  popContext
-  resetGlobalContext --technically unnecessary but it's cleaner to keep it as top
+  -- l2 <- getGlobalContext
+  ls <- getGlobalContext'
+  popContext'
+  resetGlobalContext' --technically unnecessary but it's cleaner to keep it as top
   -- customTrace e (show l1 ++ " " ++ show l2)
-  addInequality (getSpan t1) (l1, l2)
+
+  -- addInequality (getSpan t1) (l1, l2)
+  addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setSignatures v
