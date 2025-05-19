@@ -13,7 +13,10 @@ data-files:
   - List.fst
   - File.fst
   - Random.fst
-  - Secure.fst
+  - Secure/SecureUtils.fst
+  - Secure/DiffieHellman.fst
+  - Secure/RSA.fst
+  - Secure/Chacha20.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
