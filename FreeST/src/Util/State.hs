@@ -416,13 +416,42 @@ incrementLevelVarCounter = do
   n <- S.gets levelVarCounter
   S.modify (\s -> s { levelVarCounter = n + 1 })
 
--- minLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
--- minLevel' span ls = do
---   n <- S.gets levelVarCounter
---   let newLevel = T.Num n
---   S.modify (\s -> s { levelVarCounter = n + 1 })
---   mapM_ (\l -> addInequality span (newLevel, l)) ls
---   return newLevel
+minLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+minLevel' span ls = do
+  let (isEdgeVal, l') = checkTopBot ls
+  if isEdgeVal
+    then return l'
+    else do
+      n <- S.gets levelVarCounter
+      let newLevel = T.Num n
+      incrementLevelVarCounter
+      mapM_ (\l -> addInequality span (newLevel, l)) ls
+      return newLevel
+  -- n <- S.gets levelVarCounter
+  -- let newLevel = T.Num n
+  -- incrementLevelVarCounter
+  -- -- S.modify (\s -> s { levelVarCounter = n + 1 })
+  -- mapM_ (\l -> addInequality span (newLevel, l)) ls
+  -- return newLevel
+
+checkTopBot :: [T.Level] -> (Bool, T.Level)
+checkTopBot [] = (True, T.Top)
+checkTopBot [x] = if x == T.Top || x == T.Bottom 
+  then (True, x)
+  else (False, T.Top)
+checkTopBot xs
+  | any (== T.Bottom) xs = (True, T.Bottom)
+  | all (== T.Top) xs    = (True, T.Top)
+  | T.Top `elem` xs && any isNum xs = (False, T.Top)
+  | otherwise            = (False, T.Top)
+  where
+    isNum (T.Num _) = True
+    isNum _         = False
+
+-- topBotMinLevel :: [T.Level] -> T.Level
+-- topBotMinLevel [] = T.Top
+-- topBotMinLevel [x] = x
+
 
 -- maxLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
 -- maxLevel' span ls = do
@@ -431,6 +460,27 @@ incrementLevelVarCounter = do
 --   S.modify (\s -> s { levelVarCounter = n + 1 })
 --   mapM_ (\l -> addInequality span (l, newLevel)) ls
 --   return newLevel
+
+-- levelOfTypeMap :: Span -> T.TypeMap -> m T.Level
+-- levelOfTypeMap span tm
+--   | Map.null tm = T.Top
+--   -- | otherwise = foldr R.minLevel T.Top (map l (Map.elems tm))
+--   | otherwise = minLevel' span (map l (Map.elems tm))
+--   where
+--     l (T.Labelled _ T.Record _ m)  = levelOfTypeMap span m
+--     l (T.Labelled _ T.Variant _ m) = levelOfTypeMap span m
+--     l t                            = R.level t
+
+levelOfTypeMap :: S.MonadState (FreestS a) m => Span -> T.TypeMap -> m T.Level
+levelOfTypeMap span tm
+  | Map.null tm = return T.Top
+  | otherwise = do
+      ls <- mapM l (Map.elems tm)
+      minLevel' span ls
+  where
+    l (T.Labelled _ T.Record _ m)  = levelOfTypeMap span m
+    l (T.Labelled _ T.Variant _ m) = levelOfTypeMap span m
+    l t                            = return (R.level t)
 
 -- typeMapLevel :: Span -> T.TypeMap -> T.Level
 -- typeMapLevel span tm

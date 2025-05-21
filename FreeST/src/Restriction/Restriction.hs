@@ -14,7 +14,6 @@ import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
 import           Parse.Unparser
--- import           Restriction.Ordering
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -32,8 +31,8 @@ instance Leveled T.Type where
     level (T.String _) = T.Top
     level (T.Arrow _ _ l1 _ _ _) = l1
     level (T.Labelled _ (T.Choice _) l _) = l
-    level (T.Labelled _ T.Record _ m) = level m
-    level (T.Labelled _ T.Variant _ m) = level m
+    level (T.Labelled _ T.Record _ m) = T.Top --level m --this rule is never supposed to be used
+    level (T.Labelled _ T.Variant _ m) = T.Top --level m --this rule is never supposed to be used
     level (T.Skip _) = T.Top
     level (T.End _ _ l) = l
     level (T.Semi _ t1 t2) = level t1
@@ -43,10 +42,20 @@ instance Leveled T.Type where
     level (T.Var _ _) = T.Top
     level (T.Dualof _ t) = level t
 
-instance Leveled T.TypeMap where
-    level tm
-        | Map.null tm = T.Top
-        | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
+-- instance Leveled T.TypeMap where
+--     level tm
+--         | Map.null tm = T.Top
+--         | otherwise = trace ("  NOT " ++ show tm) $ do
+--             foldr minLevel T.Top (map level (Map.elems tm))
+
+-- instance Leveled T.TypeMap where
+--     level tm
+--         | Map.null tm = T.Top
+--         | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
+    --   where
+    --     e (T.Labelled _ T.Record _ m)  = levelOfTypeMap m
+    --     e (T.Labelled _ T.Variant _ m) = levelOfTypeMap m
+    --     e t                           = level t
 
 -- instance Leveled T.TypeMap where
 --     level tm
@@ -84,3 +93,8 @@ maxLevel _ T.Top = T.Top
 maxLevel T.Bottom l = l
 maxLevel l T.Bottom = l
 maxLevel (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
+
+-- levelOfTypeMap :: T.TypeMap -> T.Level
+-- levelOfTypeMap tm
+--     | Map.null tm = T.Top 
+--     | otherwise = trace ("HERE: " ++ show tm) $ level tm
