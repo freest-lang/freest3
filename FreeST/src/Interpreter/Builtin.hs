@@ -4,7 +4,7 @@ module Interpreter.Builtin where
 import           Interpreter.Value
 import           Syntax.Base
 import           Interpreter.Serialize 
-
+import Control.Concurrent
 import qualified Control.Concurrent.Chan as C
 import           Data.Char ( ord, chr )
 import           Data.Functor
@@ -65,10 +65,10 @@ connectWithRetries host port retriesLeft = do
             Left err -> 
                 if retriesLeft > 1
                     then do
-                        putStrLn $ "Connection failed: " ++ show err ++ ". Retrying... (" ++ show (retriesLeft - 1) ++ " retries left)"
+                        threadDelay 2000000
                         connectWithRetries host port (retriesLeft - 1)
                     else do
-                        putStrLn $ "Connection failed after retries: " ++ show err
+                        putStrLn "Connection failed after 3 retries"
                         error "Failed to connect to server"
     where
         connectOnce :: IO HalfChannel
