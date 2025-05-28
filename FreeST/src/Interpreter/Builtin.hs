@@ -33,13 +33,15 @@ new = do
 
 -- newHc :: Either (Pair NS.HostName, NS.ServiceName) ((NS.HostName, NS.ServiceName), String)  -> IO ChannelEnd
 newHcServer :: Value -> IO ChannelEnd
-newHcServer (Pair (String host) (String port)) = NS.withSocketsDo $ do
+newHcServer (String addr) = NS.withSocketsDo $ do
+    let (host, port) = case break (== ':') addr of
+            (h, ':':p) -> (h, p)
+            _          -> error "Invalid address format, expected 'host:port'"
     let hints = NS.defaultHints { NS.addrFlags = [], NS.addrSocketType = NS.Stream }
     addr <- NE.head <$> NS.getAddrInfo (Just hints) (Just host) (Just port)
     sock <- NS.socket (NS.addrFamily addr) (NS.addrSocketType addr) (NS.addrProtocol addr)
     NS.bind sock (NS.addrAddress addr)
     NS.listen sock 1
-    putStrLn $ "Listening at port " ++ show port
     (conn1, _) <- NS.accept sock
     return $ Right conn1
 
