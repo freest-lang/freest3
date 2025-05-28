@@ -44,7 +44,10 @@ newHcServer (Pair (String host) (String port)) = NS.withSocketsDo $ do
     return $ Right conn1
 
 newHcClient :: Value -> IO ChannelEnd
-newHcClient (Pair (Pair (String host) (String port)) (String sv_addr)) = NS.withSocketsDo $ do
+newHcClient (Pair (String mn_addr) (String sv_addr)) = NS.withSocketsDo $ do
+    let (host, port) = case break (== ':') mn_addr of
+            (h, ':':p) -> (h, p)
+            _          -> error "Invalid address format, expected 'host:port'"
     sock <- connectWithRetries host port 3 
     let len = fromIntegral (length sv_addr) :: Word8
     let bytes = toStrict1 (Bin.encode len) <> BC.pack sv_addr

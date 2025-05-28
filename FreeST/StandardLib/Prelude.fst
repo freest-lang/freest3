@@ -133,7 +133,7 @@ new : forall a:1A . () -> (a, dualof a)
 
 newHcServer : forall a:1A . (String, String) -> a
 
-newHcClient : forall a:1A . ((String, String), String) -> a
+newHcClient : forall a:1A . (String, String) -> a
 
 newHcClient1 : forall a:1A . (String, String) -> a
 
