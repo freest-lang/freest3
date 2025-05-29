@@ -3,7 +3,7 @@ type Fork = !1();?2();Close 3
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher : Int ->[1,bot] Fork ->[1,bot] dualof Fork 1->[1,3] ()
+philosopher : Int ->[top,bot] Fork ->[top,bot] dualof Fork 1->[1,3] ()
 philosopher id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -15,6 +15,9 @@ philosopher id left right =
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is eating.");
     close left;
     wait right
+
+sleep' : Int ->[top,bot] ()
+sleep' n = if n == 0 then () else sleep (n-1)
 
 main : ()
 main = 

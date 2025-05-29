@@ -195,20 +195,30 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
             T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
             T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
             _                          -> return $ level t1
-  l2'' <- case t2 of
+  l2' <- case t2 of
             T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t2) m
             T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
             _                          -> return $ level t2
-  customTrace e ("l1 " ++ show l1')
-  customTrace e ("l2 " ++ show l2'')
-  l2' <- getContext'
+  l2c <- getContext'
   popContext'
-  customTrace e ("lc " ++ show l2')
-  l <- minLevel' (getSpan t1) ([l1'] ++ (Set.toList l2')) --need to change this
-  customTrace e ("l " ++ show l)
+  gc <- getGlobalContext'
+  fic <- popFirstInContext
+  -- customTrace e' ("l1 " ++ show l1' ++ " " ++ show t1)
+  -- customTrace e ("l2 " ++ show l2' ++  " " ++ show t2)
+  -- customTrace e ("------->CONTEXT " ++ show l2c)
+  -- customTrace e ("arrow l2 " ++ show l2)
+  -- customTrace e ("global context " ++ show gc)
+  -- customTrace e ("first in context " ++ show fic)
+  -- customTrace e ("IGNOOOOOOOOOOOOOOORE")
+  -- customTrace e ("lc " ++ show l2')
+  -- l <- minLevel' (getSpan t1) ([l1'] ++ (Set.toList l2')) --need to change this
+  -- customTrace e ("l " ++ show l)
   -- let l = minLevel l1' l2'
+  -- let l = case Set.toList l2c of
+  --           [] -> T.Top
+  --           _ -> fic
   -- let l = l1'
-  return (T.Arrow p mult l l2 t1 t2, T.Bottom)
+  return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)

@@ -63,8 +63,9 @@ instance Leveled T.Type where
 --         | otherwise = minLevel' (getSpan tm) (map level (Map.elems tm))
 
 equalLevels :: T.Type -> T.Type -> Bool
-equalLevels (T.Arrow _ _ l1 _ t1 t2) (T.Arrow _ _ l2 _ u1 u2) =
-    l1 == l2 && equalLevels t1 u1 && equalLevels t2 u2
+equalLevels (T.Arrow _ _ l1 l2 t1 t2) (T.Arrow _ _ l3 l4 u1 u2) =
+    -- l1 == l3 && l2 == l4 && equalLevels t1 u1 && equalLevels t2 u2
+    l1 == l3 && checkDefaultAbs l1 l2 l4 && equalLevels t1 u1 && equalLevels t2 u2
 equalLevels (T.Labelled _ (T.Choice _) l1 m1) (T.Labelled _ (T.Choice _) l2 m2) =
     l1 == l2 && isTypeMapLevelEqual m1 m2
 equalLevels (T.End _ _ l1) (T.End _ _ l2) =
@@ -74,6 +75,10 @@ equalLevels (T.Semi _ t1 t2) (T.Semi _ u1 u2) =
 equalLevels (T.Message _ l1 _ _) (T.Message _ l2 _ _) =
     l1 == l2
 equalLevels t1 t2 = True
+
+checkDefaultAbs :: T.Level -> T.Level -> T.Level -> Bool
+checkDefaultAbs T.Top T.Bottom _ = True
+checkDefaultAbs _ l1 l2 = l1 == l2
 
 isTypeMapLevelEqual :: (Ord k, Eq k) => Map.Map k T.Type -> Map.Map k T.Type -> Bool
 isTypeMapLevelEqual m1 m2 =

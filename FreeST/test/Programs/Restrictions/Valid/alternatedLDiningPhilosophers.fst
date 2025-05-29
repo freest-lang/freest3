@@ -4,7 +4,7 @@ type SecondFork = !3();?4();Close 6
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-evenPhilosopher : Int ->[1,bot] FirstFork ->[1,bot] dualof SecondFork 1->[3,6] ()
+evenPhilosopher : Int ->[top,bot] FirstFork ->[top,bot] dualof SecondFork 1->[1,6] ()
 evenPhilosopher id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -17,7 +17,7 @@ evenPhilosopher id left right =
     close left;
     wait right
 
-oddPhilosopher : Int ->[1,bot] SecondFork ->[1,bot] dualof FirstFork 1->[1,6] ()
+oddPhilosopher : Int ->[top,bot] SecondFork ->[top,bot] dualof FirstFork 1->[1,6] ()
 oddPhilosopher id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");

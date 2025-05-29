@@ -37,6 +37,7 @@ data FreestS a = FreestS
   , context' :: [ContextSet]
   , globalContext :: T.Level
   , globalContext' :: ContextSet
+  , firstInContext :: T.Level
   , levelVarCounter :: Int
   }
 
@@ -61,6 +62,7 @@ initial ext = FreestS {
   , context' = []
   , globalContext = T.Top
   , globalContext' = Set.empty
+  , firstInContext = T.Top
   , levelVarCounter = 1000
   }
 
@@ -81,6 +83,7 @@ initialS = FreestS {
   , context' = []
   , globalContext = T.Top
   , globalContext' = Set.empty
+  , firstInContext = T.Top
   , levelVarCounter = 0
   }
 
@@ -335,8 +338,13 @@ getGlobalContext' = do
 resetGlobalContext :: S.MonadState (FreestS a) m => m ()
 resetGlobalContext = S.modify (\s -> s { globalContext = T.Top })
 
+-- resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
+-- resetGlobalContext' = S.modify (\s -> s { globalContext' = Set.empty })
+
 resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
-resetGlobalContext' = S.modify (\s -> s { globalContext' = Set.empty })
+resetGlobalContext' = do
+  S.modify (\s -> s { globalContext' = Set.empty })
+  S.modify (\s -> s { firstInContext = T.Top })
 
 updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext l = do 
@@ -353,6 +361,21 @@ updateContext l = do
           pushContext l
         else pushContext l
 
+-- updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- updateContext' l = do
+--   ctxStack <- getContextStack'
+--   case ctxStack of
+--     (x:xs) -> do
+--       let newTop = Set.insert l x
+--       S.modify (\s -> s { context' = newTop : xs })
+--     [] -> do
+--       gctx <- getGlobalContext'
+--       if gctx == Set.empty
+--         then do
+--           S.modify (\s -> s { globalContext' = Set.singleton l })
+--           pushContext' l
+--         else pushContext' l
+
 updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext' l = do
   ctxStack <- getContextStack'
@@ -360,11 +383,18 @@ updateContext' l = do
     (x:xs) -> do
       let newTop = Set.insert l x
       S.modify (\s -> s { context' = newTop : xs })
+      if x == Set.empty 
+        then do
+          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+        else do
+          S.modify (\s -> s { firstInContext = firstInContext s })
+      -- S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
     [] -> do
       gctx <- getGlobalContext'
       if gctx == Set.empty
         then do
           S.modify (\s -> s { globalContext' = Set.singleton l })
+          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
           pushContext' l
         else pushContext' l
 
@@ -407,6 +437,12 @@ popContext' = do
     [] -> do
       -- S.modify (\s -> s { globalContext' = Set.empty })
       S.modify (\s -> s { context' = [] })
+
+popFirstInContext :: S.MonadState (FreestS a) m => m T.Level
+popFirstInContext = do
+  fic <- S.gets firstInContext
+  S.modify (\s -> s { firstInContext = T.Top })
+  return fic
 
 getLevelVarCounter :: S.MonadState (FreestS a) m => m Int
 getLevelVarCounter = S.gets levelVarCounter
