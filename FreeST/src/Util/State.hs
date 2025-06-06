@@ -518,6 +518,13 @@ levelOfTypeMap span tm
     l (T.Labelled _ T.Variant _ m) = levelOfTypeMap span m
     l t                            = return (R.level t)
 
+getTypeLevel :: S.MonadState (FreestS a) m => T.Type -> m T.Level
+getTypeLevel t = do
+  case t of
+    T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t) m
+    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t) m
+    _                          -> return (R.level t)
+
 -- typeMapLevel :: Span -> T.TypeMap -> T.Level
 -- typeMapLevel span tm
 --   | Map.null tm = T.Top

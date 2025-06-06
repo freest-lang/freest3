@@ -191,14 +191,17 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   --   _ -> trace "" $ return ()
   -- let l1 = minLevel (level t1) (level t2) in
   --   return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
-  l1' <- case t1 of
-            T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
-            T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
-            _                          -> return $ level t1
-  l2' <- case t2 of
-            T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t2) m
-            T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
-            _                          -> return $ level t2
+  l1' <- getTypeLevel t1
+  l2' <- getTypeLevel t2
+
+  -- l1' <- case t1 of
+  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
+  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
+  --           _                          -> return $ level t1
+  -- l2' <- case t2 of
+  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t2) m
+  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
+  --           _                          -> return $ level t2
   l2c <- getContext'
   popContext'
   gc <- getGlobalContext'
@@ -209,7 +212,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   -- customTrace e ("arrow l2 " ++ show l2)
   -- customTrace e ("global context " ++ show gc)
   -- customTrace e ("first in context " ++ show fic)
-  -- customTrace e ("IGNOOOOOOOOOOOOOOORE")
+  -- customTrace e ("--------------------")
   -- customTrace e ("lc " ++ show l2')
   -- l <- minLevel' (getSpan t1) ([l1'] ++ (Set.toList l2')) --need to change this
   -- customTrace e ("l " ++ show l)
@@ -227,10 +230,13 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     updateContext' l1
-    l2 <- case t1 of
-      T.Labelled _ T.Record _ m' -> levelOfTypeMap (getSpan t1) m'
-      T.Labelled _ T.Variant _ m' -> levelOfTypeMap (getSpan t1) m'
-      _ -> return $ level t1
+    -- l2 <- case t1 of
+    --   T.Labelled _ T.Record _ m' -> levelOfTypeMap (getSpan t1) m'
+    --   T.Labelled _ T.Variant _ m' -> levelOfTypeMap (getSpan t1) m'
+    --   _ -> return $ level t1
+
+    l2 <- getTypeLevel t1
+
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
   -- Collect e
@@ -244,15 +250,21 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
   (l1, u1, u2) <- Extract.leveledInput e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  lu1 <- case u1 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-    _ -> return $ level u1
+  -- lu1 <- case u1 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
+  --   _ -> return $ level u1
+
+  lu1 <- getTypeLevel u1
+
   addInequality (getSpan t) (l1, lu1)
-  lu2 <- case u2 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-    _ -> return $ level u2
+  -- lu2 <- case u2 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
+  --   _ -> return $ level u2
+
+  lu2 <- getTypeLevel u2
+
   addInequality (getSpan t) (l1, lu2)
   
   -- case u1 of
@@ -280,15 +292,19 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u2) m)
   --   _ -> addInequality (getSpan t) (l1, level u2)
   
-  lu1 <- case u1 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-    _ -> return $ level u1
+  -- lu1 <- case u1 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
+  --   _ -> return $ level u1
+
+  lu1 <- getTypeLevel u1  
   addInequality (getSpan t) (l1, lu1)
-  lu2 <- case u2 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-    _ -> return $ level u2
+  -- lu2 <- case u2 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
+  --   _ -> return $ level u2
+
+  lu2 <- getTypeLevel u2  
   addInequality (getSpan t) (l1, lu2)
 
 
@@ -347,10 +363,12 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   (t2, l2) <- synthetise kEnv e2
-  l <- case t2 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan t2) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
-    _ -> return $ level t2 
+  -- l <- case t2 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan t2) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
+  --   _ -> return $ level t2 
+  
+  l <- getTypeLevel t2
 
 
   -- case t2 of
@@ -361,10 +379,12 @@ synthetise kEnv (E.Pair p e1 e2) = do
   addInequality (getSpan t2) (l1, l)
   
   -- let l1 = level t1
-  l1 <- case t1 of
-            T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
-            T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
-            _                          -> return $ level t1
+  -- l1 <- case t1 of
+  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
+  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
+  --           _                          -> return $ level t1
+
+  l1 <- getTypeLevel t1
   -- let l1 = case t1 of
   --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
   --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
@@ -388,23 +408,19 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   popContext'
   -- addInequality (getSpan t1) (l1, minLevel l3 (minLevel (level u1) (level u2)))
   addInequalities (getSpan t1) l1 ls
-  lu1 <- case u1 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-    _ -> return $ level u1
-  -- case u1 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t1) (l1, levelOfTypeMap (getSpan u1) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t1) (l1, levelOfTypeMap (getSpan u1) m)
-  --   _ -> addInequality (getSpan t1) (l1, level u1)
-  lu2 <- case u2 of
-    T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-    _ -> return $ level u2
+  -- lu1 <- case u1 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
+  --   _ -> return $ level u1
+
+  lu1 <- getTypeLevel u1
+  -- lu2 <- case u2 of
+  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
+  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
+  --   _ -> return $ level u2
+
+  lu2 <- getTypeLevel u2
   
-  -- case u2 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t1) (l1, levelOfTypeMap (getSpan u2) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t1) (l1, levelOfTypeMap (getSpan u2) m)
-  --   _ -> addInequality (getSpan t1) (l1, level u2)
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
   return (t2, maxLevel l1 l2)
