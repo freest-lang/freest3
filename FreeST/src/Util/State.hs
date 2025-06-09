@@ -39,6 +39,7 @@ data FreestS a = FreestS
   , globalContext' :: ContextSet
   , firstInContext :: T.Level
   , levelVarCounter :: Int
+  , firstInContext' :: T.Level
   }
 
 type family XExtra a
@@ -64,6 +65,7 @@ initial ext = FreestS {
   , globalContext' = Set.empty
   , firstInContext = T.Top
   , levelVarCounter = 1000
+  , firstInContext' = T.Top
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -85,6 +87,7 @@ initialS = FreestS {
   , globalContext' = Set.empty
   , firstInContext = T.Top
   , levelVarCounter = 0
+  , firstInContext' = T.Top
   }
 
 -- | AST
@@ -443,6 +446,19 @@ popFirstInContext = do
   fic <- S.gets firstInContext
   S.modify (\s -> s { firstInContext = T.Top })
   return fic
+
+getFirstInContext :: S.MonadState (FreestS a) m => m T.Level
+getFirstInContext = S.gets firstInContext
+
+setFirstInContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+setFirstInContext l = do
+  fic <- S.gets firstInContext'
+  if fic == T.Top
+    then S.modify (\s -> s { firstInContext = l })
+    else return ()
+
+clearFirstInContext :: S.MonadState (FreestS a) m => m ()
+clearFirstInContext = S.modify (\s -> s { firstInContext = T.Top })
 
 getLevelVarCounter :: S.MonadState (FreestS a) m => m Int
 getLevelVarCounter = S.gets levelVarCounter

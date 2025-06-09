@@ -176,6 +176,9 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
   newContext'
+  fic <- getFirstInContext
+  l1' <- getTypeLevel t1
+  setFirstInContext l1' 
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
@@ -191,7 +194,8 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   --   _ -> trace "" $ return ()
   -- let l1 = minLevel (level t1) (level t2) in
   --   return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
-  l1' <- getTypeLevel t1
+
+  -- l1' <- getTypeLevel t1
   l2' <- getTypeLevel t2
 
   -- l1' <- case t1 of
@@ -205,7 +209,14 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   l2c <- getContext'
   popContext'
   gc <- getGlobalContext'
-  fic <- popFirstInContext
+
+  -- fic <- popFirstInContext
+
+
+  -- customTrace e' (show t1 ++ " // " ++ show (level t1))
+  -- customTrace e' (show t1 ++ " // " ++ show l1')
+  -- customTrace e (show t2 ++ " // " ++ show (level t2))
+  -- customTrace e (show l1')
   -- customTrace e' ("l1 " ++ show l1' ++ " " ++ show t1)
   -- customTrace e ("l2 " ++ show l2' ++  " " ++ show t2)
   -- customTrace e ("------->CONTEXT " ++ show l2c)
@@ -221,6 +232,8 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   --           [] -> T.Top
   --           _ -> fic
   -- let l = l1'
+  setFirstInContext fic
+
   return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e

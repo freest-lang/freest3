@@ -8,7 +8,7 @@ server x y =
     wait x;
     close y
 
-client : X ->[top,bot] dualof Y 1->[2,4] ()
+client : X ->[top,bot] dualof Y 1->[1,4] ()
 client x y = 
     let (_,y) = receive y in
     let x = send () x in
