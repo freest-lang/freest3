@@ -17,7 +17,7 @@ evenPhilosopher id left right =
     close left;
     wait right
 
-oddPhilosopher : Int ->[top,bot] SecondFork ->[top,bot] dualof FirstFork 1->[1,6] ()
+oddPhilosopher : Int ->[top,bot] SecondFork ->[top,bot] dualof FirstFork 1->[3,6] ()
 oddPhilosopher id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");

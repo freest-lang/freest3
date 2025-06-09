@@ -21,7 +21,7 @@ philosopher1 id left right =
     close left;
     close right
 
-philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[7,9] ()
+philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[7,6] ()
 philosopher2 id left right =
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -34,7 +34,7 @@ philosopher2 id left right =
     close left;
     close right
 
-philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[13,15] ()
+philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[13,12] ()
 philosopher3 id left right =
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");

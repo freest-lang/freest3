@@ -40,6 +40,7 @@ data FreestS a = FreestS
   , firstInContext :: T.Level
   , levelVarCounter :: Int
   , firstInContext' :: T.Level
+  , latestInContext :: T.Level
   }
 
 type family XExtra a
@@ -66,6 +67,7 @@ initial ext = FreestS {
   , firstInContext = T.Top
   , levelVarCounter = 1000
   , firstInContext' = T.Top
+  , latestInContext = T.Top
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -88,6 +90,7 @@ initialS = FreestS {
   , firstInContext = T.Top
   , levelVarCounter = 0
   , firstInContext' = T.Top
+  , latestInContext = T.Top
   }
 
 -- | AST
@@ -348,6 +351,7 @@ resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
 resetGlobalContext' = do
   S.modify (\s -> s { globalContext' = Set.empty })
   S.modify (\s -> s { firstInContext = T.Top })
+  -- S.modify (\s -> s { latestInContext = T.Top })
 
 updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext l = do 
@@ -389,8 +393,10 @@ updateContext' l = do
       if x == Set.empty 
         then do
           S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
         else do
           S.modify (\s -> s { firstInContext = firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
       -- S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
     [] -> do
       gctx <- getGlobalContext'
@@ -398,6 +404,7 @@ updateContext' l = do
         then do
           S.modify (\s -> s { globalContext' = Set.singleton l })
           S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
           pushContext' l
         else pushContext' l
 
@@ -448,17 +455,23 @@ popFirstInContext = do
   return fic
 
 getFirstInContext :: S.MonadState (FreestS a) m => m T.Level
-getFirstInContext = S.gets firstInContext
+getFirstInContext = S.gets firstInContext'
 
 setFirstInContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 setFirstInContext l = do
   fic <- S.gets firstInContext'
   if fic == T.Top
-    then S.modify (\s -> s { firstInContext = l })
+    then S.modify (\s -> s { firstInContext' = l })
     else return ()
 
 clearFirstInContext :: S.MonadState (FreestS a) m => m ()
-clearFirstInContext = S.modify (\s -> s { firstInContext = T.Top })
+clearFirstInContext = S.modify (\s -> s { firstInContext' = T.Top })
+
+getLatestInContext :: S.MonadState (FreestS a) m => m T.Level
+getLatestInContext = S.gets latestInContext
+
+clearLatestInContext :: S.MonadState (FreestS a) m => m ()
+clearLatestInContext = S.modify (\s -> s { latestInContext = T.Top })
 
 getLevelVarCounter :: S.MonadState (FreestS a) m => m Int
 getLevelVarCounter = S.gets levelVarCounter

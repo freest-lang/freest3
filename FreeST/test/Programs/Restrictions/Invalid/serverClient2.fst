@@ -10,7 +10,7 @@ f x y =
   close y;                 -- priority: q+1
   ()
 
-g : S ->[top,bot] dualof R 1->[2,4] ()
+g : S ->[top,bot] dualof R 1->[2,3] ()
 g y x =
   let (n,y) = receive y in -- priority: q
   let x = send () x in     -- priority: p

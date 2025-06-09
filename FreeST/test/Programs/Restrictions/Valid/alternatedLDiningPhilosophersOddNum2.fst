@@ -5,7 +5,7 @@ type Fork3 = !3();?4();Close 8
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher1 : Int ->[3,bot] Fork1 ->[3,bot] dualof Fork3 1->[3,9] ()
+philosopher1 : Int ->[top,bot] Fork1 ->[top,bot] dualof Fork3 1->[5,9] ()
 philosopher1 id left right = 
     sleep 500;
     let (_,right) = receive right in
@@ -16,7 +16,7 @@ philosopher1 id left right =
     wait right;
     close left
 
-philosopher2 : Int ->[1,bot] Fork2 ->[1,bot] dualof Fork1 1->[5,9] ()
+philosopher2 : Int ->[top,bot] Fork2 ->[top,bot] dualof Fork1 1->[1,9] ()
 philosopher2 id left right = 
     sleep 500;
     let left = send () left in
@@ -27,7 +27,7 @@ philosopher2 id left right =
     close left;
     wait right
 
-philosopher3 : Int ->[1,bot] Fork3 ->[1,bot] dualof Fork2 1->[1,8] ()
+philosopher3 : Int ->[top,bot] Fork3 ->[top,bot] dualof Fork2 1->[3,8] ()
 philosopher3 id left right =
     sleep 500;
     let (_,right) = receive right in
@@ -38,7 +38,7 @@ philosopher3 id left right =
     wait right;
     close left
 
-philosopher4 : Int ->[1,bot] Fork2 ->[1,bot] dualof Fork3 1->[3,8] ()
+philosopher4 : Int ->[top,bot] Fork2 ->[top,bot] dualof Fork3 1->[1,8] ()
 philosopher4 id left right =
     sleep 500;
     let left = send () left in

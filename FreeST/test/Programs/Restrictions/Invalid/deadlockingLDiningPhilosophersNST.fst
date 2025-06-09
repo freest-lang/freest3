@@ -5,7 +5,7 @@ type Fork3 = !7();?8();Close 9
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher1 : Int ->[1,bot] Fork1 ->[1,bot] dualof Fork3 1->[7,9] ()
+philosopher1 : Int ->[top,bot] Fork1 ->[top,bot] dualof Fork3 1->[1,9] ()
 philosopher1 id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -18,7 +18,7 @@ philosopher1 id left right =
     close left;
     wait right
 
-philosopher2 : Int ->[1,bot] Fork2 ->[1,bot] dualof Fork1 1->[1,6] ()
+philosopher2 : Int ->[top,bot] Fork2 ->[top,bot] dualof Fork1 1->[4,3] ()
 philosopher2 id left right =
     sleep 500; 
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");
@@ -31,7 +31,7 @@ philosopher2 id left right =
     close left;
     wait right
 
-philosopher3 : Int ->[4,bot] Fork3 ->[4,bot] dualof Fork2 1->[4,9] ()
+philosopher3 : Int ->[top,bot] Fork3 ->[top,bot] dualof Fork2 1->[7,6] ()
 philosopher3 id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");

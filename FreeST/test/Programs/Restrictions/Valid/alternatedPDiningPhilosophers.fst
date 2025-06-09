@@ -10,7 +10,7 @@ type Hand8 = !22Int;?23();Close 24
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher1 : Int ->[1,bot] Hand1 1->[1,bot] Hand8 1->[22,24] ()
+philosopher1 : Int ->[top,bot] Hand1 1->[top,bot] Hand8 1->[1,24] ()
 philosopher1 id left right =
     sleep 500;
     let left = send id left in
@@ -21,7 +21,7 @@ philosopher1 id left right =
     close left;
     close right
 
-philosopher2 : Int ->[4,bot] Hand3 1->[4,bot] Hand2 1->[4,9] ()
+philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[7,6] ()
 philosopher2 id left right =
     sleep 500;
     let left = send id left in
@@ -32,7 +32,7 @@ philosopher2 id left right =
     close left;
     close right
 
-philosopher3 : Int ->[10,bot] Hand5 1->[10,bot] Hand4 1->[10,15] ()
+philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[13,12] ()
 philosopher3 id left right =
     sleep 500;
     let left = send id left in
@@ -43,7 +43,7 @@ philosopher3 id left right =
     close left;
     close right
 
-philosopher4 : Int ->[16,bot] Hand7 1->[16,bot] Hand6 1->[16,21] ()
+philosopher4 : Int ->[top,bot] Hand7 1->[top,bot] Hand6 1->[19,18] ()
 philosopher4 id left right =
     sleep 500;
     let left = send id left in
@@ -54,7 +54,7 @@ philosopher4 id left right =
     close left;
     close right
 
-fork1 : dualof Hand2 ->[1,bot] dualof Hand1 1->[1,6] ()
+fork1 : dualof Hand2 ->[top,bot] dualof Hand1 1->[4,3] ()
 fork1 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -63,7 +63,7 @@ fork1 left right =
     let right = send () right in
     wait right
 
-fork2 : dualof Hand4 ->[7,bot] dualof Hand3 1->[7,12] ()
+fork2 : dualof Hand4 ->[top,bot] dualof Hand3 1->[10,12] ()
 fork2 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -72,7 +72,7 @@ fork2 left right =
     let left = send () left in
     wait left
 
-fork3 : dualof Hand6 ->[13,bot] dualof Hand5 1->[13,18] ()
+fork3 : dualof Hand6 ->[top,bot] dualof Hand5 1->[16,15] ()
 fork3 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -81,7 +81,7 @@ fork3 left right =
     let right = send () right in
     wait right
 
-fork4 : dualof Hand8 ->[19,bot] dualof Hand7 1->[19,24] ()
+fork4 : dualof Hand8 ->[top,bot] dualof Hand7 1->[22,24] ()
 fork4 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in

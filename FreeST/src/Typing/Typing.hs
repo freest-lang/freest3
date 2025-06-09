@@ -175,10 +175,13 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
-  newContext'
+  -- newContext'
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
   setFirstInContext l1' 
+
+  -- lic_ <- getLatestInContext
+  -- customTrace e' (show lic_)
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
@@ -206,9 +209,9 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t2) m
   --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
   --           _                          -> return $ level t2
-  l2c <- getContext'
-  popContext'
-  gc <- getGlobalContext'
+  -- l2c <- getContext'
+  -- popContext'
+  -- gc <- getGlobalContext'
 
   -- fic <- popFirstInContext
 
@@ -232,9 +235,23 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   --           [] -> T.Top
   --           _ -> fic
   -- let l = l1'
+  
   setFirstInContext fic
+  lic <- getLatestInContext
 
-  return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
+  when (fic == T.Top) clearFirstInContext
+
+  clearLatestInContext
+
+  -- customTrace e' (show t1)
+  -- customTrace e (show lic)
+  -- customTrace e ("-----------------------")
+  -- return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
+  let m = if lic == T.Top
+          then l2
+          else lic
+  
+  return (T.Arrow p mult fic m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -450,7 +467,6 @@ synthetise kEnv (E.Case p e fm) = do
   popContext'
   resetGlobalContext' --technically unnecessary but it's cleaner to keep it empty
   -- customTrace e (show l1 ++ " " ++ show l2)
-
   -- addInequality (getSpan t1) (l1, l2)
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
