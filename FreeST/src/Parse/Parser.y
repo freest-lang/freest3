@@ -468,19 +468,29 @@ ChoiceView :: { (Span, T.View) }
   : '+' { (getSpan $1, T.Internal) }
   | '&' { (getSpan $1, T.External) }
 
+-- Level :: { T.Level }
+--   : top { T.Top }
+--   | bot { T.Bottom }
+--   | INT { do 
+--             let (TokenInt p x) = $1
+--             T.Num x }
+
 Level :: { T.Level }
   : top { T.Top }
   | bot { T.Bottom }
-  | INT { do 
-            let (TokenInt p x) = $1
-            T.Num x }
+  | LOWER_ID { T.Literal (getText $1)}
+
+-- LocatedLevel :: { (Span, T.Level) }
+--   : top { (getSpan $1, T.Top) }
+--   | bot { (getSpan $1, T.Bottom) }
+--   | INT { do 
+--             let (TokenInt p x) = $1
+--             (p, T.Num x) } 
 
 LocatedLevel :: { (Span, T.Level) }
   : top { (getSpan $1, T.Top) }
   | bot { (getSpan $1, T.Bottom) }
-  | INT { do 
-            let (TokenInt p x) = $1
-            (p, T.Num x) } 
+  | LOWER_ID { (getSpan $1, T.Literal (getText $1)) } 
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }

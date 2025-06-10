@@ -131,14 +131,14 @@ undefined : forall a:*T . a
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () ->[top,bot] (a, dualof a)
 -- | Sends a value on a channel. Returns the continuation channel
-send : forall a:1T . a ->[top,bot] forall b:1S . !100a; b 1->[100,100] b
+send : forall a:1T . a ->[top,bot] forall b:1S . !sendLvlVar a; b 1->[sendLvlVar,sendLvlVar] b
 -- | Receives a value on a channel. Returns the received value and 
 -- | the continuation channel.
-receive : forall a:1T b:1S . ?200a ; b ->[top,200] (a, b)
+receive : forall a:1T b:1S . ?receiveLvlVar a ; b ->[top,receiveLvlVar] (a, b)
 -- | Closes a channel.
-close : Close 300 ->[300,bot] () --n,n or top,n
+close : Close closeLvlVar ->[closeLvlVar,bot] ()
 -- | Waits for a channel to be closed.
-wait : Wait 400 ->[400,bot] () --n,n or top,n
+wait : Wait waitLvlVar ->[waitLvlVar,bot] ()
 
 -- Files 
 -- | File paths

@@ -299,18 +299,18 @@ addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (s
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
 
-getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
-getContextStack = S.gets context
+-- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
+-- getContextStack = S.gets context
 
 getContextStack' :: S.MonadState (FreestS a) m => m [ContextSet]
 getContextStack' = S.gets context'
 
-getContext :: S.MonadState (FreestS a) m => m T.Level
-getContext = do
-  ctx <- S.gets context
-  case ctx of
-    (x:_) -> return x
-    []      -> return T.Top
+-- getContext :: S.MonadState (FreestS a) m => m T.Level
+-- getContext = do
+--   ctx <- S.gets context
+--   case ctx of
+--     (x:_) -> return x
+--     []      -> return T.Top
 
 getContext' :: S.MonadState (FreestS a) m => m ContextSet
 getContext' = do
@@ -319,16 +319,16 @@ getContext' = do
     (x:_) -> return x
     []      -> return Set.empty
 
-getGlobalContext :: S.MonadState (FreestS a) m => m T.Level
-getGlobalContext = do
-  gctx <- S.gets globalContext
-  ctx <- getContext
-  ctxStack <- getContextStack
-  if gctx == T.Top && length ctxStack == 1
-    then do
-      S.modify (\s -> s { globalContext = (R.minLevel ctx gctx) })
-      return (R.minLevel ctx gctx)
-    else return gctx
+-- getGlobalContext :: S.MonadState (FreestS a) m => m T.Level
+-- getGlobalContext = do
+--   gctx <- S.gets globalContext
+--   ctx <- getContext
+--   ctxStack <- getContextStack
+--   if gctx == T.Top && length ctxStack == 1
+--     then do
+--       S.modify (\s -> s { globalContext = (R.minLevel ctx gctx) })
+--       return (R.minLevel ctx gctx)
+--     else return gctx
 
 getGlobalContext' :: S.MonadState (FreestS a) m => m ContextSet
 getGlobalContext' = do
@@ -341,8 +341,8 @@ getGlobalContext' = do
       return ctx
     else return gctx
 
-resetGlobalContext :: S.MonadState (FreestS a) m => m ()
-resetGlobalContext = S.modify (\s -> s { globalContext = T.Top })
+-- resetGlobalContext :: S.MonadState (FreestS a) m => m ()
+-- resetGlobalContext = S.modify (\s -> s { globalContext = T.Top })
 
 -- resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
 -- resetGlobalContext' = S.modify (\s -> s { globalContext' = Set.empty })
@@ -353,20 +353,20 @@ resetGlobalContext' = do
   S.modify (\s -> s { firstInContext = T.Top })
   -- S.modify (\s -> s { latestInContext = T.Top })
 
-updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
-updateContext l = do 
-  ctxStack <- getContextStack
-  case ctxStack of
-    (x:xs) -> do
-      let newTop = R.minLevel x l 
-      S.modify (\s -> s { context = newTop : xs })
-    [] -> do
-      gctx <- getGlobalContext
-      if gctx == T.Top
-        then do
-          S.modify (\s -> s { globalContext = l })
-          pushContext l
-        else pushContext l
+-- updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- updateContext l = do 
+--   ctxStack <- getContextStack
+--   case ctxStack of
+--     (x:xs) -> do
+--       let newTop = R.minLevel x l 
+--       S.modify (\s -> s { context = newTop : xs })
+--     [] -> do
+--       gctx <- getGlobalContext
+--       if gctx == T.Top
+--         then do
+--           S.modify (\s -> s { globalContext = l })
+--           pushContext l
+--         else pushContext l
 
 -- updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 -- updateContext' l = do
@@ -408,14 +408,14 @@ updateContext' l = do
           pushContext' l
         else pushContext' l
 
-newContext :: S.MonadState (FreestS a) m => m ()
-newContext = pushContext T.Top
+-- newContext :: S.MonadState (FreestS a) m => m ()
+-- newContext = pushContext T.Top
 
 newContext' :: S.MonadState (FreestS a) m => m ()
 newContext' = S.modify (\s -> s { context' = Set.empty : context' s })
 
-pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
-pushContext l = S.modify (\s -> s { context = l : context s })
+-- pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- pushContext l = S.modify (\s -> s { context = l : context s })
 
 pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
@@ -423,18 +423,18 @@ pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
 -- popContext :: S.MonadState (FreestS a) m => m ()
 -- popContext = S.modify (\s -> s { context = tail (context s) })
 
-popContext :: S.MonadState (FreestS a) m => m ()
-popContext = do
-  ctxStack <- getContextStack
-  case ctxStack of
-    (x:xs) -> do
-      gctx <- getGlobalContext
-      let newGctx = R.minLevel x gctx
-      S.modify (\s -> s { globalContext = newGctx })
-      S.modify (\s -> s { context = xs })
-    [] -> do
-      -- S.modify (\s -> s { globalContext = T.Top })
-      S.modify (\s -> s { context = [] })
+-- popContext :: S.MonadState (FreestS a) m => m ()
+-- popContext = do
+--   ctxStack <- getContextStack
+--   case ctxStack of
+--     (x:xs) -> do
+--       gctx <- getGlobalContext
+--       let newGctx = R.minLevel x gctx
+--       S.modify (\s -> s { globalContext = newGctx })
+--       S.modify (\s -> s { context = xs })
+--     [] -> do
+--       -- S.modify (\s -> s { globalContext = T.Top })
+--       S.modify (\s -> s { context = [] })
 
 popContext' :: S.MonadState (FreestS a) m => m ()
 popContext' = do
@@ -488,7 +488,8 @@ minLevel' span ls = do
     then return l'
     else do
       n <- S.gets levelVarCounter
-      let newLevel = T.Num n
+      -- let newLevel = T.Num n
+      let newLevel = T.Literal ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (newLevel, l)) ls
       return newLevel
@@ -506,44 +507,67 @@ maxLevel' span ls = do
     then return l'
     else do
       n <- S.gets levelVarCounter
-      let newLevel = T.Num n
+      -- let newLevel = T.Num n
+      let newLevel = T.Literal ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (l, newLevel)) ls
       return newLevel
 
+-- checkMinTopBot :: [T.Level] -> (Bool, T.Level)
+-- checkMinTopBot [] = (True, T.Top)
+-- checkMinTopBot [x] = (True, x)
+-- checkMinTopBot xs
+--   | any (== T.Bottom) xs = (True, T.Bottom)
+--   | all (== T.Top) xs = (True, T.Top)
+--   | length nums == 1 = (True, head nums)
+--   | T.Top `elem` xs && any isNum xs = (False, T.Top)
+--   | otherwise = (False, T.Top)
+--   where
+--     isNum (T.Num _) = True
+--     isNum _         = False
+--     nums = filter isNum xs
+
 checkMinTopBot :: [T.Level] -> (Bool, T.Level)
 checkMinTopBot [] = (True, T.Top)
--- checkMinTopBot [x] = if x == T.Top || x == T.Bottom 
---   then (True, x)
---   else (False, T.Top)
 checkMinTopBot [x] = (True, x)
 checkMinTopBot xs
   | any (== T.Bottom) xs = (True, T.Bottom)
   | all (== T.Top) xs = (True, T.Top)
-  | length nums == 1 = (True, head nums)
-  | T.Top `elem` xs && any isNum xs = (False, T.Top)
+  | length vars == 1 = (True, head vars)
+  | T.Top `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isNum (T.Num _) = True
-    isNum _         = False
-    nums = filter isNum xs
+    isVar (T.Literal _) = True
+    isVar _         = False
+    vars = filter isVar xs
+
+-- checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
+-- checkMaxTopBot [] = (True, T.Top)
+-- checkMaxTopBot [x] = (True, x)
+-- checkMaxTopBot xs
+--   | any (== T.Top) xs = (True, T.Top)
+--   | all (== T.Bottom) xs = (True, T.Bottom)
+--   | length nums == 1 = (True, head nums)
+--   | T.Bottom `elem` xs && any isNum xs = (False, T.Top)
+--   | otherwise = (False, T.Top)
+--   where
+--     isNum (T.Num _) = True
+--     isNum _         = False
+--     nums = filter isNum xs
 
 checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
 checkMaxTopBot [] = (True, T.Top)
--- checkMaxTopBot [x] = if x == T.Top || x == T.Bottom 
---   then (True, x)
---   else (False, T.Top)
 checkMaxTopBot [x] = (True, x)
 checkMaxTopBot xs
   | any (== T.Top) xs = (True, T.Top)
   | all (== T.Bottom) xs = (True, T.Bottom)
-  | length nums == 1 = (True, head nums)
-  | T.Bottom `elem` xs && any isNum xs = (False, T.Top)
+  | length vars == 1 = (True, head vars)
+  | T.Bottom `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isNum (T.Num _) = True
-    isNum _         = False
-    nums = filter isNum xs
+    isVar (T.Literal _) = True
+    isVar _         = False
+    vars = filter isVar xs
 
 -- topBotMinLevel :: [T.Level] -> T.Level
 -- topBotMinLevel [] = T.Top

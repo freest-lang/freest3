@@ -15,14 +15,15 @@ import Paths_FreeST (getLibDir)
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
+import Data.List (isPrefixOf)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text
 import System.Directory (removeFile, getCurrentDirectory)
 import System.FilePath ((</>), splitPath, joinPath)
 import System.Process
 import Control.Monad.State (liftIO)
-import Data.List (isPrefixOf)
 
 data InequalityEntry = InequalityEntry
     { span       :: Span
@@ -45,12 +46,14 @@ instance FromJSON Span where
 instance ToJSON T.Level where
     toJSON T.Top      = String "top"
     toJSON T.Bottom   = String "bot"
-    toJSON (T.Num n)  = Number (fromIntegral n)
+    -- toJSON (T.Num n)  = Number (fromIntegral n)
+    toJSON (T.Literal s)  = String (Text.pack s)
 
 instance FromJSON T.Level where
     parseJSON (String "top")    = return T.Top
     parseJSON (String "bot")    = return T.Bottom
-    parseJSON (Number n)        = return $ T.Num (round n)
+    -- parseJSON (Number n)        = return $ T.Num (round n)
+    parseJSON (String s)        = return $ T.Literal (Text.unpack s)
     parseJSON _                 = fail "Invalid T.Level format"
 
 instance ToJSON InequalityEntry where

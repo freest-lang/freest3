@@ -4,8 +4,8 @@
 module Restriction.Restriction
     ( Inequality
     , Leveled(..)
-    , minLevel
-    , maxLevel
+    -- , minLevel
+    -- , maxLevel
     , equalLevels
     )
 where
@@ -85,19 +85,19 @@ isTypeMapLevelEqual m1 m2 =
     Map.keysSet m1 == Map.keysSet m2 &&
     and [equalLevels t1 t2 | (k, t1) <- Map.toList m1, let t2 = m2 Map.! k]
 
-minLevel :: T.Level -> T.Level -> T.Level
-minLevel T.Bottom _ = T.Bottom
-minLevel _ T.Bottom = T.Bottom
-minLevel T.Top l = l
-minLevel l T.Top = l
-minLevel (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
+-- minLevel :: T.Level -> T.Level -> T.Level
+-- minLevel T.Bottom _ = T.Bottom
+-- minLevel _ T.Bottom = T.Bottom
+-- minLevel T.Top l = l
+-- minLevel l T.Top = l
+-- minLevel (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
 
-maxLevel :: T.Level -> T.Level -> T.Level
-maxLevel T.Top _ = T.Top
-maxLevel _ T.Top = T.Top
-maxLevel T.Bottom l = l
-maxLevel l T.Bottom = l
-maxLevel (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
+-- maxLevel :: T.Level -> T.Level -> T.Level
+-- maxLevel T.Top _ = T.Top
+-- maxLevel _ T.Top = T.Top
+-- maxLevel T.Bottom l = l
+-- maxLevel l T.Bottom = l
+-- maxLevel (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
 
 -- levelOfTypeMap :: T.TypeMap -> T.Level
 -- levelOfTypeMap tm
