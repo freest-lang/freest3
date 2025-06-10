@@ -1,11 +1,21 @@
 import sys
 import json
 from z3 import *
+import re
 
 Levels = DeclareSort('Levels')
 bot = Int('bot')
 top = Int('top')
 value = Function('value', Levels, IntSort())
+
+lower_id = r"\b[a-zA-Z][a-zA-Z0-9_']*\b"
+
+def rewrite_expression(expr):
+    def repl(match):
+        var = match.group(0)
+        return f"value(Const('{var}', Levels))"
+    expr_rewritten = re.sub(lower_id, repl, expr)
+    return eval(expr_rewritten, {"value": value, "Const": Const, "Levels": Levels, "top": top, "bot": bot})
 
 def get_val(l):
     if l == "top":
@@ -13,23 +23,41 @@ def get_val(l):
     elif l == "bot":
         return bot
     else:
-        return value(Const(l, Levels))
+        return rewrite_expression(l)
 
-def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
-    if l1 not in z3_consts and l1 != "top" and l1 != "bot": 
-        z3_consts[l1] = Const(l1, Levels)
-    if l2 not in z3_consts and l2 != "top" and l2 != "bot":
-        z3_consts[l2] = Const(l2, Levels)
+# def get_val(l):
+#     if l == "top":
+#         return top
+#     elif l == "bot":
+#         return bot
+#     else:
+#         return value(Const(l, Levels))
+
+def extract_variables(expr):
+    return re.findall(lower_id, expr)
+
+# def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
+#     if l1 not in z3_consts and l1 != "top" and l1 != "bot": 
+#         z3_consts[l1] = Const(l1, Levels)
+#     if l2 not in z3_consts and l2 != "top" and l2 != "bot":
+#         z3_consts[l2] = Const(l2, Levels)
+#     constraint = get_val(l1) < get_val(l2)
+#     solver.assert_and_track(constraint, name)  
+#         return constraint
+
+def add_level_constraint(solver, z3_consts, l1, l2, name):
+    for var in extract_variables(l1) + extract_variables(l2):
+        if var not in z3_consts and var != "top" and var != "bot":
+            z3_consts[var] = Const(var, Levels)
     constraint = get_val(l1) < get_val(l2)
-
-    solver.assert_and_track(constraint, name)  
+    solver.assert_and_track(constraint, name)
     return constraint
 
 def check_inequalities(inequalities, file_path):
     solver = Solver()
     z3_consts = {}
     constraint_map = {}
-    solver_constraints = []  
+    # solver_constraints = []  
 
     truths = [
         ForAll([Const('x', Levels)], bot < value(Const('x', Levels))),
@@ -43,7 +71,8 @@ def check_inequalities(inequalities, file_path):
         l1 = ineq["l1"]
         l2 = ineq["l2"]
         constraint_id = f"constraint_{i}"
-        constraint = add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, constraint_id)
+        # constraint = add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, constraint_id)
+        constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint}
 
     unsat_constraints = []

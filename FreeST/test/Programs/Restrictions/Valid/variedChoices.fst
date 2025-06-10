@@ -1,7 +1,7 @@
-type Conversation = +1{ SendFirst: !2(); ?3(), ReceiveFirst: ?2(); !3()};Close 8
-type Test = +10{ One: +11{Three: Close 13}, Two: +12{Four: Close 14}}
+type Conversation = +a{ SendFirst: !b(); ?c(), ReceiveFirst: ?d(); !e()};Close f
+type Test = +g{ One: +h{Three: Close i}, Two: +j{Four: Close k}}
 
-personA : Conversation 1->[top,8] ()
+personA : Conversation 1->[top,f] ()
 personA c =
     let c = select SendFirst c in
     let c = send () c in
@@ -18,7 +18,7 @@ personB (ReceiveFirst c) =
     let (_,c) = receive c in
     wait c
 
-personC : Conversation 1->[top,8] ()
+personC : Conversation 1->[top,f] ()
 personC c =
     let c = select ReceiveFirst c in
     let (_, c) = receive c in

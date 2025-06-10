@@ -1,9 +1,9 @@
-type Fork = !1();?2();Close 3
+type Fork = !p();?p+1();Close p+2
 
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher : Int ->[top,bot] Fork ->[top,bot] dualof Fork 1->[1,3] ()
+philosopher : Int ->[top,bot] Fork ->[top,bot] dualof Fork 1->[p,p+2] ()
 philosopher id left right = 
     sleep 500;
     -- putStrLn ( "Philosopher " ^^ (show @Int id) ^^ " is thinking.");

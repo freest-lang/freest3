@@ -1,15 +1,15 @@
-type X = !3();?1();Close 4
+type X = !a+2();!a+1();Close a
 
-server : dualof X ->[top,4] ()
+server : dualof X ->[top,a] ()
 server x = 
     let (_,x) = receive x in
-    let x = send () x in
+    let (_,x) = receive x in
     wait x
 
-client : X ->[top,4] ()
+client : X ->[top,a] ()
 client x = 
     let x = send () x in
-    let (_,x) = receive x in
+    let x = send () x in
     close x
 
 main : ()

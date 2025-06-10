@@ -1,16 +1,16 @@
-type Hand1 = !1Int;?2();Close 3
-type Hand2 = !4Int;?5();Close 6
-type Hand3 = !7Int;?8();Close 9
-type Hand4 = !10Int;?11();Close 12
-type Hand5 = !13Int;?14();Close 15
-type Hand6 = !16Int;?17();Close 18
-type Hand7 = !19Int;?20();Close 21
-type Hand8 = !22Int;?23();Close 24
+type Hand1 = !a Int;?b();Close c
+type Hand2 = !d Int;?e();Close f
+type Hand3 = !g Int;?h();Close i
+type Hand4 = !j Int;?k();Close l
+type Hand5 = !m Int;?n();Close o
+type Hand6 = !p Int;?q();Close r
+type Hand7 = !s Int;?t();Close u
+type Hand8 = !v Int;?w();Close x
 
 sleep : Int ->[top,bot] ()
 sleep n = if n == 0 then () else sleep (n-1)
 
-philosopher1 : Int ->[top,bot] Hand1 1->[top,bot] Hand8 1->[1,24] ()
+philosopher1 : Int ->[top,bot] Hand1 1->[top,bot] Hand8 1->[a,x] ()
 philosopher1 id left right =
     sleep 500;
     let left = send id left in
@@ -21,7 +21,7 @@ philosopher1 id left right =
     close left;
     close right
 
-philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[7,6] ()
+philosopher2 : Int ->[top,bot] Hand3 1->[top,bot] Hand2 1->[g,f] ()
 philosopher2 id left right =
     sleep 500;
     let left = send id left in
@@ -32,7 +32,7 @@ philosopher2 id left right =
     close left;
     close right
 
-philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[13,12] ()
+philosopher3 : Int ->[top,bot] Hand5 1->[top,bot] Hand4 1->[m,l] ()
 philosopher3 id left right =
     sleep 500;
     let left = send id left in
@@ -43,7 +43,7 @@ philosopher3 id left right =
     close left;
     close right
 
-philosopher4 : Int ->[top,bot] Hand7 1->[top,bot] Hand6 1->[19,18] ()
+philosopher4 : Int ->[top,bot] Hand7 1->[top,bot] Hand6 1->[s,r] ()
 philosopher4 id left right =
     sleep 500;
     let left = send id left in
@@ -54,7 +54,7 @@ philosopher4 id left right =
     close left;
     close right
 
-fork1 : dualof Hand2 ->[top,bot] dualof Hand1 1->[4,6] ()
+fork1 : dualof Hand2 ->[top,bot] dualof Hand1 1->[d,f] ()
 fork1 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -63,7 +63,7 @@ fork1 left right =
     let left = send () left in
     wait left
 
-fork2 : dualof Hand4 ->[top,bot] dualof Hand3 1->[10,12] ()
+fork2 : dualof Hand4 ->[top,bot] dualof Hand3 1->[j,l] ()
 fork2 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -72,7 +72,7 @@ fork2 left right =
     let left = send () left in
     wait left
 
-fork3 : dualof Hand6 ->[top,bot] dualof Hand5 1->[16,18] ()
+fork3 : dualof Hand6 ->[top,bot] dualof Hand5 1->[p,r] ()
 fork3 left right =
     let (_,right) = receive right in
     let (id,left) = receive left in
@@ -81,7 +81,7 @@ fork3 left right =
     let left = send () left in
     wait left
 
-oppositeFork : dualof Hand8 ->[top,bot] dualof Hand7 1->[22,21] ()
+oppositeFork : dualof Hand8 ->[top,bot] dualof Hand7 1->[v,u] ()
 oppositeFork left right =
     let (_,right) = receive right in
     let (id,left) = receive left in

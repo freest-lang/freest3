@@ -1,11 +1,11 @@
-type A = Close 1
-type B = Close 2
-type C = Close 3
-type D = Close 4
-type E = Close 5
-type F = Close 6
+type A = Close a
+type B = Close b
+type C = Close c
+type D = Close d
+type E = Close e
+type F = Close f
 
-func1 : A 1->[top,bot] B 1->[1,bot] C 1->[1,bot] D 1->[1,bot] E 1->[1,bot] F 1->[1,6] ()
+func1 : A 1->[top,bot] B 1->[a,bot] C 1->[a,bot] D 1->[a,bot] E 1->[a,bot] F 1->[a,f] ()
 func1 a b c d e f = 
     close a;
     close b;
@@ -14,7 +14,7 @@ func1 a b c d e f =
     close e;
     close f
 
-func2 : dualof A 1->[top,bot] dualof B 1->[1,bot] dualof C 1->[1,bot] dualof D 1->[1,bot] dualof E 1->[1,bot] dualof F 1->[1,6] ()
+func2 : dualof A 1->[top,bot] dualof B 1->[a,bot] dualof C 1->[a,bot] dualof D 1->[a,bot] dualof E 1->[a,bot] dualof F 1->[a,f] ()
 func2 a b c d e f = 
     wait a;
     wait b;

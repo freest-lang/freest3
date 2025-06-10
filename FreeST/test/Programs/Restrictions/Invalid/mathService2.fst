@@ -1,10 +1,10 @@
-type CheckIn = !1() ; Close 2
+type CheckIn = !a() ; Close b
 
-type MathService = +3{ Negate: !4Int ; ?5Int
-                    , IsZero: !6Int ; ?7Bool
-                    } ; Close 8
+type MathService = +c{ Negate: !d1 Int ; ?d2 Int
+                    , IsZero: !e1 Int ; ?e2 Bool
+                    } ; Close f
 
-mathClient : CheckIn ->[top,bot] MathService 1->[1,8] Int
+mathClient : CheckIn ->[top,bot] MathService 1->[a,f] Int
 mathClient x c0 =
     x |> send () |> close;
     let c1 = select Negate c0 in
@@ -17,7 +17,7 @@ mathClient x c0 =
 -- mathClient c =
 --   c |> select Negate |> send 5 |> receiveAndClose @Int
 
-mathServer : dualof CheckIn ->[top,bot] dualof MathService 1->[1,bot] ()
+mathServer : dualof CheckIn ->[top,bot] dualof MathService 1->[a,bot] ()
 mathServer x (Negate c1) =
     let (_,x) = receive x in
     wait x;

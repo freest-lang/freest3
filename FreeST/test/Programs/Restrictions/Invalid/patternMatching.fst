@@ -1,5 +1,5 @@
-type RecursiveSession1 = &1{Option1: RecursiveSession1}
-type RecursiveSession2 = &2{Option2: RecursiveSession2}
+type RecursiveSession1 = &p{Option1: RecursiveSession1}
+type RecursiveSession2 = &q{Option2: RecursiveSession2}
 
 client1 : RecursiveSession1 ->[top,bot] dualof RecursiveSession2 1->[top,bot] ()
 client1 (Option1 c1) c2 =

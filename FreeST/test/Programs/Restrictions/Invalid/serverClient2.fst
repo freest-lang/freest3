@@ -1,21 +1,21 @@
-type R = ?p(); Wait r
-type S = ?q(); Wait s
+type R = ?p(); Wait p+2
+type S = ?q(); Wait q+2
 
 
-f : R ->[top,bot] dualof S 1->[p,s] ()
+f : R ->[top,bot] dualof S 1->[p,q+2] ()
 f x y =
   let (n,x) = receive x in -- priority: p
   let y = send () y in     -- priority: q
-  wait x;                  -- priority: p+1
-  close y;                 -- priority: q+1
+  wait x;                  -- priority: p+2
+  close y;                 -- priority: q+2
   ()
 
-g : S ->[top,bot] dualof R 1->[q,r] ()
+g : S ->[top,bot] dualof R 1->[q,p+2] ()
 g y x =
   let (n,y) = receive y in -- priority: q
   let x = send () x in     -- priority: p
-  wait y;                  -- priority: q+1
-  close x;                 -- priority: p+1
+  wait y;                  -- priority: q+2
+  close x;                 -- priority: p+2
   ()
 
 main : ()

@@ -1,38 +1,14 @@
--- type X = !1();Close 3
--- type Y = !2();Close 4
+type X = !p();Close p+2
+type Y = !q();Close q+2
 
--- server : dualof X ->[top,bot] Y 1->[1,4] ()
--- server x y = 
---     let (_,x) = receive x in
---     let y = send () y in
---     wait x;
---     close y
-
--- client : X ->[top,bot] dualof Y 1->[1,4] ()
--- client x y = 
---     let (_,y) = receive y in
---     let x = send () x in
---     close x;
---     wait y
-
--- main : ()
--- main = 
---     let (x1,x2) = new @X () in
---     let (y1,y2) = new @Y () in
---     fork @() (\_:()1-> server x2 y1);
---     client x1 y2
-
-type X = !p();Close r
-type Y = !q();Close s
-
-server : dualof X ->[top,bot] Y 1->[p,s] ()
+server : dualof X ->[top,bot] Y 1->[p,q+2] ()
 server x y = 
     let (_,x) = receive x in
     let y = send () y in
     wait x;
     close y
 
-client : X ->[top,bot] dualof Y 1->[p,s] ()
+client : X ->[top,bot] dualof Y 1->[p,q+2] ()
 client x y = 
     let (_,y) = receive y in
     let x = send () x in
