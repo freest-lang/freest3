@@ -169,7 +169,9 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   popContext'
   -- addInequality (getSpan t1) (l1, l3)
   addInequalities (getSpan t1) l1 ls
-  return (t2, maxLevel l1 l2)
+  -- return (t2, maxLevel l1 l2)
+  upperBound <- maxLevel' (getSpan t1) [l1,l2]
+  return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
@@ -273,8 +275,11 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
   (l1, tm) <- Extract.leveledOutChoiceMap e t
+  -- return (T.Labelled p T.Variant l1
+  --         (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), maxLevel l l1)
+  upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.Labelled p T.Variant l1
-          (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), maxLevel l l1)
+          (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), upperBound)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
@@ -307,7 +312,10 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   --   _ -> addInequality (getSpan t) (l1, level u2)
   updateContext' l1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return (T.tuple p [u1, u2], maxLevel l l1)
+
+  -- return (T.tuple p [u1, u2], maxLevel l l1)
+  upperBound <- maxLevel' (getSpan t) [l, l1]
+  return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
@@ -343,7 +351,10 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   updateContext' l1
-  return (u2, maxLevel l l1)
+
+  -- return (u2, maxLevel l l1)
+  upperBound <- maxLevel' (getSpan t) [l, l1]
+  return (u2, upperBound)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   s <- get
@@ -371,7 +382,9 @@ synthetise kEnv (E.App p e1 e2) = do
   addInequalities (getSpan t) l1 ls
   addInequality (getSpan t) (l2, l3)
   -- updateContext l3
-  return (u2, maxLevel l1 $ maxLevel l2 l4)
+  -- return (u2, maxLevel l1 $ maxLevel l2 l4)
+  upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
+  return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e'))
@@ -421,8 +434,12 @@ synthetise kEnv (E.Pair p e1 e2) = do
   --           _                          -> level t1
   l2 <- levelOfTypeMap (getSpan t2) $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
   -- let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
+  -- return (T.Labelled p T.Record l1 $
+  --   Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), maxLevel l1 l2)
+
+  upperBound <- maxLevel' (getSpan t2) [l1, l2]
   return (T.Labelled p T.Record l1 $
-    Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), maxLevel l1 l2)
+    Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), upperBound)
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
@@ -453,7 +470,9 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
-  return (t2, maxLevel l1 l2)
+  -- return (t2, maxLevel l1 l2)
+  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, l1) <- synthetise kEnv e
@@ -583,7 +602,9 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  return (maxLevel l1 l2)
+  -- return (maxLevel l1 l2)
+  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  return upperBound
 leveledCheckAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
   case t of 

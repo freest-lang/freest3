@@ -481,9 +481,9 @@ incrementLevelVarCounter = do
   n <- S.gets levelVarCounter
   S.modify (\s -> s { levelVarCounter = n + 1 })
 
-minLevel' ::  S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+minLevel' :: S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
 minLevel' span ls = do
-  let (isEdgeVal, l') = checkTopBot ls
+  let (isEdgeVal, l') = checkMinTopBot ls
   if isEdgeVal
     then return l'
     else do
@@ -499,19 +499,51 @@ minLevel' span ls = do
   -- mapM_ (\l -> addInequality span (newLevel, l)) ls
   -- return newLevel
 
-checkTopBot :: [T.Level] -> (Bool, T.Level)
-checkTopBot [] = (True, T.Top)
-checkTopBot [x] = if x == T.Top || x == T.Bottom 
-  then (True, x)
-  else (False, T.Top)
-checkTopBot xs
+maxLevel' :: S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+maxLevel' span ls = do
+  let (isEdgeVal, l') = checkMaxTopBot ls
+  if isEdgeVal
+    then return l'
+    else do
+      n <- S.gets levelVarCounter
+      let newLevel = T.Num n
+      incrementLevelVarCounter
+      mapM_ (\l -> addInequality span (l, newLevel)) ls
+      return newLevel
+
+checkMinTopBot :: [T.Level] -> (Bool, T.Level)
+checkMinTopBot [] = (True, T.Top)
+-- checkMinTopBot [x] = if x == T.Top || x == T.Bottom 
+--   then (True, x)
+--   else (False, T.Top)
+checkMinTopBot [x] = (True, x)
+checkMinTopBot xs
   | any (== T.Bottom) xs = (True, T.Bottom)
-  | all (== T.Top) xs    = (True, T.Top)
+  | all (== T.Top) xs = (True, T.Top)
+  | length nums == 1 = (True, head nums)
   | T.Top `elem` xs && any isNum xs = (False, T.Top)
-  | otherwise            = (False, T.Top)
+  | otherwise = (False, T.Top)
   where
     isNum (T.Num _) = True
     isNum _         = False
+    nums = filter isNum xs
+
+checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
+checkMaxTopBot [] = (True, T.Top)
+-- checkMaxTopBot [x] = if x == T.Top || x == T.Bottom 
+--   then (True, x)
+--   else (False, T.Top)
+checkMaxTopBot [x] = (True, x)
+checkMaxTopBot xs
+  | any (== T.Top) xs = (True, T.Top)
+  | all (== T.Bottom) xs = (True, T.Bottom)
+  | length nums == 1 = (True, head nums)
+  | T.Bottom `elem` xs && any isNum xs = (False, T.Top)
+  | otherwise = (False, T.Top)
+  where
+    isNum (T.Num _) = True
+    isNum _         = False
+    nums = filter isNum xs
 
 -- topBotMinLevel :: [T.Level] -> T.Level
 -- topBotMinLevel [] = T.Top
