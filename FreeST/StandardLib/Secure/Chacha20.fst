@@ -121,7 +121,7 @@ _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     let nonceValue = _getNonce nonce in
 
     -- Building inital block
-    let list = [1702391905, 1852055603, 841835129, 1952784491] in   -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
+    let list = [1634760805, 857760878, 2036477234, 1797285236] in   -- "expand 32-byte k" -> ["expa", "nd 3", "2-by", "te k"]
     let list = list ++ _splitTo32Bit keyValue 8 in                  -- Key in row 2 and 3
     let list = list ++ [counter] in                                 -- Counter first column last row
     let list = list ++ _splitTo32Bit nonceValue 3 in                -- Nonce last 3 values of last row
