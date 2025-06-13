@@ -128,14 +128,18 @@ error : forall a:*T . String -> a
 undefined : forall a:*T . a
 
 -- Session operations
+
+-- | Bool 
+data Bool = True | False 
+
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () -> (a, dualof a)
 
 newHcServer : forall a:1A . (String) -> a
 
-newHcClient : forall a:1A . (String, String) -> a
+newHcClient : forall a:1A . (String, String) -> Bool -> a
 
-newHcClient1 : forall a:1A . (String, String) -> a
+-- newHcClient1 : forall a:1A . (String, String) -> a
 
 
 -- | Sends a value on a channel. Returns the continuation channel
@@ -174,9 +178,6 @@ __closeFile : FileHandle -> ()
 -- \________|
 
 -- # Base
-
--- | Bool 
-data Bool = True | False 
 
 -- | Boolean complement
 not : Bool -> Bool 

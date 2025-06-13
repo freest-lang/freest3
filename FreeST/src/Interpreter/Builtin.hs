@@ -45,8 +45,8 @@ newHcServer (String addr) = NS.withSocketsDo $ do
     (conn1, _) <- NS.accept sock
     return $ Right conn1
 
-newHcClient :: Value -> IO ChannelEnd
-newHcClient (Pair (String mn_addr) (String sv_addr)) = NS.withSocketsDo $ do
+newHcClient :: Value -> Bool -> IO ChannelEnd
+newHcClient (Pair (String mn_addr) (String sv_addr)) True = NS.withSocketsDo $ do
     let (host, port) = case break (== ':') mn_addr of
             (h, ':':p) -> (h, p)
             _          -> error "Invalid address format, expected 'host:port'"
@@ -56,11 +56,11 @@ newHcClient (Pair (String mn_addr) (String sv_addr)) = NS.withSocketsDo $ do
     NSB.send sock bytes
     return $ Right sock
 
-newHcClient1 :: Value -> IO ChannelEnd
-newHcClient1 (Pair (String host) (String port)) = NS.withSocketsDo $ do
+newHcClient (Pair (String host) (String port)) False = NS.withSocketsDo $ do
     sock <- connectWithRetries host port 3
     return $ Right sock
-newHcClient1 _ = error "newHcClient1: Invalid argument"
+
+newHcClient _ _ = error "newHcClient: Invalid argument"
 
 connectWithRetries :: String -> String -> Int -> IO HalfChannel
 connectWithRetries host port retriesLeft = do
@@ -126,8 +126,8 @@ initialCtx = Map.fromList
   [ -- Communication primitives
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
   , (var "newHcServer", PrimitiveFun (\info -> IOValue $ Chan <$> newHcServer info))
-  , (var "newHcClient", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient info))
-  , (var "newHcClient1", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient1 info))
+  , (var "newHcClient", PrimitiveFun (\info -> PrimitiveFun (\(Cons x _) ->  IOValue $ Chan <$> newHcClient info (read (show x)))))
+  -- , (var "newHcClient1", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient1 info))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "wait", PrimitiveFun (IOValue . wait))
