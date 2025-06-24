@@ -16,7 +16,7 @@ neStack : Int -> NEStack;a -> a
 neStack x c =
   match c with {
     Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
-    Pop  c -> send x c
+    Pop  _ -> send x c
   }
 
 eStack : EStack;a -> a
