@@ -597,6 +597,7 @@ levelOfTypeMap span tm
   | Map.null tm = return T.Top
   | otherwise = do
       ls <- mapM l (Map.elems tm)
+      -- ls <- mapM getTypeLevel (Map.elems tm)
       minLevel' span ls
   where
     l (T.Labelled _ T.Record _ m)  = levelOfTypeMap span m

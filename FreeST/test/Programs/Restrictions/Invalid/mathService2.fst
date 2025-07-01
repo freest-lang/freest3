@@ -1,47 +1,34 @@
-type CheckIn = !a() ; Close b
-
-type MathService = +c{ Negate: !d1 Int ; ?d2 Int
-                    , IsZero: !e1 Int ; ?e2 Bool
-                    } ; Close f
+type CheckIn = !a();Close b
+type MathService = +c{Negate: !d1 Int;?d2 Int
+                    , IsZero: !e1 Int;?e2 Bool
+                    };Close f
 
 mathClient : CheckIn ->[top,bot] MathService 1->[a,f] Int
-mathClient x c0 =
+mathClient x m =
     x |> send () |> close;
-    let c1 = select Negate c0 in
-    let c2 = send 5 c1 in
-    let (i, c3) = receive c2 in
-    close c3;
-    i
+    let m = select Negate m in
+    let m = send 5 m in
+    let (n, m) = receive m in
+    close m;
+    n
 
--- mathClient : MathService ->[1,5] Int
--- mathClient c =
---   c |> select Negate |> send 5 |> receiveAndClose @Int
-
-mathServer : dualof CheckIn ->[top,bot] dualof MathService 1->[a,bot] ()
-mathServer x (Negate c1) =
+mathServer : dualof CheckIn ->[top,bot] dualof MathService 1->[a,f] ()
+mathServer x (Negate m) =
     let (_,x) = receive x in
     wait x;
-    let (i, c2) = receive c1 in
-    c2 |> send (-i) |> wait
-mathServer x (IsZero c1) =
+    let (n, m) = receive m in
+    let m = send (-n) m in
+    wait m
+mathServer x (IsZero m) =
     let (_,x) = receive x in
     wait x;
-    let (i, c2) = receive c1 in
-    c2 |> send (i == 0) |> wait
-
--- mathServer : dualof MathService ->[3,8] ()
--- mathServer (Negate c1) =
---       let (i, c2) = receive c1 in
---       sendAndWait @Int (-i) c2
--- mathServer (IsZero c1) =
---       let (i, c2) = receive c1 in
---       sendAndWait @Bool (i == 0) c2
+    let (n, m) = receive m in
+    let m = send (n == 0) m in
+    wait m
 
 main : Int
 main =
     let (x1, x2) = new @CheckIn () in
-    let (c1, c2) = new @MathService () in
-    fork @() (\_:()1-> mathServer x2 c2);
-    mathClient x1 c1
---     fork @() (\_:()1-> mathServer c2);
---     mathClient c1
+    let (m1, m2) = new @MathService () in
+    fork (\_:()1-> mathServer x2 m2);
+    mathClient x1 m1

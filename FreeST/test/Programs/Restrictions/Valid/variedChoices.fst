@@ -1,5 +1,4 @@
 type Conversation = +a{ SendFirst: !b(); ?c(), ReceiveFirst: ?d(); !e()};Close f
-type Test = +g{ One: +h{Three: Close i}, Two: +j{Four: Close k}}
 
 personA : Conversation 1->[top,f] ()
 personA c =
@@ -8,7 +7,7 @@ personA c =
     let (_, c) = receive c in
     close c
 
-personB : dualof Conversation 1->[top,bot] ()
+personB : dualof Conversation 1->[top,f] ()
 personB (SendFirst c) =
     let (_,c) = receive c in
     let c = send () c in
@@ -25,7 +24,7 @@ personC c =
     let c = send () c in
     close c
 
-personD : dualof Conversation 1->[top,bot] ()
+personD : dualof Conversation 1->[top,f] ()
 personD (SendFirst c) =
     let (_,c) = receive c in
     let c = send () c in
@@ -39,7 +38,7 @@ main : ()
 main =
     let (c1, c2) = new @Conversation () in
     let (c3, c4) = new @Conversation () in
-    fork @() (\_:()1-> personA c1);
-    fork @() (\_:()1-> personC c3);
-    fork @() (\_:()1-> personB c2);
+    fork (\_:()1-> personA c1);
+    fork (\_:()1-> personC c3);
+    fork (\_:()1-> personB c2);
     personD c4
