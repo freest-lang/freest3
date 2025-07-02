@@ -5,7 +5,7 @@ import Random
 ----- Types ------
 
 data Key = SessionKey Integer | AsymmetricKey Integer Integer-- Modulus PiKey/PuKey
-type EncryptionAlgorithm = Integer -> Key -> (Integer, EncryptionAlgorithm)
+type EncryptionAlgorithm = Integer -> Key -> (Integer, EncryptionAlgorithm) -- This format only works for algorythms that use the same process for encryption and decryption
 data Signature = Signature Integer
 data SecureChannelState = SecureChannelState (Key, EncryptionAlgorithm)
 
@@ -28,7 +28,7 @@ modExp b e m =
 ----- Hashing -----
 
 hash256 : Integer -> Integer
-hash256 value = fst @Integer @RNGState $ nextN64Bits 4 $ RNGState (1, value) --Not a good hash, but a nice shortcut
+hash256 value = fst @Integer @RNGState $ nextN64Bits 4 $ RNGState (1, value) --Not a good hash, but a nice workaround
 
 
 ----- Assymetric Encryiption ------
@@ -95,6 +95,10 @@ _secureSend (Bits bits) sc =
     let (key, encryptionAlgorithm) = getSecureChannelState secureState in
     --Encode sign into the value bit representaion, otherwise the values sign is exposed as it is not encrypted
     let bits = _encodeSign bits in
+    --Generate and append hash
+    let hash = hash256 bits in
+    print @Integer hash;
+    let bits = lorI (shiftLI bits 256) hash in
     --Encrypt and update secure state
     let (bits, encryptionAlgorithm) = encryptionAlgorithm bits key in
     let secureState = SecureChannelState (key, encryptionAlgorithm) in    
@@ -111,13 +115,21 @@ _secureReceive sc =
     --Receive message
     let (msg, c) = receive c in
     let bits = _getBits msg in
-
     --Decrypt and update secure state
     let (bits, encryptionAlgorithm) = encryptionAlgorithm bits key in
-    let secureState = SecureChannelState (key, encryptionAlgorithm) in 
-    --Decode sign
-    let bits = _decodeSign bits in
-    (Bits bits, (c, secureState))
+    let secureState = SecureChannelState (key, encryptionAlgorithm) in
+    --Separate hash from data
+    let hash = modI bits (2i ^i 256i) in
+    print @Integer hash;
+    let bits = shiftRI bits 256 in
+    --Verify hash
+    if hash /=i (hash256 bits) then
+        error @() "Hash does not match, message may have been tampered with.";
+        (Bits 0i, (c, secureState))
+    else
+        --Decode sign
+        let bits = _decodeSign bits in
+        (Bits bits, (c, secureState))
 
 
 --Integer:
