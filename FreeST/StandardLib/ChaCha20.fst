@@ -7,15 +7,15 @@ import Random
 data Nonce = Nonce Integer                  -- 96-bit
 data NonceHalf = NonceHalf Integer          -- 95-bit
 data ChachaState = ChachaState (Nonce, Int) -- Nonce + Counter
-data Stream = Stream Integer                -- 512-bit
+data KeyStream = KeyStream Integer                -- 512-bit
 data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
 type Newchacha20Exchange = !NonceHalf ; ?NonceHalf
 
 _getNonce : Nonce -> Integer
 _getNonce (Nonce nonceValue) = nonceValue
 
-_getStream : Stream -> Integer
-_getStream (Stream streamValue) = streamValue
+_getKeyStream : KeyStream -> Integer
+_getKeyStream (KeyStream keyStreamValue) = keyStreamValue
 
 _newNonceHalf : () -> NonceHalf
 _newNonceHalf u = 
@@ -87,7 +87,7 @@ _chachaN block n =
         let block = _diagonalRound block in
         _chachaN block (n - 2)
 
--- ChaCha Block and Stream building assinting function
+-- ChaCha Block and KeyStream building assinting function
 
 _splitTo32Bit : Integer -> Int -> [Int]
 _splitTo32Bit value i =
@@ -111,11 +111,11 @@ _listToBlock list =
 _blockToList : Block -> [Int]
 _blockToList (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) = c0::c1::c2::c3::c4::c5::c6::c7::c8::c9::c10::c11::c12::c13::c14::[c15]
 
--- ChaCha Block and Stream building
+-- ChaCha Block and KeyStream building
 
-_chacha20 : Key -> ChachaState -> (Stream, ChachaState)
+_chacha20 : Key -> ChachaState -> (KeyStream, ChachaState)
 _chacha20 (AsymmetricKey _ _) _ =
-    error @(Stream, ChachaState) "ChaCha20 does not use asymmetric keys."
+    error @(KeyStream, ChachaState) "ChaCha20 does not use asymmetric keys."
 _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     let (nonce, counter) = nonceCounter in
     let nonceValue = _getNonce nonce in
@@ -131,21 +131,21 @@ _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     let block = _chachaN block 20 in
 
     -- Read final matrix from right to left, so the resulting right most bits are the first values of the matrix (as is supposed)
-    let stream = foldr @Integer (\x : Int y : Integer -> (shiftLI y 32) +i (intToInteger x)) 0i (_blockToList block) in
+    let keyStream = foldr @Integer (\x : Int y : Integer -> (shiftLI y 32) +i (intToInteger x)) 0i (_blockToList block) in
 
-    (Stream stream, ChachaState (Nonce nonceValue, counter + 1))
+    (KeyStream keyStream, ChachaState (Nonce nonceValue, counter + 1))
 
---Gives stream of size*512 bits
-_multipleChaCha20 : Key -> ChachaState -> Int -> (Stream, ChachaState)
+--Gives keyStream of size*512 bits
+_multipleChaCha20 : Key -> ChachaState -> Int -> (KeyStream, ChachaState)
 _multipleChaCha20 key chachaState size =
     if size <= 1 then
         _chacha20 key chachaState
     else
-        let (streamL, chachaState) = _multipleChaCha20 key chachaState (size - 1) in
-        let streamLValue = _getStream streamL in
-        let (streamR, chachaState) = _chacha20 key chachaState in
-        let streamRValue = _getStream streamR in
-        (Stream (lorI (shiftLI streamLValue 512) streamRValue), chachaState)
+        let (keyStreamL, chachaState) = _multipleChaCha20 key chachaState (size - 1) in
+        let keyStreamLValue = _getKeyStream keyStreamL in
+        let (keyStreamR, chachaState) = _chacha20 key chachaState in
+        let keyStreamRValue = _getKeyStream keyStreamR in
+        (KeyStream (lorI (shiftLI keyStreamLValue 512) keyStreamRValue), chachaState)
 
 
 --Finds value's bit size in multiples of 512
@@ -156,26 +156,29 @@ _calculateSize value =
     else
         (_calculateSize (shiftRI value 512)) + 1
 
-encryptdecryptWithchacha20 : ChachaState -> EncryptionAlgorithm
-encryptdecryptWithchacha20 chachaState msg key =
+encryptdecryptWithChaCha20 : ChachaState -> NextEncryptDecryption
+encryptdecryptWithChaCha20 chachaState msg key =
     --Calculate message size
     let size = _calculateSize msg in
-    --Obtain stream
-    let (stream, chachaState) = _multipleChaCha20 key chachaState size in
+    --Obtain keyStream
+    let (keyStream, chachaState) = _multipleChaCha20 key chachaState size in
     --Encrypt and send message
-    let msg = lxorI msg (_getStream stream) in
-    (msg, encryptdecryptWithchacha20 chachaState)
+    let msg = lxorI msg (_getKeyStream keyStream) in
+    (msg, encryptdecryptWithChaCha20 chachaState)
 
-newchacha20A: forall a . Newchacha20Exchange ; a -> (EncryptionAlgorithm, a)
-newchacha20A c =
+newChaCha20A: forall a . Newchacha20Exchange ; a -> (NextEncryptDecryption, a)
+newChaCha20A c =
     let half1 = _newNonceHalf () in
     let c = send half1 c in
     let (half2, c) = receive c in
-    (encryptdecryptWithchacha20 $ ChachaState $ (_newNonce half1 half2, 0), c)
+    let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
+    (encryptdecryptWithChaCha20 chachaState, c)
 
-newchacha20B: forall a . dualof Newchacha20Exchange ; a -> (EncryptionAlgorithm, a)
-newchacha20B c =
+newChaCha20B: forall a . dualof Newchacha20Exchange ; a -> (NextEncryptDecryption, a)
+newChaCha20B c =
     let (half1, c) = receive c in
     let half2 = _newNonceHalf () in
     let c = send half2 c in
-    (encryptdecryptWithchacha20 $ ChachaState $ (_newNonce half1 half2, 0), c)
+    let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
+    (encryptdecryptWithChaCha20 chachaState, c)
+
