@@ -99,7 +99,6 @@ _secureSend (Bits bits) sc =
     -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
     --Generate and append hash
     let hash = hash256 bits in
-    print @Integer hash;
     let bits = lorI (shiftLI bits 256) hash in
     -- ---
     --Encrypt and update secure state
@@ -124,7 +123,6 @@ _secureReceive sc =
     -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
     --Separate hash from data
     let hash = modI bits (2i ^i 256i) in
-    print @Integer hash;
     let bits = shiftRI bits 256 in
     --Verify hash
     if hash /=i (hash256 bits) then
