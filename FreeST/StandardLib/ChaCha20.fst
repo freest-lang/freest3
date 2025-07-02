@@ -1,4 +1,4 @@
-module Chacha20 where
+module ChaCha20 where
 
 import SecureUtils
 import List
@@ -115,7 +115,7 @@ _blockToList (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) = c0:
 
 _chacha20 : Key -> ChachaState -> (Stream, ChachaState)
 _chacha20 (AsymmetricKey _ _) _ =
-    error @(Stream, ChachaState) "Chacha20 does not use asymmetric keys."
+    error @(Stream, ChachaState) "ChaCha20 does not use asymmetric keys."
 _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     let (nonce, counter) = nonceCounter in
     let nonceValue = _getNonce nonce in
@@ -136,12 +136,12 @@ _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     (Stream stream, ChachaState (Nonce nonceValue, counter + 1))
 
 --Gives stream of size*512 bits
-_multipleChacha20 : Key -> ChachaState -> Int -> (Stream, ChachaState)
-_multipleChacha20 key chachaState size =
+_multipleChaCha20 : Key -> ChachaState -> Int -> (Stream, ChachaState)
+_multipleChaCha20 key chachaState size =
     if size <= 1 then
         _chacha20 key chachaState
     else
-        let (streamL, chachaState) = _multipleChacha20 key chachaState (size - 1) in
+        let (streamL, chachaState) = _multipleChaCha20 key chachaState (size - 1) in
         let streamLValue = _getStream streamL in
         let (streamR, chachaState) = _chacha20 key chachaState in
         let streamRValue = _getStream streamR in
@@ -161,7 +161,7 @@ encryptdecryptWithchacha20 chachaState msg key =
     --Calculate message size
     let size = _calculateSize msg in
     --Obtain stream
-    let (stream, chachaState) = _multipleChacha20 key chachaState size in
+    let (stream, chachaState) = _multipleChaCha20 key chachaState size in
     --Encrypt and send message
     let msg = lxorI msg (_getStream stream) in
     (msg, encryptdecryptWithchacha20 chachaState)
