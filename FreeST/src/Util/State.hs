@@ -489,7 +489,7 @@ minLevel' span ls = do
     else do
       n <- S.gets levelVarCounter
       -- let newLevel = T.Num n
-      let newLevel = T.Literal ("levelVar" ++ show n)
+      let newLevel = T.LVar ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (newLevel, l)) ls
       return newLevel
@@ -508,7 +508,7 @@ maxLevel' span ls = do
     else do
       n <- S.gets levelVarCounter
       -- let newLevel = T.Num n
-      let newLevel = T.Literal ("levelVar" ++ show n)
+      let newLevel = T.LVar ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (l, newLevel)) ls
       return newLevel
@@ -537,8 +537,9 @@ checkMinTopBot xs
   | T.Top `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isVar (T.Literal _) = True
-    isVar _         = False
+    isVar (T.Bottom) = False
+    isVar (T.Top) = False
+    isVar _         = True
     vars = filter isVar xs
 
 -- checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
@@ -565,8 +566,9 @@ checkMaxTopBot xs
   | T.Bottom `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isVar (T.Literal _) = True
-    isVar _         = False
+    isVar (T.Bottom) = False
+    isVar (T.Top) = False
+    isVar _         = True
     vars = filter isVar xs
 
 -- topBotMinLevel :: [T.Level] -> T.Level

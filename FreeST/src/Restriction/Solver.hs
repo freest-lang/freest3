@@ -16,6 +16,7 @@ import Paths_FreeST (getLibDir)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.List (isPrefixOf)
+import Data.Char (isSpace, isDigit, isAlpha)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
@@ -24,6 +25,7 @@ import System.Directory (removeFile, getCurrentDirectory)
 import System.FilePath ((</>), splitPath, joinPath)
 import System.Process
 import Control.Monad.State (liftIO)
+import Text.ParserCombinators.ReadP
 
 data InequalityEntry = InequalityEntry
     { span       :: Span
@@ -47,14 +49,59 @@ instance ToJSON T.Level where
     toJSON T.Top      = String "top"
     toJSON T.Bottom   = String "bot"
     -- toJSON (T.Num n)  = Number (fromIntegral n)
-    toJSON (T.Literal s)  = String (Text.pack s)
+    -- toJSON (T.Literal s)  = String (Text.pack s)
+    toJSON (T.LVar s)  = String (Text.pack s)
+    toJSON (T.LNum n)  = Number (fromIntegral n)
+    toJSON (T.LAdd l1 l2) = String (Text.pack (show l1 ++ "+" ++ show l2))
+    toJSON (T.LParens l) = String (Text.pack ("(" ++ show l ++ ")"))
 
 instance FromJSON T.Level where
     parseJSON (String "top")    = return T.Top
     parseJSON (String "bot")    = return T.Bottom
-    -- parseJSON (Number n)        = return $ T.Num (round n)
-    parseJSON (String s)        = return $ T.Literal (Text.unpack s)
+    parseJSON (Number n)        = return $ T.LNum (round n)
+    parseJSON (String s)        = return $ parseLevel (Text.unpack s)
     parseJSON _                 = fail "Invalid T.Level format"
+
+parseLevel :: String -> T.Level
+parseLevel s =
+    case [x | (x, rest) <- readP_to_S (skipSpaces *> levelP <* skipSpaces <* eof) s, all isSpace rest] of
+        (l:_) -> l
+        []    -> T.LVar s  -- fallback: treat as variable if parsing fails
+
+levelP :: ReadP T.Level
+levelP = parensP <++ addP
+
+parensP :: ReadP T.Level
+parensP = do
+    skipSpaces
+    _ <- char '('
+    l <- levelP
+    skipSpaces
+    _ <- char ')'
+    return (T.LParens l)
+
+addP :: ReadP T.Level
+addP = chainl1 termP addOp
+
+addOp :: ReadP (T.Level -> T.Level -> T.Level)
+addOp = do
+    skipSpaces
+    _ <- char '+'
+    skipSpaces
+    return T.LAdd
+
+termP :: ReadP T.Level
+termP = parensP <++ numP <++ varP
+
+numP :: ReadP T.Level
+numP = do
+    ds <- munch1 isDigit
+    return (T.LNum (read ds))
+
+varP :: ReadP T.Level
+varP = do
+    v <- munch1 isAlpha
+    return (T.LVar v)
 
 instance ToJSON InequalityEntry where
     toJSON (InequalityEntry span (l1,l2)) =

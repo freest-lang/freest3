@@ -480,26 +480,48 @@ ChoiceView :: { (Span, T.View) }
 --   | bot { T.Bottom }
 --   | LOWER_ID { T.Literal (getText $1)}
 
+
+
+
+
+
+-- Level :: { T.Level }
+--   : top { T.Top }
+--   | bot { T.Bottom }
+--   | LevelExprWithVar { T.Literal $1 }
+
+-- LevelExprWithVar :: { String }
+--   : LevelExprWithVar '+' LevelExpr   { $1 ++ "+" ++ $3 }
+--   | LevelExprWithVar '-' LevelExpr   { $1 ++ "-" ++ $3 }
+--   | LevelExprWithVar '*' LevelExpr   { $1 ++ "*" ++ $3 }
+--   | LevelExprWithVar '/' LevelExpr   { $1 ++ "/" ++ $3 }
+--   | LevelExpr '+' LevelExprWithVar   { $1 ++ "+" ++ $3 }
+--   | LevelExpr '-' LevelExprWithVar   { $1 ++ "-" ++ $3 }
+--   | LevelExpr '*' LevelExprWithVar   { $1 ++ "*" ++ $3 }
+--   | LevelExpr '/' LevelExprWithVar   { $1 ++ "/" ++ $3 }
+--   | '(' LevelExprWithVar ')'         { "(" ++ $2 ++ ")" }
+--   | LOWER_ID                         { getText $1 }
+
+-- LevelExpr :: { String }
+--   : '(' LevelExprWithVar ')'         { "(" ++ $2 ++ ")" }
+--   | INT                              { let (TokenInt _ x) = $1 in show x }
+
+
 Level :: { T.Level }
-  : top { T.Top }
-  | bot { T.Bottom }
-  | LevelExprWithVar { T.Literal $1 }
+  : top                { T.Top }
+  | bot                { T.Bottom }
+  | LevelWithVar       { $1 }
 
-LevelExprWithVar :: { String }
-  : LevelExprWithVar '+' LevelExpr   { $1 ++ "+" ++ $3 }
-  | LevelExprWithVar '-' LevelExpr   { $1 ++ "-" ++ $3 }
-  | LevelExprWithVar '*' LevelExpr   { $1 ++ "*" ++ $3 }
-  | LevelExprWithVar '/' LevelExpr   { $1 ++ "/" ++ $3 }
-  | LevelExpr '+' LevelExprWithVar   { $1 ++ "+" ++ $3 }
-  | LevelExpr '-' LevelExprWithVar   { $1 ++ "-" ++ $3 }
-  | LevelExpr '*' LevelExprWithVar   { $1 ++ "*" ++ $3 }
-  | LevelExpr '/' LevelExprWithVar   { $1 ++ "/" ++ $3 }
-  | '(' LevelExprWithVar ')'         { "(" ++ $2 ++ ")" }
-  | LOWER_ID                         { getText $1 }
+LevelWithVar :: { T.Level }
+  : LevelWithVar '+' LevelTerm   { T.LAdd $1 $3 }
+  | LevelTerm                    { $1 }
 
-LevelExpr :: { String }
-  : '(' LevelExprWithVar ')'         { "(" ++ $2 ++ ")" }
-  | INT                              { let (TokenInt _ x) = $1 in show x }
+LevelTerm :: { T.Level }
+  : LOWER_ID                     { T.LVar (getText $1) }
+  | '(' LevelWithVar ')'         { T.LParens $2 }
+  | LevelWithVar '+' INT         { let (TokenInt _ n) = $3 in T.LAdd $1 (T.LNum n) }
+  | INT '+' LevelWithVar         { let (TokenInt _ n) = $1 in T.LAdd (T.LNum n) $3 }
+  -- | LevelVarExpr                    { $1 }
 
 -- LocatedLevel :: { (Span, T.Level) }
 --   : top { (getSpan $1, T.Top) }
@@ -514,37 +536,68 @@ LevelExpr :: { String }
 --   | LOWER_ID { (getSpan $1, T.Literal (getText $1)) } 
 
 
+
+
+
+
+
+
+
+
+-- LocatedLevel :: { (Span, T.Level) }
+--   : top { (getSpan $1, T.Top) }
+--   | bot { (getSpan $1, T.Bottom) }
+--   | LocatedLevelExprWithVar { (fst $1, T.Literal $ snd $1) }
+
+
+-- LocatedLevelExprWithVar :: { (Span, String) }
+--   : LocatedLevelExprWithVar '+' LocatedLevelExpr
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "+" ++ str3) }
+--   | LocatedLevelExprWithVar '-' LocatedLevelExpr
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "-" ++ str3) }
+--   | LocatedLevelExprWithVar '*' LocatedLevelExpr
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "*" ++ str3) }
+--   | LocatedLevelExprWithVar '/' LocatedLevelExpr
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "/" ++ str3) }
+--   | LocatedLevelExpr '+' LocatedLevelExprWithVar
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "+" ++ str3) }
+--   | LocatedLevelExpr '-' LocatedLevelExprWithVar
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "-" ++ str3) }
+--   | LocatedLevelExpr '*' LocatedLevelExprWithVar
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "*" ++ str3) }
+--   | LocatedLevelExpr '/' LocatedLevelExprWithVar
+--       { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "/" ++ str3) }
+--   | '(' LocatedLevelExprWithVar ')'
+--       { let (s2, str2) = $2 in (getSpan $3, "(" ++ str2 ++ ")") }
+--   | LOWER_ID
+--       { (getSpan $1, getText $1) }
+
+-- LocatedLevelExpr :: { (Span, String) }
+--   : '(' LocatedLevelExprWithVar ')'   { let (s2, str2) = $2 in (getSpan $3, "(" ++ str2 ++ ")") }
+--   | INT                               { let (TokenInt p x) = $1 in (p, show x) }
+
+
 LocatedLevel :: { (Span, T.Level) }
-  : top { (getSpan $1, T.Top) }
-  | bot { (getSpan $1, T.Bottom) }
-  | LocatedLevelExprWithVar { (fst $1, T.Literal $ snd $1) }
+  : top                   { (getSpan $1, T.Top) }
+  | bot                   { (getSpan $1, T.Bottom) }
+  | LocatedLevelVarExpr   { $1 }
 
+LocatedLevelVarExpr :: { (Span, T.Level) }
+  : LocatedLevelVarExpr '+' LocatedLevelTerm   {% mkSpanFromSpanSpan (fst $1) (fst $3) >>= \s -> return (s, T.LAdd (snd $1) (snd $3)) }
+  | LocatedLevelTerm                           { $1 }
 
-LocatedLevelExprWithVar :: { (Span, String) }
-  : LocatedLevelExprWithVar '+' LocatedLevelExpr
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "+" ++ str3) }
-  | LocatedLevelExprWithVar '-' LocatedLevelExpr
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "-" ++ str3) }
-  | LocatedLevelExprWithVar '*' LocatedLevelExpr
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "*" ++ str3) }
-  | LocatedLevelExprWithVar '/' LocatedLevelExpr
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "/" ++ str3) }
-  | LocatedLevelExpr '+' LocatedLevelExprWithVar
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "+" ++ str3) }
-  | LocatedLevelExpr '-' LocatedLevelExprWithVar
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "-" ++ str3) }
-  | LocatedLevelExpr '*' LocatedLevelExprWithVar
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "*" ++ str3) }
-  | LocatedLevelExpr '/' LocatedLevelExprWithVar
-      { let (s1, str1) = $1; (s3, str3) = $3 in (s3, str1 ++ "/" ++ str3) }
-  | '(' LocatedLevelExprWithVar ')'
-      { let (s2, str2) = $2 in (getSpan $3, "(" ++ str2 ++ ")") }
-  | LOWER_ID
-      { (getSpan $1, getText $1) }
-
-LocatedLevelExpr :: { (Span, String) }
-  : '(' LocatedLevelExprWithVar ')'   { let (s2, str2) = $2 in (getSpan $3, "(" ++ str2 ++ ")") }
-  | INT                               { let (TokenInt p x) = $1 in (p, show x) }
+LocatedLevelTerm :: { (Span, T.Level) }
+  : LOWER_ID                               { (getSpan $1, T.LVar (getText $1)) }
+  | '(' LocatedLevelVarExpr ')'            {% mkSpanFromSpanSpan (getSpan $1) (getSpan $3) >>= \s -> return (s, T.LParens (snd $2)) }
+  | LocatedLevelVarExpr '+' INT            {% do
+                                                let (TokenInt p n) = $3
+                                                s <- mkSpanFromSpanSpan (fst $1) p
+                                                return (s, T.LAdd (snd $1) (T.LNum n)) }
+  | INT '+' LocatedLevelVarExpr            {% do
+                                                let (TokenInt p n) = $1 
+                                                s <- mkSpanFromSpanSpan p (fst $3)
+                                                return (s, T.LAdd (T.LNum n) (snd $3)) }
+  -- | LocatedLevelVarExpr                    { $1 }
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }

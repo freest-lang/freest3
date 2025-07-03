@@ -68,8 +68,12 @@ instance Show Multiplicity where
 instance Show T.Level where
   show T.Top = "top"
   show T.Bottom = "bot"
+  show (T.LVar x) = x
+  show (T.LNum n) = show n
+  show (T.LAdd l1 l2) = show l1 ++ "+" ++ show l2
+  show (T.LParens l) = "(" ++ show l ++ ")"
   -- show (T.Num n) = show n
-  show (T.Literal s) = s
+  -- show (T.Literal s) = s
 
 -- Arrow multiplicity has a different textual representation
 -- showArrow :: Multiplicity -> String

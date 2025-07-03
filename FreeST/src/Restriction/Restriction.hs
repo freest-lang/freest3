@@ -4,6 +4,7 @@
 module Restriction.Restriction
     ( Inequality
     , Leveled(..)
+    , LevelRange
     -- , minLevel
     -- , maxLevel
     , equalLevels
@@ -13,13 +14,13 @@ where
 import           Syntax.Base
 import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
-import           Parse.Unparser
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
+type LevelRange = (T.Level, T.Level)
 
 class Leveled a where
     level :: a -> T.Level

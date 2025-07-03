@@ -38,7 +38,8 @@ data View = External | Internal deriving (Eq, Ord)
 data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 -- data Level = Top | Bottom | Num Int deriving (Eq, Ord)
-data Level = Top | Bottom | Literal String deriving (Eq, Ord)
+-- data Level = Top | Bottom | Literal String deriving (Eq, Ord)
+data Level = Top | Bottom | LVar String | LNum Int | LAdd Level Level | LParens Level deriving (Eq, Ord)
 
 data Type =
   -- Functional Types
