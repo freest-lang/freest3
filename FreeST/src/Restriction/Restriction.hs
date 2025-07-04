@@ -8,6 +8,7 @@ module Restriction.Restriction
     -- , minLevel
     -- , maxLevel
     , equalLevels
+    , checkLevelRange
     )
 where
 
@@ -85,6 +86,28 @@ isTypeMapLevelEqual :: (Ord k, Eq k) => Map.Map k T.Type -> Map.Map k T.Type -> 
 isTypeMapLevelEqual m1 m2 =
     Map.keysSet m1 == Map.keysSet m2 &&
     and [equalLevels t1 t2 | (k, t1) <- Map.toList m1, let t2 = m2 Map.! k]
+
+checkLevelRange :: T.Level -> LevelRange -> Bool
+checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 
+
+--read as l1 > l2
+levelGT :: T.Level -> T.Level -> Bool
+levelGT T.Top _ = True
+levelGT _ T.Top = False
+levelGT _ T.Bottom = True
+levelGT T.Bottom _ = False
+levelGT (T.LNum n1) (T.LNum n2) = n1 > n2
+levelGT _ _ = False
+
+--read as l1 < l2
+levelLT :: T.Level -> T.Level -> Bool
+levelLT T.Bottom _ = True
+levelLT _ T.Bottom = False
+levelLT _ T.Top = True
+levelLT T.Top _ = False
+levelLT (T.LNum n1) (T.LNum n2) = n1 < n2
+levelLT _ _ = False
+
 
 -- minLevel :: T.Level -> T.Level -> T.Level
 -- minLevel T.Bottom _ = T.Bottom

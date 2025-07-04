@@ -493,18 +493,19 @@ synthetise kEnv (E.Case p e fm) = do
   setSignatures v
   return (t, T.Bottom)
 -- Priority abstraction 
--- synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
+synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
   -- unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e'))
-  --add to map//acc maybe not
-  -- (t, _) <- synthetise kEnv e'
-  -- return (T.Forall p (Bind p a r t), T.Bottom)
-
+  -- add to map//acc maybe not
+  (t, _) <- synthetise kEnv e'
+  return (T.Forall p (Bind p a r t), T.Bottom)
 -- Priority application
--- synthetise kEnv (E.LevelApp _ e n) = do
-  -- (t, _)                            <- synthetise kEnv e
-  -- ~(T.Forall _ (Bind _ y r u)) <- Extract.forall e t
+synthetise kEnv (E.LevelApp _ e n) = do
+  (t, _)                            <- synthetise kEnv e
+  ~(T.Forall p (Bind _ y r u)) <- Extract.forall e t
   -- void $ K.checkAgainst kEnv r n --this becomes checking if n is in range
-  -- return (Rename.subs n y u, T.Bottom)
+  let n' = T.LNum n
+  unless (checkLevelRange n' r) (addError (LevelOutOfRange p n' r))
+  return (Rename.subsLevel n y u, T.Bottom)
 
 customTrace :: E.Exp -> String -> TypingState ()
 customTrace e msg = do

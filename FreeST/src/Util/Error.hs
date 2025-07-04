@@ -13,6 +13,7 @@ import           Syntax.Program (TypeOpsEnv) -- TODO: remove on merge to keep-so
 import qualified Syntax.Type as T
 import           Util.GetTOps
 import           Util.Message
+import qualified Restriction.Restriction as R
 
 import qualified Data.Map as Map
 import           Data.Either.Extra
@@ -107,6 +108,7 @@ data ErrorType =
   | CantUnifyKind Span K.Kind K.Kind
   -- Levels
   | LevelMismatch Span T.Level T.Level
+  | LevelOutOfRange Span T.Level R.LevelRange
   deriving Show
 
 -- | This is just for avoiding throwing equal error messages
@@ -162,6 +164,7 @@ instance Located ErrorType where
   getSpan (MutualDefNotValue p _ _         ) = p
   getSpan (CantUnifyKind p _ _             ) = p
   getSpan (LevelMismatch p _ _             ) = p
+  getSpan (LevelOutOfRange p _ _           ) = p
 
 
 instance Message ErrorType where
@@ -341,6 +344,8 @@ instance Message ErrorType where
   -- Levels
   msg (LevelMismatch s l1 l2) sty ts =
     "Level " ++ style red sty ts l1 ++ " does not precede level " ++ style red sty ts l2 ++ " at " ++ moduleName s ++ ":" ++ show (startPos s)
+  msg (LevelOutOfRange s l r) sty ts =
+    "Level " ++ style red sty ts l ++ " is not in the interval " ++ style red sty ts (show r) ++ " at " ++ moduleName s ++ ":" ++ show (startPos s)
 
 
 declInTwoModules :: Span -> Span -> String

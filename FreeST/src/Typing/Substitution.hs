@@ -18,6 +18,7 @@ module Typing.Substitution
   , cosubs
   , subsAll
   , unfold
+  , subsLevel
   )
 where
 
@@ -35,6 +36,7 @@ import qualified Data.Map.Strict as Map
 
 class Subs a where
   subs :: T.Type -> Variable -> a -> a
+  subsLevel :: T.Level -> Variable -> a -> a
   subsAll :: [(T.Type, Variable)] -> a -> a
   subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 
@@ -65,6 +67,17 @@ instance Subs T.Type where
 
 instance (Subs t) => Subs (Bind k t) where
   subs t a (Bind p b k u) = Bind p b k (subs t a u)
+
+instance Subs T.Level where
+  -- Level variables
+  subsLevel l (Variable _ a _) (T.LVar x)
+    | x == a = l
+    | otherwise = T.LVar x
+  -- Level addition and parentheses
+  subsLevel l a (T.LAdd l1 l2) = T.LAdd (subsLevel l a l1) (subsLevel l a l2)
+  subsLevel l a (T.LParens l1) = T.LParens (subsLevel l a l1)
+  -- Other levels remain unchanged
+  subsLevel _ _ l = l
 
 -- [t/co-a]u, substitute t for for every occurrence of covariable a in u
 

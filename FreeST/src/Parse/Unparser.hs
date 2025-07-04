@@ -30,6 +30,7 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.MkName ( mkTrue, mkFalse )
 import qualified Syntax.Type as T
+import qualified Restriction.Restriction as R
 
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
@@ -72,8 +73,9 @@ instance Show T.Level where
   show (T.LNum n) = show n
   show (T.LAdd l1 l2) = show l1 ++ "+" ++ show l2
   show (T.LParens l) = "(" ++ show l ++ ")"
-  -- show (T.Num n) = show n
-  -- show (T.Literal s) = s
+
+-- instance Show R.LevelRange where
+--   show (l1, l2) = "(" ++ show l1 ++ "," ++ show l2 ++ ")"
 
 -- Arrow multiplicity has a different textual representation
 -- showArrow :: Multiplicity -> String
