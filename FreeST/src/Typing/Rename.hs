@@ -23,6 +23,7 @@ module Typing.Rename
   , renameType -- for testing
   , renameTypes -- for testing
   , Rename(..) -- for testing
+  , subsLevel
   )
 where
 
@@ -209,7 +210,7 @@ subs = renameType `compose3` Subs.subs
 -- subs t a u = renameType $ Subs.subs t a u
 
 subsLevel :: T.Level -> Variable -> T.Type -> T.Type
-subsLevel = renameLevel `compose3` Subs.subsLevel
+subsLevel = renameType `compose3` Subs.subsLevelInType
 
 -- https://gist.github.com/cscalfani/30ff149a75fc5580d1f8aec61f8e5283
 compose3 :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e

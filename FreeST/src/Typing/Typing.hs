@@ -34,7 +34,7 @@ import           Syntax.Value
 import           Equivalence.TypeEquivalence (equivalent)
 import           Equivalence.Subtyping (subtype)
 import qualified Typing.Extract as Extract
-import qualified Typing.Rename as Rename ( subs )
+import qualified Typing.Rename as Rename ( subs, subsLevel )
 import           Typing.Phase hiding (Typing)
 import qualified Kinding.Kinding as K
 import           Util.Error
@@ -505,7 +505,7 @@ synthetise kEnv (E.LevelApp _ e n) = do
   -- void $ K.checkAgainst kEnv r n --this becomes checking if n is in range
   let n' = T.LNum n
   unless (checkLevelRange n' r) (addError (LevelOutOfRange p n' r))
-  return (Rename.subsLevel n y u, T.Bottom)
+  return (Rename.subsLevel n' y u, T.Bottom)
 
 customTrace :: E.Exp -> String -> TypingState ()
 customTrace e msg = do

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-missing-methods #-}
 {- |
 Module      :  Typing.Substitution
 Description :  Type substitution
@@ -18,7 +19,7 @@ module Typing.Substitution
   , cosubs
   , subsAll
   , unfold
-  , subsLevel
+  , subsLevelInType
   )
 where
 
@@ -78,6 +79,24 @@ instance Subs T.Level where
   subsLevel l a (T.LParens l1) = T.LParens (subsLevel l a l1)
   -- Other levels remain unchanged
   subsLevel _ _ l = l
+
+subsLevelInType :: T.Level -> Variable -> T.Type -> T.Type
+-- Functional types
+subsLevelInType l a t@(T.Arrow s m l1 l2 t1 t2) = T.Arrow s m (subsLevel l a l1) (subsLevel l a l2) (subsLevelInType l a t1) (subsLevelInType l a t2)
+subsLevelInType l a (T.Labelled s k l' m) = T.Labelled s k (subsLevel l a l') (Map.map (subsLevelInType l a) m)
+-- Session types
+subsLevelInType l a (T.End s p l') = T.End s p (subsLevel l a l')
+subsLevelInType l a (T.Semi s t1 t2) = T.Semi s (subsLevelInType l a t1) (subsLevelInType l a t2)
+subsLevelInType l a (T.Message s l' p t1) = T.Message s (subsLevel l a l') p (subsLevelInType l a t1)
+-- Polymorphism and recursion
+subsLevelInType l a (T.Forall s b) = T.Forall s (subsLevelInBind l a b)
+subsLevelInType l a (T.Rec s b) = T.Rec s (subsLevelInBind l a b)
+subsLevelInType l a u@(T.Var s b) = u 
+-- Type operators
+subsLevelInType l a u@(T.Dualof s t) = T.Dualof s (subsLevelInType l a t)
+
+subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
+subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)
 
 -- [t/co-a]u, substitute t for for every occurrence of covariable a in u
 
