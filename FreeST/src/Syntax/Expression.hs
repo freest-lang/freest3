@@ -50,7 +50,7 @@ data Exp =
   -- Let
   | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Levels
-  | LevelAbs Span (Bind R.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
+  | LevelAbs Span (PBind R.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
   | LevelApp Span Exp Int                   -- e{n}
 
 instance Default (Bind T.Type Exp) where

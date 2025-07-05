@@ -18,6 +18,7 @@ module Syntax.Base
   , Variable(..)
   , Span(..)
   , Located(..)
+  , PBind(..)
   , defaultSpan
   , intern
   , extern
@@ -95,3 +96,6 @@ isWild (Variable _ str _) = str == "_"
 
 -- Bind for (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e)
 data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}
+
+-- Bind for priorities 
+data PBind a b = PB {pSpan :: Span, pVar :: String, pRange :: a, pBody :: b}
