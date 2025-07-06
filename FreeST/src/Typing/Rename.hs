@@ -167,10 +167,10 @@ instance Rename E.Exp where
     return $ E.UnLet p x' e1' e2'
   -- Level abstraction and application
   rename σ τ ρ (E.LevelAbs p b) = E.LevelAbs p <$> rename σ τ ρ b
-  rename σ τ ρ (E.LevelApp p e n) = do
+  rename σ τ ρ (E.LevelApp p e l) = do
     e' <- rename σ τ ρ e
-    -- n' <- rename σ τ ρ n
-    return $ E.LevelApp p e' n --n'
+    -- l' <- rename σ τ ρ l
+    return $ E.LevelApp p e' l --l'
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ _ e = return e
 

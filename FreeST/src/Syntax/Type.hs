@@ -17,7 +17,7 @@ module Syntax.Type
   , Sort(..)
   , View(..)
   , Level(..)
-  , LevelRange
+  , LevelRange(..)
   , unit 
   , tuple 
 --  , Multiplicity(..)

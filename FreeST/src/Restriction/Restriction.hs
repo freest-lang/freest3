@@ -89,21 +89,39 @@ checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2
 
 --read as l1 > l2
 levelGT :: T.Level -> T.Level -> Bool
-levelGT T.Top _ = True
-levelGT _ T.Top = False
-levelGT _ T.Bottom = True
-levelGT T.Bottom _ = False
-levelGT (T.LNum n1) (T.LNum n2) = n1 > n2
-levelGT _ _ = False
+levelGT l1 l2 =
+  case (evalLevel l1, evalLevel l2) of
+    (Just n1, Just n2) -> n1 > n2
+    _ ->
+      case (l1, l2) of
+        (T.Top, _) -> True
+        (_, T.Top) -> False
+        (_, T.Bottom) -> True
+        (T.Bottom, _) -> False
+        (T.LParens x, y) -> levelGT x y
+        (x, T.LParens y) -> levelGT x y
+        _ -> False
 
 --read as l1 < l2
 levelLT :: T.Level -> T.Level -> Bool
-levelLT T.Bottom _ = True
-levelLT _ T.Bottom = False
-levelLT _ T.Top = True
-levelLT T.Top _ = False
-levelLT (T.LNum n1) (T.LNum n2) = n1 < n2
-levelLT _ _ = False
+levelLT l1 l2 =
+  case (evalLevel l1, evalLevel l2) of
+    (Just n1, Just n2) -> n1 < n2
+    _ ->
+      case (l1, l2) of
+        (T.Bottom, _) -> True
+        (_, T.Bottom) -> False
+        (_, T.Top) -> True
+        (T.Top, _) -> False
+        (T.LParens x, y) -> levelLT x y
+        (x, T.LParens y) -> levelLT x y
+        _ -> False
+
+evalLevel :: T.Level -> Maybe Int
+evalLevel (T.LNum n) = Just n
+evalLevel (T.LAdd l1 l2) = (+) <$> evalLevel l1 <*> evalLevel l2
+evalLevel (T.LParens l) = evalLevel l
+evalLevel _ = Nothing
 
 
 -- minLevel :: T.Level -> T.Level -> T.Level

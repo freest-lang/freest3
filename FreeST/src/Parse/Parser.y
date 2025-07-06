@@ -288,6 +288,7 @@ App :: { E.Exp }
                                        \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
                                    }
   | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
+  | App '{' Level '}'              {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
   | Primary                        { $1 }
    
 Primary :: { E.Exp }
@@ -598,6 +599,17 @@ LocatedLevelTerm :: { (Span, T.Level) }
                                                 s <- mkSpanFromSpanSpan p (fst $3)
                                                 return (s, T.LAdd (T.LNum n) (snd $3)) }
   -- | LocatedLevelVarExpr                    { $1 }
+
+
+LevelBind :: { (Variable, T.LevelRange) }
+  : LOWER_ID ':' '(' Level ',' Level ')' { (mkVar (getSpan $1) (getText $1), ($4, $6)) }
+
+LevelAbs :: { E.Exp }
+  : forall LevelBind '=>' Exp
+      {% let (a, r) = $2 in
+        mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelAbs s (Bind s a r $4)
+      }
+
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
