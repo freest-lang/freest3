@@ -71,7 +71,7 @@ instance (Subs t) => Subs (Bind k t) where
 
 instance Subs T.Level where
   -- Level variables
-  subsLevel l (Variable _ a _) (T.LVar x)
+  subsLevel l a (T.LVar x)
     | x == a = l
     | otherwise = T.LVar x
   -- Level addition and parentheses

@@ -63,13 +63,12 @@ renameFun f t = do
 -- Renaming the various syntactic categories
 
 type Substitution = Map.Map Variable Variable
-type LevelSubstitution = Map.Map String String
 
 class Rename t where
   rename :: MonadState (FreestS a) m =>
     Substitution -> -- For type variables, σ
     Substitution -> -- For program variables, τ
-    LevelSubstitution -> -- For priority variables, ρ
+    Substitution -> -- For priority variables, ρ
     t -> m t
 -- Note: Type variables and program variables come from two different universes.
 -- We would like type Λa => λa:a -> λb:a -> a, the type of the truth value true
@@ -93,11 +92,17 @@ instance Rename te => Rename (Bind K.Kind te) where
     return $ Bind p a' k te'
 
 -- (∀ p ∈ (l1, l2) => e)
-instance Rename (Bind R.LevelRange E.Exp) where
-  rename σ τ ρ (Bind p (Variable p' s i) r e) = do
-    a'@(Variable _ s' _) <- rename σ τ ρ (Variable p' s i)
-    e' <- rename σ τ (Map.insert s s' ρ) e
+instance Rename (Bind T.LevelRange E.Exp) where
+  rename σ τ ρ (Bind p a r e) = do
+    a' <- rename σ τ ρ a
+    e' <- rename σ τ (Map.insert a a' ρ) e
     return $ Bind p a' r e'
+
+instance Rename (Bind T.LevelRange T.Type) where
+  rename σ τ ρ (Bind p a r t) = do
+    a' <- rename σ τ ρ a
+    t' <- rename σ τ (Map.insert a a' ρ) t
+    return $ Bind p a' r t'
 
 -- Renaming types
 
@@ -110,6 +115,7 @@ instance Rename T.Type where
   rename σ τ ρ (T.Message p l pol t) = T.Message p l pol <$> rename σ τ ρ t
   -- Polymorphism and recursive types
   rename σ τ ρ (T.Forall p b) = T.Forall p <$> rename σ τ ρ b
+  rename σ τ ρ (T.PForall p b) = T.PForall p <$> rename σ τ ρ b
   -- Without rec-cleaning
   rename σ τ ρ (T.Rec p b) = T.Rec p <$> rename σ τ ρ b
   -- With rec-cleaning
@@ -168,7 +174,7 @@ instance Rename E.Exp where
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ _ e = return e
 
-renameField :: MonadState (FreestS a) m => Substitution -> Substitution -> LevelSubstitution -> ([Variable], E.Exp) -> m ([Variable], E.Exp)
+renameField :: MonadState (FreestS a) m => Substitution -> Substitution -> Substitution -> ([Variable], E.Exp) -> m ([Variable], E.Exp)
 renameField σ τ ρ (xs, e) = do
   xs' <- mapM (rename σ τ ρ) xs
   e'  <- rename σ (insertProgVars xs') ρ e

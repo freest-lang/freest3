@@ -489,7 +489,7 @@ minLevel' span ls = do
     else do
       n <- S.gets levelVarCounter
       -- let newLevel = T.Num n
-      let newLevel = T.LVar ("levelVar" ++ show n)
+      let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (newLevel, l)) ls
       return newLevel
@@ -508,7 +508,7 @@ maxLevel' span ls = do
     else do
       n <- S.gets levelVarCounter
       -- let newLevel = T.Num n
-      let newLevel = T.LVar ("levelVar" ++ show n)
+      let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
       incrementLevelVarCounter
       mapM_ (\l -> addInequality span (l, newLevel)) ls
       return newLevel

@@ -4,7 +4,6 @@
 module Restriction.Restriction
     ( Inequality
     , Leveled(..)
-    , LevelRange
     -- , minLevel
     -- , maxLevel
     , equalLevels
@@ -14,14 +13,12 @@ where
 
 import           Syntax.Base
 import qualified Syntax.Type as T
-import qualified Syntax.Kind as K
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
-type LevelRange = (T.Level, T.Level)
 
 class Leveled a where
     level :: a -> T.Level
@@ -87,7 +84,7 @@ isTypeMapLevelEqual m1 m2 =
     Map.keysSet m1 == Map.keysSet m2 &&
     and [equalLevels t1 t2 | (k, t1) <- Map.toList m1, let t2 = m2 Map.! k]
 
-checkLevelRange :: T.Level -> LevelRange -> Bool
+checkLevelRange :: T.Level -> T.LevelRange -> Bool
 checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 
 
 --read as l1 > l2

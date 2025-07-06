@@ -108,7 +108,7 @@ data ErrorType =
   | CantUnifyKind Span K.Kind K.Kind
   -- Levels
   | LevelMismatch Span T.Level T.Level
-  | LevelOutOfRange Span T.Level R.LevelRange
+  | LevelOutOfRange Span T.Level T.LevelRange
   deriving Show
 
 -- | This is just for avoiding throwing equal error messages

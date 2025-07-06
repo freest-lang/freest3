@@ -69,7 +69,7 @@ instance Show Multiplicity where
 instance Show T.Level where
   show T.Top = "top"
   show T.Bottom = "bot"
-  show (T.LVar x) = x
+  show (T.LVar x) = extern x
   show (T.LNum n) = show n
   show (T.LAdd l1 l2) = show l1 ++ "+" ++ show l2
   show (T.LParens l) = "(" ++ show l ++ ")"

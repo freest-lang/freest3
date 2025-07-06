@@ -517,7 +517,7 @@ LevelWithVar :: { T.Level }
   | LevelTerm                    { $1 }
 
 LevelTerm :: { T.Level }
-  : LOWER_ID                     { T.LVar (getText $1) }
+  : LOWER_ID                     { T.LVar (mkVar (getSpan $1) (getText $1)) }
   | '(' LevelWithVar ')'         { T.LParens $2 }
   | LevelWithVar '+' INT         { let (TokenInt _ n) = $3 in T.LAdd $1 (T.LNum n) }
   | INT '+' LevelWithVar         { let (TokenInt _ n) = $1 in T.LAdd (T.LNum n) $3 }
@@ -587,7 +587,7 @@ LocatedLevelVarExpr :: { (Span, T.Level) }
   | LocatedLevelTerm                           { $1 }
 
 LocatedLevelTerm :: { (Span, T.Level) }
-  : LOWER_ID                               { (getSpan $1, T.LVar (getText $1)) }
+  : LOWER_ID                               { (getSpan $1, T.LVar (mkVar (getSpan $1) (getText $1))) }
   | '(' LocatedLevelVarExpr ')'            {% mkSpanFromSpanSpan (getSpan $1) (getSpan $3) >>= \s -> return (s, T.LParens (snd $2)) }
   | LocatedLevelVarExpr '+' INT            {% do
                                                 let (TokenInt p n) = $3

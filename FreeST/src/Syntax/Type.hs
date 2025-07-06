@@ -17,6 +17,7 @@ module Syntax.Type
   , Sort(..)
   , View(..)
   , Level(..)
+  , LevelRange
   , unit 
   , tuple 
 --  , Multiplicity(..)
@@ -39,7 +40,8 @@ data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 -- data Level = Top | Bottom | Num Int deriving (Eq, Ord)
 -- data Level = Top | Bottom | Literal String deriving (Eq, Ord)
-data Level = Top | Bottom | LVar String | LNum Int | LAdd Level Level | LParens Level deriving (Eq, Ord)
+data Level = Top | Bottom | LVar Variable | LNum Int | LAdd Level Level | LParens Level deriving (Eq, Ord)
+type LevelRange = (Level, Level)
 
 data Type =
   -- Functional Types
@@ -60,6 +62,8 @@ data Type =
   | Var Span Variable
   -- Type operators
   | Dualof Span Type
+  -- Levels
+  | PForall Span (Bind LevelRange Type) -- ∀ p ∈ (l1, l2) => T, Level polymorphism
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type

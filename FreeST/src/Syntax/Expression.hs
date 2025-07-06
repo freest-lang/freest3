@@ -24,7 +24,6 @@ import           Syntax.Base
 import qualified Syntax.Kind                   as K ( Kind )
 import qualified Syntax.Type                   as T
 import qualified Data.Map.Strict               as Map
-import qualified Restriction.Restriction       as R
 
 data Exp =
   -- Basic values
@@ -50,7 +49,7 @@ data Exp =
   -- Let
   | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Levels
-  | LevelAbs Span (PBind R.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
+  | LevelAbs Span (Bind T.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
   | LevelApp Span Exp Int                   -- e{n}
 
 instance Default (Bind T.Type Exp) where

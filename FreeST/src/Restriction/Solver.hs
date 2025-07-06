@@ -50,7 +50,7 @@ instance ToJSON T.Level where
     toJSON T.Bottom   = String "bot"
     -- toJSON (T.Num n)  = Number (fromIntegral n)
     -- toJSON (T.Literal s)  = String (Text.pack s)
-    toJSON (T.LVar s)  = String (Text.pack s)
+    toJSON (T.LVar x)  = String (Text.pack (extern x))
     toJSON (T.LNum n)  = Number (fromIntegral n)
     toJSON (T.LAdd l1 l2) = String (Text.pack (show l1 ++ "+" ++ show l2))
     toJSON (T.LParens l) = String (Text.pack ("(" ++ show l ++ ")"))
@@ -66,7 +66,7 @@ parseLevel :: String -> T.Level
 parseLevel s =
     case [x | (x, rest) <- readP_to_S (skipSpaces *> levelP <* skipSpaces <* eof) s, all isSpace rest] of
         (l:_) -> l
-        []    -> T.LVar s  -- fallback: treat as variable if parsing fails
+        []    -> T.LVar $ mkVar defaultSpan s
 
 levelP :: ReadP T.Level
 levelP = parensP <++ addP
@@ -101,7 +101,7 @@ numP = do
 varP :: ReadP T.Level
 varP = do
     v <- munch1 isAlpha
-    return (T.LVar v)
+    return (T.LVar $ mkVar defaultSpan v)
 
 instance ToJSON InequalityEntry where
     toJSON (InequalityEntry span (l1,l2)) =
