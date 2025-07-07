@@ -82,6 +82,8 @@ solveType v (T.Forall p (Bind p' a k t)) =
 solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
 solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
+-- Levels
+solveType v (T.PForall p (Bind p' a r t)) = T.PForall p . Bind p' a r <$> solveType v t
 -- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
 
@@ -137,3 +139,4 @@ changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
 changePos p (T.Dualof _ (T.Var _ x)) = T.Dualof p $ T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t
+changePos p (T.PForall _ xs) = T.PForall p xs

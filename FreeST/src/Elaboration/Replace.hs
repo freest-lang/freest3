@@ -76,4 +76,6 @@ changePos s (T.Rec _ b        ) = T.Rec s b
 changePos s (T.Var _ v        ) = T.Var s v
   -- Type operators
 changePos s (T.Dualof _ t     ) = T.Dualof s t
+  -- Levels
+changePos s (T.PForall _ b    ) = T.PForall s b
 -- changePos _ t                   = t

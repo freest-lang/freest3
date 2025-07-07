@@ -117,6 +117,9 @@ showBindNoKind var arrow term = show var ++ spaced arrow ++ show term
 showBindType :: Bind K.Kind T.Type -> String
 showBindType (Bind _ a _ t) = showBindNoKind a "." t -- ∀ a:k . t
 
+showBindTypeP :: Bind T.LevelRange T.Type -> String
+showBindTypeP (Bind _ a _ t) = showBindNoKind a "=>" t
+
 showBindExp :: Bind K.Kind E.Exp -> String
 showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
@@ -228,6 +231,7 @@ instance Unparse T.Type where
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
+  unparse (T.PForall _ b) = (arrowRator, "∀" ++ showBindTypeP b)
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "

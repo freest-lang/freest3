@@ -1,4 +1,4 @@
-type PPing = ?p();Wait (p+2)+0
+type PPing = forall p:(top,bot) => ?p();Wait (p+2)+0
 type PPong = ?q();Wait (q+2)+1
 
 playerA : PPing ->[top,bot] dualof PPong 1->[p,(q+2)+1] ()

@@ -446,11 +446,18 @@ Type :: { T.Type }
   | dualof Type                   {% flip T.Dualof $2 `fmap` mkSpanSpan $1 $2 }
   | TypeName                      {% flip T.Var $1 `fmap` mkSpan $1 }   -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
+  -- Polymorphic priorities
+  | forall LevelBind PForall      {% let (a,r) = $2 in flip T.PForall (Bind (getSpan a) a r $3) `fmap` mkSpanSpan $1 $3 } 
 
 Forall :: { T.Type }
   : '.' Type { $2 }
   | KindBind Forall
       { let (a,k) = $1 in T.Forall (getSpan a) (Bind (getSpan k) a k $2) }
+
+PForall :: { T.Type }
+  : '=>' Type { $2 }
+  | ',' LevelBind Forall 
+      { let (a,r) = $2 in T.PForall (getSpan a) (Bind (getSpan a) a r $3) }
 
 TupleType :: { T.Type }
   : Type               { $1 }
@@ -598,17 +605,14 @@ LocatedLevelTerm :: { (Span, T.Level) }
                                                 let (TokenInt p n) = $1 
                                                 s <- mkSpanFromSpanSpan p (fst $3)
                                                 return (s, T.LAdd (T.LNum n) (snd $3)) }
-  -- | LocatedLevelVarExpr                    { $1 }
 
 
 LevelBind :: { (Variable, T.LevelRange) }
-  : LOWER_ID ':' '(' Level ',' Level ')' { (mkVar (getSpan $1) (getText $1), ($4, $6)) }
+  : TypeVar ':' '(' Level ',' Level ')' { ($1, ($4, $6)) }
 
 LevelAbs :: { E.Exp }
-  : forall LevelBind '=>' Exp
-      {% let (a, r) = $2 in
-        mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelAbs s (Bind s a r $4)
-      }
+  : '=>' Exp { $2 }
+  | LevelBind LevelAbs {% let (a, r) = $1 in mkSpanSpan a $2 >>= \s -> pure $ E.LevelAbs s (Bind s a r $2) }
 
 
 FieldList :: { T.TypeMap }

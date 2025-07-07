@@ -88,6 +88,7 @@ instance Located Type where
   getSpan (Rec p _       ) = p
   getSpan (Var p _       ) = p
   getSpan (Dualof p _    ) = p
+  getSpan (PForall p _   ) = p
 
 -- Derived forms
 tuple :: Span -> [Type] -> Type
