@@ -126,7 +126,14 @@ ctyping kEnv (E.Pair s e1 e2) = do
   let (l0:l1:_) = mkTupleLabels
   let m = Map.insert (l0 defaultSpan) t (Map.singleton (l1 defaultSpan) u)
   merge u1 u2
-  return (T.Labelled s T.Record T.Bottom m, u1 ∪ u2) 
+  return (T.Labelled s T.Record T.Bottom m, u1 ∪ u2)
+ctyping kEnv (E.LevelAbs s b) = do
+  (t, u) <- ctyping kEnv (body b)
+  return (T.PForall s (Bind s (var b) (binder b) t), u)
+ctyping kEnv (E.LevelApp s e l) = do
+  (t, u) <- ctyping kEnv e
+  ~(T.Forall _ (Bind _ a _ b)) <- Extract.forall e t
+  return (subs t a b, u)
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

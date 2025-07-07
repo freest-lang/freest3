@@ -123,6 +123,9 @@ showBindTypeP (Bind _ a _ t) = showBindNoKind a "=>" t
 showBindExp :: Bind K.Kind E.Exp -> String
 showBindExp (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:k => e
 
+showBindExpP :: Bind T.LevelRange E.Exp -> String
+showBindExpP (Bind _ a _ e) = showBindNoKind a "=>" e -- Λ a:(l1,l2) => e
+
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> (T.Level, T.Level) -> String
 showBindTerm (Bind _ x t@T.Arrow{} e) m (l1,l2) = showBind x t True (showArrow m (l1,l2)) e -- λ x:(t) -> e
@@ -348,6 +351,9 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
+  -- Levels
+  unparse (E.LevelApp _ e l) = (appRator, show e ++ " {" ++ show l ++ "}")
+  unparse (E.LevelAbs _ b) = (arrowRator, "Λ" ++ showBindExpP b) 
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
