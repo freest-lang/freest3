@@ -288,7 +288,7 @@ App :: { E.Exp }
                                        \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
                                    }
   | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | App '{' Level '}'              {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
+  | App '{' BasicLevel '}'         {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
   | Primary                        { $1 }
    
 Primary :: { E.Exp }
@@ -307,6 +307,7 @@ Primary :: { E.Exp }
   | '(' Exp '-' ')'                {% mkSpanSpan $1 $4 >>= \s -> pure $ unOp (mkMinus s) $2 s } -- right section (-)
   | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
   | '(' Exp ')'                    { $2 } -- TODO: fix the span to include the parenthesis
+  | forall LevelBind LevelAbs      {% let (a,r) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.LevelAbs s (Bind s a r $3) }
 
 
 Abs :: { (Multiplicity, E.Exp) }
@@ -456,7 +457,7 @@ Forall :: { T.Type }
 
 PForall :: { T.Type }
   : '=>' Type { $2 }
-  | ',' LevelBind Forall 
+  | ',' LevelBind PForall 
       { let (a,r) = $2 in T.PForall (getSpan a) (Bind (getSpan a) a r $3) }
 
 TupleType :: { T.Type }
@@ -513,6 +514,18 @@ ChoiceView :: { (Span, T.View) }
 -- LevelExpr :: { String }
 --   : '(' LevelExprWithVar ')'         { "(" ++ $2 ++ ")" }
 --   | INT                              { let (TokenInt _ x) = $1 in show x }
+
+
+BasicLevel :: { T.Level }
+  : top                             { T.Top }
+  | bot                             { T.Bottom }
+  | BasicLevel '+' BasicLevelTerm   { T.LAdd $1 $3 }
+  | BasicLevelTerm                  { $1 }
+
+BasicLevelTerm :: { T.Level }
+  : LOWER_ID                   { T.LVar (mkVar (getSpan $1) (getText $1)) }
+  | INT                        { let (TokenInt _ n) = $1 in T.LNum n }
+  | '(' BasicLevel ')'         { T.LParens $2 }
 
 
 Level :: { T.Level }
@@ -612,7 +625,17 @@ LevelBind :: { (Variable, T.LevelRange) }
 
 LevelAbs :: { E.Exp }
   : '=>' Exp { $2 }
-  | LevelBind LevelAbs {% let (a, r) = $1 in mkSpanSpan a $2 >>= \s -> pure $ E.LevelAbs s (Bind s a r $2) }
+  | ',' LevelBind LevelAbs
+      {% mkSpanSpan $1 $3 >>= \s ->
+           let (a, r) = $2 in
+           return $ E.LevelAbs s (Bind s a r $3)
+      }
+
+
+  -- PForall :: { T.Type }
+  -- : '=>' Type { $2 }
+  -- | ',' LevelBind PForall 
+  --     { let (a,r) = $2 in T.PForall (getSpan a) (Bind (getSpan a) a r $3) }
 
 
 FieldList :: { T.TypeMap }

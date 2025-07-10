@@ -43,6 +43,8 @@ solveEq v f (T.Forall p (Bind p1 x k t)) =
 solveEq v f (T.Rec p (Bind p1 x k t)) =
   T.Rec p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
 solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
+solveEq v f (T.PForall p (Bind p1 x r t)) =
+  T.PForall p . Bind p1 x r <$> solveEq (x `Set.insert` v) f t
 solveEq _ _ p              = pure p
 
 
@@ -67,4 +69,5 @@ clean (T.Semi p t1 t2) = T.Semi p (clean t1) (clean t2)
 clean (T.Message p l pol t) = T.Message p l pol (clean t)
 clean (T.Forall p (Bind p1 y k t)) = T.Forall p $ Bind p1 y k (clean t)
 clean (T.Dualof p t) = T.Dualof p (clean t)
+clean (T.PForall p (Bind p1 y r t)) = T.PForall p $ Bind p1 y r (clean t)
 clean kt = kt

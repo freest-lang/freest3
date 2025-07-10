@@ -53,6 +53,7 @@ instance KindSubs T.Type where
   substitute subs (T.Forall s b) = T.Forall s (substitute subs b)
   substitute subs (T.Rec s b) = T.Rec s (substitute subs b)
   substitute subs (T.Dualof s t) = T.Dualof s (substitute subs t)
+  -- substitute subs (T.PForall s b) = T.PForall s (substitute subs b)
   substitute _ t = t
 
 instance (KindSubs a, KindSubs b) => KindSubs (Bind a b) where
@@ -67,6 +68,8 @@ instance KindSubs E.Exp where
   substitute subs (E.TypeAbs s b) = E.TypeAbs s (substitute subs b) 
   substitute subs (E.TypeApp s e t) = E.TypeApp s (substitute subs e) (substitute subs t) 
   substitute subs (E.UnLet s x e1 e2) = E.UnLet s x (substitute subs e1) (substitute subs e2)
+  -- substitute subs (E.LevelAbs s b) = E.LevelAbs s (substitute subs b)
+  -- substitute subs (E.LevelApp s e l) = E.LevelApp s (substitute subs e) l
   substitute _ e = e
 
 

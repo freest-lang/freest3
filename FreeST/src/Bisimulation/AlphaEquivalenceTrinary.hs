@@ -76,6 +76,9 @@ instance Equiv T.Type where
   equiv v (T.Dualof _ t1) (T.Dualof _ t2) = equiv v t1 t2
   equiv _ T.Dualof{} _          = TVL.False
   equiv _ _          T.Dualof{} = TVL.False
+  equiv v (T.PForall _ b1) (T.PForall _ b2) = equiv v b1 b2
+  equiv _ T.PForall{} _          = TVL.False
+  equiv _ _          T.PForall{} = TVL.False
   equiv _ _ _ = TVL.Unknown
 
 instance Equiv t => Equiv (Bind k t) where

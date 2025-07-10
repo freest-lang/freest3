@@ -80,6 +80,9 @@ toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ intern a) []
 -- Type operators
 toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
 -- toGrammar' t@T.Dualof{} =
+toGrammar' (T.PForall _ (Bind _ a r t)) = do
+  xs <- toGrammar t
+  getLHS $  Map.singleton (PForall (intern a) r) xs
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 -- Fat terminal types can be compared for syntactic equality

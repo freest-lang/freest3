@@ -114,6 +114,8 @@ free (Rec _ (Bind _ a _ t)) = Set.delete a (free t)
 free (Var _ x) = Set.singleton x
   -- Type operators
 free (Dualof _ t) = free t
+  -- Levels
+free (PForall _ (Bind _ a _ t)) = Set.delete a (free t)
   --Int, Float, Char, String, Skip, End
 free _ = Set.empty 
 

@@ -24,6 +24,7 @@ instance Replace T.Type where
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
   replace (T.Dualof p t) = T.Dualof p <$> replace t
+  replace (T.PForall p b) = T.PForall p <$> replace b
   replace t              = pure t
 
 instance Replace T.TypeMap where
@@ -31,6 +32,9 @@ instance Replace T.TypeMap where
 
 instance Replace a => Replace (Bind K.Kind a) where
   replace (Bind p x k a) = Bind p x k <$> replace a
+
+instance Replace a => Replace (Bind T.LevelRange a) where
+  replace (Bind p x r a) = Bind p x r <$> replace a
 
 -- instance Replace (Bind K.Kind Exp) where
 --   replace (Bind p x k e) = Bind p x k <$> replace e
@@ -50,6 +54,8 @@ instance Replace E.Exp where
   replace (E.TypeApp p e t  ) = E.TypeApp p <$> replace e <*> replace t
   replace (E.TypeAbs p b    ) = E.TypeAbs p <$> replace b
   replace (E.UnLet p x e1 e2) = E.UnLet p x <$> replace e1 <*> replace e2
+  replace (E.LevelAbs p b) = E.LevelAbs p <$> replace b
+  replace (E.LevelApp p e l) = E.LevelApp p <$> replace e <*> pure l
   replace e                 = return e
 
 instance Replace E.FieldMap where

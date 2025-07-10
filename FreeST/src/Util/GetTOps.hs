@@ -42,10 +42,15 @@ instance DefaultTypeOp Exp where
   getDefault m (TypeApp p e t) = TypeApp p (getDefault m e) (getDefault m t)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
+  getDefault m (LevelAbs p b) = LevelAbs p $ getDefault m b
+  getDefault m (LevelApp p e l) = LevelApp p (getDefault m e) l
   getDefault _ e           = e
 
 instance DefaultTypeOp (Bind K.Kind Exp) where
   getDefault m (Bind p x k e) = Bind p x k $ getDefault m e
+
+instance DefaultTypeOp (Bind T.LevelRange Exp) where
+  getDefault m (Bind p x r e) = Bind p x r $ getDefault m e
 
 instance DefaultTypeOp (Bind T.Type Exp) where
   getDefault m (Bind p x k t) = Bind p x k $ getDefault m t

@@ -50,6 +50,7 @@ instance Equiv T.Type where
     x1 == x2 ||                -- free variables
     Just x2 == Map.lookup x1 v -- bound variables
   equiv v (T.Dualof _ t1) (T.Dualof _ t2) = equiv v t1 t2
+  equiv v (T.PForall _ b1) (T.PForall _ b2) = equiv v b1 b2
   equiv _ _ _ = False
 
 instance (Equiv t, Eq k) => Equiv (Bind k t) where

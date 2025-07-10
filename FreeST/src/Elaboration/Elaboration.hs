@@ -91,6 +91,8 @@ buildFunBody f as e = getFromSignatures f >>= \case
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
     E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
   buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+  -- buildExp e bs (T.PForall p (Bind p1 x r t)) =
+  --   E.LevelAbs p . Bind p1 x r <$> buildExp e bs t
   buildExp _ xs _ = do
     t <- fromJust <$> getFromSignatures f
     addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e

@@ -501,6 +501,7 @@ synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
 -- Priority application
 synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
+  -- customTrace e (show t)
   ~(T.PForall p (Bind _ y r u)) <- Extract.forall e t
   -- void $ K.checkAgainst kEnv r n --this becomes checking if n is in range
   -- let n' = T.LNum n

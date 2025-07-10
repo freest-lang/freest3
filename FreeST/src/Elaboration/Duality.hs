@@ -94,6 +94,8 @@ instance Subs T.Type Variable T.Type where
   subs t x u@(T.Dualof _ (T.Var _ y))
     | y == x    = dualof t
     | otherwise = u
+  -- Priority Polymorphism
+  subs t x (T.PForall p b) = T.PForall p (subs t x b)
   subs _ _ t            = t
   -- Can't issue this error because we use
   -- this function during the elaboration of dualofs

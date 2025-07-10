@@ -47,6 +47,8 @@ instance {-# OVERLAPPING #-} ResolveDuality E.Exp where
   resolve (E.TypeApp p e t  ) = E.TypeApp p <$> resolve e <*> resolve t
   resolve (E.TypeAbs p b    ) = E.TypeAbs p <$> resolve b
   resolve (E.UnLet p x e1 e2) = E.UnLet p x <$> resolve e1 <*> resolve e2
+  resolve (E.LevelAbs p b) = E.LevelAbs p <$> resolve b
+  resolve (E.LevelApp p e l) = E.LevelApp p <$> resolve e <*> pure l
   resolve e                   = return e
 
 -- -- This should be an instance but it overlaps with that one of ParseEnv
@@ -65,6 +67,9 @@ instance ResolveDuality K.Kind where
 
 instance ResolveDuality T.Type where
   resolve = solveType Set.empty
+
+instance ResolveDuality T.LevelRange where
+  resolve = pure
 
 type Visited = Set.Set Variable
 
@@ -104,6 +109,8 @@ solveDual _ (T.Var p a) = pure $ T.Dualof p $ T.Var p a
 solveDual _ (T.Dualof _ t@T.Var{}) = pure t
 solveDual v d@(T.Dualof p t) =
   addDualof d >> solveType v (changePos p t)
+-- Priority Polymorphism
+solveDual v (T.PForall p (Bind p' a r t)) = T.PForall p . Bind p' a r <$> solveDual v t
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
 

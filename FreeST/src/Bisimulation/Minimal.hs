@@ -48,6 +48,10 @@ minimal (Rec s1 (Bind s2 a k t))
   | otherwise = minimal t
   -- Type operators
 minimal (Dualof s t) = Dualof s (minimal t)
+minimal t@(PForall s1 (Bind s2 a r u)) =
+  PForall s1 (Bind s2 b r (minimal (subs vb a u)))
+    where b = mkNewVar (first t) a
+          vb = Var (getSpan b) b
   -- Int, Float, Char, String, Skip, End, Var
 minimal t = t
 

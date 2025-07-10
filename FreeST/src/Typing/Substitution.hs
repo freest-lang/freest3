@@ -61,6 +61,8 @@ instance Subs T.Type where
   subs t a u@(T.Dualof _ (T.Var _ b))
     | a == b    = dualof t
     | otherwise = u
+  -- Priority Polymorphism
+  subs t a (T.PForall s b) = T.PForall s (subs t a b)
   subs _ _ t = t
   -- Can't issue this error because we use
   -- this function during the elaboration of dualofs
@@ -94,6 +96,8 @@ subsLevelInType l a (T.Rec s b) = T.Rec s (subsLevelInBind l a b)
 subsLevelInType l a u@(T.Var s b) = u 
 -- Type operators
 subsLevelInType l a u@(T.Dualof s t) = T.Dualof s (subsLevelInType l a t)
+-- Priority Polymorphism
+subsLevelInType l a (T.PForall s b) = T.PForall s (subsLevelInBind l a b)
 
 subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
 subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)

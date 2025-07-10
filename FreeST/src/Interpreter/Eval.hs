@@ -168,6 +168,10 @@ eval fun tys ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tys ctx eenv e1
   eval fun tys (Map.insert x v ctx) eenv e2
 eval fun tys ctx eenv (E.Case s e m) = eval fun tys ctx eenv e >>=  evalCase fun s tys ctx eenv m 
+-- eval _ _ ctx eenv (E.LevelAbs _ (Bind _ _ _ e)) = return $ LevelAbs e ctx eenv 
+-- eval fun tys ctx eenv (E.LevelApp _ e _    ) = eval fun tys ctx eenv e >>= \case
+--   (LevelAbs v ctx eenv) -> eval fun tys ctx eenv v
+--   v -> return v
 eval fun _ _ _ _ = internalError "Interpreter.Eval.eval" fun
 
 

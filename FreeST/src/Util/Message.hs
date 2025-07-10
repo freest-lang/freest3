@@ -99,4 +99,5 @@ canonical (T.Message s l p t) = T.Message s l p (canonical t)
 canonical (T.Forall s (Bind s1 a k t)) = T.Forall s (Bind s1 a k (canonical t))
 canonical (T.Rec s (Bind s1 a k t)) = T.Rec s (Bind s1 a k (canonical t))
 canonical (T.Dualof s t) = T.Dualof s (canonical t)
+canonical (T.PForall s (Bind s1 a r t)) = T.PForall s (Bind s1 a r (canonical t))
 canonical t = t
