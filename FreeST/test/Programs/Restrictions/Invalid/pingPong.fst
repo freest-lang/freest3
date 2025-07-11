@@ -5,17 +5,17 @@ type PPong = forall q:(top,bot) => ?q();Wait (q+2)+0
 
 playerA : forall p:(bot,top), q:(p,top) => PPing ->[top,bot] dualof PPong 1->[p,(q+2)+1] ()
 playerA ping pong =
-    let (_, ping) = receive ping in     --priority: p
-    let pong = send () pong in          --priority: q
-    wait ping;                          --priority: |{\color{codegreen}p+2}|
-    close pong                          --priority: |{\color{codegreen}q+2}|
+    let (_, ping) = receive ping{p} in     --priority: p
+    let pong = send () pong{q} in          --priority: q
+    wait ping{p};                          --priority: p+2
+    close pong{q}                          --priority: q+2
 
 playerB : forall p:(bot,top), q:(p,top) => dualof PPing ->[top,bot] PPong 1->[p,(p+2)+0] ()
 playerB ping pong =
-    let (_, pong) = receive pong in     --priority: q
-    let ping = send () ping in          --priority: p
-    wait pong;                          --priority: |{\color{codegreen}q+2}|
-    close ping                          --priority: |{\color{codegreen}p+2}|
+    let (_, pong) = receive pong{q} in     --priority: q
+    let ping = send () ping{p} in          --priority: p
+    wait pong{q};                          --priority: q+2
+    close ping{p}                          --priority: p+2
 
 main : ()
 main =

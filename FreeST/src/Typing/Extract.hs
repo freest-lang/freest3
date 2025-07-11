@@ -70,8 +70,8 @@ pair e t =
 forall :: MonadState (FreestS a) m => E.Exp -> T.Type -> m T.Type
 forall e t =
   case normalise t of
-    u@T.Forall{} -> return u
     u@T.PForall{} -> return u
+    u@T.Forall{} -> return u
     u -> let p = getSpan e in
       addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
 

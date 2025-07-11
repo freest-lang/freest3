@@ -132,8 +132,14 @@ ctyping kEnv (E.LevelAbs s b) = do
   return (T.PForall s (Bind s (var b) (binder b) t), u)
 ctyping kEnv (E.LevelApp s e l) = do
   (t, u) <- ctyping kEnv e
-  ~(T.Forall _ (Bind _ a _ b)) <- Extract.forall e t
-  return (subs t a b, u)
+  t' <- Extract.forall e t
+  case t' of
+    T.PForall _ (Bind _ a _ b) -> return (subs t a b, u)
+    T.Forall _ (Bind _ a _ b) -> return (subs t a b, u)
+  -- _ -> addError (ExpectedPForall (getSpan t) t) $> (t, u)
+    -- _ -> addError (ExpectedPForall (getSpan t) t) $> (t, u)
+  -- ~(T.PForall _ (Bind _ a _ b)) <- Extract.forall e t
+  -- return (subs t a b, u)
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

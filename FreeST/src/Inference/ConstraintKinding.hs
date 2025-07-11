@@ -76,6 +76,11 @@ cg pEnv kEnv mu@(T.Rec _ b) = do
     mv <- freshMultVar (getSpan $ binder b)
     addConstraint (MultC mv [k'])
     return $ K.Kind (getSpan $ binder b) (MultVar mv) K.Absorb
+cg pEnv kEnv (T.PForall s b) = do
+  k' <- cg (Set.insert (var b) pEnv) kEnv (body b)
+  mv <- freshMultVar s
+  addConstraint $ MultC mv [k']
+  return $ K.Kind s (MultVar mv) K.Top
 
 isVar :: K.Kind -> Bool
 isVar (K.Kind _ MultVar{} K.PKVar{}) = True

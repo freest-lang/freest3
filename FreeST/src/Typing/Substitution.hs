@@ -98,6 +98,7 @@ subsLevelInType l a u@(T.Var s b) = u
 subsLevelInType l a u@(T.Dualof s t) = T.Dualof s (subsLevelInType l a t)
 -- Priority Polymorphism
 subsLevelInType l a (T.PForall s b) = T.PForall s (subsLevelInBind l a b)
+subsLevelInType _ _ t = t
 
 subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
 subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)
