@@ -1,17 +1,16 @@
-module ChaCha20 where
+module ChaCha20Poly1305 where
 
 import SecureUtils
 import List
 import Random
 
-data Nonce = Nonce Integer                  -- 96-bit
-data NonceHalf = NonceHalf Integer          -- 95-bit
+data ChaChaPolyState = ChaChaPolyState RNGState
 data ChachaState = ChachaState (Nonce, Int) -- Nonce + Counter
-data KeyStream = KeyStream Integer                -- 512-bit
+data Nonce = Nonce Integer                  -- 96-bit
+data KeyStream = KeyStream Integer          -- 512-bit
 data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
-type Newchacha20Exchange = !NonceHalf ; ?NonceHalf
--- Work around due to not being able to call functions that were not declared yet
-data CryptMode = Encrypt | Decrypt
+type NewChaChaPolyExchange = !Integer       -- Sharing rng seed
+data CryptMode = Encrypt | Decrypt          -- Work around due to not being able to call functions that were not declared yet
 
 _getNonce : Nonce -> Integer
 _getNonce (Nonce nonceValue) = nonceValue
@@ -19,14 +18,10 @@ _getNonce (Nonce nonceValue) = nonceValue
 _getKeyStream : KeyStream -> Integer
 _getKeyStream (KeyStream keyStreamValue) = keyStreamValue
 
-_newNonceHalf : () -> NonceHalf
-_newNonceHalf u = 
-    let rng = newRNGState u in
+_newNonce : RNGState -> (Nonce, RNGState)
+_newNonce rng =
     let (nonce, rng) = nextN64Bits 2 rng in
-    NonceHalf $ modI nonce (2i ^i 95i)
-
-_newNonce : NonceHalf -> NonceHalf -> Nonce
-_newNonce (NonceHalf half1) (NonceHalf half2) = Nonce $ half1 +i half2
+    (Nonce $ modI nonce (2i ^i 96i), rng)
 
 -- Round assisting functions
 
@@ -115,10 +110,10 @@ _blockToList (Block c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15) = c0:
 
 -- ChaCha Block and KeyStream building
 
-_chacha20 : Key -> ChachaState -> (KeyStream, ChachaState)
-_chacha20 (AsymmetricKey _ _) _ =
+_keyStreamStep : Key -> ChachaState -> (KeyStream, ChachaState)
+_keyStreamStep (AsymmetricKey _ _) _ =
     error @(KeyStream, ChachaState) "ChaCha20 does not use asymmetric keys."
-_chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
+_keyStreamStep (SessionKey keyValue) (ChachaState nonceCounter) =
     let (nonce, counter) = nonceCounter in
     let nonceValue = _getNonce nonce in
 
@@ -138,14 +133,14 @@ _chacha20 (SessionKey keyValue) (ChachaState nonceCounter) =
     (KeyStream keyStream, ChachaState (Nonce nonceValue, counter + 1))
 
 --Gives keyStream of size*512 bits
-_multipleChaCha20 : Key -> ChachaState -> Int -> (KeyStream, ChachaState)
-_multipleChaCha20 key chachaState size =
+_generateKeyStream : Key -> ChachaState -> Int -> (KeyStream, ChachaState)
+_generateKeyStream key chachaState size =
     if size <= 1 then
-        _chacha20 key chachaState
+        _keyStreamStep key chachaState
     else
-        let (keyStreamL, chachaState) = _multipleChaCha20 key chachaState (size - 1) in
+        let (keyStreamL, chachaState) = _generateKeyStream key chachaState (size - 1) in
         let keyStreamLValue = _getKeyStream keyStreamL in
-        let (keyStreamR, chachaState) = _chacha20 key chachaState in
+        let (keyStreamR, chachaState) = _keyStreamStep key chachaState in
         let keyStreamRValue = _getKeyStream keyStreamR in
         (KeyStream (lorI (shiftLI keyStreamLValue 512) keyStreamRValue), chachaState)
 
@@ -158,40 +153,49 @@ _calculateSize value =
     else
         (_calculateSize (shiftRI value 512)) + 1
 
-encryptDecryptWithChaCha20 : CryptMode -> ChachaState -> NextCrypt
-
-encryptDecryptWithChaCha20 Encrypt chachaState msg key =
-    --Calculate message size
-    let size = _calculateSize msg in
+_ChaCha20 : Integer -> Key -> ChaChaPolyState -> (Integer, ChaChaPolyState)
+_ChaCha20 value key (ChaChaPolyState rng) =
+    --Calculate size
+    let size = _calculateSize value in
+    --Obtain nonce and new RNG state
+    let (nonce, rng) = _newNonce rng in
     --Obtain keyStream
-    let (keyStream, chachaState) = _multipleChaCha20 key chachaState size in
-    --Encrypt and return cypher
-    let cypher = lxorI msg (_getKeyStream keyStream) in
-    (cypher, encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState)
+    let (keyStream, chaChaState) = _generateKeyStream key (ChachaState (nonce, 0)) size in
+    --Encrypt/Decrypt and return value
+    let newValue = lxorI value (_getKeyStream keyStream) in
+    (newValue, ChaChaPolyState rng)
 
-encryptDecryptWithChaCha20 Decrypt chachaState cypher key =
-    --Calculate cypher size
-    let size = _calculateSize cypher in
-    --Obtain keyStream
-    let (keyStream, chachaState) = _multipleChaCha20 key chachaState size in
-    --Decrypt and return message
-    let msg = lxorI cypher (_getKeyStream keyStream) in
-    (msg, encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState)
+encryptDecryptWithChaCha20 : CryptMode -> ChaChaPolyState -> NextCrypt
 
-newChaCha20A: forall a . Newchacha20Exchange ; a -> ((NextEncrypt, NextDecrypt), a)
-newChaCha20A c =
-    let half1 = _newNonceHalf () in
-    let c = send half1 c in
-    let (half2, c) = receive c in
-    let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
-    ((encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState), c)
+encryptDecryptWithChaCha20 Encrypt chaChaPolyState msg key =
+    --Encrypt
+    let (cypher, chaChaPolyState) = _ChaCha20 msg key chaChaPolyState in
+    --Genrate Poly1305 tag
 
-newChaCha20B: forall a . dualof Newchacha20Exchange ; a -> ((NextEncrypt, NextDecrypt), a)
-newChaCha20B c =
-    let (half1, c) = receive c in
-    let half2 = _newNonceHalf () in
-    let c = send half2 c in
-    let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
-    ((encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState), c)
+    --Attach tag to cypher
 
+    (cypher, encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState)
 
+encryptDecryptWithChaCha20 Decrypt chaChaPolyState cypher key =
+    --Separetate tag from cypher
+    
+    --Check tag
+    
+    --Decrypt
+    let (msg, chaChaPolyState) = _ChaCha20 cypher key chaChaPolyState in
+    (msg, encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState)
+
+newChaChaPolyA: forall a . NewChaChaPolyExchange ; a -> ((NextEncrypt, NextDecrypt), a)
+newChaChaPolyA c =
+    let rng = newRNGState () in
+    let seed = getRngSeed rng in
+    let c = send seed c in
+    let chaChaPolyState = ChaChaPolyState rng in
+    ((encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState), c)
+
+newChaChaPolyB: forall a . dualof NewChaChaPolyExchange ; a -> ((NextEncrypt, NextDecrypt), a)
+newChaChaPolyB c =
+    let (seed, c) = receive c in
+    let rng = newRNGStateSetSeed seed in
+    let chaChaPolyState = ChaChaPolyState rng in
+    ((encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState), c)

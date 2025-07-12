@@ -34,8 +34,8 @@ newRNGStateSetSeed : Integer -> RNGState
 newRNGStateSetSeed seed = RNGState (1, seed)
 
 --Gets the seed from the current rng state
-getSeed : RNGState -> Integer
-getSeed (RNGState _seed) = 
+getRngSeed : RNGState -> Integer
+getRngSeed (RNGState _seed) = 
     let (_, seed) = _seed in
     seed
 

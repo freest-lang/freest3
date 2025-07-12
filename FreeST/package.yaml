@@ -17,7 +17,7 @@ data-files:
   - SecureUtils.fst
   - DiffieHellman.fst
   - RSA.fst
-  - ChaCha20.fst
+  - ChaCha20Poly1305.fst
   - SecureChannel.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
