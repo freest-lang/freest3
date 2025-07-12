@@ -29,6 +29,16 @@ data RNGState = RNGState (Int, Integer)
 newRNGState : () -> RNGState
 newRNGState u = RNGState (1, getSystemTime u)
 
+--Creates new rng state with the given seed
+newRNGStateSetSeed : Integer -> RNGState
+newRNGStateSetSeed seed = RNGState (1, seed)
+
+--Gets the seed from the current rng state
+getSeed : RNGState -> Integer
+getSeed (RNGState _seed) = 
+    let (_, seed) = _seed in
+    seed
+
 --Gets next Int
 nextInt64 : RNGState -> (Int, RNGState)
 nextInt64 (RNGState ctrKey) =
