@@ -10,6 +10,8 @@ data ChachaState = ChachaState (Nonce, Int) -- Nonce + Counter
 data KeyStream = KeyStream Integer                -- 512-bit
 data Block = Block Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int -- 4x4 matrix of 32-bit values, This should be a mutable array.
 type Newchacha20Exchange = !NonceHalf ; ?NonceHalf
+-- Work around due to not being able to call functions that were not declared yet
+data CryptMode = Encrypt | Decrypt
 
 _getNonce : Nonce -> Integer
 _getNonce (Nonce nonceValue) = nonceValue
@@ -156,29 +158,40 @@ _calculateSize value =
     else
         (_calculateSize (shiftRI value 512)) + 1
 
-encryptdecryptWithChaCha20 : ChachaState -> NextEncryptDecryption
-encryptdecryptWithChaCha20 chachaState msg key =
+encryptDecryptWithChaCha20 : CryptMode -> ChachaState -> NextCrypt
+
+encryptDecryptWithChaCha20 Encrypt chachaState msg key =
     --Calculate message size
     let size = _calculateSize msg in
     --Obtain keyStream
     let (keyStream, chachaState) = _multipleChaCha20 key chachaState size in
-    --Encrypt and send message
-    let msg = lxorI msg (_getKeyStream keyStream) in
-    (msg, encryptdecryptWithChaCha20 chachaState)
+    --Encrypt and return cypher
+    let cypher = lxorI msg (_getKeyStream keyStream) in
+    (cypher, encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState)
 
-newChaCha20A: forall a . Newchacha20Exchange ; a -> (NextEncryptDecryption, a)
+encryptDecryptWithChaCha20 Decrypt chachaState cypher key =
+    --Calculate cypher size
+    let size = _calculateSize cypher in
+    --Obtain keyStream
+    let (keyStream, chachaState) = _multipleChaCha20 key chachaState size in
+    --Decrypt and return message
+    let msg = lxorI cypher (_getKeyStream keyStream) in
+    (msg, encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState)
+
+newChaCha20A: forall a . Newchacha20Exchange ; a -> ((NextEncrypt, NextDecrypt), a)
 newChaCha20A c =
     let half1 = _newNonceHalf () in
     let c = send half1 c in
     let (half2, c) = receive c in
     let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
-    (encryptdecryptWithChaCha20 chachaState, c)
+    ((encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState), c)
 
-newChaCha20B: forall a . dualof Newchacha20Exchange ; a -> (NextEncryptDecryption, a)
+newChaCha20B: forall a . dualof Newchacha20Exchange ; a -> ((NextEncrypt, NextDecrypt), a)
 newChaCha20B c =
     let (half1, c) = receive c in
     let half2 = _newNonceHalf () in
     let c = send half2 c in
     let chachaState = ChachaState $ (_newNonce half1 half2, 0) in
-    (encryptdecryptWithChaCha20 chachaState, c)
+    ((encryptDecryptWithChaCha20 Encrypt chachaState, encryptDecryptWithChaCha20 Decrypt chachaState), c)
+
 

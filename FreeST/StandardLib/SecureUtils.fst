@@ -4,14 +4,16 @@ import Random
 
 ----- Types ------
 data Key = SessionKey Integer | AsymmetricKey Integer Integer-- Modulus PiKey/PuKey
---This abstrction works well for ChaCha20 cause encryption and decryption are interchangable, but not for other methods and for example if we implement Poly1305.
---Main issue preveting diferent encryp and decrypt funciotions being returned is that a one cannot call the other before the other has been declared...
-type NextEncryptDecryption = Integer -> Key -> (Integer, NextEncryptDecryption)
-data Signature = Signature Integer
-data SecureChannelState = SecureChannelState (Key, NextEncryptDecryption)
 
-getSecureChannelState : SecureChannelState -> (Key, NextEncryptDecryption)
-getSecureChannelState (SecureChannelState keyNextEncryptDecryption) = keyNextEncryptDecryption
+type NextCrypt = Integer -> Key -> (Integer, NextEncrypt, NextDecrypt)
+type NextEncrypt = NextCrypt
+type NextDecrypt = NextCrypt
+
+data Signature = Signature Integer
+data SecureChannelState = SecureChannelState (Key, NextEncrypt, NextDecrypt)
+
+getSecureChannelState : SecureChannelState -> (Key, NextEncrypt, NextDecrypt)
+getSecureChannelState (SecureChannelState keyNextCrypt) = keyNextCrypt
 
 
 ----- Modular Exponentiation -----
@@ -93,17 +95,21 @@ _secureSend : Bits -> forall a . (SecureSend ; a, SecureChannelState) -> (a, Sec
 _secureSend (Bits bits) sc =
     --Separate channel, key, and encryption algorithm
     let (c, secureState) = sc in
-    let (key, nextEncrypt) = getSecureChannelState secureState in
+    let (key, nextCrypt) = getSecureChannelState secureState in
+    let (nextEncrypt, nextDecrypt) = nextCrypt in
     --Encode sign into the value bit representaion, otherwise the values sign is exposed as it is not encrypted
     let bits = _encodeSign bits in
+
+    --TODO REMOVE THIS
     -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
-    --Generate and append hash
-    let hash = hash256 bits in
-    let bits = lorI (shiftLI bits 256) hash in
+    -- --Generate and append hash
+    -- let hash = hash256 bits in
+    -- let bits = lorI (shiftLI bits 256) hash in
     -- ---
+
     --Encrypt and update secure state
-    let (bits, nextEncryptDecryption) = nextEncrypt bits key in
-    let secureState = SecureChannelState (key, nextEncryptDecryption) in    
+    let (bits, nextCrypt) = nextEncrypt bits key in
+    let secureState = SecureChannelState (key, nextCrypt) in    
     --Send message
     let msg = (Bits bits) in
     (send msg c, secureState)
@@ -113,23 +119,27 @@ _secureReceive : forall a . (SecureReceive ; a, SecureChannelState) -> (Bits, (a
 _secureReceive sc =
     --Separate channel, key, and decryption algorithm
     let (c, secureState) = sc in
-    let (key, nextDecrypt) = getSecureChannelState secureState in
+    let (key, nextCrypt) = getSecureChannelState secureState in
+    let (nextEncrypt, nextDecrypt) = nextCrypt in
     --Receive message
     let (msg, c) = receive c in
     let bits = _getBits msg in
     --Decrypt and update secure state
-    let (bits, nextEncryptDecryption) = nextDecrypt bits key in
-    let secureState = SecureChannelState (key, nextEncryptDecryption) in
+    let (bits, nextCrypt) = nextDecrypt bits key in
+    let secureState = SecureChannelState (key, nextCrypt) in
+
+    --TODO REMOVE THIS
     -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
-    --Separate hash from data
-    let hash = modI bits (2i ^i 256i) in
-    let bits = shiftRI bits 256 in
-    --Verify hash
-    if hash /=i (hash256 bits) then
-        error @() "Hash does not match, message may have been tampered with.";
-        (Bits 0i, (c, secureState))
-    else
+    -- --Separate hash from data
+    -- let hash = modI bits (2i ^i 256i) in
+    -- let bits = shiftRI bits 256 in
+    -- --Verify hash
+    -- if hash /=i (hash256 bits) then
+    --     error @() "Hash does not match, message may have been tampered with.";
+    --     (Bits 0i, (c, secureState))
+    -- else
     -- --- 
+
     --Decode sign
         let bits = _decodeSign bits in
         (Bits bits, (c, secureState))

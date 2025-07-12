@@ -14,14 +14,14 @@ type EstablishSecureChannelB = dualof EstablishSecureChannelA
 establishSecureChannelA : forall a . EstablishSecureChannelA ; a -> (a, SecureChannelState)
 establishSecureChannelA c =
     let (c, key) = dhA @(Newchacha20Exchange ; a) c in
-    let (nextEncryptDecryption, c) = newChaCha20A @a c in
-    (c, SecureChannelState (key, nextEncryptDecryption))
+    let (nextCrypt, c) = newChaCha20A @a c in
+    (c, SecureChannelState (key, nextCrypt))
 
 establishSecureChannelB : forall a . EstablishSecureChannelB ; a -> (a, SecureChannelState)
 establishSecureChannelB c =
     let (c, key) = dhB @(dualof Newchacha20Exchange ; a) c in
-    let (nextEncryptDecryption, c) = newChaCha20B @a c in
-    (c, SecureChannelState (key, nextEncryptDecryption))
+    let (nextCrypt, c) = newChaCha20B @a c in
+    (c, SecureChannelState (key, nextCrypt))
 
 
 --Signed Cypher Suit : DiffieHellman + RSA + chacha20
