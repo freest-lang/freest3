@@ -495,7 +495,6 @@ synthetise kEnv (E.Case p e fm) = do
 -- Priority abstraction 
 synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
   -- unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e'))
-  -- add to map//acc maybe not
   (t, _) <- synthetise kEnv e'
   return (T.PForall p (Bind p a r t), T.Bottom)
 -- Priority application
@@ -505,6 +504,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
+      customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
       return (Rename.subsLevel l y u, T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)

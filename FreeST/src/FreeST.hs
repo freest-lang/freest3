@@ -64,7 +64,8 @@ checkAndRun runOpts = do
   when (hasErrors elabS) (die $ getErrors runOpts elabS)
 
   -- | Kind Inference  
-  let infS = execState (renameProgram >> infer) (elabToInf defs elabS)
+  -- let infS = execState (renameProgram >> infer) (elabToInf defs elabS)
+  let infS = execState (renameProgram) (elabToInf defs elabS)
 --  when (hasErrors infS) (die $ getErrors runOpts infS)
   -- | Typecheck
   s4 <- execStateT typeCheck (infToTyping runOpts infS)

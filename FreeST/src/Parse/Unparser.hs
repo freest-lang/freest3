@@ -224,7 +224,7 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right semiRator
   unparse (T.Labelled _ (T.Choice v) l m) =
     (maxRator, show v ++ show l ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
+  unparse (T.Forall _ b) = (arrowRator, "forall " ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
     (maxRator, "*" ++ show t)
@@ -234,7 +234,7 @@ instance Unparse T.Type where
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
-  unparse (T.PForall _ b) = (arrowRator, "∀" ++ showBindTypeP b)
+  unparse (T.PForall _ b) = (arrowRator, "forall " ++ showBindTypeP b)
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "
@@ -273,7 +273,7 @@ instance Unparse Exp where
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m (T.Top, T.Bottom))
+  unparse (E.Abs _ m b) = (arrowRator, "\\" ++ showBindTerm b m (T.Top, T.Bottom))
   unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
@@ -344,7 +344,7 @@ instance Unparse Exp where
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
     where t' = bracket (unparse t) Right appRator
-  unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
+  unparse (E.TypeAbs _ b) = (arrowRator, "\\" ++ showBindExp b)
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
@@ -353,7 +353,7 @@ instance Unparse Exp where
     r = bracket (unparse e2) Right inRator
   -- Levels
   unparse (E.LevelApp _ e l) = (appRator, show e ++ " {" ++ show l ++ "}")
-  unparse (E.LevelAbs _ b) = (arrowRator, "Λ" ++ showBindExpP b) 
+  unparse (E.LevelAbs _ b) = (arrowRator, "\\" ++ showBindExpP b) 
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
