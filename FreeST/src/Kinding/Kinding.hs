@@ -134,8 +134,8 @@ synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
             (addError (CantMatchKinds p k (K.ls p) t)) $> (K.ls p, T.Bottom)
     Nothing -> addError (TypeVarNotInScope p a) $> (omission p, T.Bottom)
 synthetise' s kEnv (T.PForall _ (Bind p a r t)) = do
-  (K.Kind _ m _, _) <- synthetise' (Set.insert a s) kEnv t
-  return $ (K.Kind p m K.Top, T.Bottom)
+  (K.Kind _ m pk, _) <- synthetise' (Set.insert a s) kEnv t
+  return $ (K.Kind p m pk, T.Bottom)
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not

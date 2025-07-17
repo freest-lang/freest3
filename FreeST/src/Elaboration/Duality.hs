@@ -34,6 +34,7 @@ instance Duality T.Type where
     let t' = subs (T.Dualof p' (T.Var p' a)) a t in
       T.Rec p $ Bind p' a k (cosubs u a (dualof t'))
   -- Non session-types, Skip
+  dualof (T.PForall p (Bind p' a r t)) = T.PForall p $ Bind p' a r (dualof t)
   dualof t = t
 
 instance Duality T.Polarity where

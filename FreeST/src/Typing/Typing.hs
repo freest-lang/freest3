@@ -52,7 +52,7 @@ import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
 import qualified Data.Set as Set
 
-import Debug.Trace (trace)
+import           Debug.Trace (trace)
 
 
 typeCheck :: TypingState ()
@@ -504,7 +504,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
-      customTrace e (show r ++ " " ++ show l)
+      -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
       return (Rename.subsLevel l y u, T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
