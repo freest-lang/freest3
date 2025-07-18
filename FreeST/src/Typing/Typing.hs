@@ -500,16 +500,16 @@ synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
 -- Priority application
 synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
-  -- customTrace e (show t)
+  -- customTrace e (show l ++ " " ++ show t)
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
       -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
-      return (Rename.subsLevel l y u, T.Bottom)
+      let t' = Rename.subsLevel l y u
+      -- customTrace e (show $ t')
+      return (t', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
-  -- void $ K.checkAgainst kEnv r n --this becomes checking if n is in range
-  -- let n' = T.LNum n
 
 customTrace :: E.Exp -> String -> TypingState ()
 customTrace e msg = do

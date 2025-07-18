@@ -11,6 +11,8 @@ value = Function('value', Levels, IntSort())
 lower_id = r"\b[a-zA-Z][a-zA-Z0-9_']*\b"
 
 def rewrite_expression(expr):
+    if not isinstance(expr, str):
+        expr = str(expr)
     def repl(match):
         var = match.group(0)
         return f"value(Const('{var}', Levels))"
@@ -34,6 +36,8 @@ def get_val(l):
 #         return value(Const(l, Levels))
 
 def extract_variables(expr):
+    if not isinstance(expr, str):
+        expr = str(expr)
     return re.findall(lower_id, expr)
 
 # def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):

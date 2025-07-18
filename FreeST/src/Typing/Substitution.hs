@@ -31,6 +31,7 @@ import           Elaboration.Duality ( dualof )
 import           Util.Error          ( internalError )
 
 import qualified Data.Map.Strict as Map
+import           Debug.Trace (trace)
 
 
 -- [t/a]u, substitute t for for every occurrence of a in u
@@ -74,7 +75,7 @@ instance (Subs t) => Subs (Bind k t) where
 instance Subs T.Level where
   -- Level variables
   subsLevel l a (T.LVar x)
-    | x == a = l
+    | (extern x) == (extern a) = l
     | otherwise = T.LVar x
   -- Level addition and parentheses
   subsLevel l a (T.LAdd l1 l2) = T.LAdd (subsLevel l a l1) (subsLevel l a l2)
@@ -97,8 +98,11 @@ subsLevelInType l a u@(T.Var s b) = u
 -- Type operators
 subsLevelInType l a u@(T.Dualof s t) = T.Dualof s (subsLevelInType l a t)
 -- Priority Polymorphism
-subsLevelInType l a (T.PForall s b) = T.PForall s (subsLevelInBind l a b)
+subsLevelInType l a (T.PForall s b) = T.PForall s (subsLevelInBindWithRange l a b)
 subsLevelInType _ _ t = t
+
+subsLevelInBindWithRange :: T.Level -> Variable -> Bind T.LevelRange T.Type -> Bind (T.Level, T.Level) T.Type
+subsLevelInBindWithRange l a (Bind p b (l1, l2) u) = Bind p b (subsLevel l a l1, subsLevel l a l2) (subsLevelInType l a u)
 
 subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
 subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)

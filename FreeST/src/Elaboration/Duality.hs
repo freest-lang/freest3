@@ -63,11 +63,15 @@ instance Cosubs T.Type where
   cosubs t x u@(T.Dualof _ (T.Var _ y))
     | y == x = t
     | otherwise = u
+  cosubs t x (T.PForall p b) = T.PForall p (cosubs t x b)
   cosubs _ _ t            = t
 
 
 instance Cosubs t => Cosubs (Bind K.Kind t) where
   cosubs t x (Bind p y k u) = Bind p y k (cosubs t x u)
+
+instance Cosubs t => Cosubs (Bind T.LevelRange t) where
+  cosubs t x (Bind p y r u) = Bind p y r (cosubs t x u)
 
 
 -- Duplicated. See Validation.Substitution
