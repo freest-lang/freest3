@@ -17,7 +17,12 @@ def rewrite_expression(expr):
         var = match.group(0)
         return f"value(Const('{var}', Levels))"
     expr_rewritten = re.sub(lower_id, repl, expr)
-    return eval(expr_rewritten, {"value": value, "Const": Const, "Levels": Levels, "top": top, "bot": bot})
+    val = eval(expr_rewritten, {"value": value, "Const": Const, "Levels": Levels, "top": top, "bot": bot})
+    if isinstance(val, int):
+        return IntVal(val)
+    else:
+        return val
+    # return eval(expr_rewritten, {"value": value, "Const": Const, "Levels": Levels, "top": top, "bot": bot})
 
 def get_val(l):
     if l == "top":

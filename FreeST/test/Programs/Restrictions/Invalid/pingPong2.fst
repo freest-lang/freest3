@@ -28,4 +28,4 @@ main =
     let (pingI, pingO) = new @PPing () in
     let (pongI, pongO) = new @PPing () in
     fork (\_:()1-> ((playerA{1}{2}) pingI pongO));
-    (playerA{1}{2}) pongI pingO 
+    (playerA{2}{1}) pongI pingO 

@@ -75,6 +75,7 @@ instance (Subs t) => Subs (Bind k t) where
 instance Subs T.Level where
   -- Level variables
   subsLevel l a (T.LVar x)
+    -- | (extern x) == (extern a) = trace (extern x ++ " " ++ show l) l
     | (extern x) == (extern a) = l
     | otherwise = T.LVar x
   -- Level addition and parentheses

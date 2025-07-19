@@ -34,6 +34,7 @@ data Value =
   | Fork
   | IOValue (IO Value)
   | Handle Handle
+  | LevelAbs E.Exp Ctx Defs
 
 type Ctx = Map.Map Variable Value
 
@@ -58,6 +59,7 @@ instance Show Value where
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
   show (Handle h)     = show h 
+  show (LevelAbs _ _ _) = "<fun>"
 
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2

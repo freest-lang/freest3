@@ -507,7 +507,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
       -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
       let t' = Rename.subsLevel l y u
-      -- customTrace e (show $ t')
+      -- customTrace e (show t' ++ " ||| " ++ show u)
       return (t', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
@@ -634,6 +634,7 @@ leveledCheckAgainst kEnv e t = do
       return l3 
     _ -> do 
       (t1, l1) <- synthetise kEnv e
+      customTrace e ("HERE-> " ++ show t ++ " == " ++ show t1 ++ "///" ++ show l1)
       compareTypes e t t1
       return l1
 
