@@ -8,8 +8,8 @@ playerA =
     forall a:(bot,top), b:(a,top) =>
     \ping: PPing -> 
     \pong: dualof PPing 1->
-    let (_, ping) = receive (ping{1}) in     --priority: p
-    let pong = send () (pong{2}) in          --priority: q
+    let (_, ping) = receive (ping{a}) in     --priority: p
+    let pong = send () (pong{b}) in          --priority: q
     wait ping;                          --priority: p+2
     close pong                          --priority: q+2
 
@@ -28,4 +28,4 @@ main =
     let (pingI, pingO) = new @PPing () in
     let (pongI, pongO) = new @PPing () in
     fork (\_:()1-> ((playerA{1}{2}) pingI pongO));
-    (playerA{1}{2}) pongI pingO 
+    (playerA{2}{1}) pongI pingO 

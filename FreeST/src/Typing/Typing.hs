@@ -299,6 +299,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   --   _ -> return $ level u2
 
   lu2 <- getTypeLevel u2
+  customTrace e (show l1)
 
   addInequality (getSpan t) (l1, lu2)
   
@@ -507,7 +508,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
       -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
       let t' = Rename.subsLevel l y u
-      -- customTrace e (show t' ++ " ||| " ++ show u)
+      customTrace e (show t' ++ " ||| " ++ show u)
       return (t', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
