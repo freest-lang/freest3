@@ -144,8 +144,57 @@ _generateKeyStream key chachaState size =
         let keyStreamRValue = _getKeyStream keyStreamR in
         (KeyStream (lorI (shiftLI keyStreamLValue 512) keyStreamRValue), chachaState)
 
+_ChaCha20 : Integer -> Key -> Nonce -> Int -> Integer
+_ChaCha20 value key nonce size =
+    --Obtain keyStream
+    let (keyStream, _) = _generateKeyStream key (ChachaState (nonce, 0)) size in
+    --Encrypt/Decrypt and return value
+    let newValue = lxorI value (_getKeyStream keyStream) in
+    newValue
 
---Finds value's bit size in multiples of 512
+_generatePoly1305Key : Key -> Nonce -> (Integer, Integer)
+_generatePoly1305Key key nonce =
+    --Generate a 256-bit key from the ChaCha20 key and nonce
+    let keyStream = _ChaCha20 0i key nonce 1 in
+    --Get the first 128 bits
+    let r = modI keyStream (2i ^i 128i) in
+    --Get the second 128 bits
+    let s = modI (shiftRI keyStream 128) (2i ^i 128i) in
+    --Mask that clamps r, sets to 0 the 4 hightest bits from bytes 3,7,11,15 and the 2 lowest bits from bytes 4,8,12
+    let mask = 340282347905251000583034798271797133071i in
+    --Clamp r
+    let r = landI r mask in
+    (r, s)
+
+_accumulatePoly1305 : Integer -> Integer -> Integer -> Integer -> Integer
+_accumulatePoly1305 r p ciphertext acc =
+    if ciphertext ==i 0i then
+        acc
+    else
+        --Get the lowest 16 bytes (128 bits)
+        let block = modI ciphertext (2i ^i 128i) in
+        --Shift ciphertext to the right by 128 bits
+        let ciphertext = shiftRI ciphertext 128 in
+        --Add 1 bit to block
+        let block = block +i (2i ^i 128i) in
+        --Add to accumulator and multiply by r
+        let acc = modI ((acc +i block) *i r) p in
+        _accumulatePoly1305 r p ciphertext acc
+
+_generatePoly1305Tag : Integer -> Key -> Nonce -> Integer
+_generatePoly1305Tag ciphertext key nonce =
+    --Get the Poly1305 key
+    let (r, s) = _generatePoly1305Key key nonce in
+    --Calculate modulu P
+    let p = (2i ^i 130i) -i 5i in
+    --Accumulate the ciphertext
+    let acc = _accumulatePoly1305 r p ciphertext 0i in
+    --Add s to accumulator
+    let acc = acc +i s in
+    --Return 16 byte (128 bit) tag
+    modI acc (2i ^i 128i)
+    
+--Finds value's bit size in multiples of 512 (32*16)
 _calculateSize : Integer -> Int
 _calculateSize value =
     if value ==i 0i then
@@ -153,37 +202,46 @@ _calculateSize value =
     else
         (_calculateSize (shiftRI value 512)) + 1
 
-_ChaCha20 : Integer -> Key -> ChaChaPolyState -> (Integer, ChaChaPolyState)
-_ChaCha20 value key (ChaChaPolyState rng) =
-    --Calculate size
-    let size = _calculateSize value in
+--Separates ciphertext and tag
+_separateChipherTag : Integer -> Int -> (Integer, Integer)
+_separateChipherTag value size =
+    let tag = shiftRI value (512 * size) in
+    let ciphertext = modI value (2i ^i (intToInteger(512 * size))) in
+    (ciphertext, tag)
+
+chaCha20Poly1305 : CryptMode -> ChaChaPolyState -> NextCrypt
+
+chaCha20Poly1305 Encrypt (ChaChaPolyState rng) msg key =
+    --Calculate msg size
+    let size = _calculateSize msg in
     --Obtain nonce and new RNG state
     let (nonce, rng) = _newNonce rng in
-    --Obtain keyStream
-    let (keyStream, chaChaState) = _generateKeyStream key (ChachaState (nonce, 0)) size in
-    --Encrypt/Decrypt and return value
-    let newValue = lxorI value (_getKeyStream keyStream) in
-    (newValue, ChaChaPolyState rng)
-
-encryptDecryptWithChaCha20 : CryptMode -> ChaChaPolyState -> NextCrypt
-
-encryptDecryptWithChaCha20 Encrypt chaChaPolyState msg key =
     --Encrypt
-    let (cypher, chaChaPolyState) = _ChaCha20 msg key chaChaPolyState in
+    let ciphertext = _ChaCha20 msg key nonce size in
     --Genrate Poly1305 tag
+    let tag = _generatePoly1305Tag ciphertext key nonce in
+    --Attach tag to ciphertext
+    let ciphertextAndMac = lorI ciphertext (shiftLI tag (512 * size)) in
+    --Return ciphertext+mac and next iterations
+    let chaChaPolyState = ChaChaPolyState rng in
+    (ciphertextAndMac, chaCha20Poly1305 Encrypt chaChaPolyState, chaCha20Poly1305 Decrypt chaChaPolyState)
 
-    --Attach tag to cypher
-
-    (cypher, encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState)
-
-encryptDecryptWithChaCha20 Decrypt chaChaPolyState cypher key =
-    --Separetate tag from cypher
-    
+chaCha20Poly1305 Decrypt (ChaChaPolyState rng) value key =
+    --Calculate ciphertext size
+    let size = (_calculateSize value) - 1 in
+    --Separetate tag from ciphertext
+    let (ciphertext, tag) = _separateChipherTag value size in
+    --Obtain nonce and new RNG state
+    let (nonce, rng) = _newNonce rng in
     --Check tag
-    
-    --Decrypt
-    let (msg, chaChaPolyState) = _ChaCha20 cypher key chaChaPolyState in
-    (msg, encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState)
+    if tag ==i _generatePoly1305Tag ciphertext key nonce then
+        --Decrypt
+        let msg = _ChaCha20 ciphertext key nonce size in
+        --Return decrypted message and next iterations
+        let chaChaPolyState = ChaChaPolyState rng in
+        (msg, chaCha20Poly1305 Encrypt chaChaPolyState, chaCha20Poly1305 Decrypt chaChaPolyState)
+    else
+        error @(Integer, NextEncrypt, NextDecrypt) "ChaCha20Poly1305: Invalid tag."
 
 newChaChaPolyA: forall a . NewChaChaPolyExchange ; a -> ((NextEncrypt, NextDecrypt), a)
 newChaChaPolyA c =
@@ -191,11 +249,11 @@ newChaChaPolyA c =
     let seed = getRngSeed rng in
     let c = send seed c in
     let chaChaPolyState = ChaChaPolyState rng in
-    ((encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState), c)
+    ((chaCha20Poly1305 Encrypt chaChaPolyState, chaCha20Poly1305 Decrypt chaChaPolyState), c)
 
 newChaChaPolyB: forall a . dualof NewChaChaPolyExchange ; a -> ((NextEncrypt, NextDecrypt), a)
 newChaChaPolyB c =
     let (seed, c) = receive c in
     let rng = newRNGStateSetSeed seed in
     let chaChaPolyState = ChaChaPolyState rng in
-    ((encryptDecryptWithChaCha20 Encrypt chaChaPolyState, encryptDecryptWithChaCha20 Decrypt chaChaPolyState), c)
+    ((chaCha20Poly1305 Encrypt chaChaPolyState, chaCha20Poly1305 Decrypt chaChaPolyState), c)
