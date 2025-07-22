@@ -31,7 +31,6 @@ import           Elaboration.Duality ( dualof )
 import           Util.Error          ( internalError )
 
 import qualified Data.Map.Strict as Map
-import           Debug.Trace (trace)
 
 
 -- [t/a]u, substitute t for for every occurrence of a in u
@@ -73,15 +72,11 @@ instance (Subs t) => Subs (Bind k t) where
   subs t a (Bind p b k u) = Bind p b k (subs t a u)
 
 instance Subs T.Level where
-  -- Level variables
   subsLevel l a (T.LVar x)
-    -- | (extern x) == (extern a) = trace (extern x ++ " " ++ show l) l
-    | (extern x) == (extern a) = l
+    | x == a = l
     | otherwise = T.LVar x
-  -- Level addition and parentheses
   subsLevel l a (T.LAdd l1 l2) = T.LAdd (subsLevel l a l1) (subsLevel l a l2)
   subsLevel l a (T.LParens l1) = T.LParens (subsLevel l a l1)
-  -- Other levels remain unchanged
   subsLevel _ _ l = l
 
 subsLevelInType :: T.Level -> Variable -> T.Type -> T.Type
@@ -90,6 +85,10 @@ subsLevelInType l a t@(T.Arrow s m l1 l2 t1 t2) = T.Arrow s m (subsLevel l a l1)
 subsLevelInType l a (T.Labelled s k l' m) = T.Labelled s k (subsLevel l a l') (Map.map (subsLevelInType l a) m)
 -- Session types
 subsLevelInType l a (T.End s p l') = T.End s p (subsLevel l a l')
+subsLevelInType l a (T.Semi s t1 t2@(T.Rec _ _)) = do
+  case t1 of
+    T.Skip _ -> T.Semi s (subsLevelInType l a t1) (subsLevelInType l a t2)
+    _ -> T.Semi s (subsLevelInType l a t1) t2
 subsLevelInType l a (T.Semi s t1 t2) = T.Semi s (subsLevelInType l a t1) (subsLevelInType l a t2)
 subsLevelInType l a (T.Message s l' p t1) = T.Message s (subsLevel l a l') p (subsLevelInType l a t1)
 -- Polymorphism and recursion
@@ -107,6 +106,14 @@ subsLevelInBindWithRange l a (Bind p b (l1, l2) u) = Bind p b (subsLevel l a l1,
 
 subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
 subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)
+
+-- subsLevelInRange :: T.Level -> Variable -> T.Level -> T.Level
+-- subsLevelInRange l a (T.LVar x)
+--   | extern x == extern a = l
+--   | otherwise = T.LVar x
+-- subsLevelInRange l a (T.LAdd l1 l2) = T.LAdd (subsLevelInRange l a l1) (subsLevelInRange l a l2)
+-- subsLevelInRange l a (T.LParens l1) = T.LParens (subsLevelInRange l a l1)
+-- subsLevelInRange _ _ l = l
 
 -- [t/co-a]u, substitute t for for every occurrence of covariable a in u
 

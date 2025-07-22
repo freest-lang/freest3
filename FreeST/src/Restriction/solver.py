@@ -72,8 +72,25 @@ def check_inequalities(inequalities, file_path):
         ForAll([Const('x', Levels)], bot < value(Const('x', Levels))),
         ForAll([Const('x', Levels)], value(Const('x', Levels)) < top),
         bot < top
+        # value(Const("a", Levels)) == 1,
+        # value(Const("a", Levels)) == 2,
+        # value(Const("b", Levels)) == 1,
+        # value(Const("b", Levels)) == 2
     ]
     solver.add(*truths)
+
+    # solver.assert_and_track(value(Const("a", Levels)) == 1, "a_eq_1")
+    # constraint_map["a_eq_1"] = {"span": "default", "l1": "a", "l2": 1, "constraint": value(Const("a", Levels)) == 1}
+    # c1 = And(value(Const("a", Levels)) == 1, value(Const("a", Levels)) == 2)
+    # solver.assert_and_track(c1, "a_eq_2")
+    # constraint_map["a_eq_2"] = {"span": "default", "l1": "a", "l2": 2, "constraint": c1}
+    # c2 = And(value(Const("b", Levels)) == 1, value(Const("b", Levels)) == 2)
+    # solver.assert_and_track(c2, "b_eq_1")
+    # constraint_map["b_eq_1"] = {"span": "default", "l1": "b", "l2": 1, "constraint": c2}
+    # solver.assert_and_track(value(Const("b", Levels)) == 2, "b_eq_2")
+    # constraint_map["b_eq_2"] = {"span": "default", "l1": "b", "l2": 2, "constraint": value(Const("b", Levels)) == 2}
+
+    # solver.add(value("a") == 1)
 
     for i, ineq in enumerate(inequalities):
         span = ineq["span"]
@@ -83,7 +100,9 @@ def check_inequalities(inequalities, file_path):
         # constraint = add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, constraint_id)
         constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint}
+        # print(constraint)
 
+    # print(solver)
     unsat_constraints = []
     if solver.check() == sat:
         return []
@@ -105,11 +124,16 @@ def check_inequalities(inequalities, file_path):
                 constraint_map.pop(constraint_id)
                 solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
 
+        # print(unsat_constraints)
         return unsat_constraints
 
 def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
     new_solver = Solver()
     new_solver.add(*truths)
+    # new_solver.assert_and_track(value(Const("a", Levels)) == 1, "a_eq_1")
+    # new_solver.assert_and_track(value(Const("a", Levels)) == 2, "a_eq_2")
+    # new_solver.assert_and_track(value(Const("b", Levels)) == 1, "b_eq_1")
+    # new_solver.assert_and_track(value(Const("b", Levels)) == 2, "b_eq_2")
     for id, constraint in constraint_map.items():
         if id != constraint_to_remove: 
             new_solver.assert_and_track(constraint["constraint"], id)

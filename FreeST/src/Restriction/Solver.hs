@@ -177,5 +177,5 @@ solveInequalities ineqs = do
     modulePath <- getRestrictionModulePath
     runPythonFile solverPath ineqPath modulePath
     ineqs <- readInequalitiesFromFile
-    removeFile ineqPath
+    -- removeFile ineqPath
     return ineqs

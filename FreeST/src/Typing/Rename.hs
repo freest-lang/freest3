@@ -95,24 +95,27 @@ instance Rename te => Rename (Bind K.Kind te) where
 instance Rename (Bind T.LevelRange E.Exp) where
   rename σ τ ρ (Bind p a r e) = do
     a' <- rename σ τ ρ a
+    r' <- rename σ τ ρ r
     e' <- rename σ τ (Map.insert a a' ρ) e
-    return $ Bind p a' r e'
+    return $ Bind p a' r' e'
 
 instance Rename (Bind T.LevelRange T.Type) where
   rename σ τ ρ (Bind p a r t) = do
     a' <- rename σ τ ρ a
+    r' <- rename σ τ ρ r
     t' <- rename σ τ (Map.insert a a' ρ) t
-    return $ Bind p a' r t'
+    return $ Bind p a' r' t'
 
 -- Renaming types
 
 instance Rename T.Type where
   -- Functional types
-  rename σ τ ρ (T.Arrow p m l1 l2 t u) = T.Arrow p m l1 l2 <$> rename σ τ ρ t <*> rename σ τ ρ u
-  rename σ τ ρ (T.Labelled p s l m) = T.Labelled p s l <$> tMapM (rename σ τ ρ) m
+  rename σ τ ρ (T.Arrow p m l1 l2 t u) = T.Arrow p m <$> rename σ τ ρ l1 <*> rename σ τ ρ l2 <*> rename σ τ ρ t <*> rename σ τ ρ u
+  rename σ τ ρ (T.Labelled p s l m) = T.Labelled p s <$> rename σ τ ρ l <*> tMapM (rename σ τ ρ) m
   -- Session types
   rename σ τ ρ (T.Semi p t u) = T.Semi p <$> rename σ τ ρ t <*> rename σ τ ρ u
-  rename σ τ ρ (T.Message p l pol t) = T.Message p l pol <$> rename σ τ ρ t
+  rename σ τ ρ (T.Message p l pol t) = T.Message p <$> rename σ τ ρ l <*> pure pol <*> rename σ τ ρ t
+  rename σ τ ρ (T.End p pol l) = T.End p pol <$> rename σ τ ρ l
   -- Polymorphism and recursive types
   rename σ τ ρ (T.Forall p b) = T.Forall p <$> rename σ τ ρ b
   rename σ τ ρ (T.PForall p b) = T.PForall p <$> rename σ τ ρ b
@@ -169,8 +172,8 @@ instance Rename E.Exp where
   rename σ τ ρ (E.LevelAbs p b) = E.LevelAbs p <$> rename σ τ ρ b
   rename σ τ ρ (E.LevelApp p e l) = do
     e' <- rename σ τ ρ e
-    -- l' <- rename σ τ ρ l
-    return $ E.LevelApp p e' l --l'
+    l' <- rename σ τ ρ l
+    return $ E.LevelApp p e' l'
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ _ e = return e
 
@@ -199,6 +202,11 @@ instance Rename T.Level where
   rename σ τ ρ (T.LParens l) = T.LParens <$> rename σ τ ρ l
   rename _ _ _ l = return l
 
+instance Rename T.LevelRange where
+  rename σ τ ρ (l1, l2) = do
+    l1' <- rename σ τ ρ l1
+    l2' <- rename σ τ ρ l2
+    return (l1', l2')
 
 renameLevel :: T.Level -> T.Level
 renameLevel = head . renameLevels . (: [])

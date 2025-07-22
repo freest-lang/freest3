@@ -24,6 +24,7 @@ type Warnings = [WarningType]
 type Errors = [ErrorType]
 type Inequalities = Set.Set (Span, R.Inequality)
 type ContextSet = Set.Set T.Level
+type LevelVarCounterMap = Map.Map String Int
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -41,6 +42,7 @@ data FreestS a = FreestS
   , levelVarCounter :: Int
   , firstInContext' :: T.Level
   , latestInContext :: T.Level
+  , polyLevelVars :: LevelVarCounterMap
   }
 
 type family XExtra a
@@ -68,6 +70,7 @@ initial ext = FreestS {
   , levelVarCounter = 1000
   , firstInContext' = T.Top
   , latestInContext = T.Top
+  , polyLevelVars = Map.empty
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -91,6 +94,7 @@ initialS = FreestS {
   , levelVarCounter = 0
   , firstInContext' = T.Top
   , latestInContext = T.Top
+  , polyLevelVars = Map.empty
   }
 
 -- | AST
@@ -612,6 +616,15 @@ getTypeLevel t = do
     T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t) m
     T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t) m
     _                          -> return (R.level t)
+
+addLevelVar :: S.MonadState (FreestS a) m => String -> m Int
+addLevelVar name = do
+  m <- S.gets polyLevelVars
+  let val = case Map.lookup name m of
+                 Nothing -> 1
+                 Just v  -> v + 1
+  S.modify (\s -> s { polyLevelVars = Map.insert name val m })
+  return val
 
 -- typeMapLevel :: Span -> T.TypeMap -> T.Level
 -- typeMapLevel span tm

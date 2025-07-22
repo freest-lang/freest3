@@ -299,7 +299,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   --   _ -> return $ level u2
 
   lu2 <- getTypeLevel u2
-  customTrace e (show l1)
+  -- customTrace e (show l1)
 
   addInequality (getSpan t) (l1, lu2)
   
@@ -374,8 +374,9 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
 synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
+  -- customTrace e2 ("E1:" ++ show u1)
   newContext'
-  l2 <- leveledCheckAgainst kEnv e2 u1
+  l2 <- leveledCheckAgainst kEnv e2 u1 --u1(from arrow) is replaced, e2 is not
   -- l <- getContext
   ls <- getContext'
   popContext'
@@ -503,13 +504,24 @@ synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
   -- customTrace e (show l ++ " " ++ show t)
   t' <- Extract.forall e t
+  -- customTrace e ("------>" ++show t)
   case t' of
     T.PForall p (Bind _ y r u) -> do
       -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
-      let t' = Rename.subsLevel l y u
-      customTrace e (show t' ++ " ||| " ++ show u)
-      return (t', T.Bottom)
+      -- customTrace e (show y ++ " ||| " ++ show l)
+      -- customTrace e ("-------" ++ extern y ++ intern y ++ "-------")
+      -- l' <- case l of
+      --   T.LVar (Variable s x i) -> do
+      --     n <- addLevelVar x
+      --     return $ T.LVar (Variable s (x ++ "_" ++ show n) i)
+      --   _ -> return l
+      -- let t' = Rename.subsLevel l' y u
+      -- customTrace e (show l ++ " " ++ extern y ++ " ||| " ++ show u)
+      let t'' = Rename.subsLevel l y u
+      -- customTrace e (show t'')
+      -- customTrace e (show t' ++ " ||| " ++ show u ++ "  " ++ intern y)
+      return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
 customTrace :: E.Exp -> String -> TypingState ()
@@ -635,7 +647,7 @@ leveledCheckAgainst kEnv e t = do
       return l3 
     _ -> do 
       (t1, l1) <- synthetise kEnv e
-      customTrace e ("HERE-> " ++ show t ++ " == " ++ show t1 ++ "///" ++ show l1)
+      -- customTrace e ("HERE-> " ++ show t ++ " == " ++ show t1 ++ "///" ++ show l1)
       compareTypes e t t1
       return l1
 

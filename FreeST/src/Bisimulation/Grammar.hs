@@ -66,7 +66,7 @@ data Label = FatTerm String
            | Pair2
            | Forall String K.Kind 
            | Var String    
-           | PForall String T.LevelRange
+           | PForall String
   deriving (Eq, Ord)
 
 {-
@@ -147,7 +147,7 @@ instance Show Label where
   show Pair2 = "π2" 
   show (Forall a k) = "∀"++a++":"++show k
   show (Var a) = a
-  show (PForall a r) = "∀"++a++":"++show r
+  show (PForall a) = "∀"++a
 
 instance Show Grammar where
   show (Grammar xss p) =

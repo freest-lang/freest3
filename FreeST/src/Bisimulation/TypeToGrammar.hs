@@ -60,14 +60,14 @@ toGrammar' (T.Arrow _ m _ _ t u) = do
   ys <- toGrammar u
   getLHS $ Map.fromList $
     [(ArrowD, xs), (ArrowR, ys)] ++ [(Arrow1, []) | m == Lin]
-toGrammar' (T.Labelled _  s l m) = do -- Can't test this type directly
+toGrammar' (T.Labelled _  s _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.insert (Labelled s) [bottom] $ Map.mapKeys (Label s . intern) ms
 -- Session Types
 toGrammar' (T.Skip _)        = return []
 toGrammar' (T.End _ p _)       = getLHS $ Map.singleton (End p) [bottom]
 toGrammar' (T.Semi _ t u)    = liftM2 (++) (toGrammar t) (toGrammar u)
-toGrammar' (T.Message _ l p t) = do
+toGrammar' (T.Message _ _ p t) = do
   xs <- toGrammar t
   getLHS $ Map.fromList [(MessageP p, xs ++ [bottom]), (MessageC p, [])]
 -- Polymorphism and recursive types
@@ -82,7 +82,7 @@ toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' (T.PForall _ (Bind _ a r t)) = do
   xs <- toGrammar t
-  getLHS $  Map.singleton (PForall (intern a) r) xs
+  getLHS $  Map.singleton (PForall (intern a)) xs
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 -- Fat terminal types can be compared for syntactic equality
