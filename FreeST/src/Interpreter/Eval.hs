@@ -25,7 +25,6 @@ import           System.IO.Unsafe ( unsafePerformIO )
 import           System.IO ( hFlush, stdout, stderr )
 import Control.Monad (foldM)
 import Syntax.Value (isVal)
--- import Debug.Trace (trace)
 
 ------------------------------------------------------------
 -- EVALUATION

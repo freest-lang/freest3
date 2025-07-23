@@ -70,6 +70,8 @@ typeCheck = do
     defs <- getDefs
     sigs <- getSignatures
     setSignatures $ Map.filterWithKey (\k _ -> Map.notMember k defs) sigs
+    -- *Register the starting position of each function (for polymorphic deadlock-freedom)
+    registerFunctionPositions defs
     -- * Check definitions in evaluation order
     mapM_ (checkDefs sigs) =<< getEvalOrder
     -- * Check the main function
@@ -168,9 +170,9 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   ls <- getContext'
   popContext'
   -- addInequality (getSpan t1) (l1, l3)
-  addInequalities (getSpan t1) l1 ls
+  addInequalities (getSpan e1) l1 ls
   -- return (t2, maxLevel l1 l2)
-  upperBound <- maxLevel' (getSpan t1) [l1,l2]
+  upperBound <- maxLevel' (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -183,7 +185,6 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   setFirstInContext l1' 
 
   -- lic_ <- getLatestInContext
-  -- customTrace e' (show lic_)
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
@@ -218,20 +219,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   -- fic <- popFirstInContext
 
 
-  -- customTrace e' (show t1 ++ " // " ++ show (level t1))
-  -- customTrace e' (show t1 ++ " // " ++ show l1')
-  -- customTrace e (show t2 ++ " // " ++ show (level t2))
-  -- customTrace e (show l1')
-  -- customTrace e' ("l1 " ++ show l1' ++ " " ++ show t1)
-  -- customTrace e ("l2 " ++ show l2' ++  " " ++ show t2)
-  -- customTrace e ("------->CONTEXT " ++ show l2c)
-  -- customTrace e ("arrow l2 " ++ show l2)
-  -- customTrace e ("global context " ++ show gc)
-  -- customTrace e ("first in context " ++ show fic)
-  -- customTrace e ("--------------------")
-  -- customTrace e ("lc " ++ show l2')
   -- l <- minLevel' (getSpan t1) ([l1'] ++ (Set.toList l2')) --need to change this
-  -- customTrace e ("l " ++ show l)
   -- let l = minLevel l1' l2'
   -- let l = case Set.toList l2c of
   --           [] -> T.Top
@@ -245,9 +233,6 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
 
   clearLatestInContext
 
-  -- customTrace e' (show t1)
-  -- customTrace e (show lic)
-  -- customTrace e ("-----------------------")
   -- return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
   let m = if lic == T.Top
           then l2
@@ -291,17 +276,14 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   --   _ -> return $ level u1
 
   lu1 <- getTypeLevel u1
-
-  addInequality (getSpan t) (l1, lu1)
+  addInequality (getSpan e) (l1, lu1)
   -- lu2 <- case u2 of
   --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
   --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
   --   _ -> return $ level u2
 
   lu2 <- getTypeLevel u2
-  -- customTrace e (show l1)
-
-  addInequality (getSpan t) (l1, lu2)
+  addInequality (getSpan e) (l1, lu2)
   
   -- case u1 of
   --   T.Labelled _ T.Record _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u1) m)
@@ -337,14 +319,14 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   --   _ -> return $ level u1
 
   lu1 <- getTypeLevel u1  
-  addInequality (getSpan t) (l1, lu1)
+  addInequality (getSpan e1) (l1, lu1)
   -- lu2 <- case u2 of
   --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
   --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
   --   _ -> return $ level u2
 
   lu2 <- getTypeLevel u2  
-  addInequality (getSpan t) (l1, lu2)
+  addInequality (getSpan e1) (l1, lu2)
 
 
   -- addInequality (getSpan t) (l1, level u1)
@@ -367,14 +349,13 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   (t, l) <- synthetise kEnv e
   l1 <- Extract.leveledEnd e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
-  addInequality (getSpan t) (l, l1)
+  addInequality (getSpan e) (l, l1)
   updateContext' l1
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
-  -- customTrace e2 ("E1:" ++ show u1)
   newContext'
   l2 <- leveledCheckAgainst kEnv e2 u1 --u1(from arrow) is replaced, e2 is not
   -- l <- getContext
@@ -485,9 +466,11 @@ synthetise kEnv (E.Case p e fm) = do
                                  (return ([], [])) fm'
   -- l2 <- getGlobalContext
   ls <- getGlobalContext'
-  popContext'
+  case Map.toList fm' of
+    [(mkFalse, _), (mkTrue, _)] -> return ()
+    _ -> popContext'
+  -- popContext'
   resetGlobalContext' --technically unnecessary but it's cleaner to keep it empty
-  -- customTrace e (show l1 ++ " " ++ show l2)
   -- addInequality (getSpan t1) (l1, l2)
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
@@ -502,14 +485,25 @@ synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
 -- Priority application
 synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
-  -- customTrace e (show l ++ " " ++ show t)
   t' <- Extract.forall e t
-  -- customTrace e ("------>" ++show t)
   case t' of
     T.PForall p (Bind _ y r u) -> do
       -- customTrace e (show r ++ " " ++ show l)
       unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
-      -- customTrace e (show y ++ " ||| " ++ show l)
+      -- customTrace e (takeWhile (/= ' ') (show e))
+      -- customTrace e (show $ getSpan y)
+
+      --check if it's new func call or not 
+      let f = takeWhile (/= ' ') (show e)
+      if (f == (show e)) 
+        then do
+          n <- addFunctionCall f
+          duplicateConstraintsInFunc f n
+          -- addEquality (will imply using mkVar with n)
+        else do
+          n <- getFunctionCallsOf f
+          -- addEquality (will imply using mkVar with n)
+          return ()
       -- customTrace e ("-------" ++ extern y ++ intern y ++ "-------")
       -- l' <- case l of
       --   T.LVar (Variable s x i) -> do
@@ -519,8 +513,6 @@ synthetise kEnv (E.LevelApp _ e l) = do
       -- let t' = Rename.subsLevel l' y u
       -- customTrace e (show l ++ " " ++ extern y ++ " ||| " ++ show u)
       let t'' = Rename.subsLevel l y u
-      -- customTrace e (show t'')
-      -- customTrace e (show t' ++ " ||| " ++ show u ++ "  " ++ intern y)
       return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
@@ -647,7 +639,6 @@ leveledCheckAgainst kEnv e t = do
       return l3 
     _ -> do 
       (t1, l1) <- synthetise kEnv e
-      -- customTrace e ("HERE-> " ++ show t ++ " == " ++ show t1 ++ "///" ++ show l1)
       compareTypes e t t1
       return l1
 

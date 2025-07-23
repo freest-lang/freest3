@@ -54,11 +54,7 @@ instance Equiv T.Type where
   -- equiv v (T.Message _ l1 p1 t1) (T.Message _ l2 p2 t2) = p1 == p2 && l1 == l2 && equiv v t1 t2
   equiv v (T.Forall _ b1) (T.Forall _ b2) = equiv v b1 b2
   -- equiv v (T.Rec _ b1) (T.Rec _ b2) = equiv v b1 b2
-  equiv v (T.Rec p1 b1@(Bind _ _ _ t1)) (T.Rec p2 b2@(Bind _ _ _ t2)) = do
-    let bool = equiv v b1 b2
-    if bool
-      then bool
-      else trace ("TYPE 1: " ++ show t1 ++ " |||| TYPE 2: " ++ show t2 ++ " |||| T1 == T2: " ++ show (equiv v b1 b2) ++ " " ++ show p1 ++ " " ++ show p2) bool
+  equiv v (T.Rec p1 b1@(Bind _ _ _ t1)) (T.Rec p2 b2@(Bind _ _ _ t2)) = equiv v b1 b2
   equiv v (T.Var _ x1) (T.Var _ x2) =
     x1 == x2 ||                -- free variables
     Just x2 == Map.lookup x1 v -- bound variables

@@ -12,7 +12,7 @@ import           Util.Warning
 import qualified Restriction.Restriction as R
 
 import qualified Control.Monad.State as S
-import           Data.List ( intercalate, nub )
+import           Data.List ( intercalate, nub, sortOn )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Data.Maybe
@@ -24,7 +24,7 @@ type Warnings = [WarningType]
 type Errors = [ErrorType]
 type Inequalities = Set.Set (Span, R.Inequality)
 type ContextSet = Set.Set T.Level
-type LevelVarCounterMap = Map.Map String Int
+type FunctionCallNum = Map.Map String Int
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -42,7 +42,8 @@ data FreestS a = FreestS
   , levelVarCounter :: Int
   , firstInContext' :: T.Level
   , latestInContext :: T.Level
-  , polyLevelVars :: LevelVarCounterMap
+  , functionCalls :: FunctionCallNum
+  , functionPositions :: Map.Map String (Int, Int)
   }
 
 type family XExtra a
@@ -70,7 +71,8 @@ initial ext = FreestS {
   , levelVarCounter = 1000
   , firstInContext' = T.Top
   , latestInContext = T.Top
-  , polyLevelVars = Map.empty
+  , functionCalls = Map.empty
+  , functionPositions = Map.empty
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -94,7 +96,8 @@ initialS = FreestS {
   , levelVarCounter = 0
   , firstInContext' = T.Top
   , latestInContext = T.Top
-  , polyLevelVars = Map.empty
+  , functionCalls = Map.empty
+  , functionPositions = Map.empty
   }
 
 -- | AST
@@ -617,17 +620,79 @@ getTypeLevel t = do
     T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t) m
     _                          -> return (R.level t)
 
-addLevelVar :: S.MonadState (FreestS a) m => String -> m Int
-addLevelVar name = do
-  m <- S.gets polyLevelVars
+addFunctionCall :: S.MonadState (FreestS a) m => String -> m Int
+addFunctionCall name = do
+  m <- S.gets functionCalls
   let val = case Map.lookup name m of
-                 Nothing -> 1
+                 Nothing -> 0
                  Just v  -> v + 1
-  S.modify (\s -> s { polyLevelVars = Map.insert name val m })
+  S.modify (\s -> s { functionCalls = Map.insert name val m })
   return val
+
+getFunctionCallsOf :: S.MonadState (FreestS a) m => String -> m Int
+getFunctionCallsOf name = do
+  m <- S.gets functionCalls
+  return $ Map.findWithDefault 0 name m
 
 -- typeMapLevel :: Span -> T.TypeMap -> T.Level
 -- typeMapLevel span tm
 --   | Map.null tm = T.Top
 --   | otherwise = 
-  
+
+registerFunctionPositions :: S.MonadState (FreestS a) m => Definitions a -> m ()
+registerFunctionPositions defs = do
+  S.forM_ (Map.toList defs) $ \(k, v) -> do
+    let span = getSpan k
+    let (startingPos, _) = startPos span
+    S.when (moduleName span /= "Prelude" && moduleName span /= "<default>") $ do
+      S.modify (\s -> s { functionPositions = Map.insert (extern k) (startingPos, -1) (functionPositions s) })
+  orderFunctionPositions
+
+getFunctionPositions :: S.MonadState (FreestS a) m => m (Map.Map String (Int, Int))
+getFunctionPositions = S.gets functionPositions
+
+orderFunctionPositions :: S.MonadState (FreestS a) m => m ()
+orderFunctionPositions = do
+  m <- S.gets functionPositions
+  let xs = sortOn (\(_, (start, _)) -> start) (Map.toList m)
+      go [] = []
+      go [(name, (start, _))] = [(name, (start, -1))]
+      go ((name, (start, _)) : rest@((_, (nextStart, _)):_)) =
+        (name, (start, nextStart - 1)) : go rest
+      newMap = Map.fromList (go xs)
+  S.modify (\s -> s { functionPositions = newMap })
+
+isInFunction :: S.MonadState (FreestS a) m => String -> Span -> m Bool
+isInFunction name span = do
+  m <- getFunctionPositions
+  return $ case Map.lookup name m of
+    Just (start, end) -> do
+      let (pos, _) = startPos span
+      pos > start && lesserThan pos end
+    Nothing           -> False
+    where
+      lesserThan n1 n2 = n2 == -1 || n1 < n2
+
+duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
+duplicateConstraintsInFunc func ver = do
+  if ver > 0
+    then do
+      ineqs <- getInequalities
+      S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+        inFunc <- isInFunction func p
+        if inFunc
+          then do
+            l1' <- replaceLVar l1 ver
+            l2' <- replaceLVar l2 ver
+            addInequality p (l1', l2')
+          else return ()
+    else return ()
+  where replaceLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "_" ++ show i))
+        replaceLVar l@(T.LNum n) _ = return l
+        replaceLVar (T.LParens l) i = replaceLVar l i
+        replaceLVar (T.LAdd l1 l2) i = do
+          l1' <- replaceLVar l1 i
+          l2' <- replaceLVar l2 i
+          return (T.LAdd l1' l2')
+        replaceLVar l@(T.Top) _ = return l
+        replaceLVar l@(T.Bottom) _ = return l

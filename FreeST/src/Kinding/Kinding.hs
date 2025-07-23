@@ -39,8 +39,6 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-import           Debug.Trace (trace)
-
 -- synthetise :: MonadState FreestS m => K.KindEnv -> T.Type -> m K.Kind
 synthetise :: MonadState (FreestS a) m => K.KindEnv -> T.Type -> m (K.Kind, T.Level)
 synthetise kenv = synthetise' (Map.keysSet kenv) kenv
