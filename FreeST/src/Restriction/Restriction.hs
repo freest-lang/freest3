@@ -3,11 +3,12 @@
 
 module Restriction.Restriction
     ( Inequality
+    , Equality
     , Leveled(..)
     -- , minLevel
     -- , maxLevel
     , equalLevels
-    , checkLevelRange
+    -- , checkLevelRange
     )
 where
 
@@ -19,6 +20,7 @@ import qualified Data.Set as Set
 import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
+type Equality = (T.Level, T.Level)
 
 class Leveled a where
     level :: a -> T.Level
@@ -85,44 +87,44 @@ isTypeMapLevelEqual m1 m2 =
     Map.keysSet m1 == Map.keysSet m2 &&
     and [equalLevels t1 t2 | (k, t1) <- Map.toList m1, let t2 = m2 Map.! k]
 
-checkLevelRange :: T.Level -> T.LevelRange -> Bool
-checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 
+-- checkLevelRange :: T.Level -> T.LevelRange -> Bool
+-- checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 
 
---read as l1 > l2
-levelGT :: T.Level -> T.Level -> Bool
-levelGT l1 l2 =
-  case (evalLevel l1, evalLevel l2) of
-    (Just n1, Just n2) -> n1 > n2
-    _ ->
-      case (l1, l2) of
-        (T.Top, _) -> True
-        (_, T.Top) -> False
-        (_, T.Bottom) -> True
-        (T.Bottom, _) -> False
-        (T.LParens x, y) -> levelGT x y
-        (x, T.LParens y) -> levelGT x y
-        _ -> False
+-- --read as l1 > l2
+-- levelGT :: T.Level -> T.Level -> Bool
+-- levelGT l1 l2 =
+--   case (evalLevel l1, evalLevel l2) of
+--     (Just n1, Just n2) -> n1 > n2
+--     _ ->
+--       case (l1, l2) of
+--         (T.Top, _) -> True
+--         (_, T.Top) -> False
+--         (_, T.Bottom) -> True
+--         (T.Bottom, _) -> False
+--         (T.LParens x, y) -> levelGT x y
+--         (x, T.LParens y) -> levelGT x y
+--         _ -> False
 
---read as l1 < l2
-levelLT :: T.Level -> T.Level -> Bool
-levelLT l1 l2 =
-  case (evalLevel l1, evalLevel l2) of
-    (Just n1, Just n2) -> n1 < n2
-    _ ->
-      case (l1, l2) of
-        (T.Bottom, _) -> True
-        (_, T.Bottom) -> False
-        (_, T.Top) -> True
-        (T.Top, _) -> False
-        (T.LParens x, y) -> levelLT x y
-        (x, T.LParens y) -> levelLT x y
-        _ -> False
+-- --read as l1 < l2
+-- levelLT :: T.Level -> T.Level -> Bool
+-- levelLT l1 l2 =
+--   case (evalLevel l1, evalLevel l2) of
+--     (Just n1, Just n2) -> n1 < n2
+--     _ ->
+--       case (l1, l2) of
+--         (T.Bottom, _) -> True
+--         (_, T.Bottom) -> False
+--         (_, T.Top) -> True
+--         (T.Top, _) -> False
+--         (T.LParens x, y) -> levelLT x y
+--         (x, T.LParens y) -> levelLT x y
+--         _ -> False
 
-evalLevel :: T.Level -> Maybe Int
-evalLevel (T.LNum n) = Just n
-evalLevel (T.LAdd l1 l2) = (+) <$> evalLevel l1 <*> evalLevel l2
-evalLevel (T.LParens l) = evalLevel l
-evalLevel _ = Nothing
+-- evalLevel :: T.Level -> Maybe Int
+-- evalLevel (T.LNum n) = Just n
+-- evalLevel (T.LAdd l1 l2) = (+) <$> evalLevel l1 <*> evalLevel l2
+-- evalLevel (T.LParens l) = evalLevel l
+-- evalLevel _ = Nothing
 
 
 -- minLevel :: T.Level -> T.Level -> T.Level

@@ -166,12 +166,9 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  -- l3 <- getContext
   ls <- getContext'
   popContext'
-  -- addInequality (getSpan t1) (l1, l3)
   addInequalities (getSpan e1) l1 ls
-  -- return (t2, maxLevel l1 l2)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
@@ -183,61 +180,19 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
   setFirstInContext l1' 
-
-  -- lic_ <- getLatestInContext
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
-  -- case t1 of
-  --   T.Labelled _ T.Record _ m -> trace ("TYPEMAP " ++ show m) $ return ()
-  --   T.Labelled _ T.Variant _ m -> trace ("TYPEMAP " ++ show m) $ return ()
-  --   _ -> trace "" $ return ()
-  -- case t2 of
-  --   T.Labelled _ T.Record _ m -> trace ("TYPEMAP " ++ show m) $ return ()
-  --   T.Labelled _ T.Variant _ m -> trace ("TYPEMAP " ++ show m) $ return ()
-  --   _ -> trace "" $ return ()
-  -- let l1 = minLevel (level t1) (level t2) in
-  --   return (T.Arrow p mult l1 l2 t1 t2, T.Bottom)
-
-  -- l1' <- getTypeLevel t1
   l2' <- getTypeLevel t2
-
-  -- l1' <- case t1 of
-  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
-  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
-  --           _                          -> return $ level t1
-  -- l2' <- case t2 of
-  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t2) m
-  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
-  --           _                          -> return $ level t2
-  -- l2c <- getContext'
-  -- popContext'
-  -- gc <- getGlobalContext'
-
-  -- fic <- popFirstInContext
-
-
-  -- l <- minLevel' (getSpan t1) ([l1'] ++ (Set.toList l2')) --need to change this
-  -- let l = minLevel l1' l2'
-  -- let l = case Set.toList l2c of
-  --           [] -> T.Top
-  --           _ -> fic
-  -- let l = l1'
-  
   setFirstInContext fic
   lic <- getLatestInContext
-
   when (fic == T.Top) clearFirstInContext
-
   clearLatestInContext
-
-  -- return (T.Arrow p mult fic l2 t1 t2, T.Bottom)
   let m = if lic == T.Top
           then l2
           else lic
-  
   return (T.Arrow p mult fic m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
@@ -247,21 +202,13 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     updateContext' l1
-    -- l2 <- case t1 of
-    --   T.Labelled _ T.Record _ m' -> levelOfTypeMap (getSpan t1) m'
-    --   T.Labelled _ T.Variant _ m' -> levelOfTypeMap (getSpan t1) m'
-    --   _ -> return $ level t1
-
     l2 <- getTypeLevel t1
-
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
   (l1, tm) <- Extract.leveledOutChoiceMap e t
-  -- return (T.Labelled p T.Variant l1
-  --         (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), maxLevel l l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.Labelled p T.Variant l1
           (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), upperBound)
@@ -270,33 +217,11 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (t, l)        <- synthetise kEnv e
   (l1, u1, u2) <- Extract.leveledInput e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  -- lu1 <- case u1 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-  --   _ -> return $ level u1
-
   lu1 <- getTypeLevel u1
   addInequality (getSpan e) (l1, lu1)
-  -- lu2 <- case u2 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-  --   _ -> return $ level u2
-
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
-  
-  -- case u1 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u1) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u1) m)
-  --   _ -> addInequality (getSpan t) (l1, level u1)
-  -- case u2 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u2) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u2) m)
-  --   _ -> addInequality (getSpan t) (l1, level u2)
   updateContext' l1
---  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-
-  -- return (T.tuple p [u1, u2], maxLevel l l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
@@ -304,38 +229,12 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (t, l)     <- synthetise kEnv e2
   (l1, u1, u2) <- Extract.leveledOutput e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
-  -- case u1 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u1) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u1) m)
-  --   _ -> addInequality (getSpan t) (l1, level u1)
-  -- case u2 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u2) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t) (l1, levelOfTypeMap (getSpan u2) m)
-  --   _ -> addInequality (getSpan t) (l1, level u2)
-  
-  -- lu1 <- case u1 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-  --   _ -> return $ level u1
-
   lu1 <- getTypeLevel u1  
   addInequality (getSpan e1) (l1, lu1)
-  -- lu2 <- case u2 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-  --   _ -> return $ level u2
-
   lu2 <- getTypeLevel u2  
   addInequality (getSpan e1) (l1, lu2)
-
-
-  -- addInequality (getSpan t) (l1, level u1)
-  -- addInequality (getSpan t) (l1, level u2)
---  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   updateContext' l1
-
-  -- return (u2, maxLevel l l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
@@ -357,15 +256,11 @@ synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
   newContext'
-  l2 <- leveledCheckAgainst kEnv e2 u1 --u1(from arrow) is replaced, e2 is not
-  -- l <- getContext
+  l2 <- leveledCheckAgainst kEnv e2 u1
   ls <- getContext'
   popContext'
-  -- addInequality (getSpan t) (l1, l)
   addInequalities (getSpan t) l1 ls
   addInequality (getSpan t) (l2, l3)
-  -- updateContext l3
-  -- return (u2, maxLevel l1 $ maxLevel l2 l4)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
   return (u2, upperBound)
 -- Type abstraction
@@ -389,37 +284,10 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   (t2, l2) <- synthetise kEnv e2
-  -- l <- case t2 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan t2) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t2) m
-  --   _ -> return $ level t2 
-  
   l <- getTypeLevel t2
-
-
-  -- case t2 of
-  --   T.Labelled _ T.Record _ m -> addInequality (getSpan t2) (l1, levelOfTypeMap (getSpan t2) m)
-  --   T.Labelled _ T.Variant _ m -> addInequality (getSpan t2) (l1, levelOfTypeMap (getSpan t2) m)
-  --   _ -> addInequality (getSpan t1) (l1, level t2)
-
   addInequality (getSpan t2) (l1, l)
-  
-  -- let l1 = level t1
-  -- l1 <- case t1 of
-  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
-  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
-  --           _                          -> return $ level t1
-
   l1 <- getTypeLevel t1
-  -- let l1 = case t1 of
-  --           T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t1) m
-  --           T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t1) m
-  --           _                          -> level t1
   l2 <- levelOfTypeMap (getSpan t2) $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
-  -- let l2 = level $ T.Labelled p T.Record l1 $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
-  -- return (T.Labelled p T.Record l1 $
-  --   Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), maxLevel l1 l2)
-
   upperBound <- maxLevel' (getSpan t2) [l1, l2]
   return (T.Labelled p T.Record l1 $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), upperBound)
@@ -433,27 +301,13 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  -- l3 <- getContext
   ls <- getContext'
   popContext'
-  -- addInequality (getSpan t1) (l1, minLevel l3 (minLevel (level u1) (level u2)))
   addInequalities (getSpan t1) l1 ls
-  -- lu1 <- case u1 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u1) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u1) m
-  --   _ -> return $ level u1
-
   lu1 <- getTypeLevel u1
-  -- lu2 <- case u2 of
-  --   T.Labelled _ T.Record _ m -> levelOfTypeMap (getSpan u2) m
-  --   T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan u2) m
-  --   _ -> return $ level u2
-
   lu2 <- getTypeLevel u2
-  
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
-  -- return (t2, maxLevel l1 l2)
   upperBound <- maxLevel' (getSpan t1) [l1, l2]
   return (t2, upperBound)
 -- Datatype elimination
@@ -464,14 +318,11 @@ synthetise kEnv (E.Case p e fm) = do
   resetGlobalContext'
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  -- l2 <- getGlobalContext
   ls <- getGlobalContext'
   case Map.toList fm' of
     [(mkFalse, _), (mkTrue, _)] -> return ()
     _ -> popContext'
-  -- popContext'
   resetGlobalContext' --technically unnecessary but it's cleaner to keep it empty
-  -- addInequality (getSpan t1) (l1, l2)
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -488,30 +339,35 @@ synthetise kEnv (E.LevelApp _ e l) = do
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
-      -- customTrace e (show r ++ " " ++ show l)
-      unless (checkLevelRange l r) (addError (LevelOutOfRange p l r)) 
-      -- customTrace e (takeWhile (/= ' ') (show e))
-      -- customTrace e (show $ getSpan y)
-
-      --check if it's new func call or not 
-      let f = takeWhile (/= ' ') (show e)
-      if (f == (show e)) 
-        then do
-          n <- addFunctionCall f
-          duplicateConstraintsInFunc f n
-          -- addEquality (will imply using mkVar with n)
-        else do
-          n <- getFunctionCallsOf f
-          -- addEquality (will imply using mkVar with n)
-          return ()
-      -- customTrace e ("-------" ++ extern y ++ intern y ++ "-------")
-      -- l' <- case l of
-      --   T.LVar (Variable s x i) -> do
-      --     n <- addLevelVar x
-      --     return $ T.LVar (Variable s (x ++ "_" ++ show n) i)
-      --   _ -> return l
-      -- let t' = Rename.subsLevel l' y u
-      -- customTrace e (show l ++ " " ++ extern y ++ " ||| " ++ show u)
+      case l of
+        T.LNum n -> do
+          let f = takeWhile (/= ' ') (show e)
+          let (r1, r2) = r
+          r1' <- bindLVarToFunc r1 f
+          r2' <- bindLVarToFunc r2 f
+          l' <- bindLVarToFunc (T.LVar y) f
+          if (f == (show e)) 
+            then do
+              n <- addFunctionCall f
+              duplicateConstraintsInFunc f n
+              if n == 0 then do
+                addInequality (getSpan y) (r1', l')
+                addInequality (getSpan y) (l', r2')
+                addEquality (getSpan e) (l', l)
+              else do
+                l' <- renameLVar l' n
+                addEquality (getSpan e) (l', l)
+            else do
+              n <- getFunctionCallsOf f
+              if n == 0 then do
+                addInequality (getSpan y) (r1', l')
+                addInequality (getSpan y) (l', r2')
+                addEquality (getSpan e) (l', l)
+              else do
+                l' <- renameLVar l' n
+                addEquality (getSpan e) (l', l)
+        _ -> do
+              return ()
       let t'' = Rename.subsLevel l y u
       return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
@@ -521,38 +377,6 @@ customTrace e msg = do
   if moduleName (getSpan e) /= "Prelude"
     then trace (msg ++ " || " ++ show e) return()
     else trace "" return()
-
-tracedSynthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
-tracedSynthetise kEnv e = do
-  if moduleName (getSpan e) == "Prelude"
-    then do
-      synthetise kEnv e
-    else do
-      let logRule msg = trace ("Synthetising e: " ++ msg ++ " " ++ show e) (return ())
-      case e of
-        E.Int _ _       -> logRule "E.Int"
-        E.Float _ _     -> logRule "E.Float"
-        E.Char _ _      -> logRule "E.Char"
-        E.Unit _        -> logRule "E.Unit"
-        E.String _ _    -> logRule "E.String"
-        E.Var _ _       -> logRule "E.Var"
-        E.UnLet _ _ _ _ -> logRule "E.UnLet"
-        E.Abs _ _ _     -> logRule "E.Abs"
-        E.Pair _ _ _    -> logRule "E.Pair"
-        E.BinLet _ _ _ _ _ -> logRule "E.BinLet"
-        (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkSelect p -> logRule "E.App (Select)"
-        (E.App _ (E.Var p x) e) | x == mkCollect p -> logRule "E.App (Collect)"
-        (E.App p (E.Var _ x) e) | x == mkReceive p -> logRule "E.App (Receive)"
-        (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p -> logRule "E.App (Send)"
-        (E.App p fork@(E.Var _ x) e) | x == mkFork p -> logRule "E.App (Fork)"
-        (E.App p (E.Var _ x) e) | x == mkClose p -> logRule "E.App (Close)"
-        (E.App p (E.Var _ x) e) | x == mkWait p -> logRule "E.App (Wait)"
-        E.App _ _ _     -> logRule "E.App"
-        E.TypeApp _ _ _ -> logRule "E.TypeApp " 
-        E.TypeAbs _ _   -> logRule "E.TypeAbs"
-        E.Case _ _ _    -> logRule "E.Case"
-        _               -> logRule "Unknown expression"
-      synthetise kEnv e
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -625,7 +449,6 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  -- return (maxLevel l1 l2)
   upperBound <- maxLevel' (getSpan t1) [l1, l2]
   return upperBound
 leveledCheckAgainst kEnv e t = do 
@@ -689,27 +512,8 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
 
 checkInequalities :: TypingState ()
 checkInequalities = do
-  getInequalities >>= liftIO . solveInequalities >>= \ineq ->
-    forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
-      addError (LevelMismatch span l1 l2)
-
-  -- solvedIneqs <- liftIO $ solveInequalities ineq
-  -- forM_ (Set.toList solvedIneqs) $ \(span, (l1, l2)) -> do
-  --   addError (LevelMismatch span l1 l2)
-
---   ineq <- getInequalities
---   forM_ (Set.toList ineq) $ \(span, (l1, l2)) -> do
---     unless ((isValidIneq l1 l2) || (isFromPrelude span)) $
---       addError (LevelMismatch span l1 l2)
-
--- isFromPrelude :: Span -> Bool
--- isFromPrelude s = moduleName s == "Prelude" || moduleName s == "<default>"
-
--- isValidIneq :: T.Level -> T.Level -> Bool
--- isValidIneq T.Top T.Top = True
--- isValidIneq T.Top _ = False
--- isValidIneq _ T.Top = True
--- isValidIneq T.Bottom T.Bottom = True
--- isValidIneq _ T.Bottom = False
--- isValidIneq T.Bottom _ = True
--- isValidIneq (T.Num n1) (T.Num n2) = n1 < n2
+  ineqs <- getInequalities
+  eqs   <- getEqualities
+  (solvedIneqs, _) <- liftIO $ solveInequalities ineqs eqs
+  forM_ (Set.toList solvedIneqs) $ \(span, (l1, l2)) -> do
+    addError (LevelMismatch span l1 l2)

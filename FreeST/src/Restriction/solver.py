@@ -8,7 +8,7 @@ bot = Int('bot')
 top = Int('top')
 value = Function('value', Levels, IntSort())
 
-lower_id = r"\b[a-zA-Z][a-zA-Z0-9_']*\b"
+lower_id = r"\b[a-zA-Z][a-zA-Z0-9_'#:]*\b"
 
 def rewrite_expression(expr):
     if not isinstance(expr, str):
@@ -22,7 +22,6 @@ def rewrite_expression(expr):
         return IntVal(val)
     else:
         return val
-    # return eval(expr_rewritten, {"value": value, "Const": Const, "Levels": Levels, "top": top, "bot": bot})
 
 def get_val(l):
     if l == "top":
@@ -32,27 +31,10 @@ def get_val(l):
     else:
         return rewrite_expression(l)
 
-# def get_val(l):
-#     if l == "top":
-#         return top
-#     elif l == "bot":
-#         return bot
-#     else:
-#         return value(Const(l, Levels))
-
 def extract_variables(expr):
     if not isinstance(expr, str):
         expr = str(expr)
     return re.findall(lower_id, expr)
-
-# def add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, name):
-#     if l1 not in z3_consts and l1 != "top" and l1 != "bot": 
-#         z3_consts[l1] = Const(l1, Levels)
-#     if l2 not in z3_consts and l2 != "top" and l2 != "bot":
-#         z3_consts[l2] = Const(l2, Levels)
-#     constraint = get_val(l1) < get_val(l2)
-#     solver.assert_and_track(constraint, name)  
-#         return constraint
 
 def add_level_constraint(solver, z3_consts, l1, l2, name):
     for var in extract_variables(l1) + extract_variables(l2):
@@ -62,47 +44,41 @@ def add_level_constraint(solver, z3_consts, l1, l2, name):
     solver.assert_and_track(constraint, name)
     return constraint
 
+def add_level_equality(solver, z3_consts, l1, l2, name):
+    for var in extract_variables(l1) + extract_variables(l2):
+        if var not in z3_consts and var != "top" and var != "bot":
+            z3_consts[var] = Const(var, Levels)
+    constraint = get_val(l1) == get_val(l2)
+    solver.assert_and_track(constraint, name)
+    return constraint
+
+def wrap_thread_num(s):
+    return re.sub(r'#(\d+)', r'[#\1]', s)
+
 def check_inequalities(inequalities, file_path):
     solver = Solver()
     z3_consts = {}
     constraint_map = {}
-    # solver_constraints = []  
 
     truths = [
         ForAll([Const('x', Levels)], bot < value(Const('x', Levels))),
         ForAll([Const('x', Levels)], value(Const('x', Levels)) < top),
         bot < top
-        # value(Const("a", Levels)) == 1,
-        # value(Const("a", Levels)) == 2,
-        # value(Const("b", Levels)) == 1,
-        # value(Const("b", Levels)) == 2
     ]
     solver.add(*truths)
-
-    # solver.assert_and_track(value(Const("a", Levels)) == 1, "a_eq_1")
-    # constraint_map["a_eq_1"] = {"span": "default", "l1": "a", "l2": 1, "constraint": value(Const("a", Levels)) == 1}
-    # c1 = And(value(Const("a", Levels)) == 1, value(Const("a", Levels)) == 2)
-    # solver.assert_and_track(c1, "a_eq_2")
-    # constraint_map["a_eq_2"] = {"span": "default", "l1": "a", "l2": 2, "constraint": c1}
-    # c2 = And(value(Const("b", Levels)) == 1, value(Const("b", Levels)) == 2)
-    # solver.assert_and_track(c2, "b_eq_1")
-    # constraint_map["b_eq_1"] = {"span": "default", "l1": "b", "l2": 1, "constraint": c2}
-    # solver.assert_and_track(value(Const("b", Levels)) == 2, "b_eq_2")
-    # constraint_map["b_eq_2"] = {"span": "default", "l1": "b", "l2": 2, "constraint": value(Const("b", Levels)) == 2}
-
-    # solver.add(value("a") == 1)
 
     for i, ineq in enumerate(inequalities):
         span = ineq["span"]
         l1 = ineq["l1"]
         l2 = ineq["l2"]
+        equality = ineq["equality"]
         constraint_id = f"constraint_{i}"
-        # constraint = add_level_constraint(solver, z3_consts, solver_constraints, l1, l2, constraint_id)
-        constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
-        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint}
-        # print(constraint)
+        if equality:
+            constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
+        else:
+            constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
+        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "equality": equality}
 
-    # print(solver)
     unsat_constraints = []
     if solver.check() == sat:
         return []
@@ -114,6 +90,7 @@ def check_inequalities(inequalities, file_path):
                     "span": constraint_map[str(c)]["span"],
                     "l1": constraint_map[str(c)]["l1"],
                     "l2": constraint_map[str(c)]["l2"],
+                    "equality": constraint_map[str(c)]["equality"],
                     "file_path": file_path,
                 }
                 for c in unsat_core
@@ -121,28 +98,25 @@ def check_inequalities(inequalities, file_path):
 
             for c in unsat_core:
                 constraint_id = str(c)
-                constraint_map.pop(constraint_id)
-                solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
+                if not constraint_map[constraint_id]["equality"]:
+                    constraint_map.pop(constraint_id)
+                    solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
+        
+        for c in unsat_constraints:
+            if isinstance(c["l1"], str):
+                c["l1"] = wrap_thread_num(c["l1"])
+            if isinstance(c["l2"], str):
+                c["l2"] = wrap_thread_num(c["l2"])
 
-        # print(unsat_constraints)
         return unsat_constraints
 
 def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
     new_solver = Solver()
     new_solver.add(*truths)
-    # new_solver.assert_and_track(value(Const("a", Levels)) == 1, "a_eq_1")
-    # new_solver.assert_and_track(value(Const("a", Levels)) == 2, "a_eq_2")
-    # new_solver.assert_and_track(value(Const("b", Levels)) == 1, "b_eq_1")
-    # new_solver.assert_and_track(value(Const("b", Levels)) == 2, "b_eq_2")
     for id, constraint in constraint_map.items():
         if id != constraint_to_remove: 
             new_solver.assert_and_track(constraint["constraint"], id)
     return new_solver
-
-def get_constraint_id(constraint, constraint_map):
-    for key, value in constraint_map.items():
-        if str(value["constraint"]) == str(constraint):
-            return key
     
 if __name__ == "__main__":
     file_path = sys.argv[1]

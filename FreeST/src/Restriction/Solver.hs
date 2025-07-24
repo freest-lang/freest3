@@ -14,6 +14,7 @@ import           Restriction.Setup
 import Paths_FreeST (getLibDir)
 
 import Data.Aeson
+import Data.Aeson.Types (Parser)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.List (isPrefixOf)
 import Data.Char (isSpace, isDigit, isAlpha)
@@ -26,11 +27,22 @@ import System.FilePath ((</>), splitPath, joinPath)
 import System.Process
 import Control.Monad.State (liftIO)
 import Text.ParserCombinators.ReadP
+import Debug.Trace (trace)
 
 data InequalityEntry = InequalityEntry
-    { span       :: Span
+    { iSpan       :: Span
     , inequality :: R.Inequality
     } deriving (Eq, Show)
+
+data EqualityEntry = EqualityEntry
+    { eSpan       :: Span
+    , equality   :: R.Equality
+    } deriving (Eq, Show)
+
+data Entry
+  = EntryIneq InequalityEntry
+  | EntryEq EqualityEntry
+  deriving (Show)
 
 instance ToJSON Span where
     toJSON (Span moduleName startPos endPos) =
@@ -103,46 +115,119 @@ varP = do
     v <- munch1 isAlpha
     return (T.LVar $ mkVar defaultSpan v)
 
+instance ToJSON Entry where
+    toJSON (EntryIneq ineqEntry) = toJSON ineqEntry
+    toJSON (EntryEq eqEntry)     = toJSON eqEntry
+
+instance FromJSON Entry where
+  parseJSON v = withObject "Entry" (\obj -> do
+    eqFlag <- obj .: "equality"
+    if eqFlag == (0 :: Int)
+      then EntryIneq <$> parseJSON v
+      else EntryEq <$> parseJSON v
+    ) v
+
 instance ToJSON InequalityEntry where
-    toJSON (InequalityEntry span (l1,l2)) =
-        object [ "span" .= span 
+    toJSON (InequalityEntry iSpan (l1,l2)) =
+        object [ "span" .= iSpan
                , "l1" .= l1
                , "l2" .= l2 
+               , "equality" .= (0 :: Int)
                ]
 
 instance FromJSON InequalityEntry where
     parseJSON = withObject "InequalityEntry" $ \v -> do
-        span <- v .: "span"   
+        iSpan <- v .: "span"   
         l1      <- v .: "l1"        
         l2      <- v .: "l2"
-        return $ InequalityEntry span (l1,l2)
+        equality <- v .: "equality" :: Parser Int
+        return $ InequalityEntry iSpan (l1, l2)
+
+instance ToJSON EqualityEntry where
+    toJSON (EqualityEntry eSpan (l1,l2)) =
+        object [ "span" .= eSpan
+               , "l1" .= l1
+               , "l2" .= l2 
+               , "equality" .= (1 :: Int)
+               ]
+            
+instance FromJSON EqualityEntry where
+    parseJSON = withObject "EqualityEntry" $ \v -> do
+        eSpan <- v .: "span"   
+        l1      <- v .: "l1"        
+        l2      <- v .: "l2"
+        equality <- v .: "equality" :: Parser Int
+        return $ EqualityEntry eSpan (l1, l2)
 
 serializeInequalities :: Inequalities -> BL.ByteString
 serializeInequalities ineqs =
     encode $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList ineqs)
 
-deserializeInequalities :: BL.ByteString -> Inequalities
-deserializeInequalities contents =
-    case decode contents of
-        Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
-        Nothing      -> error "Failed to parse inequalities from JSON"
+serializeEqualities :: Equalities -> BL.ByteString
+serializeEqualities eqs =
+    encode $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList eqs)
 
-writeInequalitiesToFile :: Inequalities -> IO ()
-writeInequalitiesToFile ineqs = do
+deserializeEntries :: BL.ByteString -> (Inequalities, Equalities)
+deserializeEntries contents =
+  case decode contents :: Maybe [Entry] of
+    Just entries ->
+      let (ineqs, eqs) = foldr partition ([], []) entries
+          partition (EntryIneq (InequalityEntry span ineq)) (is, es) = ((span, ineq):is, es)
+          partition (EntryEq (EqualityEntry span eq)) (is, es) = (is, (span, eq):es)
+      in (Set.fromList ineqs, Set.fromList eqs)
+    Nothing -> error "Failed to parse constraints from JSON"
+
+-- deserializeInequalities :: BL.ByteString -> Inequalities
+-- deserializeInequalities contents =
+--     case decode contents of
+--         Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
+--         Nothing      -> error "Failed to parse inequalities from JSON"
+
+-- writeInequalitiesToFile :: Inequalities -> IO ()
+-- writeInequalitiesToFile ineqs = do
+--     let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
+--     let serialized = encodePretty $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList filteredIneqs)
+--     filePath <- inequalitiesFilePath
+--     BL.writeFile filePath serialized
+
+-- writeEqualitiesToFile :: Equalities -> IO ()
+-- writeEqualitiesToFile eqs = do
+--     let filteredEqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
+--     let serialized = encodePretty $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList filteredEqs)
+--     filePath <- inequalitiesFilePath
+--     BL.writeFile filePath serialized
+
+writeEntriesToFile :: Inequalities -> Equalities -> IO ()
+writeEntriesToFile ineqs eqs = do
     let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
-    let serialized = encodePretty $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList filteredIneqs)
+    let filteredEqs   = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
+    let entries =
+          map (\(span, ineq) -> EntryIneq (InequalityEntry span ineq)) (Set.toList filteredIneqs) ++
+          map (\(span, eq)   -> EntryEq   (EqualityEntry span eq))   (Set.toList filteredEqs)
+    let serialized = encodePretty entries
     filePath <- inequalitiesFilePath
     BL.writeFile filePath serialized
 
-readInequalitiesFromFile :: IO Inequalities
-readInequalitiesFromFile = do
+readEntriesFromFile :: IO (Inequalities, Equalities)
+readEntriesFromFile = do
     filePath <- inequalitiesFilePath
     contents <- BL.readFile filePath
     if BL.null contents
-        then return Set.empty
+        then return (Set.empty, Set.empty)
         else do
-            let ineqs = deserializeInequalities contents
-            ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
+            let (ineqs, eqs) = deserializeEntries contents
+            ineqs `seq` eqs `seq` return (ineqs, eqs)
+
+
+-- readInequalitiesFromFile :: IO Inequalities
+-- readInequalitiesFromFile = do
+--     filePath <- inequalitiesFilePath
+--     contents <- BL.readFile filePath
+--     if BL.null contents
+--         then return Set.empty
+--         else do
+--             let ineqs = deserializeInequalities contents
+--             ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
 
 getSourcePath :: IO FilePath
 getSourcePath = do
@@ -169,13 +254,13 @@ getPythonSolverPath = do
     path <-getRestrictionModulePath 
     return $ path </> "solver.py"
   
-solveInequalities :: Inequalities -> IO Inequalities
-solveInequalities ineqs = do
-    writeInequalitiesToFile ineqs
+solveInequalities :: Inequalities -> Equalities -> IO (Inequalities, Equalities)
+solveInequalities ineqs eqs = do
+    writeEntriesToFile ineqs eqs
     ineqPath <- inequalitiesFilePath
     solverPath <- getPythonSolverPath
     modulePath <- getRestrictionModulePath
     runPythonFile solverPath ineqPath modulePath
-    ineqs <- readInequalitiesFromFile
-    -- removeFile ineqPath
-    return ineqs
+    constraints <- readEntriesFromFile
+    removeFile ineqPath
+    return constraints

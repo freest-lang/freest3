@@ -23,6 +23,7 @@ import           Debug.Trace
 type Warnings = [WarningType]
 type Errors = [ErrorType]
 type Inequalities = Set.Set (Span, R.Inequality)
+type Equalities = Set.Set (Span, R.Equality)
 type ContextSet = Set.Set T.Level
 type FunctionCallNum = Map.Map String Int
 
@@ -34,6 +35,7 @@ data FreestS a = FreestS
   , typenames :: TypeOpsEnv -- TODO: Remove with the new errors 
   , extra :: XExtra a
   , inequalities :: Inequalities
+  , equalities :: Equalities
   , context :: [T.Level]
   , context' :: [ContextSet]
   , globalContext :: T.Level
@@ -63,6 +65,7 @@ initial ext = FreestS {
   , typenames = Map.empty
   , extra = ext
   , inequalities = Set.empty
+  , equalities = Set.empty
   , context = []
   , context' = []
   , globalContext = T.Top
@@ -88,6 +91,7 @@ initialS = FreestS {
   , typenames = Map.empty
   , extra = void
   , inequalities = Set.empty
+  , equalities = Set.empty
   , context = []
   , context' = []
   , globalContext = T.Top
@@ -305,6 +309,12 @@ addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (s
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
+
+getEqualities :: S.MonadState (FreestS a) m => m Equalities
+getEqualities = S.gets equalities
+
+addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> m ()
+addEquality span equality = S.modify (\s -> s { equalities = Set.insert (span, equality) (equalities s) })
 
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
@@ -675,24 +685,46 @@ isInFunction name span = do
 
 duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
 duplicateConstraintsInFunc func ver = do
+  ineqs <- getInequalities
   if ver > 0
     then do
-      ineqs <- getInequalities
       S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
         inFunc <- isInFunction func p
         if inFunc
           then do
-            l1' <- replaceLVar l1 ver
-            l2' <- replaceLVar l2 ver
+            l1' <- renameLVar l1 ver
+            l2' <- renameLVar l2 ver
             addInequality p (l1', l2')
           else return ()
-    else return ()
-  where replaceLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "_" ++ show i))
-        replaceLVar l@(T.LNum n) _ = return l
-        replaceLVar (T.LParens l) i = replaceLVar l i
-        replaceLVar (T.LAdd l1 l2) i = do
-          l1' <- replaceLVar l1 i
-          l2' <- replaceLVar l2 i
-          return (T.LAdd l1' l2')
-        replaceLVar l@(T.Top) _ = return l
-        replaceLVar l@(T.Bottom) _ = return l
+    else do
+      S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+        inFunc <- isInFunction func p
+        if inFunc
+          then do
+            l1' <- bindLVarToFunc l1 func
+            l2' <- bindLVarToFunc l2 func
+            S.modify (\s -> s { inequalities = Set.delete (p, (l1, l2)) (inequalities s) })
+            addInequality p (l1', l2')
+          else return ()
+
+renameLVar :: S.MonadState (FreestS a) m => T.Level -> Int -> m T.Level
+renameLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "#" ++ show i))
+renameLVar l@(T.LNum n) _ = return l
+renameLVar (T.LParens l) i = renameLVar l i
+renameLVar (T.LAdd l1 l2) i = do
+  l1' <- renameLVar l1 i
+  l2' <- renameLVar l2 i
+  return (T.LAdd l1' l2')
+renameLVar l@(T.Top) _ = return l
+renameLVar l@(T.Bottom) _ = return l
+
+bindLVarToFunc :: S.MonadState (FreestS a) m => T.Level -> String -> m T.Level
+bindLVarToFunc (T.LVar x) f = return $ T.LVar (mkVar (getSpan x) (f ++ ":" ++ extern x))
+bindLVarToFunc l@(T.LNum n) _ = return l
+bindLVarToFunc (T.LParens l) f = bindLVarToFunc l f
+bindLVarToFunc (T.LAdd l1 l2) f = do
+  l1' <- bindLVarToFunc l1 f
+  l2' <- bindLVarToFunc l2 f
+  return (T.LAdd l1' l2')
+bindLVarToFunc l@(T.Top) _ = return l
+bindLVarToFunc l@(T.Bottom) _ = return l

@@ -1,6 +1,6 @@
 type InputStream = forall p:(bot,top) => ?p Int ; InputStream
 
-filterStream : forall a:(bot,top), b:(a,top) => (Int ->[top,bot] Bool) ->[top,bot] InputStream ->[top,bot] dualof InputStream 1->[p,q+1] ()
+filterStream : forall a:(bot,top), b:(a,top) => (Int ->[top,bot] Bool) ->[top,bot] InputStream ->[top,bot] dualof InputStream 1->[a,b+2] ()
 filterStream =
     forall a:(bot,top), b:(a,top) =>
     \f: (Int ->[top,bot] Bool) ->
@@ -13,14 +13,14 @@ filterStream =
     else
     (filterStream{a+1}{b+1}) f x y
 
-server : forall p:(bot,top) => dualof InputStream ->[top,p+1] ()
+server : forall p:(bot,top) => dualof InputStream ->[top,p] ()
 server =
     forall p:(bot,top) =>
     \x: dualof InputStream ->
     let x = send 2 (x{p}) in
     (server{p+1}) x
 
-client : forall p:(bot,top) => InputStream ->[top,p+2] ()
+client : forall p:(bot,top) => InputStream ->[top,p] ()
 client =
     forall p:(bot,top) =>
     \y: InputStream ->

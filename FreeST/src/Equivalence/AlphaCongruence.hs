@@ -19,7 +19,6 @@ where
 import           Syntax.Base
 import qualified Syntax.Type                   as T
 import qualified Data.Map.Strict               as Map
-import           Debug.Trace (trace)
 import Parse.Unparser
 
 type VarMap = Map.Map Variable Variable
