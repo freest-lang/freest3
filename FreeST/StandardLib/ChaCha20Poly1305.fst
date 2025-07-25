@@ -194,13 +194,21 @@ _generatePoly1305Tag ciphertext key nonce =
     --Return 16 byte (128 bit) tag
     modI acc (2i ^i 128i)
     
---Finds value's bit size in multiples of 512 (32*16)
-_calculateSize : Integer -> Int
-_calculateSize value =
+_calculateSizeLoop : Integer -> Int
+_calculateSizeLoop value =
     if value ==i 0i then
         0
     else
-        (_calculateSize (shiftRI value 512)) + 1
+        (_calculateSizeLoop (shiftRI value 512)) + 1
+
+--Finds value's bit size in multiples of 512 (32*16)
+_calculateSize : Integer -> Int
+_calculateSize value = 
+    let size = _calculateSizeLoop value in
+    if size == 0 then
+        1
+    else
+        size
 
 --Separates ciphertext and tag
 _separateChipherTag : Integer -> Int -> (Integer, Integer)
