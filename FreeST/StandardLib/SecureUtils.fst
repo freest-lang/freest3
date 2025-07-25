@@ -272,10 +272,7 @@ secureReceiveBool sc =
     let msg = _getBits bits in
     if msg ==i 1i then
         (True, sc)
-    else if msg ==i 0i then
-        (False, sc)
     else
-        --TODO: Not sure how this should be handled, returning Flase for now
         (False, sc)
 
 --Unit:
