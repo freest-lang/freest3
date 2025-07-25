@@ -22,8 +22,10 @@ import           Debug.Trace
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
-type Inequalities = Set.Set (Span, R.Inequality)
-type Equalities = Set.Set (Span, R.Equality)
+-- type Inequalities = Set.Set (Span, R.Inequality)
+type Inequalities = Set.Set R.InequalityEntry
+-- type Equalities = Set.Set (Span, R.Equality)
+type Equalities = Set.Set R.EqualityEntry
 type ContextSet = Set.Set T.Level
 type FunctionCallNum = Map.Map String Int
 
@@ -305,16 +307,28 @@ getInequalities :: S.MonadState (FreestS a) m => m Inequalities
 getInequalities = S.gets inequalities
 
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
-addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (span, inequality) (inequalities s) })
+addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality "null" (-1)) (inequalities s) })
+
+addFullInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> m ()
+addFullInequality span inequality function threadNum = 
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum) (inequalities s) })
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
 
+-- addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> String -> Int -> m ()
+-- addInequalities span l1 ctx function threadNum =
+--   mapM_ (\l2 -> addInequality span (R.Inequality l1 l2) function threadNum) (Set.toList ctx)
+
 getEqualities :: S.MonadState (FreestS a) m => m Equalities
 getEqualities = S.gets equalities
 
-addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> m ()
-addEquality span equality = S.modify (\s -> s { equalities = Set.insert (span, equality) (equalities s) })
+-- addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> m ()
+-- addEquality span equality = S.modify (\s -> s { equalities = Set.insert (span, equality) (equalities s) })
+
+addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> m ()
+addEquality span equality function threadNum =
+  S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum) (equalities s) })
 
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
@@ -683,28 +697,54 @@ isInFunction name span = do
     where
       lesserThan n1 n2 = n2 == -1 || n1 < n2
 
+-- duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
+-- duplicateConstraintsInFunc func ver = do
+--   ineqs <- getInequalities
+--   if ver > 0
+--     then do
+--       S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+--         inFunc <- isInFunction func p
+--         if inFunc
+--           then do
+--             l1' <- renameLVar l1 ver
+--             l2' <- renameLVar l2 ver
+--             addInequality p (l1', l2')
+--           else return ()
+--     else do
+--       S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+--         inFunc <- isInFunction func p
+--         if inFunc
+--           then do
+--             l1' <- bindLVarToFunc l1 func
+--             l2' <- bindLVarToFunc l2 func
+--             S.modify (\s -> s { inequalities = Set.delete (p, (l1, l2)) (inequalities s) })
+--             addInequality p (l1', l2')
+--           else return ()
+
+
 duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
 duplicateConstraintsInFunc func ver = do
   ineqs <- getInequalities
   if ver > 0
     then do
-      S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n) -> do
         inFunc <- isInFunction func p
         if inFunc
           then do
-            l1' <- renameLVar l1 ver
-            l2' <- renameLVar l2 ver
-            addInequality p (l1', l2')
+            -- l1' <- renameLVar l1 ver
+            -- l2' <- renameLVar l2 ver
+            -- addInequality p (l1, l2) f n
+            addFullInequality p (l1, l2) func (ver + 1)
           else return ()
     else do
-      S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
+      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n) -> do
         inFunc <- isInFunction func p
         if inFunc
           then do
-            l1' <- bindLVarToFunc l1 func
-            l2' <- bindLVarToFunc l2 func
-            S.modify (\s -> s { inequalities = Set.delete (p, (l1, l2)) (inequalities s) })
-            addInequality p (l1', l2')
+            -- l1' <- bindLVarToFunc l1 func
+            -- l2' <- bindLVarToFunc l2 func
+            S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n) (inequalities s) })
+            addFullInequality p (l1, l2) func (ver + 1)
           else return ()
 
 renameLVar :: S.MonadState (FreestS a) m => T.Level -> Int -> m T.Level

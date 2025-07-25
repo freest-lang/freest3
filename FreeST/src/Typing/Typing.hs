@@ -343,40 +343,20 @@ synthetise kEnv (E.LevelApp _ e l) = do
         T.LNum n -> do
           let f = takeWhile (/= ' ') (show e)
           let (r1, r2) = r
-          r1' <- bindLVarToFunc r1 f
-          r2' <- bindLVarToFunc r2 f
-          l' <- bindLVarToFunc (T.LVar y) f
+          let l' = T.LVar y
           if (f == (show e)) 
             then do
               n <- addFunctionCall f
               duplicateConstraintsInFunc f n
-              if n == 0 then do
-                addInequality (getSpan y) (r1', l')
-                addInequality (getSpan y) (l', r2')
-                addEquality (getSpan e) (l', l)
-              else do
-                l' <- renameLVar l' n
-                addEquality (getSpan e) (l', l)
+              addLevelAppConstraints y e l' r1 r2 l f (n+1)
             else do
               n <- getFunctionCallsOf f
-              if n == 0 then do
-                addInequality (getSpan y) (r1', l')
-                addInequality (getSpan y) (l', r2')
-                addEquality (getSpan e) (l', l)
-              else do
-                l' <- renameLVar l' n
-                addEquality (getSpan e) (l', l)
+              addLevelAppConstraints y e l' r1 r2 l f (n+1)
         _ -> do
               return ()
       let t'' = Rename.subsLevel l y u
       return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
-
-customTrace :: E.Exp -> String -> TypingState ()
-customTrace e msg = do
-  if moduleName (getSpan e) /= "Prelude"
-    then trace (msg ++ " || " ++ show e) return()
-    else trace "" return()
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -515,5 +495,18 @@ checkInequalities = do
   ineqs <- getInequalities
   eqs   <- getEqualities
   (solvedIneqs, _) <- liftIO $ solveInequalities ineqs eqs
-  forM_ (Set.toList solvedIneqs) $ \(span, (l1, l2)) -> do
-    addError (LevelMismatch span l1 l2)
+  forM_ (Set.toList solvedIneqs) $ \(InequalityEntry span (l1, l2) f n) -> do
+    addError (LevelMismatch span l1 l2 f n)
+
+addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()
+addLevelAppConstraints y e l r1 r2 n f threadNum = do
+  when (threadNum == 1) $ do
+    addFullInequality (getSpan y) (r1, l) f threadNum
+    addFullInequality (getSpan y) (l, r2) f threadNum
+  addEquality (getSpan e) (l, n) f threadNum
+
+customTrace :: E.Exp -> String -> TypingState ()
+customTrace e msg = do
+  if moduleName (getSpan e) /= "Prelude"
+    then trace (msg ++ " || " ++ show e) return()
+    else trace "" return()

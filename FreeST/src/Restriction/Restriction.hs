@@ -4,6 +4,8 @@
 module Restriction.Restriction
     ( Inequality
     , Equality
+    , InequalityEntry(..)
+    , EqualityEntry(..)
     , Leveled(..)
     -- , minLevel
     -- , maxLevel
@@ -21,6 +23,20 @@ import           Debug.Trace (trace)
 
 type Inequality = (T.Level, T.Level)
 type Equality = (T.Level, T.Level)
+
+data InequalityEntry = InequalityEntry
+  { iSpan           :: Span
+  , inequality      :: Inequality
+  , iFunction       :: String
+  , iThreadNum      :: Int
+  } deriving (Eq, Ord)
+
+data EqualityEntry = EqualityEntry
+  { eSpan           :: Span
+  , equality        :: Equality
+  , eFunction       :: String
+  , eThreadNum      :: Int
+  } deriving (Eq, Ord)
 
 class Leveled a where
     level :: a -> T.Level

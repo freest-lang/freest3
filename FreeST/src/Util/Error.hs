@@ -107,7 +107,7 @@ data ErrorType =
   -- Kind Inference
   | CantUnifyKind Span K.Kind K.Kind
   -- Levels
-  | LevelMismatch Span T.Level T.Level
+  | LevelMismatch Span T.Level T.Level String Int
   | LevelOutOfRange Span T.Level T.LevelRange
   deriving Show
 
@@ -163,7 +163,7 @@ instance Located ErrorType where
   getSpan (RuntimeError p _                ) = p
   getSpan (MutualDefNotValue p _ _         ) = p
   getSpan (CantUnifyKind p _ _             ) = p
-  getSpan (LevelMismatch p _ _             ) = p
+  getSpan (LevelMismatch p _ _ _ _         ) = p
   getSpan (LevelOutOfRange p _ _           ) = p
 
 
@@ -342,8 +342,11 @@ instance Message ErrorType where
     "Can't unify kinds. Got " ++  style red sty ts k1 ++ " <: " ++ style red sty ts k2
     ++ ", but " ++  style red sty ts k1 ++ " is not a subkind of " ++  style red sty ts k2
   -- Levels
-  msg (LevelMismatch s l1 l2) sty ts =
-    "Level " ++ style red sty ts l1 ++ " does not precede level " ++ style red sty ts l2 ++ " at " ++ moduleName s ++ ":" ++ show (startPos s)
+  msg (LevelMismatch s l1 l2 f n) sty ts =
+    "Level " ++ style red sty ts l1 ++ " does not precede level " ++ style red sty ts l2 ++ "\n" ++
+    "            at thread " ++ styleP red sty ts ("#" ++ show n) ++ "\n" ++
+    "            of function " ++ styleP red sty ts f ++ "\n" ++
+    "            at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (LevelOutOfRange s l r) sty ts =
     "Level " ++ style red sty ts l ++ " is not in the interval " ++ style red sty ts (show r) ++ " at " ++ moduleName s ++ ":" ++ show (startPos s)
 

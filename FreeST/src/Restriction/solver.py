@@ -52,8 +52,25 @@ def add_level_equality(solver, z3_consts, l1, l2, name):
     solver.assert_and_track(constraint, name)
     return constraint
 
-def wrap_thread_num(s):
-    return re.sub(r'#(\d+)', r'[#\1]', s)
+def wrap_variables(level, function, thread_num):
+    vars = extract_variables(level)
+    wrapped_level = level
+    for var in vars:
+        replacement = f"{function}:{var}#{thread_num}"
+        wrapped_level = wrapped_level.replace(var, replacement)
+    return wrapped_level
+
+def unwrap_variables(expr):
+    if not isinstance(expr, str):
+        return str(expr)
+    pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\:([a-zA-Z_][a-zA-Z0-9_']*)(#(\d+))"
+    matches = re.findall(pattern, expr)
+    function = matches[0][0] if matches else None
+    thread_num = int(matches[0][3]) if matches else None
+    def repl(m):
+        return m.group(2)
+    unwrapped_expr = re.sub(pattern, repl, expr)
+    return unwrapped_expr
 
 def check_inequalities(inequalities, file_path):
     solver = Solver()
@@ -69,15 +86,17 @@ def check_inequalities(inequalities, file_path):
 
     for i, ineq in enumerate(inequalities):
         span = ineq["span"]
-        l1 = ineq["l1"]
-        l2 = ineq["l2"]
+        function = ineq["function"]
+        thread_num = ineq["thread_num"]
+        l1 = wrap_variables(ineq["l1"], function, thread_num)
+        l2 = wrap_variables(ineq["l2"], function, thread_num)
         equality = ineq["equality"]
         constraint_id = f"constraint_{i}"
         if equality:
             constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
-        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "equality": equality}
+        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality}
 
     unsat_constraints = []
     if solver.check() == sat:
@@ -88,8 +107,10 @@ def check_inequalities(inequalities, file_path):
             unsat_constraints.extend([
                 {
                     "span": constraint_map[str(c)]["span"],
-                    "l1": constraint_map[str(c)]["l1"],
-                    "l2": constraint_map[str(c)]["l2"],
+                    "l1": unwrap_variables(constraint_map[str(c)]["l1"]),
+                    "l2": unwrap_variables(constraint_map[str(c)]["l2"]),
+                    "function": constraint_map[str(c)]["function"],
+                    "thread_num": constraint_map[str(c)]["thread_num"],
                     "equality": constraint_map[str(c)]["equality"],
                     "file_path": file_path,
                 }
@@ -101,12 +122,6 @@ def check_inequalities(inequalities, file_path):
                 if not constraint_map[constraint_id]["equality"]:
                     constraint_map.pop(constraint_id)
                     solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
-        
-        for c in unsat_constraints:
-            if isinstance(c["l1"], str):
-                c["l1"] = wrap_thread_num(c["l1"])
-            if isinstance(c["l2"], str):
-                c["l2"] = wrap_thread_num(c["l2"])
 
         return unsat_constraints
 

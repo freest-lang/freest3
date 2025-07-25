@@ -51,7 +51,7 @@ instance Style Int where
   style f sty _ = f sty . show 
 
 quote :: String -> String
-quote str = '\'' : str ++ "'" 
+quote str = '\'' : str ++ "'"
 
 showModule :: String -> Span -> String
 showModule "Prelude" _ = "Prelude"
@@ -101,3 +101,6 @@ canonical (T.Rec s (Bind s1 a k t)) = T.Rec s (Bind s1 a k (canonical t))
 canonical (T.Dualof s t) = T.Dualof s (canonical t)
 canonical (T.PForall s (Bind s1 a r t)) = T.PForall s (Bind s1 a r (canonical t))
 canonical t = t
+
+styleP :: (Stylable -> String -> String) -> Stylable -> TypeOpsEnv -> String -> String
+styleP f sty _ s = f sty s

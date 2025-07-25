@@ -29,20 +29,19 @@ import Control.Monad.State (liftIO)
 import Text.ParserCombinators.ReadP
 import Debug.Trace (trace)
 
-data InequalityEntry = InequalityEntry
-    { iSpan       :: Span
-    , inequality :: R.Inequality
-    } deriving (Eq, Show)
+-- data InequalityEntry = InequalityEntry
+--     { iSpan       :: Span
+--     , inequality :: R.Inequality
+--     } deriving (Eq, Show)
 
-data EqualityEntry = EqualityEntry
-    { eSpan       :: Span
-    , equality   :: R.Equality
-    } deriving (Eq, Show)
+-- data EqualityEntry = EqualityEntry
+--     { eSpan       :: Span
+--     , equality   :: R.Equality
+--     } deriving (Eq, Show)
 
 data Entry
-  = EntryIneq InequalityEntry
-  | EntryEq EqualityEntry
-  deriving (Show)
+  = EntryIneq R.InequalityEntry
+  | EntryEq R.EqualityEntry
 
 instance ToJSON Span where
     toJSON (Span moduleName startPos endPos) =
@@ -127,53 +126,70 @@ instance FromJSON Entry where
       else EntryEq <$> parseJSON v
     ) v
 
-instance ToJSON InequalityEntry where
-    toJSON (InequalityEntry iSpan (l1,l2)) =
+instance ToJSON R.InequalityEntry where
+    toJSON (R.InequalityEntry iSpan (l1,l2) f n) =
         object [ "span" .= iSpan
                , "l1" .= l1
-               , "l2" .= l2 
+               , "l2" .= l2
+               , "function" .= f
+               , "thread_num" .= n
                , "equality" .= (0 :: Int)
                ]
 
-instance FromJSON InequalityEntry where
+instance FromJSON R.InequalityEntry where
     parseJSON = withObject "InequalityEntry" $ \v -> do
         iSpan <- v .: "span"   
         l1      <- v .: "l1"        
         l2      <- v .: "l2"
+        f       <- v .: "function"
+        n       <- v .: "thread_num"
         equality <- v .: "equality" :: Parser Int
-        return $ InequalityEntry iSpan (l1, l2)
+        return $ R.InequalityEntry iSpan (l1, l2) f n
 
-instance ToJSON EqualityEntry where
-    toJSON (EqualityEntry eSpan (l1,l2)) =
+instance ToJSON R.EqualityEntry where
+    toJSON (R.EqualityEntry eSpan (l1,l2) f n) =
         object [ "span" .= eSpan
                , "l1" .= l1
-               , "l2" .= l2 
+               , "l2" .= l2
+               , "function" .= f
+               , "thread_num" .= n
                , "equality" .= (1 :: Int)
                ]
             
-instance FromJSON EqualityEntry where
+instance FromJSON R.EqualityEntry where
     parseJSON = withObject "EqualityEntry" $ \v -> do
-        eSpan <- v .: "span"   
-        l1      <- v .: "l1"        
-        l2      <- v .: "l2"
-        equality <- v .: "equality" :: Parser Int
-        return $ EqualityEntry eSpan (l1, l2)
+        eSpan <- v .: "span"
+        l1    <- v .: "l1"
+        l2    <- v .: "l2"
+        f     <- v .: "function"
+        n     <- v .: "thread_num"
+        return $ R.EqualityEntry eSpan (l1, l2) f n
+
+-- serializeInequalities :: Inequalities -> BL.ByteString
+-- serializeInequalities ineqs =
+--     encode $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList ineqs)
 
 serializeInequalities :: Inequalities -> BL.ByteString
 serializeInequalities ineqs =
-    encode $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList ineqs)
+    encode $ map (\(R.InequalityEntry span (l1, l2) f n) -> R.InequalityEntry span (l1, l2) f n) (Set.toList ineqs)
+
+-- serializeEqualities :: Equalities -> BL.ByteString
+-- serializeEqualities eqs =
+--     encode $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList eqs)
 
 serializeEqualities :: Equalities -> BL.ByteString
 serializeEqualities eqs =
-    encode $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList eqs)
+    encode $ map (\(R.EqualityEntry span (l1, l2) f n) -> R.EqualityEntry span (l1, l2) f n) (Set.toList eqs)
+
 
 deserializeEntries :: BL.ByteString -> (Inequalities, Equalities)
 deserializeEntries contents =
   case decode contents :: Maybe [Entry] of
     Just entries ->
       let (ineqs, eqs) = foldr partition ([], []) entries
-          partition (EntryIneq (InequalityEntry span ineq)) (is, es) = ((span, ineq):is, es)
-          partition (EntryEq (EqualityEntry span eq)) (is, es) = (is, (span, eq):es)
+            where
+              partition (EntryIneq entry) (is, es) = (entry:is, es)
+              partition (EntryEq entry)   (is, es) = (is, entry:es)
       in (Set.fromList ineqs, Set.fromList eqs)
     Nothing -> error "Failed to parse constraints from JSON"
 
@@ -199,11 +215,11 @@ deserializeEntries contents =
 
 writeEntriesToFile :: Inequalities -> Equalities -> IO ()
 writeEntriesToFile ineqs eqs = do
-    let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
-    let filteredEqs   = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
+    let filteredIneqs = Set.filter (\(R.InequalityEntry (Span moduleName _ _) _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
+    let filteredEqs   = Set.filter (\(R.EqualityEntry (Span moduleName _ _) _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
     let entries =
-          map (\(span, ineq) -> EntryIneq (InequalityEntry span ineq)) (Set.toList filteredIneqs) ++
-          map (\(span, eq)   -> EntryEq   (EqualityEntry span eq))   (Set.toList filteredEqs)
+          map EntryIneq (Set.toList filteredIneqs) ++
+          map EntryEq   (Set.toList filteredEqs)
     let serialized = encodePretty entries
     filePath <- inequalitiesFilePath
     BL.writeFile filePath serialized
