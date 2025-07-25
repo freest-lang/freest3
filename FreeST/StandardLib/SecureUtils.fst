@@ -270,11 +270,8 @@ secureReceiveBool : forall a . (SecureReceive ; a, SecureChannelState) -> (Bool,
 secureReceiveBool sc = 
     let (bits, sc) = _secureReceive @a sc in
     let msg = _getBits bits in
-    if msg ==i 1i then
-        (True, sc)
-    else
-        (False, sc)
-
+    (msg /=i 0i, sc)
+    
 --Unit:
 
 type SecureSendUnit = SecureSend
