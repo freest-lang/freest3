@@ -1,6 +1,6 @@
 type InputStream = forall p:(bot,top) => ?p Int ; InputStream
 
-filterStream : forall a:(bot,top), b:(a,top) => (Int ->[top,bot] Bool) ->[top,bot] InputStream ->[top,bot] dualof InputStream 1->[a,b+2] ()
+filterStream : forall a:(bot,top), b:(a,top) => (Int ->[top,bot] Bool) ->[top,bot] InputStream ->[top,bot] dualof InputStream 1->[a,b] ()
 filterStream =
     forall a:(bot,top), b:(a,top) =>
     \f: (Int ->[top,bot] Bool) ->

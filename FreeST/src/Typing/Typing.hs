@@ -116,7 +116,6 @@ checkFunBody sigs f e = forM_ (sigs Map.!? f) checkBody
       sigs <- getSignatures
       (k, _) <-  K.synthetise Map.empty t 
       when (K.isLin k && Map.member f sigs) (removeFromSignatures f)
-      checkAgainst Map.empty e t      
       when (Map.member f sigs) $ addToSignatures f t
 
 checkMainFunction :: TypingState ()
@@ -193,6 +192,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   let m = if lic == T.Top
           then l2
           else lic
+  fic <- checkRenamedContext fic
   return (T.Arrow p mult fic m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
@@ -353,7 +353,10 @@ synthetise kEnv (E.LevelApp _ e l) = do
               n <- getFunctionCallsOf f
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
         _ -> do
-              return ()
+              fic <- getFirstInContext
+              case fic of
+                T.LVar x -> when (x == y) $ setPolyContext l
+                _ -> return ()
       let t'' = Rename.subsLevel l y u
       return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)

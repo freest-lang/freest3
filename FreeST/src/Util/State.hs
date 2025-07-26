@@ -48,6 +48,7 @@ data FreestS a = FreestS
   , latestInContext :: T.Level
   , functionCalls :: FunctionCallNum
   , functionPositions :: Map.Map String (Int, Int)
+  , polyContext :: T.Level
   }
 
 type family XExtra a
@@ -78,6 +79,7 @@ initial ext = FreestS {
   , latestInContext = T.Top
   , functionCalls = Map.empty
   , functionPositions = Map.empty
+  , polyContext = T.Top
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -104,6 +106,7 @@ initialS = FreestS {
   , latestInContext = T.Top
   , functionCalls = Map.empty
   , functionPositions = Map.empty
+  , polyContext = T.Top
   }
 
 -- | AST
@@ -381,7 +384,7 @@ getGlobalContext' = do
 resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
 resetGlobalContext' = do
   S.modify (\s -> s { globalContext' = Set.empty })
-  S.modify (\s -> s { firstInContext = T.Top })
+  S.modify (\s -> s { firstInContext' = T.Top })
   -- S.modify (\s -> s { latestInContext = T.Top })
 
 -- updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
@@ -423,10 +426,10 @@ updateContext' l = do
       S.modify (\s -> s { context' = newTop : xs })
       if x == Set.empty 
         then do
-          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { firstInContext' = if firstInContext' s == T.Top then l else firstInContext' s })
           S.modify (\s -> s { latestInContext = l })
         else do
-          S.modify (\s -> s { firstInContext = firstInContext s })
+          S.modify (\s -> s { firstInContext' = firstInContext' s })
           S.modify (\s -> s { latestInContext = l })
       -- S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
     [] -> do
@@ -434,7 +437,7 @@ updateContext' l = do
       if gctx == Set.empty
         then do
           S.modify (\s -> s { globalContext' = Set.singleton l })
-          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { firstInContext' = if firstInContext' s == T.Top then l else firstInContext' s })
           S.modify (\s -> s { latestInContext = l })
           pushContext' l
         else pushContext' l
@@ -481,12 +484,19 @@ popContext' = do
 
 popFirstInContext :: S.MonadState (FreestS a) m => m T.Level
 popFirstInContext = do
-  fic <- S.gets firstInContext
-  S.modify (\s -> s { firstInContext = T.Top })
+  fic <- S.gets firstInContext'
+  S.modify (\s -> s { firstInContext' = T.Top })
   return fic
 
 getFirstInContext :: S.MonadState (FreestS a) m => m T.Level
 getFirstInContext = S.gets firstInContext'
+
+checkRenamedContext :: S.MonadState (FreestS a) m => T.Level -> m T.Level
+checkRenamedContext l = do
+  pc <- S.gets polyContext
+  if pc /= T.Top
+    then return pc
+    else return l
 
 setFirstInContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 setFirstInContext l = do
@@ -495,8 +505,17 @@ setFirstInContext l = do
     then S.modify (\s -> s { firstInContext' = l })
     else return ()
 
+setPolyContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+setPolyContext l = do
+  pc <- S.gets polyContext
+  if pc == T.Top
+    then S.modify (\s -> s { polyContext = l })
+    else return ()
+
 clearFirstInContext :: S.MonadState (FreestS a) m => m ()
-clearFirstInContext = S.modify (\s -> s { firstInContext' = T.Top })
+clearFirstInContext = do
+  S.modify (\s -> s { firstInContext' = T.Top })
+  S.modify (\s -> s { polyContext = T.Top })
 
 getLatestInContext :: S.MonadState (FreestS a) m => m T.Level
 getLatestInContext = S.gets latestInContext
