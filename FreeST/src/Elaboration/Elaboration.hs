@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Elaboration.Elaboration (elaboration) where
+module Elaboration.Elaboration (elaboration, elaboration') where
 
 import qualified Syntax.Base as T
 import           Syntax.AST
