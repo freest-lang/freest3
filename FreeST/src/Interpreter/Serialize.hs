@@ -15,6 +15,7 @@ import Debug.Trace (trace)
 import Data.Int (Int32)
 import Data.Bits (shiftL, (.|.))
 
+
 import          Control.Monad (void) -- REMOVE
 import Data.Fixed (Uni)
 
@@ -29,16 +30,18 @@ byteStringToSignedInt32 bs = fromIntegral $ foldl combine 0 (B.unpack bs)
 
 class Serializable a where
     serialize :: a -> B.ByteString
-    deserialize :: Word8 -> V.HalfChannel -> IO a
+    deserialize :: Word8 -> V.HalfChannel -> IO (Either String a)
 
 instance Serializable Value where
     serialize :: Value -> BC.ByteString
     serialize (Cons (Variable _ "False" _) []) = B.singleton 99 <> B.singleton 0
     serialize (Cons (Variable _ "True" _) [])  = B.singleton 99 <> B.singleton 1
-    serialize d@(Cons _ _) = let bytes = serialize' d in
+    serialize d@(Cons (Variable _ name _) _) = let bytes = serialize' d in
         let len = fromIntegral (B.length bytes) :: Word32 in
         let lenBytes = toStrict1 (Bin.encode len) in
-        B.singleton 0 <> lenBytes <> bytes         
+        let lenVariable = fromIntegral (length name) :: Word8 in
+        let lenVariableBytes = toStrict1 (Bin.encode lenVariable) in
+        B.singleton 0 <> lenVariableBytes <> BC.pack name <> lenBytes <> bytes
     serialize Unit            = B.singleton 1
     serialize i@(Integer _)   = B.singleton 2 <> serialize' i
     serialize f@(Float   _)   = B.singleton 3 <> serialize' f
@@ -47,43 +50,57 @@ instance Serializable Value where
     serialize l@(Label  _)    = B.singleton 6 <> serialize' l
     serialize _ = error "Not implemented"
 
-    deserialize :: Word8 -> V.HalfChannel -> IO Value
+    deserialize :: Word8 -> V.HalfChannel -> IO (Either String Value)
     deserialize 0 hc = do
+        lenVariableBytes <- fmap BL.fromStrict (NSB.recv hc 1)
+        let lenVariable = fromIntegral (Bin.decode lenVariableBytes :: Word8)
+        NSB.recv hc lenVariable -- Its only important for the monitor
+
         lenBytes <- fmap BL.fromStrict (NSB.recv hc 4)
         let len = fromIntegral (Bin.decode lenBytes :: Word32)
         bytes <- NSB.recv hc len
-        return $ processMessage bytes []
+        return $ Right (processMessage bytes [])
 
-    deserialize 1 hc = return Unit
+    deserialize 1 hc = return $ Right Unit
     deserialize 2 hc = do
         v <- NSB.recv hc 4
-        return $ Integer $ byteStringToSignedInt32 v
+        return $ Right (Integer $ byteStringToSignedInt32 v)
     
     deserialize 3 hc = do
         f <- fmap BL.fromStrict (NSB.recv hc 4)
-        return (Float $ float2Double . castWord32ToFloat $ (Bin.decode f :: Word32))
-    
+        return $ Right (Float $ float2Double . castWord32ToFloat $ (Bin.decode f :: Word32))
+
     deserialize 4 hc = do
         c <- NSB.recv hc 1
-        return (Character $ BC.head c)
-    
+        return $ Right (Character $ BC.head c)
+
     deserialize 5 hc = do
         lenBytes <- fmap BL.fromStrict (NSB.recv hc 4)
         let len = fromIntegral (Bin.decode lenBytes :: Word32)
         s <- NSB.recv hc len
-        return (String $ BC.unpack (B.init s))
-    
+        return $ Right (String $ BC.unpack (B.init s))
+
     deserialize 6 hc = do
         lenBytes <- fmap BL.fromStrict (NSB.recv hc 4)
         let len = fromIntegral (Bin.decode lenBytes :: Word32)
         s <- NSB.recv hc len
-        return (Label $ BC.unpack (B.init s))
+        return $ Right (Label $ BC.unpack (B.init s))
+    
+    deserialize 7 hc = do
+        -- This is a close message, we just ignore it
+        return $ Right Unit
+
+    deserialize 8 hc = do
+        lenBytes <- fmap BL.fromStrict (NSB.recv hc 4)
+        let len = fromIntegral (Bin.decode lenBytes :: Word32)
+        s <- NSB.recv hc len
+        return $ Left (BC.unpack (B.init s))
     
     deserialize 99 hc = do
         c <- B.head <$> NSB.recv hc 1 
         if c == 0
-            then return (Cons (Variable defaultSpan "False" (-1)) [])
-            else return (Cons (Variable defaultSpan "True" (-1)) [])
+            then return $ Right (Cons (Variable defaultSpan "False" (-1)) [])
+            else return $ Right (Cons (Variable defaultSpan "True" (-1)) [])
 
     deserialize _ _ = error "Not implemented"
    
@@ -154,7 +171,7 @@ processMessage bytes state =
                 lenArgs = B.head lenArgsBytes
                 name = BC.unpack nameBytes
                 len = B.head lenBytes
-                (stateRest, args) =getArgs (fromIntegral lenArgs) state
+                (stateRest, args) = getArgs (fromIntegral lenArgs) state
             in 
                 processMessage rest''' (stateRest ++ [[Cons (Variable defaultSpan name (-1)) args]])
 

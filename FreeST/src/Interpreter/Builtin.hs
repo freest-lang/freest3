@@ -20,6 +20,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Binary as Bin
 import qualified Data.ByteString.Char8 as BC 
 import           Data.Word (Word32, Word8)
+import qualified Data.ByteString.Lazy as BL
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -32,8 +33,8 @@ new = do
   return (Left (c1, c2), Left (c2, c1))
 
 -- newHc :: Either (Pair NS.HostName, NS.ServiceName) ((NS.HostName, NS.ServiceName), String)  -> IO ChannelEnd
-newHcServer :: Value -> IO ChannelEnd
-newHcServer (String addr) = NS.withSocketsDo $ do
+newHcServer :: Value -> String -> IO ChannelEnd
+newHcServer (String addr) dts = NS.withSocketsDo $ do
     let (host, port) = case break (== ':') addr of
             (h, ':':p) -> (h, p)
             _          -> error "Invalid address format, expected 'host:port'"
@@ -43,10 +44,22 @@ newHcServer (String addr) = NS.withSocketsDo $ do
     NS.bind sock (NS.addrAddress addr)
     NS.listen sock 1
     (conn1, _) <- NS.accept sock
-    return $ Right conn1
+    -- send datatype information
+    let len = fromIntegral (1 + length dts) :: Word32
+        bytes = toStrict1 (Bin.encode len) <> BC.pack dts <> B.singleton 0
+    NSB.send conn1 bytes
 
-newHcClient :: Value -> Bool -> IO ChannelEnd
-newHcClient (Pair (String mn_addr) (String sv_addr)) True = NS.withSocketsDo $ do
+    b <- NSB.recv conn1 1
+    if B.head b == 8 then do
+      lenBytes <- fmap BL.fromStrict (NSB.recv conn1 4)
+      let len = fromIntegral (Bin.decode lenBytes :: Word32)
+      s <- NSB.recv conn1 len
+      error $ BC.unpack (B.init s)
+    else
+      return $ Right conn1
+
+newHcClient :: Value -> Bool -> String -> IO ChannelEnd
+newHcClient (Pair (String mn_addr) (String sv_addr)) True dts = NS.withSocketsDo $ do
     let (host, port) = case break (== ':') mn_addr of
             (h, ':':p) -> (h, p)
             _          -> error "Invalid address format, expected 'host:port'"
@@ -54,13 +67,31 @@ newHcClient (Pair (String mn_addr) (String sv_addr)) True = NS.withSocketsDo $ d
     let len = fromIntegral (length sv_addr) :: Word8
     let bytes = toStrict1 (Bin.encode len) <> BC.pack sv_addr
     NSB.send sock bytes
-    return $ Right sock
 
-newHcClient (Pair (String host) (String port)) False = NS.withSocketsDo $ do
+    b <- NSB.recv sock 1
+    if B.head b == 8
+      then error "Server did not exist in that address"
+      else return ()
+
+    let len = fromIntegral (1 + length dts) :: Word32
+        bytes = toStrict1 (Bin.encode len) <> BC.pack dts <> B.singleton 0
+
+    NSB.send sock bytes
+
+    b <- NSB.recv sock 1
+    if B.head b == 8 then do
+      lenBytes <- fmap BL.fromStrict (NSB.recv sock 4)
+      let len = fromIntegral (Bin.decode lenBytes :: Word32)
+      s <- NSB.recv sock len
+      error $ BC.unpack (B.init s)
+    else
+      return $ Right sock
+
+newHcClient (Pair (String host) (String port)) False dts = NS.withSocketsDo $ do
     sock <- connectWithRetries host port 3
     return $ Right sock
 
-newHcClient _ _ = error "newHcClient: Invalid argument"
+newHcClient _ _ _ = error "newHcClient: Invalid argument"
 
 connectWithRetries :: String -> String -> Int -> IO HalfChannel
 connectWithRetries host port retriesLeft = do
@@ -93,7 +124,10 @@ receive (Left c) = do
 receive (Right c) = do
   bytes <- NSB.recv c 1
   v <- deserialize (B.head bytes) c
-  return (v, Right c)
+  case v of
+    Left err -> error $ "Error deserializing message: " ++ err
+    Right v  -> do
+      return (v, Right c)
 
 send :: Value -> ChannelEnd -> IO ChannelEnd
 send v (Left c) = do
@@ -115,7 +149,14 @@ close (Chan (Left c)) = do
   return Unit
 
 close (Chan (Right c)) = do
-  NSB.send c (B.singleton 7) >> NS.close c $> Unit
+  NSB.send c (B.singleton 7)
+  byte <- NSB.recv c 1
+  v <- deserialize (B.head byte) c
+  case v of
+    Left err -> error $ "Error deserializing message: " ++ err
+    Right Unit -> do
+      NS.close c 
+      return Unit
 
 ------------------------------------------------------------  
 -- SETUP, builtin functions
@@ -125,8 +166,8 @@ initialCtx :: Ctx
 initialCtx = Map.fromList
   [ -- Communication primitives
     (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
-  , (var "newHcServer", PrimitiveFun (\info -> IOValue $ Chan <$> newHcServer info))
-  , (var "newHcClient", PrimitiveFun (\info -> PrimitiveFun (\(Cons x _) ->  IOValue $ Chan <$> newHcClient info (read (show x)))))
+  , (var "newHcServer", PrimitiveFun (\info -> PrimitiveFun(\(String s) -> IOValue $ Chan <$> newHcServer info s)))
+  , (var "newHcClient", PrimitiveFun (\info -> PrimitiveFun (\(Cons x _) ->  PrimitiveFun(\(String s) -> IOValue $ Chan <$> newHcClient info (read (show x)) s))))
   -- , (var "newHcClient1", PrimitiveFun (\info -> IOValue $ Chan <$> newHcClient1 info))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))

@@ -135,9 +135,9 @@ data Bool = True | False
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () -> (a, dualof a)
 
-newHcServer : forall a:1A . (String) -> a
+newHcServer : forall a:1A . String -> String -> a
 
-newHcClient : forall a:1A . (String, String) -> Bool -> a
+newHcClient : forall a:1A . (String, String) -> Bool -> String -> a
 
 -- newHcClient1 : forall a:1A . (String, String) -> a
 
