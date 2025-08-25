@@ -52,3 +52,6 @@ main =
     fork (\_:()1-> philosopher 1 fw1 fr3);
     fork (\_:()1-> philosopher 2 fw2 fr1);
     philosopher 3 fw3 fr2
+
+--the problem here is that conditional branches with different
+--orders are impossible
