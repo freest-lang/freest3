@@ -52,9 +52,17 @@ _millerRabin n k rng =
         let d = _decompose (n -i 1i) in
         _millerRabinLoop1 d n k rng
 
+_getPreparedRandom : RNGState -> (Integer, RNGState)
+_getPreparedRandom rng =
+    let (n, rng) = nextN64Bits 24 rng in -- 24*64 = 1536 bits
+    if n <i (2i ^i 1535i) then
+        ((n +i (2i ^i 1535i)), rng)
+    else
+        (n, rng)
+
 _generatePrime : RNGState -> (Integer, RNGState)
 _generatePrime rng =
-    let (n, rng) = nextN64Bits 24 rng in -- 24*64 = 1536 bits
+    let (n, rng) = _getPreparedRandom rng in -- value between 1535 and 1536 bits, to ensure correct key size
     let (isPrime, rng) = _millerRabin n 20 rng in
     if isPrime then
         (n, rng)
@@ -92,27 +100,22 @@ generateRSAKeyPair filePath =
     print @(String, Integer) ("Modulus", n);
     print @(String, Integer) ("Private exponent", d);
     print @(String, Integer) ("Public exponent", e);
-    if (shiftRI n 3069) ==i 0i then --Up to 3 leading 0s are accepted (something like 12.5% of happening ig), up to 3069-bits can be encrypted
-        print @String "Modulus too small, restarting";
-        print @String "------------------//------------------";
-        generateRSAKeyPair filePath
-    else
-        --Writing Keys to Files
-        print @String "Creating key files";
-        let piFile = openWriteFile $ filePath ^^ ".priv" in
-        let puFile = openWriteFile $ filePath ^^ ".pub" in
-        --Writing Modulus n
-        let piFile = hPrint @Integer n piFile in
-        let puFile = hPrint @Integer n puFile in
-        --Writing Private exponent
-        let piFile = hPrint @Integer d piFile in
-        --Writing Public exponent
-        let puFile = hPrint @Integer e puFile in
-        --Closing Files
-        hCloseOut piFile;
-        hCloseOut puFile;
-        print @String $ "RSA Keypair sucsessfully created on " ^^ filePath;
-        ()
+    --Writing Keys to Files
+    print @String "Creating key files";
+    let piFile = openWriteFile $ filePath ^^ ".priv" in
+    let puFile = openWriteFile $ filePath ^^ ".pub" in
+    --Writing Modulus n
+    let piFile = hPrint @Integer n piFile in
+    let puFile = hPrint @Integer n puFile in
+    --Writing Private exponent
+    let piFile = hPrint @Integer d piFile in
+    --Writing Public exponent
+    let puFile = hPrint @Integer e puFile in
+    --Closing Files
+    hCloseOut piFile;
+    hCloseOut puFile;
+    print @String $ "RSA Keypair sucsessfully created on " ^^ filePath;
+    ()
 
 -- Reading keys
 
