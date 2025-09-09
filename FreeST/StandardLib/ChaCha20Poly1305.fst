@@ -144,10 +144,10 @@ _generateKeyStream key chachaState size =
         let keyStreamRValue = _getKeyStream keyStreamR in
         (KeyStream (lorI (shiftLI keyStreamLValue 512) keyStreamRValue), chachaState)
 
-_ChaCha20 : Integer -> Key -> Nonce -> Int -> Integer
-_ChaCha20 value key nonce size =
+_ChaCha20 : Integer -> Key -> Nonce -> Int -> Int -> Integer
+_ChaCha20 value key nonce size offset =
     --Obtain keyStream
-    let (keyStream, _) = _generateKeyStream key (ChachaState (nonce, 0)) size in
+    let (keyStream, _) = _generateKeyStream key (ChachaState (nonce, offset)) size in
     --Encrypt/Decrypt and return value
     let newValue = lxorI value (_getKeyStream keyStream) in
     newValue
@@ -155,7 +155,7 @@ _ChaCha20 value key nonce size =
 _generatePoly1305Key : Key -> Nonce -> (Integer, Integer)
 _generatePoly1305Key key nonce =
     --Generate a 256-bit key from the ChaCha20 key and nonce
-    let keyStream = _ChaCha20 0i key nonce 1 in
+    let keyStream = _ChaCha20 0i key nonce 1 0 in
     --Get the first 128 bits
     let r = modI keyStream (2i ^i 128i) in
     --Get the second 128 bits
@@ -225,7 +225,7 @@ chaCha20Poly1305 Encrypt (ChaChaPolyState rng) msg key =
     --Obtain nonce and new RNG state
     let (nonce, rng) = _newNonce rng in
     --Encrypt
-    let ciphertext = _ChaCha20 msg key nonce size in
+    let ciphertext = _ChaCha20 msg key nonce size 1 in
     --Genrate Poly1305 tag
     let tag = _generatePoly1305Tag ciphertext key nonce in
     --Attach tag to ciphertext
@@ -244,7 +244,7 @@ chaCha20Poly1305 Decrypt (ChaChaPolyState rng) value key =
     --Check tag
     if tag ==i _generatePoly1305Tag ciphertext key nonce then
         --Decrypt
-        let msg = _ChaCha20 ciphertext key nonce size in
+        let msg = _ChaCha20 ciphertext key nonce size 1 in
         --Return decrypted message and next iterations
         let chaChaPolyState = ChaChaPolyState rng in
         (msg, chaCha20Poly1305 Encrypt chaChaPolyState, chaCha20Poly1305 Decrypt chaChaPolyState)
