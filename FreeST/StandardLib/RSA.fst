@@ -10,17 +10,12 @@ import Random
 
 _millerRabinLoop2 : Integer -> Integer -> Integer -> Bool
 _millerRabinLoop2 x d n =
-    if d ==i (n -i 1i) then
+    if d ==i (n -i 1i) || x ==i 1i then
         False
+    else if x ==i (n -i 1i) then
+        True
     else
-        let x = modI (x ^i 2i) n in
-        let d = d *i 2i in
-        if x ==i (n -i 1i) then
-            True
-        else if x ==i 1i then
-            False
-        else
-            _millerRabinLoop2 x d n
+        _millerRabinLoop2 (modI (x ^i 2i) n) (d *i 2i) n
 
 _millerRabinLoop1 : Integer -> Integer -> Int -> RNGState -> (Bool, RNGState)
 _millerRabinLoop1 d n k rng =
@@ -30,9 +25,7 @@ _millerRabinLoop1 d n k rng =
         let (a, rng) = nextN64Bits 24 rng in -- 24*64 = 1536 bits
         let a = 2i +i (modI a (n -i 3i)) in
         let x =  modExp a d n in
-        if x ==i 1i || x ==i (n -i 1i) then
-            (True, rng)
-        else if _millerRabinLoop2 x d n then
+        if x ==i 1i || x ==i (n -i 1i) || _millerRabinLoop2 x d n then
             _millerRabinLoop1 d n (k - 1) rng
         else
             (False, rng)
