@@ -99,14 +99,6 @@ _secureSend (Bits bits) sc =
     let (nextEncrypt, nextDecrypt) = nextCrypt in
     --Encode sign into the value bit representaion, otherwise the values sign is exposed as it is not encrypted
     let bits = _encodeSign bits in
-
-    --TODO REMOVE THIS
-    -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
-    -- --Generate and append hash
-    -- let hash = hash256 bits in
-    -- let bits = lorI (shiftLI bits 256) hash in
-    -- ---
-
     --Encrypt and update secure state
     let (bits, nextCrypt) = nextEncrypt bits key in
     let secureState = SecureChannelState (key, nextCrypt) in    
@@ -127,19 +119,6 @@ _secureReceive sc =
     --Decrypt and update secure state
     let (bits, nextCrypt) = nextDecrypt bits key in
     let secureState = SecureChannelState (key, nextCrypt) in
-
-    --TODO REMOVE THIS
-    -- --- This similar to the hasing function is just a simple workaround until a proper integraty chack is in place (eg. Poly1305).
-    -- --Separate hash from data
-    -- let hash = modI bits (2i ^i 256i) in
-    -- let bits = shiftRI bits 256 in
-    -- --Verify hash
-    -- if hash /=i (hash256 bits) then
-    --     error @() "Hash does not match, message may have been tampered with.";
-    --     (Bits 0i, (c, secureState))
-    -- else
-    -- --- 
-
     --Decode sign
         let bits = _decodeSign bits in
         (Bits bits, (c, secureState))
