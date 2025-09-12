@@ -1,7 +1,3 @@
---TODO:
--- Confirm that new nounces are being created per message as expected and that both sides are maintaingin the same state (rng).
--- Add Poly1305 tag generation and verification.
-
 module SecureChannel where
 
 import SecureUtils
