@@ -48,8 +48,8 @@ instance Leveled T.Type where
     level (T.String _) = T.Top
     level (T.Arrow _ _ l1 _ _ _) = l1
     level (T.Labelled _ (T.Choice _) l _) = l
-    level (T.Labelled _ T.Record _ m) = T.Top --level m --this rule is never supposed to be used
-    level (T.Labelled _ T.Variant _ m) = T.Top --level m --this rule is never supposed to be used
+    level (T.Labelled _ T.Record _ m) = T.Top
+    level (T.Labelled _ T.Variant _ m) = T.Top
     level (T.Skip _) = T.Top
     level (T.End _ _ l) = l
     level (T.Semi _ t1 t2) = level t1
@@ -83,6 +83,7 @@ instance Leveled T.Type where
 equalLevels :: T.Type -> T.Type -> Bool
 equalLevels (T.Arrow _ _ l1 l2 t1 t2) (T.Arrow _ _ l3 l4 u1 u2) = do
     compareLevels l1 l3 && checkDefaultAbs l1 l2 l4 && equalLevels t1 u1 && equalLevels t2 u2
+    -- checkDefaultAbs l1 l2 l4 && equalLevels t1 u1 && equalLevels t2 u2
 equalLevels (T.Labelled _ (T.Choice _) l1 m1) (T.Labelled _ (T.Choice _) l2 m2) =
     compareLevels l1 l2 && isTypeMapLevelEqual m1 m2
 equalLevels (T.End _ _ l1) (T.End _ _ l2) =

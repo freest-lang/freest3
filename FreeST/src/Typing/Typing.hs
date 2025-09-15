@@ -70,7 +70,7 @@ typeCheck = do
     defs <- getDefs
     sigs <- getSignatures
     setSignatures $ Map.filterWithKey (\k _ -> Map.notMember k defs) sigs
-    -- *Register the starting position of each function (for polymorphic deadlock-freedom)
+    -- * Register the starting position of each function (for polymorphic deadlock-freedom)
     registerFunctionPositions defs
     -- * Check definitions in evaluation order
     mapM_ (checkDefs sigs) =<< getEvalOrder
@@ -178,13 +178,13 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   -- newContext'
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
-  setFirstInContext l1' 
+  setFirstInContext l1'
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
-  l2' <- getTypeLevel t2
+  -- l2' <- getTypeLevel t2
   setFirstInContext fic
   lic <- getLatestInContext
   when (fic == T.Top) clearFirstInContext
@@ -193,6 +193,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
           then l2
           else lic
   fic <- checkRenamedContext fic
+  -- customTrace e' ("Arrow from " ++ show fic ++ " to " ++ show m)
   return (T.Arrow p mult fic m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
@@ -340,21 +341,22 @@ synthetise kEnv (E.LevelApp _ e l) = do
   case t' of
     T.PForall p (Bind _ y r u) -> do
       case l of
-        T.LNum n -> do
+        T.LNum n -> do --instantiate with a number
           let f = takeWhile (/= ' ') (show e)
           let (r1, r2) = r
           let l' = T.LVar y
-          if (f == (show e)) 
-            then do
+          if (f == (show e))
+            then do --single instantiation
               n <- addFunctionCall f
+              -- customTrace e ("Adding level application constraints for function " ++ f ++ ", call number " ++ show (n+1))
               duplicateConstraintsInFunc f n
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
-            else do
+            else do --multiple instantiations
               n <- getFunctionCallsOf f
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
-        _ -> do
+        _ -> do --instantiate with a variable
               fic <- getFirstInContext
-              case fic of
+              case fic of --update variable in context to build abstraction properly
                 T.LVar x -> when (x == y) $ setPolyContext l
                 _ -> return ()
       let t'' = Rename.subsLevel l y u
@@ -420,7 +422,41 @@ checkAgainst kEnv e t = do
       compareTypes e u2 t2  
     _ -> do 
       (t1, l1) <- synthetise kEnv e
+      -- ctx <- getContext'
+      -- customTrace e ("Context: " ++ show ctx)
+      -- tl <- getTypeLevel t
+      -- case t of
+      --   T.PForall _ (Bind _ a _ t') -> do
+      --     case t' of
+      --       T.Arrow _ _ _ _ _ _ -> customTrace e ("Type: " ++ show t')
+      --       _ -> return()
+      --   _ -> return()
+      -- customTrace e ("Type to check against: " ++ show tl)
+      -- customTrace e ("3 - Comparing " ++ show t ++ " with " ++ show t1)
+      -- collectPriorities t Set.empty
       compareTypes e t t1
+
+-- collectPriorities :: T.Type -> Set.Set Variable -> TypingState (Set.Set Variable)
+-- collectPriorities (T.PForall _ (Bind _ x _ t)) s = do
+--   s' <- collectPriorities t (Set.insert x s)
+--   return s'
+-- collectPriorities (T.Arrow p _ l1 _ t1 t2) s = do
+--   -- case t2 of
+--   --   T.Arrow _ _ _ _ _ _ -> collectPriorities t1 s
+--   --   _ -> do
+--   let xs = Set.toList s
+--   case t2 of
+--     T.Arrow _ _ _ _ _ _ -> return ()
+--     _ -> do
+--       forM_ xs $ \x ->
+--         when (show l1 /= extern x) $ do
+--           addInequality p (l1, T.LVar x)
+--           -- customTrace (E.Int p 0) ("Collecting priorities in arrow: " ++ show l1 ++ " " ++ extern x)
+--         -- customTrace e ("l1: " ++ show l1 ++ ", extern x: " ++ extern x)
+--   collectPriorities t2 s
+-- collectPriorities _ s = return s
+
+
 
 leveledCheckAgainst :: K.KindEnv -> E.Exp -> T.Type -> TypingState T.Level
 -- Pair elimination
@@ -441,11 +477,14 @@ leveledCheckAgainst kEnv e t = do
       (t3, l3) <- synthetise kEnv e
       (_, u1, u2) <- Extract.function e t3 
       compareTypes e u1 t1 
+      -- customTrace e ("Comparing " ++ show u1 ++ " with " ++ show t1)
       compareTypes e u2 t2 
+      -- customTrace e ("Comparing " ++ show u2 ++ " with " ++ show t2)
       return l3 
     _ -> do 
       (t1, l1) <- synthetise kEnv e
       compareTypes e t t1
+      -- customTrace e ("Comparing " ++ show t ++ " with " ++ show t1)
       return l1
 
 

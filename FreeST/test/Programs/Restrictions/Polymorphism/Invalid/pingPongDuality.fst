@@ -10,22 +10,11 @@ playerA =
     wait ping;
     close pong
 
-playerB : forall a:(bot,top), b:(a,top) => dualof PPing ->[top,bot] PPing 1->[a,a+2] ()
-playerB =
-    forall a:(bot,top), b:(a,top) =>
-    \ping: dualof PPing -> 
-    \pong: PPing 1->
-    let (_, pong) = receive (pong{b}) in
-    let ping = send () (ping{a}) in
-    wait pong;
-    close ping
-
 main : ()
 main =
     let (pingI, pingO) = new @PPing () in
     let (pongI, pongO) = new @PPing () in
     fork (\_:()1-> ((playerA{1}{2}) pingI pongO));
-    (playerB{1}{2}) pingO pongI
+    (playerA{1}{2}) pongI pingO 
 
--- duality issue still a problem here, ping and pong can be instantiated with different priorities
--- leading to a deadlock when {1}{2}/{1}{2}
+--because duality does not preserve priorities, it can deadlock if I do {1}{2}/{1}{2}

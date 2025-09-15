@@ -740,7 +740,7 @@ isInFunction name span = do
 --             addInequality p (l1', l2')
 --           else return ()
 
-
+-- this fucntion needs to be rewritten, we got repeated code
 duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
 duplicateConstraintsInFunc func ver = do
   ineqs <- getInequalities
@@ -766,24 +766,24 @@ duplicateConstraintsInFunc func ver = do
             addFullInequality p (l1, l2) func (ver + 1)
           else return ()
 
-renameLVar :: S.MonadState (FreestS a) m => T.Level -> Int -> m T.Level
-renameLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "#" ++ show i))
-renameLVar l@(T.LNum n) _ = return l
-renameLVar (T.LParens l) i = renameLVar l i
-renameLVar (T.LAdd l1 l2) i = do
-  l1' <- renameLVar l1 i
-  l2' <- renameLVar l2 i
-  return (T.LAdd l1' l2')
-renameLVar l@(T.Top) _ = return l
-renameLVar l@(T.Bottom) _ = return l
+-- renameLVar :: S.MonadState (FreestS a) m => T.Level -> Int -> m T.Level
+-- renameLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "#" ++ show i))
+-- renameLVar l@(T.LNum n) _ = return l
+-- renameLVar (T.LParens l) i = renameLVar l i
+-- renameLVar (T.LAdd l1 l2) i = do
+--   l1' <- renameLVar l1 i
+--   l2' <- renameLVar l2 i
+--   return (T.LAdd l1' l2')
+-- renameLVar l@(T.Top) _ = return l
+-- renameLVar l@(T.Bottom) _ = return l
 
-bindLVarToFunc :: S.MonadState (FreestS a) m => T.Level -> String -> m T.Level
-bindLVarToFunc (T.LVar x) f = return $ T.LVar (mkVar (getSpan x) (f ++ ":" ++ extern x))
-bindLVarToFunc l@(T.LNum n) _ = return l
-bindLVarToFunc (T.LParens l) f = bindLVarToFunc l f
-bindLVarToFunc (T.LAdd l1 l2) f = do
-  l1' <- bindLVarToFunc l1 f
-  l2' <- bindLVarToFunc l2 f
-  return (T.LAdd l1' l2')
-bindLVarToFunc l@(T.Top) _ = return l
-bindLVarToFunc l@(T.Bottom) _ = return l
+-- bindLVarToFunc :: S.MonadState (FreestS a) m => T.Level -> String -> m T.Level
+-- bindLVarToFunc (T.LVar x) f = return $ T.LVar (mkVar (getSpan x) (f ++ ":" ++ extern x))
+-- bindLVarToFunc l@(T.LNum n) _ = return l
+-- bindLVarToFunc (T.LParens l) f = bindLVarToFunc l f
+-- bindLVarToFunc (T.LAdd l1 l2) f = do
+--   l1' <- bindLVarToFunc l1 f
+--   l2' <- bindLVarToFunc l2 f
+--   return (T.LAdd l1' l2')
+-- bindLVarToFunc l@(T.Top) _ = return l
+-- bindLVarToFunc l@(T.Bottom) _ = return l

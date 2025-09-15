@@ -16,3 +16,5 @@ main =
     let (pongI, pongO) = new @PPing () in
     fork (\_:()1-> ((playerA{1}{2}) pingI pongO));
     (playerA{2}{1}) pongI pingO 
+
+--because duality does not preserve priorities, it can deadlock if I do {1}{2}/{1}{2}
