@@ -127,8 +127,8 @@ _secureReceive sc =
 --Integer:
 
 type SecureSendInfiniteInt = SecureSend
-secureSendInfiniteInt : Integer -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
-secureSendInfiniteInt msg sc = _secureSend (Bits msg) @a sc
+secureSendInteger : Integer -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
+secureSendInteger msg sc = _secureSend (Bits msg) @a sc
 
 type SecureReceiveInfiniteInt = SecureReceive
 secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (Integer, (a, SecureChannelState))
