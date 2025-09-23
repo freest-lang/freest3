@@ -55,7 +55,7 @@ _getPreparedRandom rng =
 
 _generatePrime : RNGState -> (Integer, RNGState)
 _generatePrime rng =
-    let (n, rng) = _getPreparedRandom rng in -- value between 1535 and 1536 bits, to ensure correct key size
+    let (n, rng) = _getPreparedRandom rng in -- 1536-bit value, to ensure correct key size
     let (isPrime, rng) = _millerRabin n 20 rng in
     if isPrime then
         (n, rng)
