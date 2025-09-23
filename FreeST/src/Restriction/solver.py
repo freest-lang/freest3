@@ -118,11 +118,14 @@ def check_inequalities(inequalities, file_path):
             ])
 
             for c in unsat_core:
+                # print(unwrap_variables(constraint_map[str(c)]["l1"])
+                #       + (" = " if constraint_map[str(c)]["equality"] else " < ")
+                #       + unwrap_variables(constraint_map[str(c)]["l2"]))
                 constraint_id = str(c)
                 if not constraint_map[constraint_id]["equality"]:
                     constraint_map.pop(constraint_id)
                     solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
-
+        
         return unsat_constraints
 
 def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
