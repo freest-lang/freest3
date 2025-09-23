@@ -126,13 +126,13 @@ _secureReceive sc =
 
 --Integer:
 
-type SecureSendInfiniteInt = SecureSend
+type SecureSendInteger = SecureSend
 secureSendInteger : Integer -> forall a . (SecureSend ; a, SecureChannelState) -> (a, SecureChannelState)
 secureSendInteger msg sc = _secureSend (Bits msg) @a sc
 
-type SecureReceiveInfiniteInt = SecureReceive
-secureReceiveInfiniteInt : forall a . (SecureReceive ; a, SecureChannelState) -> (Integer, (a, SecureChannelState))
-secureReceiveInfiniteInt sc = 
+type SecureReceiveInteger = SecureReceive
+secureReceiveInteger : forall a . (SecureReceive ; a, SecureChannelState) -> (Integer, (a, SecureChannelState))
+secureReceiveInteger sc = 
     let (bits, sc) = _secureReceive @a sc in
     let msg = _getBits bits in
     (msg, sc)
