@@ -120,8 +120,8 @@ _secureReceive sc =
     let (bits, nextCrypt) = nextDecrypt bits key in
     let secureState = SecureChannelState (key, nextCrypt) in
     --Decode sign
-        let bits = _decodeSign bits in
-        (Bits bits, (c, secureState))
+    let bits = _decodeSign bits in
+    (Bits bits, (c, secureState))
 
 
 --Integer:
