@@ -125,7 +125,7 @@ receive (Right c) = do
   bytes <- NSB.recv c 1
   v <- deserialize (B.head bytes) c
   case v of
-    Left err -> error $ "Error deserializing message: " ++ err
+    Left err -> error $ "Error: " ++ err
     Right v  -> do
       return (v, Right c)
 
@@ -141,7 +141,14 @@ send v (Right c) = do
 wait :: Value -> IO Value
 wait (Chan (Left c)) = C.readChan (fst c) $> Unit
 
-wait (Chan (Right c)) = NSB.recv c 1 >> NS.close c $> Unit
+wait (Chan (Right c)) = do
+  bytes <- NSB.recv c 1
+  v <- (deserialize (B.head bytes) c :: IO (Either String Value))
+  case v of
+    Left err -> error $ "Error: " ++ err
+    Right v  -> do
+      NS.close c 
+      return Unit
 
 close :: Value -> IO Value
 close (Chan (Left c)) = do
@@ -153,7 +160,7 @@ close (Chan (Right c)) = do
   byte <- NSB.recv c 1
   v <- deserialize (B.head byte) c
   case v of
-    Left err -> error $ "Error deserializing message: " ++ err
+    Left err -> error $ "Error: " ++ err
     Right Unit -> do
       NS.close c 
       return Unit
