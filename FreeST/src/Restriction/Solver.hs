@@ -64,7 +64,7 @@ instance ToJSON T.Level where
     toJSON (T.LVar x)  = String (Text.pack (extern x))
     toJSON (T.LNum n)  = Number (fromIntegral n)
     toJSON (T.LAdd l1 l2) = String (Text.pack (show l1 ++ "+" ++ show l2))
-    toJSON (T.LParens l) = String (Text.pack ("(" ++ show l ++ ")"))
+    -- toJSON (T.LParens l) = String (Text.pack ("(" ++ show l ++ ")"))
 
 instance FromJSON T.Level where
     parseJSON (String "top")    = return T.Top
@@ -79,20 +79,20 @@ parseLevel s =
         (l:_) -> l
         []    -> T.LVar $ mkVar defaultSpan s
 
-levelP :: ReadP T.Level
-levelP = parensP <++ addP
+-- levelP :: ReadP T.Level
+-- levelP = parensP <++ addP
 
-parensP :: ReadP T.Level
-parensP = do
-    skipSpaces
-    _ <- char '('
-    l <- levelP
-    skipSpaces
-    _ <- char ')'
-    return (T.LParens l)
+-- parensP :: ReadP T.Level
+-- parensP = do
+--     skipSpaces
+--     _ <- char '('
+--     l <- levelP
+--     skipSpaces
+--     _ <- char ')'
+--     return (T.LParens l)
 
-addP :: ReadP T.Level
-addP = chainl1 termP addOp
+-- addP :: ReadP T.Level
+-- addP = chainl1 termP addOp
 
 addOp :: ReadP (T.Level -> T.Level -> T.Level)
 addOp = do
@@ -101,8 +101,17 @@ addOp = do
     skipSpaces
     return T.LAdd
 
+-- termP :: ReadP T.Level
+-- termP = parensP <++ numP <++ varP
+
+levelP :: ReadP T.Level
+levelP = addP
+
+addP :: ReadP T.Level
+addP = chainl1 termP addOp
+
 termP :: ReadP T.Level
-termP = parensP <++ numP <++ varP
+termP = numP <++ varP
 
 numP :: ReadP T.Level
 numP = do

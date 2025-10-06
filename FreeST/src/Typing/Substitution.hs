@@ -76,7 +76,7 @@ instance Subs T.Level where
     | x == a = l
     | otherwise = T.LVar x
   subsLevel l a (T.LAdd l1 l2) = T.LAdd (subsLevel l a l1) (subsLevel l a l2)
-  subsLevel l a (T.LParens l1) = T.LParens (subsLevel l a l1)
+  -- subsLevel l a (T.LParens l1) = T.LParens (subsLevel l a l1)
   subsLevel _ _ l = l
 
 subsLevelInType :: T.Level -> Variable -> T.Type -> T.Type

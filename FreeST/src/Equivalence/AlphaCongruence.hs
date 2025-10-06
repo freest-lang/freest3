@@ -70,5 +70,5 @@ instance Equiv T.Level where
   equiv v (T.LVar x1) (T.LVar x2) = extern x1 == extern x2
   equiv v (T.LNum n1) (T.LNum n2) = n1 == n2
   equiv v (T.LAdd l1 l2) (T.LAdd l3 l4) = equiv v l1 l3 && equiv v l2 l4
-  equiv v (T.LParens l1) (T.LParens l2) = equiv v l1 l2
+  -- equiv v (T.LParens l1) (T.LParens l2) = equiv v l1 l2
   equiv _ _ _ = False

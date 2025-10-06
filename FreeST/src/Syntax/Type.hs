@@ -40,7 +40,7 @@ data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 -- data Level = Top | Bottom | Num Int deriving (Eq, Ord)
 -- data Level = Top | Bottom | Literal String deriving (Eq, Ord)
-data Level = Top | Bottom | LVar Variable | LNum Int | LAdd Level Level | LParens Level deriving (Eq, Ord)
+data Level = Top | Bottom | LVar Variable | LNum Int | LAdd Level Level deriving (Eq, Ord) -- | LParens Level deriving (Eq, Ord)
 type LevelRange = (Level, Level)
 
 data Type =

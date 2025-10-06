@@ -99,6 +99,16 @@ equalLevels t1 t2 = True
 checkDefaultAbs :: T.Level -> T.Level -> T.Level -> Bool
 checkDefaultAbs T.Top T.Bottom _ = True
 checkDefaultAbs _ l1 l2 = compareLevels l1 l2
+-- checkDefaultAbs _ l1 l2 = compareLevels (normalizeLevel l1) (normalizeLevel l2)
+--   where
+--     normalizeLevel l = rebuild (flatten l)
+--       where
+--         flatten (T.LAdd x y) = flatten x ++ flatten y
+--         flatten x = [x]
+--         rebuild [] = error "normalizeLevel: empty addition"
+--         rebuild [x] = x
+--         rebuild (x:xs) = T.LAdd x (rebuild xs)
+--use this ^ if you have to switch the method of parsing
 
 isTypeMapLevelEqual :: (Ord k, Eq k) => Map.Map k T.Type -> Map.Map k T.Type -> Bool
 isTypeMapLevelEqual m1 m2 =
@@ -111,7 +121,7 @@ compareLevels T.Bottom T.Bottom = True
 compareLevels (T.LVar x) (T.LVar y) = extern x == extern y
 compareLevels (T.LNum n1) (T.LNum n2) = n1 == n2
 compareLevels (T.LAdd l1 l2) (T.LAdd l3 l4) = compareLevels l1 l3 && compareLevels l2 l4
-compareLevels (T.LParens l1) (T.LParens l2) = compareLevels l1 l2
+-- compareLevels (T.LParens l1) (T.LParens l2) = compareLevels l1 l2
 compareLevels _ _ = False
 
 toString :: T.Level -> String
@@ -120,7 +130,15 @@ toString T.Bottom = "bot"
 toString (T.LVar x) = extern x
 toString (T.LNum n) = show n
 toString (T.LAdd l1 l2) = toString l1 ++ "+" ++ toString l2
-toString (T.LParens l) = "(" ++ toString l ++ ")"
+-- toString (T.LParens l) = "(" ++ toString l ++ ")"
+
+toString2 :: T.Level -> String
+toString2 T.Top = "top"
+toString2 T.Bottom = "bot"
+toString2 (T.LVar x) = extern x
+toString2 (T.LNum n) = show n
+toString2 (T.LAdd l1 l2) = "Add " ++ toString2 l1 ++ " " ++ toString2 l2
+-- toString2 (T.LParens l) = "Parens " ++ toString2 l
 
 -- checkLevelRange :: T.Level -> T.LevelRange -> Bool
 -- checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 

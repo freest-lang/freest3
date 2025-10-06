@@ -199,7 +199,7 @@ renameVar x = do
 instance Rename T.Level where
   rename _ _ ρ (T.LVar x) = return $ T.LVar (Map.findWithDefault x x ρ)
   rename σ τ ρ (T.LAdd l1 l2) = T.LAdd <$> rename σ τ ρ l1 <*> rename σ τ ρ l2
-  rename σ τ ρ (T.LParens l) = T.LParens <$> rename σ τ ρ l
+  -- rename σ τ ρ (T.LParens l) = T.LParens <$> rename σ τ ρ l
   rename _ _ _ l = return l
 
 instance Rename T.LevelRange where
