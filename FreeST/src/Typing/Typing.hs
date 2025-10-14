@@ -179,6 +179,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
   setFirstInContext l1'
+  pushLevelToAbstractionContext l1'
   (t2, l2) <- synthetise kEnv e
   difference kEnv x
   when (mult == Un) (do
@@ -193,8 +194,11 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
           then l2
           else lic
   fic <- checkRenamedContext fic
+  absctx <- getAbstractionContext
+  ac <- popLevelFromAbstractionContext
   -- customTrace e' ("Arrow from " ++ show fic ++ " to " ++ show m)
-  return (T.Arrow p mult fic m t1 t2, T.Bottom)
+  -- return (T.Arrow p mult fic m t1 t2, T.Bottom)
+  return (T.Arrow p mult ac m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -348,13 +352,13 @@ synthetise kEnv (E.LevelApp _ e l) = do
           if (f == (show e))
             then do --single instantiation
               n <- addFunctionCall f
-              -- customTrace e ("Adding level application constraints for function " ++ f ++ ", call number " ++ show (n+1))
               duplicateConstraintsInFunc f n
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
             else do --multiple instantiations
               n <- getFunctionCallsOf f
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
         _ -> do --instantiate with a variable
+              substituteAbstractionContext y l
               fic <- getFirstInContext
               case fic of --update variable in context to build abstraction properly
                 T.LVar x -> when (x == y) $ setPolyContext l
@@ -494,10 +498,40 @@ compareTypes e t u = do
   timeout_ms   <- subTimeout_ms <$> getRunOpts
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
-  case checkAttempt of 
-    Just checks -> unless (checks && equalLevels t u)
+  --t is programmer u is compiler
+  clearAbstractionStack
+  progAbs <- iterateAbstraction t u []
+  case checkAttempt of
+    Just checks -> unless (checks && equalLevels t progAbs)
                  $ addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
+
+iterateAbstraction :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
+iterateAbstraction (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
+  case ls of
+    [] -> do
+      when (l1 /= T.Top) $ addError (LevelNotInContext p1 l1)
+      let ls' = if l3 /= T.Top && l3 /= T.Bottom then [l3] else []
+      t2' <- iterateAbstraction t2 t4 ls'
+      return (T.Arrow p2 m2 l1 l4 t3 t2')
+    _ -> do
+      let ls' = if l3 /= T.Top && l3 /= T.Bottom then ls ++ [l3] else ls
+      when (not (any (compareLevels l1) ls')) $ addError (LevelNotInContext p1 l1)
+      let ls'' = filter (not . compareLevels l1) ls'
+      addInequalities2 p1 l1 ls''
+      t2' <- iterateAbstraction t2 t4 ls'
+      return (T.Arrow p2 m2 l1 l4 t3 t2')
+iterateAbstraction (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
+  t1' <- iterateAbstraction t1 t2 ls
+  return (T.Forall p (Bind p a k t1'))
+iterateAbstraction (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
+  t1' <- iterateAbstraction t1 t2 ls
+  return (T.Rec p (Bind p a k t1'))
+iterateAbstraction (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
+  t1' <- iterateAbstraction t1 t2 ls
+  return (T.PForall p (Bind p a k t1'))
+iterateAbstraction _ t2 _ = return t2
+    
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
@@ -542,9 +576,9 @@ checkInequalities = do
 
 addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()
 addLevelAppConstraints y e l r1 r2 n f threadNum = do
-  when (threadNum == 1) $ do
-    addFullInequality (getSpan y) (r1, l) f threadNum
-    addFullInequality (getSpan y) (l, r2) f threadNum
+  -- when (threadNum == 1) $ do
+  addFullInequality (getSpan y) (r1, l) f threadNum
+  addFullInequality (getSpan y) (l, r2) f threadNum
   addEquality (getSpan e) (l, n) f threadNum
 
 customTrace :: E.Exp -> String -> TypingState ()

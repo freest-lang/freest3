@@ -49,6 +49,8 @@ data FreestS a = FreestS
   , functionCalls :: FunctionCallNum
   , functionPositions :: Map.Map String (Int, Int)
   , polyContext :: T.Level
+  , abstractionContext :: [T.Level]
+  , abstractionStack :: [T.Level]
   }
 
 type family XExtra a
@@ -80,6 +82,8 @@ initial ext = FreestS {
   , functionCalls = Map.empty
   , functionPositions = Map.empty
   , polyContext = T.Top
+  , abstractionContext = []
+  , abstractionStack = []
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -107,6 +111,8 @@ initialS = FreestS {
   , functionCalls = Map.empty
   , functionPositions = Map.empty
   , polyContext = T.Top
+  , abstractionContext = []
+  , abstractionStack = []
   }
 
 -- | AST
@@ -318,6 +324,9 @@ addFullInequality span inequality function threadNum =
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
+
+addInequalities2 :: S.MonadState (FreestS a) m => Span -> T.Level -> [T.Level] -> m ()
+addInequalities2 span l1 ls = mapM_ (\l2 -> addInequality span (l1, l2)) ls
 
 -- addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> String -> Int -> m ()
 -- addInequalities span l1 ctx function threadNum =
@@ -711,7 +720,7 @@ isInFunction name span = do
   return $ case Map.lookup name m of
     Just (start, end) -> do
       let (pos, _) = startPos span
-      pos > start && lesserThan pos end
+      pos >= start && lesserThan pos end
     Nothing           -> False
     where
       lesserThan n1 n2 = n2 == -1 || n1 < n2
@@ -753,7 +762,10 @@ duplicateConstraintsInFunc func ver = do
             -- l1' <- renameLVar l1 ver
             -- l2' <- renameLVar l2 ver
             -- addInequality p (l1, l2) f n
-            addFullInequality p (l1, l2) func (ver + 1)
+            case (l1, l2) of
+              (T.LNum _, _) -> return ()
+              (_, T.LNum _) -> return ()
+              _             -> addFullInequality p (l1, l2) func (ver + 1)
           else return ()
     else do
       S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n) -> do
@@ -787,3 +799,33 @@ duplicateConstraintsInFunc func ver = do
 --   return (T.LAdd l1' l2')
 -- bindLVarToFunc l@(T.Top) _ = return l
 -- bindLVarToFunc l@(T.Bottom) _ = return l
+
+pushLevelToAbstractionContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+pushLevelToAbstractionContext l = S.modify (\s -> s { abstractionContext = l : abstractionContext s })
+
+getAbstractionContext :: S.MonadState (FreestS a) m => m [T.Level]
+getAbstractionContext = S.gets abstractionContext
+
+popLevelFromAbstractionContext :: S.MonadState (FreestS a) m => m T.Level
+popLevelFromAbstractionContext = S.state $ \s -> case abstractionContext s of
+  []     -> (T.Top, s)
+  (x:xs) -> (x, s { abstractionContext = xs, abstractionStack = x : abstractionStack s })
+
+clearAbstractionContext :: S.MonadState (FreestS a) m => m ()
+clearAbstractionContext = S.modify (\s -> s { abstractionContext = [] })
+
+substituteAbstractionContext :: S.MonadState (FreestS a) m => Variable -> T.Level -> m ()
+substituteAbstractionContext v l = S.modify $ \s ->
+  s { abstractionContext = map (substLevel v l) (abstractionContext s) }
+  where
+    substLevel v l (T.LVar v')
+      | v == v'   = l
+      | otherwise = T.LVar v'
+    substLevel v l (T.LAdd l1 l2) = T.LAdd (substLevel v l l1) (substLevel v l l2)
+    substLevel _ _ l =  l
+
+getAbstractionStack :: S.MonadState (FreestS a) m => m [T.Level]
+getAbstractionStack = S.gets abstractionStack
+
+clearAbstractionStack :: S.MonadState (FreestS a) m => m ()
+clearAbstractionStack = S.modify (\s -> s { abstractionStack = [] })

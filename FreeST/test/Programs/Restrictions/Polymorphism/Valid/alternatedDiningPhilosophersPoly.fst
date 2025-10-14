@@ -18,7 +18,7 @@ evenPhilosopher =
     -- let (_,right) = receive right in
     evenPhilosopher{p+1}{q+1} left right
 
-oddPhilosopher : forall p:(q,top), q:(bot,top) => Fork ->[top,bot] dualof Fork 1->[p,p+1] ()
+oddPhilosopher : forall p:(q,top), q:(bot,top) => Fork ->[top,bot] dualof Fork 1->[q,p+1] ()
 oddPhilosopher =
     forall p:(q,top), q:(bot,top) =>
     \left: Fork ->

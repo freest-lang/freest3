@@ -109,6 +109,7 @@ data ErrorType =
   -- Levels
   | LevelMismatch Span T.Level T.Level String Int
   | LevelOutOfRange Span T.Level T.LevelRange
+  | LevelNotInContext Span T.Level
   deriving Show
 
 -- | This is just for avoiding throwing equal error messages
@@ -165,6 +166,7 @@ instance Located ErrorType where
   getSpan (CantUnifyKind p _ _             ) = p
   getSpan (LevelMismatch p _ _ _ _         ) = p
   getSpan (LevelOutOfRange p _ _           ) = p
+  getSpan (LevelNotInContext p _           ) = p
 
 
 instance Message ErrorType where
@@ -349,6 +351,8 @@ instance Message ErrorType where
     "            at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (LevelOutOfRange s l r) sty ts =
     "Level " ++ style red sty ts l ++ " is not in the interval " ++ style red sty ts (show r) ++ " at " ++ moduleName s ++ ":" ++ show (startPos s)
+  msg (LevelNotInContext s l) sty ts =
+    "Level " ++ style red sty ts l ++ " is not in the context at " ++ moduleName s ++ ":" ++ show (startPos s)
 
 
 declInTwoModules :: Span -> Span -> String

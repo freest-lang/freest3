@@ -10,6 +10,7 @@ module Restriction.Restriction
     -- , minLevel
     -- , maxLevel
     , equalLevels
+    , compareLevels
     -- , checkLevelRange
     )
 where

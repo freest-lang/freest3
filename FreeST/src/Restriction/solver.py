@@ -76,6 +76,8 @@ def check_inequalities(inequalities, file_path):
     solver = Solver()
     z3_consts = {}
     constraint_map = {}
+    equalities = []
+    unsat_core_list = []
 
     truths = [
         ForAll([Const('x', Levels)], bot < value(Const('x', Levels))),
@@ -94,6 +96,7 @@ def check_inequalities(inequalities, file_path):
         constraint_id = f"constraint_{i}"
         if equality:
             constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
+            equalities.append(constraint)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality}
@@ -122,11 +125,17 @@ def check_inequalities(inequalities, file_path):
                 #       + (" = " if constraint_map[str(c)]["equality"] else " < ")
                 #       + unwrap_variables(constraint_map[str(c)]["l2"]))
                 constraint_id = str(c)
+                unsat_core_list.append(constraint_map[constraint_id])
                 if not constraint_map[constraint_id]["equality"]:
                     constraint_map.pop(constraint_id)
                     solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
         
-        return unsat_constraints
+        
+        
+                
+        filtered_unsat_constraints = check_equalities(equalities, unsat_core_list, truths, unsat_constraints)
+        return filtered_unsat_constraints
+        # return unsat_constraints
 
 def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
     new_solver = Solver()
@@ -135,7 +144,35 @@ def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, trut
         if id != constraint_to_remove: 
             new_solver.assert_and_track(constraint["constraint"], id)
     return new_solver
-    
+
+def check_equalities(equalities, unsat_core_list, truths, unsat_constraints):
+    for c in unsat_core_list:
+        new_solver = Solver()
+        new_solver.add(*truths)   
+        new_solver.add(c["constraint"])
+        for e in equalities:
+            new_solver.add(e)
+        if new_solver.check() == sat:
+            unsat_constraints = remove_constraint(unsat_constraints, c)  
+    return unsat_constraints   
+
+def remove_constraint(unsat_constraints, c):
+    l1 = unwrap_variables(c["l1"])
+    l2 = unwrap_variables(c["l2"])
+    function = c["function"]
+    thread_num = c["thread_num"]
+    equality = c["equality"]
+    return [
+        uc for uc in unsat_constraints
+        if not (
+            uc["l1"] == l1 and
+            uc["l2"] == l2 and
+            uc["function"] == function and
+            uc["thread_num"] == thread_num and
+            uc["equality"] == equality
+        )
+    ]
+
 if __name__ == "__main__":
     file_path = sys.argv[1]
 

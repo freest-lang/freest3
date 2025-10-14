@@ -10,7 +10,7 @@ playerA =
     wait ping;
     close pong
 
-playerB : forall a:(bot,top), b:(a,top) => dualof PPing ->[top,bot] PPing 1->[a,a+2] ()
+playerB : forall a:(bot,top), b:(bot,top) => dualof PPing ->[top,bot] PPing 1->[b,a+2] ()
 playerB =
     forall a:(bot,top), b:(a,top) =>
     \ping: dualof PPing -> 
