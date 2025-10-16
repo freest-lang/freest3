@@ -23,7 +23,7 @@ pointClient =
     (pointClient{a+1}{b+1}{c+1}) point
     
 
-pointServer : forall a:(bot,top), b:(a,top), c:(a,top) => Int ->[top,bot] Int ->[top,bot] dualof Point ->[top,bot] Diverge
+pointServer : forall a:(bot,top), b:(a,top), c:(a,top) => Int ->[top,bot] Int ->[top,bot] dualof Point ->[top,b+2] Diverge
 pointServer =
     forall a:(bot,top), b:(a,top), c:(a,top) =>
     \x1: Int ->

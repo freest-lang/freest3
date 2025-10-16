@@ -326,7 +326,11 @@ addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
 
 addInequalities2 :: S.MonadState (FreestS a) m => Span -> T.Level -> [T.Level] -> m ()
-addInequalities2 span l1 ls = mapM_ (\l2 -> addInequality span (l1, l2)) ls
+addInequalities2 span l1 = mapM_ (\l2 -> addInequality span (l1, l2))
+
+addInequalitiesInReverse :: S.MonadState (FreestS a) m => Span -> T.Level -> [T.Level] -> m ()
+addInequalitiesInReverse span l1 ls = do
+  mapM_ (\l2 -> addInequality span (l2, l1)) ls
 
 -- addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> String -> Int -> m ()
 -- addInequalities span l1 ctx function threadNum =
@@ -596,8 +600,8 @@ checkMinTopBot xs
   | T.Top `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isVar (T.Bottom) = False
-    isVar (T.Top) = False
+    isVar T.Bottom = False
+    isVar T.Top = False
     isVar _         = True
     vars = filter isVar xs
 
@@ -625,8 +629,8 @@ checkMaxTopBot xs
   | T.Bottom `elem` xs && any isVar xs = (False, T.Top)
   | otherwise = (False, T.Top)
   where
-    isVar (T.Bottom) = False
-    isVar (T.Top) = False
+    isVar T.Bottom = False
+    isVar T.Top = False
     isVar _         = True
     vars = filter isVar xs
 

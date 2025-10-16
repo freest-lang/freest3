@@ -141,11 +141,11 @@ checkLinearity = do
 
 synthetise :: K.KindEnv -> E.Exp -> TypingState (T.Type, T.Level)
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ (T.Int p, T.Bottom)
-synthetise _ (E.Float p _ ) = return $ (T.Float p, T.Bottom)
-synthetise _ (E.Char p _  ) = return $ (T.Char p, T.Bottom)
-synthetise _ (E.Unit p    ) = return $ (T.unit p, T.Bottom)
-synthetise _ (E.String p _) = return $ (T.String p, T.Bottom)
+synthetise _ (E.Int  p _  ) = return (T.Int p, T.Bottom)
+synthetise _ (E.Float p _ ) = return (T.Float p, T.Bottom)
+synthetise _ (E.Char p _  ) = return (T.Char p, T.Bottom)
+synthetise _ (E.Unit p    ) = return (T.unit p, T.Bottom)
+synthetise _ (E.String p _) = return (T.String p, T.Bottom)
 synthetise kEnv (E.Var _ x) =
   getFromSignatures x >>= \case
     Just s -> do
@@ -185,7 +185,6 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   when (mult == Un) (do
     sigs2 <- getSignatures
     checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv sigs1 sigs2) 
-  -- l2' <- getTypeLevel t2
   setFirstInContext fic
   lic <- getLatestInContext
   when (fic == T.Top) clearFirstInContext
@@ -194,10 +193,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
           then l2
           else lic
   fic <- checkRenamedContext fic
-  absctx <- getAbstractionContext
   ac <- popLevelFromAbstractionContext
-  -- customTrace e' ("Arrow from " ++ show fic ++ " to " ++ show m)
-  -- return (T.Arrow p mult fic m t1 t2, T.Bottom)
   return (T.Arrow p mult ac m t1 t2, T.Bottom)
 -- Application, the special cases first
   -- Select C e
@@ -327,7 +323,6 @@ synthetise kEnv (E.Case p e fm) = do
   case Map.toList fm' of
     [(mkFalse, _), (mkTrue, _)] -> return ()
     _ -> popContext'
-  resetGlobalContext' --technically unnecessary but it's cleaner to keep it empty
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -349,7 +344,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
           let f = takeWhile (/= ' ') (show e)
           let (r1, r2) = r
           let l' = T.LVar y
-          if (f == (show e))
+          if f == show e
             then do --single instantiation
               n <- addFunctionCall f
               duplicateConstraintsInFunc f n
@@ -426,41 +421,7 @@ checkAgainst kEnv e t = do
       compareTypes e u2 t2  
     _ -> do 
       (t1, l1) <- synthetise kEnv e
-      -- ctx <- getContext'
-      -- customTrace e ("Context: " ++ show ctx)
-      -- tl <- getTypeLevel t
-      -- case t of
-      --   T.PForall _ (Bind _ a _ t') -> do
-      --     case t' of
-      --       T.Arrow _ _ _ _ _ _ -> customTrace e ("Type: " ++ show t')
-      --       _ -> return()
-      --   _ -> return()
-      -- customTrace e ("Type to check against: " ++ show tl)
-      -- customTrace e ("3 - Comparing " ++ show t ++ " with " ++ show t1)
-      -- collectPriorities t Set.empty
       compareTypes e t t1
-
--- collectPriorities :: T.Type -> Set.Set Variable -> TypingState (Set.Set Variable)
--- collectPriorities (T.PForall _ (Bind _ x _ t)) s = do
---   s' <- collectPriorities t (Set.insert x s)
---   return s'
--- collectPriorities (T.Arrow p _ l1 _ t1 t2) s = do
---   -- case t2 of
---   --   T.Arrow _ _ _ _ _ _ -> collectPriorities t1 s
---   --   _ -> do
---   let xs = Set.toList s
---   case t2 of
---     T.Arrow _ _ _ _ _ _ -> return ()
---     _ -> do
---       forM_ xs $ \x ->
---         when (show l1 /= extern x) $ do
---           addInequality p (l1, T.LVar x)
---           -- customTrace (E.Int p 0) ("Collecting priorities in arrow: " ++ show l1 ++ " " ++ extern x)
---         -- customTrace e ("l1: " ++ show l1 ++ ", extern x: " ++ extern x)
---   collectPriorities t2 s
--- collectPriorities _ s = return s
-
-
 
 leveledCheckAgainst :: K.KindEnv -> E.Exp -> T.Type -> TypingState T.Level
 -- Pair elimination
@@ -481,14 +442,11 @@ leveledCheckAgainst kEnv e t = do
       (t3, l3) <- synthetise kEnv e
       (_, u1, u2) <- Extract.function e t3 
       compareTypes e u1 t1 
-      -- customTrace e ("Comparing " ++ show u1 ++ " with " ++ show t1)
       compareTypes e u2 t2 
-      -- customTrace e ("Comparing " ++ show u2 ++ " with " ++ show t2)
       return l3 
     _ -> do 
       (t1, l1) <- synthetise kEnv e
       compareTypes e t t1
-      -- customTrace e ("Comparing " ++ show t ++ " with " ++ show t1)
       return l1
 
 
@@ -500,37 +458,51 @@ compareTypes e t u = do
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   --t is programmer u is compiler
   clearAbstractionStack
-  progAbs <- iterateAbstraction t u []
+  progAbs <- checkAbstractionLevels t u []
   case checkAttempt of
     Just checks -> unless (checks && equalLevels t progAbs)
                  $ addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
-iterateAbstraction :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
-iterateAbstraction (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
+checkAbstractionLevels :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
+checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
   case ls of
     [] -> do
       when (l1 /= T.Top) $ addError (LevelNotInContext p1 l1)
-      let ls' = if l3 /= T.Top && l3 /= T.Bottom then [l3] else []
-      t2' <- iterateAbstraction t2 t4 ls'
-      return (T.Arrow p2 m2 l1 l4 t3 t2')
+      let ls' = ([l3 | l3 /= T.Top && l3 /= T.Bottom])
+      t4' <- checkAbstractionLevels t2 t4 ls'
+      checkLatentEffect t4'
     _ -> do
       let ls' = if l3 /= T.Top && l3 /= T.Bottom then ls ++ [l3] else ls
-      when (not (any (compareLevels l1) ls')) $ addError (LevelNotInContext p1 l1)
+      unless (any (compareLevels l1) ls') $ addError (LevelNotInContext p1 l1)
       let ls'' = filter (not . compareLevels l1) ls'
       addInequalities2 p1 l1 ls''
-      t2' <- iterateAbstraction t2 t4 ls'
-      return (T.Arrow p2 m2 l1 l4 t3 t2')
-iterateAbstraction (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
-  t1' <- iterateAbstraction t1 t2 ls
+      t4' <- checkAbstractionLevels t2 t4 ls'
+      checkLatentEffect t4'
+  where
+    checkLatentEffect t4' = do
+      case t4' of
+        T.Arrow {} -> do
+          resetGlobalContext'
+          return (T.Arrow p2 m2 l1 l4 t3 t4')
+        _ -> do
+          gc <- getGlobalContext'
+          when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
+            if not (any (compareLevels l2) gc)
+              then addError (IncorrectLatentEffect p1 l2)
+              else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
+          resetGlobalContext'
+          return (T.Arrow p2 m2 l1 l2 t3 t4')
+checkAbstractionLevels (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
+  t1' <- checkAbstractionLevels t1 t2 ls
   return (T.Forall p (Bind p a k t1'))
-iterateAbstraction (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
-  t1' <- iterateAbstraction t1 t2 ls
+checkAbstractionLevels (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
+  t1' <- checkAbstractionLevels t1 t2 ls
   return (T.Rec p (Bind p a k t1'))
-iterateAbstraction (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
-  t1' <- iterateAbstraction t1 t2 ls
+checkAbstractionLevels (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
+  t1' <- checkAbstractionLevels t1 t2 ls
   return (T.PForall p (Bind p a k t1'))
-iterateAbstraction _ t2 _ = return t2
+checkAbstractionLevels _ t2 _ = return t2
     
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
@@ -576,7 +548,6 @@ checkInequalities = do
 
 addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()
 addLevelAppConstraints y e l r1 r2 n f threadNum = do
-  -- when (threadNum == 1) $ do
   addFullInequality (getSpan y) (r1, l) f threadNum
   addFullInequality (getSpan y) (l, r2) f threadNum
   addEquality (getSpan e) (l, n) f threadNum
