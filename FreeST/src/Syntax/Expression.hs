@@ -52,6 +52,7 @@ data Exp =
   | LevelAbs Span (Bind T.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
   | LevelApp Span Exp T.Level               -- e{p}
   | LevelInstantiation Span Exp
+  | LevelEndpointPriority Span Exp (Int, Int) -- (initial value, increment)
   | LevelPeek Span Exp
 
 instance Default (Bind T.Type Exp) where
