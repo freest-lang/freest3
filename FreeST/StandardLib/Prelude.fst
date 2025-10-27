@@ -130,6 +130,7 @@ undefined : forall a:*T . a
 -- Session operations
 -- | Creates two endpoints of a channels of the given type.
 new : forall a:1A . () ->[top,bot] (a, dualof a)
+-- new : forall a:1A . () ->[top,bot] (Int,Int) ->[top,bot] (a, dualof a)
 -- | Sends a value on a channel. Returns the continuation channel
 send : forall a:1T . a ->[top,bot] forall b:1S . !sendLvlVar a; b 1->[sendLvlVar,sendLvlVar] b
 -- | Receives a value on a channel. Returns the received value and 

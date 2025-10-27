@@ -51,6 +51,8 @@ data Exp =
   -- Levels
   | LevelAbs Span (Bind T.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
   | LevelApp Span Exp T.Level               -- e{p}
+  | LevelInstantiation Span Exp
+  | LevelPeek Span Exp
 
 instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.unit p) (Unit p)

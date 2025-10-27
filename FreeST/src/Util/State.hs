@@ -12,13 +12,14 @@ import           Util.Warning
 import qualified Restriction.Restriction as R
 
 import qualified Control.Monad.State as S
-import           Data.List ( intercalate, nub, sortOn )
+import           Data.List ( intercalate, nub, sortOn, isPrefixOf )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Data.Maybe
 import qualified Data.Traversable as Traversable
 import           Data.Void
 import           Debug.Trace
+import           Data.Char (isAlphaNum)
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
@@ -28,6 +29,11 @@ type Inequalities = Set.Set R.InequalityEntry
 type Equalities = Set.Set R.EqualityEntry
 type ContextSet = Set.Set T.Level
 type FunctionCallNum = Map.Map String Int
+
+data FunctionData = FunctionData
+  { funcPosition :: (Int, Int),
+    funcParams :: [String]
+  } deriving (Show, Eq)
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -47,7 +53,7 @@ data FreestS a = FreestS
   , firstInContext' :: T.Level
   , latestInContext :: T.Level
   , functionCalls :: FunctionCallNum
-  , functionPositions :: Map.Map String (Int, Int)
+  , functionPositions :: Map.Map String FunctionData
   , polyContext :: T.Level
   , abstractionContext :: [T.Level]
   , abstractionStack :: [T.Level]
@@ -695,26 +701,27 @@ getFunctionCallsOf name = do
 --   | Map.null tm = T.Top
 --   | otherwise = 
 
-registerFunctionPositions :: S.MonadState (FreestS a) m => Definitions a -> m ()
+registerFunctionPositions :: (S.MonadState (FreestS a) m, Show (XDef a)) => Definitions a -> m ()
 registerFunctionPositions defs = do
   S.forM_ (Map.toList defs) $ \(k, v) -> do
     let span = getSpan k
     let (startingPos, _) = startPos span
     S.when (moduleName span /= "Prelude" && moduleName span /= "<default>") $ do
-      S.modify (\s -> s { functionPositions = Map.insert (extern k) (startingPos, -1) (functionPositions s) })
+      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) []) (functionPositions s) })
   orderFunctionPositions
+  updateFunctionParams defs
 
-getFunctionPositions :: S.MonadState (FreestS a) m => m (Map.Map String (Int, Int))
+getFunctionPositions :: S.MonadState (FreestS a) m => m (Map.Map String FunctionData)
 getFunctionPositions = S.gets functionPositions
 
 orderFunctionPositions :: S.MonadState (FreestS a) m => m ()
 orderFunctionPositions = do
   m <- S.gets functionPositions
-  let xs = sortOn (\(_, (start, _)) -> start) (Map.toList m)
+  let xs = sortOn (\(_, FunctionData (start, _) _) -> start) (Map.toList m)
       go [] = []
-      go [(name, (start, _))] = [(name, (start, -1))]
-      go ((name, (start, _)) : rest@((_, (nextStart, _)):_)) =
-        (name, (start, nextStart - 1)) : go rest
+      go [(name, FunctionData (start, _) params)] = [(name, FunctionData (start, -1) params)]
+      go ((name, FunctionData (start, _) params) : rest@((_, FunctionData (nextStart, _) _):_)) =
+        (name, FunctionData (start, nextStart - 1) params) : go rest
       newMap = Map.fromList (go xs)
   S.modify (\s -> s { functionPositions = newMap })
 
@@ -722,12 +729,32 @@ isInFunction :: S.MonadState (FreestS a) m => String -> Span -> m Bool
 isInFunction name span = do
   m <- getFunctionPositions
   return $ case Map.lookup name m of
-    Just (start, end) -> do
+    Just (FunctionData (start, end) _) -> 
       let (pos, _) = startPos span
-      pos >= start && lesserThan pos end
-    Nothing           -> False
+      in pos >= start && lesserThan pos end
+    Nothing -> False
     where
       lesserThan n1 n2 = n2 == -1 || n1 < n2
+
+updateFunctionParams :: (S.MonadState (FreestS a) m, Show (XDef a)) => Definitions a -> m ()
+updateFunctionParams defs = do
+  fps <- getFunctionPositions
+  let updateParams name fd =
+        case [ v | (k, v) <- Map.toList defs, extern k == name ] of
+          (v:_) ->
+            let params = extractVars (show v)
+            in fd { funcParams = params }
+          [] -> fd
+      newMap = Map.mapWithKey updateParams fps
+  S.modify (\s -> s { functionPositions = newMap })
+  where
+    extractVars s =
+      [ takeWhile isAlphaNum (dropWhile (== '\\') w)
+      | w <- words s
+      , "\\" `isPrefixOf` w
+      , ':' `elem` w
+      ]
+
 
 -- duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
 -- duplicateConstraintsInFunc func ver = do

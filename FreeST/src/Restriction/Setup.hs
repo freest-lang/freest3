@@ -5,7 +5,7 @@ import System.Directory (removeDirectoryRecursive, doesDirectoryExist, getCurren
 import System.Info (os)
 import System.FilePath ((</>))
 import System.Exit (ExitCode(..))
-import Control.Monad (when)
+import Control.Monad (when, unless)
 
 getPythonCommand :: IO String
 getPythonCommand
@@ -48,7 +48,7 @@ setupVenv modulePath = do
     let venvPath = modulePath </> "venv"
     pyCmd <- getPythonCommand
     venvExists <- doesDirectoryExist venvPath
-    when (not venvExists) $ do
+    unless venvExists $ do
         print "Creating virtual environment for solver..."
         callProcess pyCmd ["-m", "venv", venvPath]
     return venvPath

@@ -85,7 +85,6 @@ typeCheck = do
   -- here, we continue with the errors from the previous state (kind inference) 
   s <- get
   setErrors (errors s ++ errors s0)
-  
 
 checkDefs :: Signatures -> [Variable] -> TypingState () 
 checkDefs sigs [ ] = return () 
