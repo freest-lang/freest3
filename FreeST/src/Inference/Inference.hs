@@ -67,6 +67,7 @@ instance KindSubs E.Exp where
   substitute subs (E.Case    s e fm) = E.Case s e (Map.map (second (substitute subs)) fm)
   substitute subs (E.TypeAbs s b) = E.TypeAbs s (substitute subs b) 
   substitute subs (E.TypeApp s e t) = E.TypeApp s (substitute subs e) (substitute subs t) 
+  substitute subs (E.LevelTypeApp s e t (n,m)) = E.LevelTypeApp s (substitute subs e) (substitute subs t) (n,m)
   substitute subs (E.UnLet s x e1 e2) = E.UnLet s x (substitute subs e1) (substitute subs e2)
   -- substitute subs (E.LevelAbs s b) = E.LevelAbs s (substitute subs b)
   -- substitute subs (E.LevelApp s e l) = E.LevelApp s (substitute subs e) l

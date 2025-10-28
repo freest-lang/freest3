@@ -274,6 +274,13 @@ synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   void $ K.checkAgainstAbsorb kEnv t
   return (Rename.subs t y u', T.Bottom)
+-- New @t {n,m}
+synthetise kEnv (E.LevelTypeApp p new@(E.Var _ x) t (n,m)) | x == mkNew p = do
+  (u, _)                           <- synthetise kEnv new
+  ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
+  customTrace new ("Initial value: " ++ show n ++ ", increment: " ++ show m)
+  void $ K.checkAgainstAbsorb kEnv t
+  return (Rename.subs t y u', T.Bottom)
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   (u, _)                            <- synthetise kEnv e

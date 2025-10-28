@@ -354,6 +354,8 @@ instance Unparse Exp where
   -- Levels
   unparse (E.LevelApp _ e l) = (appRator, show e ++ " {" ++ show l ++ "}")
   unparse (E.LevelAbs _ b) = (arrowRator, "\\" ++ showBindExpP b) 
+  unparse (E.LevelTypeApp _ e t (n,m)) = (appRator, show e ++ " @" ++ t' ++ " {" ++ show n ++ ", " ++ show m ++ "}")
+    where t' = bracket (unparse t) Right appRator
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)

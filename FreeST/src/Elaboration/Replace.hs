@@ -56,6 +56,7 @@ instance Replace E.Exp where
   replace (E.UnLet p x e1 e2) = E.UnLet p x <$> replace e1 <*> replace e2
   replace (E.LevelAbs p b) = E.LevelAbs p <$> replace b
   replace (E.LevelApp p e l) = E.LevelApp p <$> replace e <*> pure l
+  replace (E.LevelTypeApp p e t (n,m)) = E.LevelTypeApp p <$> replace e <*> replace t <*> pure (n,m)
   replace e                 = return e
 
 instance Replace E.FieldMap where

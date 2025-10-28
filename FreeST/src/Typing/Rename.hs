@@ -174,6 +174,8 @@ instance Rename E.Exp where
     e' <- rename σ τ ρ e
     l' <- rename σ τ ρ l
     return $ E.LevelApp p e' l'
+  rename σ τ ρ (E.LevelTypeApp p e t (n,m)) =
+    E.LevelTypeApp p <$> rename σ τ ρ e <*> rename σ τ ρ t <*> pure (n,m)
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ _ e = return e
 

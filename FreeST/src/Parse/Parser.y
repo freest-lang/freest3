@@ -288,11 +288,12 @@ App :: { E.Exp }
                                        \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
                                       }
   | App '@' Type                      {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | App '@' Type '{' INT ',' INT '}'  {% do
-                                          s1 <- mkSpanSpan $1 $8 
-                                          s2 <- mkSpanSpan $1 $3
-                                          s3 <- mkSpanSpan $4 $8
-                                          pure $ E.App s1 (E.TypeApp s2 $1 $3) (E.LevelEndpointPriority s3 $1 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2))) }
+  -- | App '@' Type '{' INT ',' INT '}'  {% do
+  --                                         s1 <- mkSpanSpan $1 $8 
+  --                                         s2 <- mkSpanSpan $1 $3
+  --                                         s3 <- mkSpanSpan $4 $8
+  --                                         pure $ E.App s1 (E.TypeApp s2 $1 $3) (E.LevelEndpointPriority s3 $1 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2))) }
+  | App '@' Type '{' INT ',' INT '}'  {% mkSpanSpan $1 $8 >>= \s -> pure $ E.LevelTypeApp s $1 $3 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2)) }
   | App '{' BasicLevel '}'            {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
   | Primary                           { $1 }
    

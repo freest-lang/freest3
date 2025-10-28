@@ -52,7 +52,7 @@ data Exp =
   | LevelAbs Span (Bind T.LevelRange Exp)   -- ∀ p ∈ (l1, l2) => e
   | LevelApp Span Exp T.Level               -- e{p}
   | LevelInstantiation Span Exp
-  | LevelEndpointPriority Span Exp (Int, Int) -- (initial value, increment)
+  | LevelTypeApp Span Exp T.Type (Int, Int) -- (initial value, increment)
   | LevelPeek Span Exp
 
 instance Default (Bind T.Type Exp) where
@@ -82,3 +82,6 @@ instance Located Exp where
   getSpan (CasePat  p _ _     ) = p
   getSpan (LevelAbs p _       ) = p
   getSpan (LevelApp p _ _     ) = p
+  getSpan (LevelInstantiation p _ ) = p
+  getSpan (LevelTypeApp p _ _ _) = p
+  getSpan (LevelPeek p _     ) = p

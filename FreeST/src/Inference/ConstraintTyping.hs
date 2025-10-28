@@ -140,6 +140,12 @@ ctyping kEnv (E.LevelApp s e l) = do
     -- _ -> addError (ExpectedPForall (getSpan t) t) $> (t, u)
   -- ~(T.PForall _ (Bind _ a _ b)) <- Extract.forall e t
   -- return (subs t a b, u)
+ctyping kEnv (E.LevelTypeApp _ e t (n,m)) = do
+  k <- constraintKinding kEnv t
+  (t1, u) <- ctyping kEnv e
+  ~(T.Forall _ b) <- Extract.forall e t1
+  addConstraint $ KindC k (binder b)
+  return (subs t (var b) (body b), u)
 ctyping _ e = error $ "undefined: " ++ show e
 
 mult :: T.Type -> Multiplicity

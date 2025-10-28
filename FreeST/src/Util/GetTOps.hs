@@ -44,6 +44,7 @@ instance DefaultTypeOp Exp where
     UnLet p x (getDefault m e1) (getDefault m e2)
   getDefault m (LevelAbs p b) = LevelAbs p $ getDefault m b
   getDefault m (LevelApp p e l) = LevelApp p (getDefault m e) l
+  getDefault m (LevelTypeApp p e t (a,b)) = LevelTypeApp p (getDefault m e) (getDefault m t) (a,b)
   getDefault _ e           = e
 
 instance DefaultTypeOp (Bind K.Kind Exp) where
