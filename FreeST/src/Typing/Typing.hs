@@ -278,7 +278,8 @@ synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
 synthetise kEnv (E.LevelTypeApp p new@(E.Var _ x) t (n,m)) | x == mkNew p = do
   (u, _)                           <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
-  customTrace new ("Initial value: " ++ show n ++ ", increment: " ++ show m)
+  fep <- getLatestFreshEndpoints
+  addEndpointPriorities fep (n, m)
   void $ K.checkAgainstAbsorb kEnv t
   return (Rename.subs t y u', T.Bottom)
 -- Type application
@@ -342,7 +343,6 @@ synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
 -- Priority application
 synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
-  customTrace e ("Level argument: " ++ show l)
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
@@ -372,6 +372,8 @@ synthetise kEnv (E.LevelApp _ e l) = do
 synthetise kEnv (E.LevelPeek p e) = do
   (t, l) <- synthetise kEnv e
   customTrace e "Priority peek at level: "
+  -- here it would be the current iter of c1
+  -- also when doing r1 == c1 remember that there will be multiple c1s in the solver
   return (t, T.Bottom) --return state level
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
@@ -407,6 +409,7 @@ checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> TypingState ()
 
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
+  updateLatestFreshEndpoints (x, y)
   (t1, l1)  <- synthetise kEnv e1
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1

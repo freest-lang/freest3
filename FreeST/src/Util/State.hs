@@ -29,6 +29,7 @@ type Inequalities = Set.Set R.InequalityEntry
 type Equalities = Set.Set R.EqualityEntry
 type ContextSet = Set.Set T.Level
 type FunctionCallNum = Map.Map String Int
+type EndpointPriorities = Map.Map Variable (Int, Int)
 
 data FunctionData = FunctionData
   { funcPosition :: (Int, Int),
@@ -57,6 +58,8 @@ data FreestS a = FreestS
   , polyContext :: T.Level
   , abstractionContext :: [T.Level]
   , abstractionStack :: [T.Level]
+  , endpointPriorities :: EndpointPriorities
+  , latestFreshEndpoints :: (Variable, Variable)
   }
 
 type family XExtra a
@@ -90,6 +93,8 @@ initial ext = FreestS {
   , polyContext = T.Top
   , abstractionContext = []
   , abstractionStack = []
+  , endpointPriorities = Map.empty
+  , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -119,6 +124,8 @@ initialS = FreestS {
   , polyContext = T.Top
   , abstractionContext = []
   , abstractionStack = []
+  , endpointPriorities = Map.empty
+  , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   }
 
 -- | AST
@@ -372,17 +379,6 @@ getContext' = do
     (x:_) -> return x
     []      -> return Set.empty
 
--- getGlobalContext :: S.MonadState (FreestS a) m => m T.Level
--- getGlobalContext = do
---   gctx <- S.gets globalContext
---   ctx <- getContext
---   ctxStack <- getContextStack
---   if gctx == T.Top && length ctxStack == 1
---     then do
---       S.modify (\s -> s { globalContext = (R.minLevel ctx gctx) })
---       return (R.minLevel ctx gctx)
---     else return gctx
-
 getGlobalContext' :: S.MonadState (FreestS a) m => m ContextSet
 getGlobalContext' = do
   gctx <- S.gets globalContext'
@@ -394,47 +390,11 @@ getGlobalContext' = do
       return ctx
     else return gctx
 
--- resetGlobalContext :: S.MonadState (FreestS a) m => m ()
--- resetGlobalContext = S.modify (\s -> s { globalContext = T.Top })
-
--- resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
--- resetGlobalContext' = S.modify (\s -> s { globalContext' = Set.empty })
-
 resetGlobalContext' :: S.MonadState (FreestS a) m => m ()
 resetGlobalContext' = do
   S.modify (\s -> s { globalContext' = Set.empty })
   S.modify (\s -> s { firstInContext' = T.Top })
   -- S.modify (\s -> s { latestInContext = T.Top })
-
--- updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
--- updateContext l = do 
---   ctxStack <- getContextStack
---   case ctxStack of
---     (x:xs) -> do
---       let newTop = R.minLevel x l 
---       S.modify (\s -> s { context = newTop : xs })
---     [] -> do
---       gctx <- getGlobalContext
---       if gctx == T.Top
---         then do
---           S.modify (\s -> s { globalContext = l })
---           pushContext l
---         else pushContext l
-
--- updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
--- updateContext' l = do
---   ctxStack <- getContextStack'
---   case ctxStack of
---     (x:xs) -> do
---       let newTop = Set.insert l x
---       S.modify (\s -> s { context' = newTop : xs })
---     [] -> do
---       gctx <- getGlobalContext'
---       if gctx == Set.empty
---         then do
---           S.modify (\s -> s { globalContext' = Set.singleton l })
---           pushContext' l
---         else pushContext' l
 
 updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext' l = do
@@ -461,33 +421,11 @@ updateContext' l = do
           pushContext' l
         else pushContext' l
 
--- newContext :: S.MonadState (FreestS a) m => m ()
--- newContext = pushContext T.Top
-
 newContext' :: S.MonadState (FreestS a) m => m ()
 newContext' = S.modify (\s -> s { context' = Set.empty : context' s })
 
--- pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
--- pushContext l = S.modify (\s -> s { context = l : context s })
-
 pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
-
--- popContext :: S.MonadState (FreestS a) m => m ()
--- popContext = S.modify (\s -> s { context = tail (context s) })
-
--- popContext :: S.MonadState (FreestS a) m => m ()
--- popContext = do
---   ctxStack <- getContextStack
---   case ctxStack of
---     (x:xs) -> do
---       gctx <- getGlobalContext
---       let newGctx = R.minLevel x gctx
---       S.modify (\s -> s { globalContext = newGctx })
---       S.modify (\s -> s { context = xs })
---     [] -> do
---       -- S.modify (\s -> s { globalContext = T.Top })
---       S.modify (\s -> s { context = [] })
 
 popContext' :: S.MonadState (FreestS a) m => m ()
 popContext' = do
@@ -582,20 +520,6 @@ maxLevel' span ls = do
       mapM_ (\l -> addInequality span (l, newLevel)) ls
       return newLevel
 
--- checkMinTopBot :: [T.Level] -> (Bool, T.Level)
--- checkMinTopBot [] = (True, T.Top)
--- checkMinTopBot [x] = (True, x)
--- checkMinTopBot xs
---   | any (== T.Bottom) xs = (True, T.Bottom)
---   | all (== T.Top) xs = (True, T.Top)
---   | length nums == 1 = (True, head nums)
---   | T.Top `elem` xs && any isNum xs = (False, T.Top)
---   | otherwise = (False, T.Top)
---   where
---     isNum (T.Num _) = True
---     isNum _         = False
---     nums = filter isNum xs
-
 checkMinTopBot :: [T.Level] -> (Bool, T.Level)
 checkMinTopBot [] = (True, T.Top)
 checkMinTopBot [x] = (True, x)
@@ -610,20 +534,6 @@ checkMinTopBot xs
     isVar T.Top = False
     isVar _         = True
     vars = filter isVar xs
-
--- checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
--- checkMaxTopBot [] = (True, T.Top)
--- checkMaxTopBot [x] = (True, x)
--- checkMaxTopBot xs
---   | any (== T.Top) xs = (True, T.Top)
---   | all (== T.Bottom) xs = (True, T.Bottom)
---   | length nums == 1 = (True, head nums)
---   | T.Bottom `elem` xs && any isNum xs = (False, T.Top)
---   | otherwise = (False, T.Top)
---   where
---     isNum (T.Num _) = True
---     isNum _         = False
---     nums = filter isNum xs
 
 checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
 checkMaxTopBot [] = (True, T.Top)
@@ -755,31 +665,6 @@ updateFunctionParams defs = do
       , ':' `elem` w
       ]
 
-
--- duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
--- duplicateConstraintsInFunc func ver = do
---   ineqs <- getInequalities
---   if ver > 0
---     then do
---       S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
---         inFunc <- isInFunction func p
---         if inFunc
---           then do
---             l1' <- renameLVar l1 ver
---             l2' <- renameLVar l2 ver
---             addInequality p (l1', l2')
---           else return ()
---     else do
---       S.forM_ (Set.toList ineqs) $ \(p, (l1,l2)) -> do
---         inFunc <- isInFunction func p
---         if inFunc
---           then do
---             l1' <- bindLVarToFunc l1 func
---             l2' <- bindLVarToFunc l2 func
---             S.modify (\s -> s { inequalities = Set.delete (p, (l1, l2)) (inequalities s) })
---             addInequality p (l1', l2')
---           else return ()
-
 -- this fucntion needs to be rewritten, we got repeated code
 duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> Int -> m ()
 duplicateConstraintsInFunc func ver = do
@@ -808,28 +693,6 @@ duplicateConstraintsInFunc func ver = do
             S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n) (inequalities s) })
             addFullInequality p (l1, l2) func (ver + 1)
           else return ()
-
--- renameLVar :: S.MonadState (FreestS a) m => T.Level -> Int -> m T.Level
--- renameLVar (T.LVar x) i = return $ T.LVar (mkVar (getSpan x) (extern x ++ "#" ++ show i))
--- renameLVar l@(T.LNum n) _ = return l
--- renameLVar (T.LParens l) i = renameLVar l i
--- renameLVar (T.LAdd l1 l2) i = do
---   l1' <- renameLVar l1 i
---   l2' <- renameLVar l2 i
---   return (T.LAdd l1' l2')
--- renameLVar l@(T.Top) _ = return l
--- renameLVar l@(T.Bottom) _ = return l
-
--- bindLVarToFunc :: S.MonadState (FreestS a) m => T.Level -> String -> m T.Level
--- bindLVarToFunc (T.LVar x) f = return $ T.LVar (mkVar (getSpan x) (f ++ ":" ++ extern x))
--- bindLVarToFunc l@(T.LNum n) _ = return l
--- bindLVarToFunc (T.LParens l) f = bindLVarToFunc l f
--- bindLVarToFunc (T.LAdd l1 l2) f = do
---   l1' <- bindLVarToFunc l1 f
---   l2' <- bindLVarToFunc l2 f
---   return (T.LAdd l1' l2')
--- bindLVarToFunc l@(T.Top) _ = return l
--- bindLVarToFunc l@(T.Bottom) _ = return l
 
 pushLevelToAbstractionContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushLevelToAbstractionContext l = S.modify (\s -> s { abstractionContext = l : abstractionContext s })
@@ -860,3 +723,20 @@ getAbstractionStack = S.gets abstractionStack
 
 clearAbstractionStack :: S.MonadState (FreestS a) m => m ()
 clearAbstractionStack = S.modify (\s -> s { abstractionStack = [] })
+
+addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> (Int, Int) -> m ()
+addEndpointPriority v p = S.modify (\s -> s { endpointPriorities = Map.insert v p (endpointPriorities s) })
+
+addEndpointPriorities :: S.MonadState (FreestS a) m => (Variable, Variable) -> (Int, Int) -> m ()
+addEndpointPriorities (v1, v2) p = do
+  addEndpointPriority v1 p
+  addEndpointPriority v2 p
+
+getEndpointPriorities :: S.MonadState (FreestS a) m => m EndpointPriorities
+getEndpointPriorities = S.gets endpointPriorities
+
+updateLatestFreshEndpoints :: S.MonadState (FreestS a) m => (Variable, Variable) -> m ()
+updateLatestFreshEndpoints ep = S.modify (\s -> s { latestFreshEndpoints = ep })
+
+getLatestFreshEndpoints :: S.MonadState (FreestS a) m => m (Variable, Variable)
+getLatestFreshEndpoints = S.gets latestFreshEndpoints
