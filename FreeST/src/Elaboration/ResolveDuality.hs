@@ -50,6 +50,7 @@ instance {-# OVERLAPPING #-} ResolveDuality E.Exp where
   resolve (E.LevelAbs p b) = E.LevelAbs p <$> resolve b
   resolve (E.LevelApp p e l) = E.LevelApp p <$> resolve e <*> pure l
   resolve (E.LevelTypeApp p e t (n,m)) = E.LevelTypeApp p <$> resolve e <*> resolve t <*> pure (n,m)
+  resolve (E.LevelPeek p e) = E.LevelPeek p <$> resolve e
   resolve e                   = return e
 
 -- -- This should be an instance but it overlaps with that one of ParseEnv

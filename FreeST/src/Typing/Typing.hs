@@ -342,6 +342,7 @@ synthetise kEnv e@(E.LevelAbs _ (Bind p a r e')) = do
 -- Priority application
 synthetise kEnv (E.LevelApp _ e l) = do
   (t, _)                            <- synthetise kEnv e
+  customTrace e ("Level argument: " ++ show l)
   t' <- Extract.forall e t
   case t' of
     T.PForall p (Bind _ y r u) -> do
@@ -367,6 +368,11 @@ synthetise kEnv (E.LevelApp _ e l) = do
       let t'' = Rename.subsLevel l y u
       return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
+--Priority peek
+synthetise kEnv (E.LevelPeek p e) = do
+  (t, l) <- synthetise kEnv e
+  customTrace e "Priority peek at level: "
+  return (t, T.Bottom) --return state level
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])

@@ -1,4 +1,4 @@
-type Stream = forall i:(bot,top) => !i() ; Stream
+type Stream = forall i:(bot,top) => !i() ; Close i+1
 
 -- client : forall p:(bot,top) => Stream ->[top,bot] dualof Stream 1->[p,top] ()
 -- client c1 c2 =
@@ -26,7 +26,12 @@ main : ()
 main =
     -- let ps = (1,2) in
     -- let qs = (2,2) in
-    let (r1, w1) = new @Stream {1,2} in
+    let (r1, w1) = new @Stream {1,2} () in
+    let r1 = send () (inst r1) in
+    let (_, w1) = receive (inst w1) in
+    let r1 = priority r1 in
+    close r1;
+    wait w1;
     -- let (r2, w2) = new @Stream qs in
     -- fork (\_:()1-> (client {lowest r1} r1 w2));
     -- server {lowest w1} w1 r2

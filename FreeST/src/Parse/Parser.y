@@ -121,6 +121,8 @@ import           Paths_FreeST ( getDataFileName )
   dualof   {TokenDualof _}
   bot      {TokenBottom _}
   top      {TokenTop _}
+  inst     {TokenInst _}
+  priority {TokenPriority _}
 
 -- %nonassoc LOWER_ID UPPER_ID
 -- %nonassoc '(' '['
@@ -295,6 +297,8 @@ App :: { E.Exp }
   --                                         pure $ E.App s1 (E.TypeApp s2 $1 $3) (E.LevelEndpointPriority s3 $1 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2))) }
   | App '@' Type '{' INT ',' INT '}'  {% mkSpanSpan $1 $8 >>= \s -> pure $ E.LevelTypeApp s $1 $3 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2)) }
   | App '{' BasicLevel '}'            {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
+  | inst App                          {% mkSpanSpan $1 $2 >>= \s -> pure $ E.LevelApp s $2 T.Bottom }
+  | priority VarExp                   {% mkSpanSpan $1 $2 >>= \s -> pure $ E.LevelPeek s $2 }
   | Primary                           { $1 }
    
 Primary :: { E.Exp }
@@ -315,7 +319,6 @@ Primary :: { E.Exp }
   | '(' Exp ')'                    { $2 } -- TODO: fix the span to include the parenthesis
   | forall LevelBind LevelAbs      {% let (a,r) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.LevelAbs s (Bind s a r $3) }
 
-
 Abs :: { (Multiplicity, E.Exp) }
   : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs
@@ -323,6 +326,9 @@ Abs :: { (Multiplicity, E.Exp) }
          let (m, e) = $2 in
          mkSpanSpan v e >>= \s -> pure (m, E.Abs s m (Bind s v t e))
       }
+
+VarExp :: { E.Exp }
+  : ArbitraryProgVar {% flip E.Var $1 `fmap` mkSpan $1 }
 
 TAbs :: { E.Exp }
   : '=>' Exp { $2 }

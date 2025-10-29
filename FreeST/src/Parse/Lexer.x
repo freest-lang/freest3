@@ -145,8 +145,10 @@ tokens :-
   of				{ \p s -> TokenOf (internalPos p) }
   (forall|∀)                    { \p s -> TokenForall (internalPos p) }
   dualof			{ \p s -> TokenDualof (internalPos p) }
-  bot     { \p s -> TokenBottom (internalPos p) }
-  top     { \p s -> TokenTop (internalPos p) }
+  bot         { \p s -> TokenBottom (internalPos p) }
+  top         { \p s -> TokenTop (internalPos p) }
+  inst        { \p s -> TokenInst (internalPos p) }
+  priority    { \p s -> TokenPriority (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)    	{ \p s -> TokenInt (internalPos p) (read s) }
@@ -253,6 +255,8 @@ data Token =
   | TokenAnd Span
   | TokenBottom Span
   | TokenTop Span
+  | TokenInst Span
+  | TokenPriority Span
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -347,6 +351,8 @@ instance Show Token where
   show (TokenAnd _) = "and"
   show (TokenBottom _) = "bot"
   show (TokenTop _) = "top"
+  show (TokenInst _) = "inst"
+  show (TokenPriority _) = "priority"
 
 -- Trim newlines
 scanTokens :: String -> FilePath -> Either ErrorType [Token] 
@@ -481,6 +487,8 @@ instance Located Token where
   getSpan (TokenAnd p) = p
   getSpan (TokenBottom p) = p
   getSpan (TokenTop p) = p 
+  getSpan (TokenInst p) = p
+  getSpan (TokenPriority p) = p
 --  pos t = error $ show t
 
 
