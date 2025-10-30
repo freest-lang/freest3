@@ -253,6 +253,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
+  registerEndpointPriorities e1 e2 p
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
   newContext'
@@ -279,7 +280,9 @@ synthetise kEnv (E.LevelTypeApp p new@(E.Var _ x) t (n,m)) | x == mkNew p = do
   (u, _)                           <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   fep <- getLatestFreshEndpoints
-  addEndpointPriorities fep (n, m)
+  func <- getCurrentFunction (fst $ startPos p)
+
+  addEndpointPriorities fep (n, m) func
   void $ K.checkAgainstAbsorb kEnv t
   return (Rename.subs t y u', T.Bottom)
 -- Type application
@@ -371,7 +374,9 @@ synthetise kEnv (E.LevelApp _ e l) = do
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
   (t, l) <- synthetise kEnv e
-  customTrace e "Priority peek at level: "
+  customTrace e ("Priority peek at level: " ++ show l)
+  ep <- getEndpointPriorities
+  customTrace e ("Current endpoint priorities: " ++ show ep)
   -- here it would be the current iter of c1
   -- also when doing r1 == c1 remember that there will be multiple c1s in the solver
   return (t, T.Bottom) --return state level
@@ -504,7 +509,7 @@ checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) l
           gc <- getGlobalContext'
           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
             if not (any (compareLevels l2) gc)
-              then addError (IncorrectLatentEffect p1 l2)
+              then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
           resetGlobalContext'
           return (T.Arrow p2 m2 l1 l2 t3 t4')
@@ -566,6 +571,19 @@ addLevelAppConstraints y e l r1 r2 n f threadNum = do
   addFullInequality (getSpan y) (r1, l) f threadNum
   addFullInequality (getSpan y) (l, r2) f threadNum
   addEquality (getSpan e) (l, n) f threadNum
+
+registerEndpointPriorities :: E.Exp -> E.Exp -> Span -> TypingState ()
+registerEndpointPriorities e1 e2 p = do
+  let funcName = takeWhile (/= ' ') (show e1)
+  fr <- isFunctionRegistered funcName
+  ep <- getEndpointPriorityByName (show e2)
+  case ep of
+    Just ePrio -> when fr $ do
+      param <- getFunctionParam funcName 
+      case param of
+        Just param' -> addEndpointPriority (mkVar p param') ePrio funcName
+        Nothing -> return ()
+    Nothing -> return ()
 
 customTrace :: E.Exp -> String -> TypingState ()
 customTrace e msg = do
