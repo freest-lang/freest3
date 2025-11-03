@@ -67,6 +67,7 @@ data FreestS a = FreestS
   , abstractionStack :: [T.Level]
   , endpointPriorities :: EndpointPriorities
   , latestFreshEndpoints :: (Variable, Variable)
+  , priorityInstantiations :: Map.Map String Int
   }
 
 type family XExtra a
@@ -102,6 +103,7 @@ initial ext = FreestS {
   , abstractionStack = []
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
+  , priorityInstantiations = Map.empty
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -133,6 +135,7 @@ initialS = FreestS {
   , abstractionStack = []
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
+  , priorityInstantiations = Map.empty
   }
 
 -- | AST
@@ -803,3 +806,17 @@ getFunctionParam func = do
           return $ Just param
         else return Nothing
     Nothing -> return Nothing
+
+addPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m ()
+addPriorityInstantiation var = do
+  m <- S.gets priorityInstantiations
+  let newMap = case Map.lookup var m of
+        Nothing -> Map.insert var 0 m
+        Just v  -> Map.insert var (v + 1) m
+  S.modify (\s -> s { priorityInstantiations = newMap })
+
+getPriorityInstantiations :: S.MonadState (FreestS a) m => m (Map.Map String Int)
+getPriorityInstantiations = S.gets priorityInstantiations
+
+clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
+clearPriorityInstantiations = S.modify (\s -> s { priorityInstantiations = Map.empty })

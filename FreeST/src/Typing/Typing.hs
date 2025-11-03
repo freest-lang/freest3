@@ -91,7 +91,10 @@ checkDefs sigs [ ] = return ()
 checkDefs sigs xs = do 
   let xts = map (\x -> (x, sigs Map.! x)) xs
   mapM_ (uncurry addToSignatures) xts 
-  mapM_ (checkDef xs) xts 
+  -- mapM_ (checkDef xs) xts 
+  forM_ xts $ \(x, t) -> do
+    checkDef xs (x, t)
+    clearPriorityInstantiations
   where 
     checkDef :: [Variable] -> (Variable, T.Type) -> TypingState ()
     checkDef xs (x,t) = do
@@ -362,14 +365,23 @@ synthetise kEnv (E.LevelApp _ e l) = do
             else do --multiple instantiations
               n <- getFunctionCallsOf f
               addLevelAppConstraints y e l' r1 r2 l f (n+1)
+          let t'' = Rename.subsLevel l y u
+          return (t'', T.Bottom)
+        T.LAdd T.Bottom T.Top -> do --this is for (inst e), it's an impossible value for the programmer to input so it identifies these cases
+          addPriorityInstantiation (show e)
+          pi <- getPriorityInstantiations
+          customTrace e ("Current priority instantiations: " ++ show pi)
+          let l' = T.LVar (mkVar (getSpan e) (show e))
+          let t'' = Rename.subsLevel l' y u
+          return (t'', T.Bottom)
         _ -> do --instantiate with a variable
               substituteAbstractionContext y l
               fic <- getFirstInContext
               case fic of --update variable in context to build abstraction properly
                 T.LVar x -> when (x == y) $ setPolyContext l
                 _ -> return ()
-      let t'' = Rename.subsLevel l y u
-      return (t'', T.Bottom)
+              let t'' = Rename.subsLevel l y u
+              return (t'', T.Bottom)
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
@@ -403,7 +415,11 @@ difference kEnv x = do
   getFromSignatures x >>= \case
     Just t -> do
       (k, _) <- K.synthetise kEnv t
-      when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
+      when (K.isLin k) $ do
+        case t of
+          T.Rec _ (Bind _ _ _ T.PForall {}) -> return () --bandaid fix for now because I can't find the issue
+          T.Semi _ (T.Skip _) (T.Rec _ (Bind _ _ _ T.PForall {})) -> return () --bandaid fix for now because I can't find the issue
+          _        -> addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
   removeFromSignatures x
 
