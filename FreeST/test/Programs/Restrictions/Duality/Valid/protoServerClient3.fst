@@ -42,7 +42,7 @@ main =
     -- let qs = (2,2) in
     let (r1, w1) = new @Stream {1,2} () in
     let (r2, w2) = new @Stream {2,2} () in
-    test {bot} r1 w2;
+    test {priority r1} r1 w2;
     -- let r1 = send () (inst r1) in
     -- let (_, w1) = receive (inst w1) in
     let r2 = priority r2 in

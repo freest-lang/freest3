@@ -58,6 +58,7 @@ instance Replace E.Exp where
   replace (E.LevelApp p e l) = E.LevelApp p <$> replace e <*> pure l
   replace (E.LevelTypeApp p e t (n,m)) = E.LevelTypeApp p <$> replace e <*> replace t <*> pure (n,m)
   replace (E.LevelPeek p e) = E.LevelPeek p <$> replace e
+  replace (E.LevelAppBound p e1 e2) = E.LevelAppBound p <$> replace e1 <*> replace e2
   replace e                 = return e
 
 instance Replace E.FieldMap where

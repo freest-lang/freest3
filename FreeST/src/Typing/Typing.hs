@@ -385,13 +385,17 @@ synthetise kEnv (E.LevelApp _ e l) = do
     T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
-  (t, l) <- synthetise kEnv e
-  customTrace e ("Priority peek at level: " ++ show l)
-  ep <- getEndpointPriorities
-  customTrace e ("Current endpoint priorities: " ++ show ep)
-  -- here it would be the current iter of c1
-  -- also when doing r1 == c1 remember that there will be multiple c1s in the solver
-  return (t, T.Bottom) --return state level
+  let var = mkVar (getSpan e) (show e)
+  return (T.Skip p, T.LVar var)
+-- Priority application defining function bounds
+synthetise kEnv (E.LevelAppBound p e1 e2) = do
+  customTrace e1 ("Priority application with bound at expr: " ++ show e2)
+  (t1, _) <- synthetise kEnv e1
+  (_, l) <- synthetise kEnv e2
+  t1' <- Extract.forall e1 t1
+  case t1' of
+    T.PForall p (Bind _ y r u) -> return (Rename.subsLevel l y u, T.Bottom)
+    T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])

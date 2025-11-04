@@ -818,5 +818,10 @@ addPriorityInstantiation var = do
 getPriorityInstantiations :: S.MonadState (FreestS a) m => m (Map.Map String Int)
 getPriorityInstantiations = S.gets priorityInstantiations
 
+getPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m (Maybe Int)
+getPriorityInstantiation var = do
+  m <- S.gets priorityInstantiations
+  return $ Map.lookup var m
+
 clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
 clearPriorityInstantiations = S.modify (\s -> s { priorityInstantiations = Map.empty })

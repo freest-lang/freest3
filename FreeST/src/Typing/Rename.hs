@@ -177,6 +177,10 @@ instance Rename E.Exp where
   rename σ τ ρ (E.LevelTypeApp p e t (n,m)) =
     E.LevelTypeApp p <$> rename σ τ ρ e <*> rename σ τ ρ t <*> pure (n,m)
   rename σ τ ρ (E.LevelPeek p e) = E.LevelPeek p <$> rename σ τ ρ e
+  rename σ τ ρ (E.LevelAppBound p e1 e2) = do
+    e1' <- rename σ τ ρ e1
+    e2' <- rename σ τ ρ e2
+    return $ E.LevelAppBound p e1' e2'
   -- Otherwise: Unit, Int, Float, Char, String
   rename _ _ _ e = return e
 

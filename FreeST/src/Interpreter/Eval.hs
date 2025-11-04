@@ -175,6 +175,9 @@ eval fun tys ctx eenv (E.LevelTypeApp _ e _ (n,m)) = eval fun tys ctx eenv e >>=
   (TypeAbs v ctx eenv) -> eval fun tys ctx eenv v
   v -> return v
 eval fun tys ctx eenv (E.LevelPeek _ e) = return $ LevelPeek e ctx eenv
+eval fun tys ctx eenv (E.LevelAppBound _ e1 e2) = eval fun tys ctx eenv e1 >>= \case
+  (LevelAbs v ctx eenv) -> eval fun tys ctx eenv v
+  v -> return v
 eval fun _ _ _ _ = internalError "Interpreter.Eval.eval" fun
 
 

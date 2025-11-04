@@ -46,6 +46,7 @@ instance DefaultTypeOp Exp where
   getDefault m (LevelApp p e l) = LevelApp p (getDefault m e) l
   getDefault m (LevelTypeApp p e t (a,b)) = LevelTypeApp p (getDefault m e) (getDefault m t) (a,b)
   getDefault m (LevelPeek p e) = LevelPeek p (getDefault m e)
+  getDefault m (LevelAppBound p e1 e2) = LevelAppBound p (getDefault m e1) (getDefault m e2)
   getDefault _ e           = e
 
 instance DefaultTypeOp (Bind K.Kind Exp) where

@@ -297,8 +297,9 @@ App :: { E.Exp }
   --                                         pure $ E.App s1 (E.TypeApp s2 $1 $3) (E.LevelEndpointPriority s3 $1 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2))) }
   | App '@' Type '{' INT ',' INT '}'  {% mkSpanSpan $1 $8 >>= \s -> pure $ E.LevelTypeApp s $1 $3 (let (TokenInt _ n1) = $5 in let (TokenInt _ n2) = $7 in (n1,n2)) }
   | App '{' BasicLevel '}'            {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelApp s $1 $3 }
+  | App '{' LevelPeek '}'             {% mkSpanSpan $1 $4 >>= \s -> pure $ E.LevelAppBound s $1 $3 }
   | inst App                          {% mkSpanSpan $1 $2 >>= \s -> pure $ E.LevelApp s $2 (T.LAdd T.Bottom T.Top) }
-  | priority VarExp                   {% mkSpanSpan $1 $2 >>= \s -> pure $ E.LevelPeek s $2 }
+  | LevelPeek                         { $1 }
   | Primary                           { $1 }
    
 Primary :: { E.Exp }
@@ -661,6 +662,9 @@ LevelAbs :: { E.Exp }
            let (a, r) = $2 in
            return $ E.LevelAbs s (Bind s a r $3)
       }
+
+LevelPeek :: { E.Exp }
+  : priority VarExp {% mkSpanSpan $1 $2 >>= \s -> pure $ E.LevelPeek s $2 }
 
 
   -- PForall :: { T.Type }
