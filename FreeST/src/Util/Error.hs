@@ -111,6 +111,7 @@ data ErrorType =
   | LevelOutOfRange Span T.Level T.LevelRange
   | LevelNotInContext Span T.Level
   | IncorrectLatentEffect Span T.Level
+  | PriorityNotInstantiated Span T.Level
   deriving Show
 
 -- | This is just for avoiding throwing equal error messages
@@ -169,6 +170,7 @@ instance Located ErrorType where
   getSpan (LevelOutOfRange p _ _           ) = p
   getSpan (LevelNotInContext p _           ) = p
   getSpan (IncorrectLatentEffect p _       ) = p
+  getSpan (PriorityNotInstantiated p _     ) = p
 
 
 instance Message ErrorType where
@@ -357,6 +359,8 @@ instance Message ErrorType where
     "Level " ++ style red sty ts l ++ " is not in the context at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (IncorrectLatentEffect s l) sty ts =
     "Level " ++ style red sty ts l ++ " is not a valid latent effect of function at " ++ moduleName s ++ ":" ++ show (startPos s)
+  msg (PriorityNotInstantiated s l) sty ts =
+    "Level " ++ style red sty ts l ++ " has not been instantiated at " ++ moduleName s ++ ":" ++ show (startPos s)
 
 
 declInTwoModules :: Span -> Span -> String

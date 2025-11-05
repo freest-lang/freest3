@@ -45,7 +45,8 @@ main =
     test {priority r1} r1 w2;
     -- let r1 = send () (inst r1) in
     -- let (_, w1) = receive (inst w1) in
-    let r2 = priority r2 in
+    let pr2 = priority r2 in
+    test {pr2} r2 w1;
     -- sleep 500 500;
     -- close r1;
     -- wait w1;

@@ -29,19 +29,20 @@ type Inequalities = Set.Set R.InequalityEntry
 type Equalities = Set.Set R.EqualityEntry
 type ContextSet = Set.Set T.Level
 type FunctionCallNum = Map.Map String Int
-type EndpointPriorities = Map.Map Variable EndpointPriorityData
+type EndpointPriorities = Map.Map (Variable, String, Int) (Int, Int)
 
 data FunctionData = FunctionData
   { funcPosition :: (Int, Int),
     funcParams :: [String],
-    funcParamIndex :: Int
+    funcParamIndex :: Int,
+    functionCallNum :: Int
   } deriving (Show, Eq)
 
-data EndpointPriorityData = EndpointPriorityData
-  { currentPriority :: Int,
-    increment :: Int,
-    functionName :: String
-  } deriving (Show, Eq)
+-- data EndpointPriorityData = EndpointPriorityData
+--   { currentPriority :: Int,
+--     increment :: Int
+--     -- functionName :: String
+--   } deriving (Show, Eq)
 
 data FreestS a = FreestS
   { ast :: AST a
@@ -68,6 +69,7 @@ data FreestS a = FreestS
   , endpointPriorities :: EndpointPriorities
   , latestFreshEndpoints :: (Variable, Variable)
   , priorityInstantiations :: Map.Map String Int
+  , calledFunctions :: Map.Map String Int
   }
 
 type family XExtra a
@@ -104,6 +106,7 @@ initial ext = FreestS {
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   , priorityInstantiations = Map.empty
+  , calledFunctions = Map.empty
   }
 
 -- Dummy phase. This instance allows calling functions from a generic context
@@ -136,6 +139,7 @@ initialS = FreestS {
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   , priorityInstantiations = Map.empty
+  , calledFunctions = Map.empty
   }
 
 -- | AST
@@ -627,7 +631,7 @@ registerFunctionPositions defs = do
     let span = getSpan k
     let (startingPos, _) = startPos span
     S.when (moduleName span /= "Prelude" && moduleName span /= "<default>") $ do
-      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) [] (-1)) (functionPositions s) })
+      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) [] (-1) 0) (functionPositions s) })
   orderFunctionPositions
   updateFunctionParams defs
 
@@ -643,7 +647,7 @@ getCurrentFunction :: S.MonadState (FreestS a) m => Int -> m String
 getCurrentFunction pos = do
   fps <- getFunctionPositions
   let res = find
-        (\(_, FunctionData (start, end) _ _) ->
+        (\(_, FunctionData (start, end) _ _ _) ->
             start <= pos && (end == -1 || end >= pos))
         (Map.toList fps)
   return $ maybe "<error>" fst res --there's always a function, this just prevents us from having to unwrap the Maybe later
@@ -651,11 +655,11 @@ getCurrentFunction pos = do
 orderFunctionPositions :: S.MonadState (FreestS a) m => m ()
 orderFunctionPositions = do
   m <- S.gets functionPositions
-  let xs = sortOn (\(_, FunctionData (start, _) _ _) -> start) (Map.toList m)
+  let xs = sortOn (\(_, FunctionData (start, _) _ _ _) -> start) (Map.toList m)
       go [] = []
-      go [(name, FunctionData (start, _) params i)] = [(name, FunctionData (start, -1) params i)]
-      go ((name, FunctionData (start, _) params i) : rest@((_, FunctionData (nextStart, _) _ _):_)) =
-        (name, FunctionData (start, nextStart - 1) params i) : go rest
+      go [(name, FunctionData (start, _) params i callNum)] = [(name, FunctionData (start, -1) params i callNum)]
+      go ((name, FunctionData (start, _) params i callNum) : rest@((_, FunctionData (nextStart, _) _ _ _):_)) =
+        (name, FunctionData (start, nextStart - 1) params i callNum) : go rest
       newMap = Map.fromList (go xs)
   S.modify (\s -> s { functionPositions = newMap })
 
@@ -663,7 +667,7 @@ isInFunction :: S.MonadState (FreestS a) m => String -> Span -> m Bool
 isInFunction name span = do
   m <- getFunctionPositions
   return $ case Map.lookup name m of
-    Just (FunctionData (start, end) _ _) -> 
+    Just (FunctionData (start, end) _ _ _) -> 
       let (pos, _) = startPos span
       in pos >= start && lesserThan pos end
     Nothing -> False
@@ -751,19 +755,25 @@ clearAbstractionStack = S.modify (\s -> s { abstractionStack = [] })
 -- addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> (Int, Int) -> m ()
 -- addEndpointPriority v p = S.modify (\s -> s { endpointPriorities = Map.insert v p (endpointPriorities s) })
 
-addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> (Int, Int) -> String -> m ()
-addEndpointPriority v (x,y) func = do
-  S.modify (\s -> s { endpointPriorities = Map.insert v (EndpointPriorityData x y func) (endpointPriorities s) })
+-- addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> (Int, Int) -> m ()
+-- addEndpointPriority v func (x,y) = do
+--   S.modify (\s -> s { endpointPriorities = Map.insert (v, func) (x,y) (endpointPriorities s) })
+
+addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> (Int, Int) -> m ()
+addEndpointPriority v func (x, y) = do
+  fps <- getFunctionPositions
+  let callNum = maybe 0 functionCallNum (Map.lookup func fps)
+  S.modify (\s -> s { endpointPriorities = Map.insert (v, func, callNum) (x, y) (endpointPriorities s) })
 
 -- addEndpointPriorities :: S.MonadState (FreestS a) m => (Variable, Variable) -> (Int, Int) -> m ()
 -- addEndpointPriorities (v1, v2) p = do
 --   addEndpointPriority v1 p
 --   addEndpointPriority v2 p
 
-addEndpointPriorities :: S.MonadState (FreestS a) m => (Variable, Variable) -> (Int, Int) -> String -> m ()
-addEndpointPriorities (v1, v2) p func = do
-  addEndpointPriority v1 p func
-  addEndpointPriority v2 p func
+addEndpointPriorities :: S.MonadState (FreestS a) m => (Variable, Variable) -> String -> (Int, Int) -> m ()
+addEndpointPriorities (v1, v2) func p = do
+  addEndpointPriority v1 func p
+  addEndpointPriority v2 func p
 
 getEndpointPriorities :: S.MonadState (FreestS a) m => m EndpointPriorities
 getEndpointPriorities = S.gets endpointPriorities
@@ -771,18 +781,26 @@ getEndpointPriorities = S.gets endpointPriorities
 -- getEndpointPriority :: S.MonadState (FreestS a) m => Variable -> m (Maybe (Int, Int))
 -- getEndpointPriority v = do Map.lookup v <$> getEndpointPriorities
 
-getEndpointPriority :: S.MonadState (FreestS a) m => Variable -> m (Maybe (Int, Int))
-getEndpointPriority v = do
-  fmap (\epd -> (currentPriority epd, increment epd))
-       . Map.lookup v
-       <$> getEndpointPriorities
+-- getEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> m (Maybe (Int, Int))
+-- getEndpointPriority v func = do
+--   Map.lookup (v, func) <$> getEndpointPriorities
 
-getEndpointPriorityByName :: S.MonadState (FreestS a) m => String -> m (Maybe (Int, Int))
-getEndpointPriorityByName name = do
+getEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> m (Maybe (Int, Int))
+getEndpointPriority v func = do
+  fps <- getFunctionPositions
+  let callNum =  maybe 0 functionCallNum (Map.lookup func fps)
+  Map.lookup (v, func, callNum) <$> getEndpointPriorities
+
+getEndpointPriorityByName :: S.MonadState (FreestS a) m => String -> String -> m (Maybe (Int, Int))
+getEndpointPriorityByName varName funcName = do
+  fps <- getFunctionPositions
+  let callNum = maybe 0 functionCallNum (Map.lookup funcName fps)
   mp <- getEndpointPriorities
-  let match = [ (currentPriority epd, increment epd)
-              | (v, epd) <- Map.toList mp
-              , extern v == name
+  let match = [ epd
+              | ((v, f, c), epd) <- Map.toList mp
+              , extern v == varName
+              , f == funcName
+              , c == callNum
               ]
   return $ listToMaybe match
 
@@ -796,7 +814,7 @@ getFunctionParam :: S.MonadState (FreestS a) m => String -> m (Maybe String)
 getFunctionParam func = do
   fps <- getFunctionPositions
   case Map.lookup func fps of
-    Just fd@(FunctionData pos params paramIndex) ->
+    Just fd@(FunctionData pos params paramIndex callNum) ->
       if paramIndex >= 0 && paramIndex < length params
         then do
           let param = params !! paramIndex
@@ -806,6 +824,32 @@ getFunctionParam func = do
           return $ Just param
         else return Nothing
     Nothing -> return Nothing
+
+addFunctionCall' :: S.MonadState (FreestS a) m => String -> Int -> m ()
+addFunctionCall' func line = do
+  multi <- isMultipleArgFunctionCall func line
+  S.unless multi $ do
+    fps <- getFunctionPositions
+    case Map.lookup func fps of
+      Just fd@(FunctionData pos params paramIndex callNum) -> do
+        let newFd = fd { functionCallNum = callNum + 1 }
+        S.modify (\s -> s { functionPositions = Map.insert func newFd fps })
+        S.modify (\s -> s { calledFunctions = Map.insert func line (calledFunctions s) })
+      Nothing -> return ()
+  where
+    isMultipleArgFunctionCall :: S.MonadState (FreestS a) m => String -> Int -> m Bool
+    isMultipleArgFunctionCall func line = do
+      called <- S.gets calledFunctions
+      return $ case Map.lookup func called of
+        Just l  -> l == line
+        Nothing -> False
+
+-- isMultipleArgFunctionCall :: S.MonadState (FreestS a) m => String -> Int -> m Bool
+-- isMultipleArgFunctionCall func line = do
+--   called <- S.gets calledFunctions
+--   return $ case Map.lookup func called of
+--     Just l -> l == line
+--     Nothing -> False
 
 addPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m ()
 addPriorityInstantiation var = do

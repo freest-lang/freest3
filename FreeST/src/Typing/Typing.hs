@@ -164,6 +164,15 @@ synthetise kEnv (E.Var _ x) =
 synthetise kEnv (E.UnLet p x e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
+  case e1 of
+    E.LevelPeek{} -> do
+      func <- getCurrentFunction (fst $ startPos p)
+      ep <- getEndpointPriorityByName (show l1) func
+      case ep of
+        Just ePrio -> do
+          addEndpointPriority (mkVar p (show x)) func ePrio
+        Nothing -> return ()
+    _ -> return ()
   newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
@@ -284,8 +293,7 @@ synthetise kEnv (E.LevelTypeApp p new@(E.Var _ x) t (n,m)) | x == mkNew p = do
   ~(T.Forall _ (Bind _ y _ u')) <- Extract.forall new u
   fep <- getLatestFreshEndpoints
   func <- getCurrentFunction (fst $ startPos p)
-
-  addEndpointPriorities fep (n, m) func
+  addEndpointPriorities fep func (n, m)
   void $ K.checkAgainstAbsorb kEnv t
   return (Rename.subs t y u', T.Bottom)
 -- Type application
@@ -375,6 +383,16 @@ synthetise kEnv (E.LevelApp _ e l) = do
           let t'' = Rename.subsLevel l' y u
           return (t'', T.Bottom)
         _ -> do --instantiate with a variable
+              -- customTrace e ("Priority application at expr: " ++ show l)
+              let f = takeWhile (/= ' ') (show e)
+              let var = mkVar (getSpan e) (show l)
+              currFunc <- getCurrentFunction (fst $ startPos (getSpan e))
+              ep <- getEndpointPriorityByName (show l) currFunc
+              case ep of
+                Just ePrio -> addEndpointPriority var f ePrio
+                Nothing -> addError $ PriorityNotInstantiated (getSpan e) l
+              eps <- getEndpointPriorities
+              customTrace e ("Current endpoint priorities: " ++ show eps)
               substituteAbstractionContext y l
               fic <- getFirstInContext
               case fic of --update variable in context to build abstraction properly
@@ -386,12 +404,13 @@ synthetise kEnv (E.LevelApp _ e l) = do
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
   let var = mkVar (getSpan e) (show e)
+  customTrace e ("Priority peek at expr: " ++ show var)
   return (T.Skip p, T.LVar var)
 -- Priority application defining function bounds
 synthetise kEnv (E.LevelAppBound p e1 e2) = do
-  customTrace e1 ("Priority application with bound at expr: " ++ show e2)
   (t1, _) <- synthetise kEnv e1
   (_, l) <- synthetise kEnv e2
+  customTrace e1 ("Priority application with bound at expr: " ++ show l)
   t1' <- Extract.forall e1 t1
   case t1' of
     T.PForall p (Bind _ y r u) -> return (Rename.subsLevel l y u, T.Bottom)
@@ -596,12 +615,14 @@ registerEndpointPriorities :: E.Exp -> E.Exp -> Span -> TypingState ()
 registerEndpointPriorities e1 e2 p = do
   let funcName = takeWhile (/= ' ') (show e1)
   fr <- isFunctionRegistered funcName
-  ep <- getEndpointPriorityByName (show e2)
+  currFunc <- getCurrentFunction (fst $ startPos p)
+  ep <- getEndpointPriorityByName (show e2) currFunc
   case ep of
     Just ePrio -> when fr $ do
-      param <- getFunctionParam funcName 
+      addFunctionCall' funcName (fst $ startPos p)
+      param <- getFunctionParam funcName
       case param of
-        Just param' -> addEndpointPriority (mkVar p param') ePrio funcName
+        Just param' -> addEndpointPriority (mkVar p param') funcName ePrio
         Nothing -> return ()
     Nothing -> return ()
 
