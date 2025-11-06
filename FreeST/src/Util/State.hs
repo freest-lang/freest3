@@ -343,11 +343,30 @@ getInequalities :: S.MonadState (FreestS a) m => m Inequalities
 getInequalities = S.gets inequalities
 
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
-addInequality span inequality = S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality "null" (-1)) (inequalities s) })
+addInequality span inequality = do
+  let (x,y) = inequality
+  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
+  let xi' = case xi of
+        Just xi'' -> xi''
+        Nothing   -> -1
+  let yi' = case yi of
+        Just yi'' -> yi''
+        Nothing   -> -1
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality "null" (-1) xi' yi') (inequalities s) })
 
 addFullInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> m ()
-addFullInequality span inequality function threadNum = 
-  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum) (inequalities s) })
+addFullInequality span inequality function threadNum = do
+  let (x,y) = inequality
+  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
+  let xi' = case xi of
+        Just xi'' -> xi''
+        Nothing   -> -1
+  let yi' = case yi of
+        Just yi'' -> yi''
+        Nothing   -> -1
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi' yi') (inequalities s) })
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
@@ -370,8 +389,17 @@ getEqualities = S.gets equalities
 -- addEquality span equality = S.modify (\s -> s { equalities = Set.insert (span, equality) (equalities s) })
 
 addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> m ()
-addEquality span equality function threadNum =
-  S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum) (equalities s) })
+addEquality span equality function threadNum = do
+  let (x,y) = equality
+  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
+  let xi' = case xi of
+        Just xi'' -> xi''
+        Nothing   -> -1
+  let yi' = case yi of
+        Just yi'' -> yi''
+        Nothing   -> -1
+  S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum xi' yi') (equalities s) })
 
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
@@ -699,7 +727,7 @@ duplicateConstraintsInFunc func ver = do
   ineqs <- getInequalities
   if ver > 0
     then do
-      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n) -> do
+      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n xi yi) -> do
         inFunc <- isInFunction func p
         if inFunc
           then do
@@ -712,13 +740,13 @@ duplicateConstraintsInFunc func ver = do
               _             -> addFullInequality p (l1, l2) func (ver + 1)
           else return ()
     else do
-      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n) -> do
+      S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n xi yi) -> do
         inFunc <- isInFunction func p
         if inFunc
           then do
             -- l1' <- bindLVarToFunc l1 func
             -- l2' <- bindLVarToFunc l2 func
-            S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n) (inequalities s) })
+            S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n xi yi) (inequalities s) })
             addFullInequality p (l1, l2) func (ver + 1)
           else return ()
 

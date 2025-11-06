@@ -162,6 +162,7 @@ synthetise kEnv (E.Var _ x) =
       return (s, T.Bottom)
 -- Unary let
 synthetise kEnv (E.UnLet p x e1 e2) = do
+  customTrace e1 "UNARYLET"
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
   case e1 of
@@ -179,6 +180,16 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   ls <- getContext'
   popContext'
   addInequalities (getSpan e1) l1 ls
+  customTrace e2 (show e1 ++ " -> " ++ show l1 ++ " // " ++ show ls ++ " <- ")
+  pis <- getPriorityInstantiations
+  customTrace e2 ("Priority instantiations: " ++ show pis)
+  
+  xi <- getPriorityInstantiation (show l1)
+  if not (null ls) 
+    then do 
+      yi <- getPriorityInstantiation (show (head (Set.toList ls)))
+      customTrace e2 ("xi: " ++ show xi ++ ", yi: " ++ show yi)
+    else customTrace e2 ("xi: " ++ show xi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
@@ -230,8 +241,11 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (l1, u1, u2) <- Extract.leveledInput e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
   lu1 <- getTypeLevel u1
+  customTrace e ("Receive: adding inequality " ++ show (l1, lu1))
   addInequality (getSpan e) (l1, lu1)
   lu2 <- getTypeLevel u2
+  customTrace e ("RECEIVE TYPES: " ++ show u1 ++ " , " ++ show u2)
+  customTrace e ("Receive: added inequality " ++ show (l1, lu2))
   addInequality (getSpan e) (l1, lu2)
   updateContext' l1
   upperBound <- maxLevel' (getSpan t) [l, l1]
@@ -242,8 +256,11 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (l1, u1, u2) <- Extract.leveledOutput e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
   lu1 <- getTypeLevel u1  
+  customTrace e1 ("Send: adding inequality " ++ show (l1, lu1))
   addInequality (getSpan e1) (l1, lu1)
-  lu2 <- getTypeLevel u2  
+  lu2 <- getTypeLevel u2
+  customTrace e1 ("SEND TYPES: " ++ show u1 ++ " , " ++ show u2)
+  customTrace e1 ("Send: added inequality " ++ show (l1, lu2))
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
   updateContext' l1
@@ -404,7 +421,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
   let var = mkVar (getSpan e) (show e)
-  customTrace e ("Priority peek at expr: " ++ show var)
+  customTrace e ("Priority peek at expr: " ++ show var ++ " " ++ show p)
   return (T.Skip p, T.LVar var)
 -- Priority application defining function bounds
 synthetise kEnv (E.LevelAppBound p e1 e2) = do
@@ -598,7 +615,7 @@ checkInequalities = do
   ineqs <- getInequalities
   eqs   <- getEqualities
   (solvedIneqs, _) <- liftIO $ solveInequalities ineqs eqs
-  forM_ (Set.toList solvedIneqs) $ \(InequalityEntry span (l1, l2) f n) -> do
+  forM_ (Set.toList solvedIneqs) $ \(InequalityEntry span (l1, l2) f n _ _) -> do
     addError (LevelMismatch span l1 l2 f n)
 
 addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()

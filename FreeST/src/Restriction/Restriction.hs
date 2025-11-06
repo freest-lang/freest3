@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Restriction.Restriction
@@ -11,6 +10,7 @@ module Restriction.Restriction
     -- , maxLevel
     , equalLevels
     , compareLevels
+    , getLevelVar
     -- , checkLevelRange
     )
 where
@@ -30,6 +30,8 @@ data InequalityEntry = InequalityEntry
   , inequality      :: Inequality
   , iFunction       :: String
   , iThreadNum      :: Int
+  , iXInstance      :: Int
+  , iYInstance      :: Int
   } deriving (Eq, Ord)
 
 data EqualityEntry = EqualityEntry
@@ -37,6 +39,8 @@ data EqualityEntry = EqualityEntry
   , equality        :: Equality
   , eFunction       :: String
   , eThreadNum      :: Int
+  , eXInstance      :: Int
+  , eYInstance      :: Int
   } deriving (Eq, Ord)
 
 class Leveled a where
@@ -139,6 +143,13 @@ toString2 T.Bottom = "bot"
 toString2 (T.LVar x) = extern x
 toString2 (T.LNum n) = show n
 toString2 (T.LAdd l1 l2) = "Add " ++ toString2 l1 ++ " " ++ toString2 l2
+
+getLevelVar :: T.Level -> Variable
+getLevelVar (T.LVar x) = x
+getLevelVar (T.LNum n) = mkVar defaultSpan (show n)
+getLevelVar (T.LAdd l1 l2) = getLevelVar l1
+getLevelVar T.Top = mkVar defaultSpan "top"
+getLevelVar T.Bottom = mkVar defaultSpan "bot"
 -- toString2 (T.LParens l) = "Parens " ++ toString2 l
 
 -- checkLevelRange :: T.Level -> T.LevelRange -> Bool

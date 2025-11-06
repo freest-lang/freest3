@@ -135,32 +135,38 @@ instance FromJSON Entry where
     ) v
 
 instance ToJSON R.InequalityEntry where
-    toJSON (R.InequalityEntry iSpan (l1,l2) f n) =
+    toJSON (R.InequalityEntry iSpan (l1,l2) f n x y) =
         object [ "span" .= iSpan
                , "l1" .= l1
                , "l2" .= l2
                , "function" .= f
                , "thread_num" .= n
+               , "xinstance" .= x
+               , "yinstance" .= y
                , "equality" .= (0 :: Int)
                ]
 
 instance FromJSON R.InequalityEntry where
     parseJSON = withObject "InequalityEntry" $ \v -> do
-        iSpan <- v .: "span"   
-        l1      <- v .: "l1"        
-        l2      <- v .: "l2"
-        f       <- v .: "function"
-        n       <- v .: "thread_num"
+        iSpan    <- v .: "span"   
+        l1       <- v .: "l1"        
+        l2       <- v .: "l2"
+        f        <- v .: "function"
+        n        <- v .: "thread_num"
+        x        <- v .: "xinstance"
+        y        <- v .: "yinstance"
         equality <- v .: "equality" :: Parser Int
-        return $ R.InequalityEntry iSpan (l1, l2) f n
+        return $ R.InequalityEntry iSpan (l1, l2) f n x y
 
 instance ToJSON R.EqualityEntry where
-    toJSON (R.EqualityEntry eSpan (l1,l2) f n) =
+    toJSON (R.EqualityEntry eSpan (l1,l2) f n x y) =
         object [ "span" .= eSpan
                , "l1" .= l1
                , "l2" .= l2
                , "function" .= f
                , "thread_num" .= n
+               , "xinstance" .= x
+               , "yinstance" .= y
                , "equality" .= (1 :: Int)
                ]
             
@@ -171,7 +177,9 @@ instance FromJSON R.EqualityEntry where
         l2    <- v .: "l2"
         f     <- v .: "function"
         n     <- v .: "thread_num"
-        return $ R.EqualityEntry eSpan (l1, l2) f n
+        x     <- v .: "xinstance"
+        y     <- v .: "yinstance"
+        return $ R.EqualityEntry eSpan (l1, l2) f n x y
 
 -- serializeInequalities :: Inequalities -> BL.ByteString
 -- serializeInequalities ineqs =
@@ -179,7 +187,7 @@ instance FromJSON R.EqualityEntry where
 
 serializeInequalities :: Inequalities -> BL.ByteString
 serializeInequalities ineqs =
-    encode $ map (\(R.InequalityEntry span (l1, l2) f n) -> R.InequalityEntry span (l1, l2) f n) (Set.toList ineqs)
+    encode $ map (\(R.InequalityEntry span (l1, l2) f n xi yi) -> R.InequalityEntry span (l1, l2) f n xi yi) (Set.toList ineqs)
 
 -- serializeEqualities :: Equalities -> BL.ByteString
 -- serializeEqualities eqs =
@@ -187,7 +195,7 @@ serializeInequalities ineqs =
 
 serializeEqualities :: Equalities -> BL.ByteString
 serializeEqualities eqs =
-    encode $ map (\(R.EqualityEntry span (l1, l2) f n) -> R.EqualityEntry span (l1, l2) f n) (Set.toList eqs)
+    encode $ map (\(R.EqualityEntry span (l1, l2) f n xi yi) -> R.EqualityEntry span (l1, l2) f n xi yi) (Set.toList eqs)
 
 
 deserializeEntries :: BL.ByteString -> (Inequalities, Equalities)
@@ -223,8 +231,8 @@ deserializeEntries contents =
 
 writeEntriesToFile :: Inequalities -> Equalities -> IO ()
 writeEntriesToFile ineqs eqs = do
-    let filteredIneqs = Set.filter (\(R.InequalityEntry (Span moduleName _ _) _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
-    let filteredEqs   = Set.filter (\(R.EqualityEntry (Span moduleName _ _) _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
+    let filteredIneqs = Set.filter (\(R.InequalityEntry (Span moduleName _ _) _ _ _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
+    let filteredEqs   = Set.filter (\(R.EqualityEntry (Span moduleName _ _) _ _ _ _ _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
     let entries =
           map EntryIneq (Set.toList filteredIneqs) ++
           map EntryEq   (Set.toList filteredEqs)

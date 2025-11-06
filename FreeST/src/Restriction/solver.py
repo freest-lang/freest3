@@ -94,11 +94,14 @@ def check_inequalities(inequalities, file_path):
         l2 = wrap_variables(ineq["l2"], function, thread_num)
         equality = ineq["equality"]
         constraint_id = f"constraint_{i}"
+        x_instance = ineq["xinstance"]
+        y_instance = ineq["yinstance"]
         if equality:
             constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
             equalities.append(constraint)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
+            print(f"{constraint} with ({x_instance}, {y_instance})")
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality}
 
     unsat_constraints = []
