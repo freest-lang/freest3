@@ -438,11 +438,7 @@ difference kEnv x = do
   getFromSignatures x >>= \case
     Just t -> do
       (k, _) <- K.synthetise kEnv t
-      when (K.isLin k) $ do
-        case t of
-          T.Rec _ (Bind _ _ _ T.PForall {}) -> return () --bandaid fix for now because I can't find the issue
-          T.Semi _ (T.Skip _) (T.Rec _ (Bind _ _ _ T.PForall {})) -> return () --bandaid fix for now because I can't find the issue
-          _        -> addError (LinProgVar (getSpan x) x t k)
+      when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
   removeFromSignatures x
 

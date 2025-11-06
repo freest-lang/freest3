@@ -34,7 +34,7 @@ test =
     let (_, c2) = receive (inst c2) in
     let c1 = send () (inst c1) in
     let (_, c2) = receive (inst c2) in
-    ()
+    test {priority c1} c1 c2
 
 main : ()
 main =
