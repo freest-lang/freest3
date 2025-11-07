@@ -489,7 +489,7 @@ checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) l
           gc <- getGlobalContext'
           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
             if not (any (compareLevels l2) gc)
-              then addError (IncorrectLatentEffect p1 l2)
+              then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
           resetGlobalContext'
           return (T.Arrow p2 m2 l1 l2 t3 t4')
