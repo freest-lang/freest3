@@ -28,6 +28,7 @@ type Inequalities = Set.Set R.InequalityEntry
 -- type Equalities = Set.Set (Span, R.Equality)
 type Equalities = Set.Set R.EqualityEntry
 type ContextSet = Set.Set T.Level
+type InstantiatedContextSet = Set.Set (T.Level, Int)
 type FunctionCallNum = Map.Map String Int
 type EndpointPriorities = Map.Map (Variable, String, Int) (Int, Int)
 
@@ -54,7 +55,7 @@ data FreestS a = FreestS
   , inequalities :: Inequalities
   , equalities :: Equalities
   , context :: [T.Level]
-  , context' :: [ContextSet]
+  , context' :: [InstantiatedContextSet]
   , globalContext :: T.Level
   , globalContext' :: ContextSet
   , firstInContext :: T.Level
@@ -345,28 +346,32 @@ getInequalities = S.gets inequalities
 addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
 addInequality span inequality = do
   let (x,y) = inequality
-  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
-  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
-  let xi' = case xi of
-        Just xi'' -> xi''
-        Nothing   -> -1
-  let yi' = case yi of
-        Just yi'' -> yi''
-        Nothing   -> -1
-  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality "null" (-1) xi' yi') (inequalities s) })
+  xi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar y)
+  -- let xi' = case xi of
+  --       Just xi'' -> xi''
+  --       Nothing   -> -1
+  -- let yi' = case yi of
+  --       Just yi'' -> yi''
+  --       Nothing   -> -1
+  func <- getCurrentFunction (fst $ startPos span)
+  let call = case func of
+        "null" -> 0
+        _      -> 1
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality func call xi yi) (inequalities s) })
 
 addFullInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> m ()
 addFullInequality span inequality function threadNum = do
   let (x,y) = inequality
-  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
-  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
-  let xi' = case xi of
-        Just xi'' -> xi''
-        Nothing   -> -1
-  let yi' = case yi of
-        Just yi'' -> yi''
-        Nothing   -> -1
-  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi' yi') (inequalities s) })
+  xi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar y)
+  -- let xi' = case xi of
+  --       Just xi'' -> xi''
+  --       Nothing   -> -1
+  -- let yi' = case yi of
+  --       Just yi'' -> yi''
+  --       Nothing   -> -1
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi yi) (inequalities s) })
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
 addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
@@ -377,6 +382,14 @@ addInequalities2 span l1 = mapM_ (\l2 -> addInequality span (l1, l2))
 addInequalitiesInReverse :: S.MonadState (FreestS a) m => Span -> T.Level -> [T.Level] -> m ()
 addInequalitiesInReverse span l1 ls = do
   mapM_ (\l2 -> addInequality span (l2, l1)) ls
+
+addInstantiatedInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> Int -> InstantiatedContextSet -> m ()
+addInstantiatedInequalities span l i ctx = do
+  func <- getCurrentFunction (fst $ startPos span)
+  let call = case func of
+        "null" -> 0
+        _      -> 1
+  mapM_ (\(l2, yi') -> S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span (l, l2) func call i yi') (inequalities s) }) ) (Set.toList ctx)
 
 -- addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> String -> Int -> m ()
 -- addInequalities span l1 ctx function threadNum =
@@ -391,21 +404,26 @@ getEqualities = S.gets equalities
 addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> m ()
 addEquality span equality function threadNum = do
   let (x,y) = equality
-  xi <- getPriorityInstantiation $ extern (R.getLevelVar x)
-  yi <- getPriorityInstantiation $ extern (R.getLevelVar y)
-  let xi' = case xi of
-        Just xi'' -> xi''
-        Nothing   -> -1
-  let yi' = case yi of
-        Just yi'' -> yi''
-        Nothing   -> -1
-  S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum xi' yi') (equalities s) })
+  xi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar y)
+  -- let xi' = case xi of
+  --       Just xi'' -> xi''
+  --       Nothing   -> -1
+  -- let yi' = case yi of
+  --       Just yi'' -> yi''
+  --       Nothing   -> -1
+  S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum xi yi) (equalities s) })
 
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
 
+-- getContextStack' :: S.MonadState (FreestS a) m => m [ContextSet]
+-- getContextStack' = S.gets context'
+
 getContextStack' :: S.MonadState (FreestS a) m => m [ContextSet]
-getContextStack' = S.gets context'
+getContextStack' = do
+  stack <- S.gets context'
+  return $ map (Set.map fst) stack
 
 -- getContext :: S.MonadState (FreestS a) m => m T.Level
 -- getContext = do
@@ -414,12 +432,26 @@ getContextStack' = S.gets context'
 --     (x:_) -> return x
 --     []      -> return T.Top
 
+-- getContext' :: S.MonadState (FreestS a) m => m ContextSet
+-- getContext' = do
+--   ctx <- S.gets context'
+--   case ctx of
+--     (x:_) -> return x
+--     []      -> return Set.empty
+
 getContext' :: S.MonadState (FreestS a) m => m ContextSet
 getContext' = do
   ctx <- S.gets context'
   case ctx of
+    (x:_) -> return $ Set.map fst x
+    []    -> return Set.empty
+
+getFullContext' :: S.MonadState (FreestS a) m => m InstantiatedContextSet
+getFullContext' = do
+  ctx <- S.gets context'
+  case ctx of
     (x:_) -> return x
-    []      -> return Set.empty
+    []    -> return Set.empty
 
 getGlobalContext' :: S.MonadState (FreestS a) m => m ContextSet
 getGlobalContext' = do
@@ -438,12 +470,39 @@ resetGlobalContext' = do
   S.modify (\s -> s { firstInContext' = T.Top })
   -- S.modify (\s -> s { latestInContext = T.Top })
 
+-- updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- updateContext' l = do
+--   ctxStack <- getContextStack'
+--   case ctxStack of
+--     (x:xs) -> do
+--       let newTop = Set.insert l x
+--       S.modify (\s -> s { context' = newTop : xs })
+--       if x == Set.empty 
+--         then do
+--           S.modify (\s -> s { firstInContext' = if firstInContext' s == T.Top then l else firstInContext' s })
+--           S.modify (\s -> s { latestInContext = l })
+--         else do
+--           S.modify (\s -> s { firstInContext' = firstInContext' s })
+--           S.modify (\s -> s { latestInContext = l })
+--       -- S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+--     [] -> do
+--       gctx <- getGlobalContext'
+--       if gctx == Set.empty
+--         then do
+--           S.modify (\s -> s { globalContext' = Set.singleton l })
+--           S.modify (\s -> s { firstInContext' = if firstInContext' s == T.Top then l else firstInContext' s })
+--           S.modify (\s -> s { latestInContext = l })
+--           pushContext' l
+--         else pushContext' l
+
 updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext' l = do
-  ctxStack <- getContextStack'
+  ctxStack <- S.gets context'
+  insts <- getPriorityInstantiations
+  let inst = Map.findWithDefault (-1) (show l) insts
   case ctxStack of
     (x:xs) -> do
-      let newTop = Set.insert l x
+      let newTop = Set.insert (l, inst) x
       S.modify (\s -> s { context' = newTop : xs })
       if x == Set.empty 
         then do
@@ -452,7 +511,6 @@ updateContext' l = do
         else do
           S.modify (\s -> s { firstInContext' = firstInContext' s })
           S.modify (\s -> s { latestInContext = l })
-      -- S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
     [] -> do
       gctx <- getGlobalContext'
       if gctx == Set.empty
@@ -466,20 +524,36 @@ updateContext' l = do
 newContext' :: S.MonadState (FreestS a) m => m ()
 newContext' = S.modify (\s -> s { context' = Set.empty : context' s })
 
+-- pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
+-- pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
+
 pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
-pushContext' l = S.modify (\s -> s { context' = Set.singleton l : context' s })
+pushContext' l = do
+  insts <- getPriorityInstantiations
+  let inst = Map.findWithDefault (-1) (show l) insts
+  S.modify (\s -> s { context' = Set.singleton (l, inst) : context' s })
+
+-- popContext' :: S.MonadState (FreestS a) m => m ()
+-- popContext' = do
+--   ctxStack <- getContextStack'
+--   case ctxStack of
+--     (x:xs) -> do
+--       gctx <- getGlobalContext'
+--       S.modify (\s -> s { globalContext' = Set.union x gctx })
+--       S.modify (\s -> s { context' = xs })
+--     [] -> do
+--       -- S.modify (\s -> s { globalContext' = Set.empty })
+--       S.modify (\s -> s { context' = [] })
 
 popContext' :: S.MonadState (FreestS a) m => m ()
 popContext' = do
-  ctxStack <- getContextStack'
+  ctxStack <- S.gets context'
   case ctxStack of
     (x:xs) -> do
-      gctx <- getGlobalContext'
-      S.modify (\s -> s { globalContext' = Set.union x gctx })
+      gctx <- S.gets globalContext'
+      S.modify (\s -> s { globalContext' = Set.union (Set.map fst x) gctx })
       S.modify (\s -> s { context' = xs })
-    [] -> do
-      -- S.modify (\s -> s { globalContext' = Set.empty })
-      S.modify (\s -> s { context' = [] })
+    [] -> S.modify (\s -> s { context' = [] })
 
 popFirstInContext :: S.MonadState (FreestS a) m => m T.Level
 popFirstInContext = do
@@ -659,7 +733,7 @@ registerFunctionPositions defs = do
     let span = getSpan k
     let (startingPos, _) = startPos span
     S.when (moduleName span /= "Prelude" && moduleName span /= "<default>") $ do
-      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) [] (-1) 0) (functionPositions s) })
+      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) [] 0 0) (functionPositions s) })
   orderFunctionPositions
   updateFunctionParams defs
 
@@ -678,7 +752,7 @@ getCurrentFunction pos = do
         (\(_, FunctionData (start, end) _ _ _) ->
             start <= pos && (end == -1 || end >= pos))
         (Map.toList fps)
-  return $ maybe "<error>" fst res --there's always a function, this just prevents us from having to unwrap the Maybe later
+  return $ maybe "null" fst res
 
 orderFunctionPositions :: S.MonadState (FreestS a) m => m ()
 orderFunctionPositions = do
@@ -894,6 +968,11 @@ getPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m (Maybe Int
 getPriorityInstantiation var = do
   m <- S.gets priorityInstantiations
   return $ Map.lookup var m
+
+getUnwrappedPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m Int
+getUnwrappedPriorityInstantiation var = do
+  m <- S.gets priorityInstantiations
+  return $ Map.findWithDefault (-1) var m
 
 clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
 clearPriorityInstantiations = S.modify (\s -> s { priorityInstantiations = Map.empty })

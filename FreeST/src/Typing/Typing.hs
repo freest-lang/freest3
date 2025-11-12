@@ -174,12 +174,13 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
           addEndpointPriority (mkVar p (show x)) func ePrio
         Nothing -> return ()
     _ -> return ()
+  il1 <- getUnwrappedPriorityInstantiation (show l1)
   newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  ls <- getContext'
+  ls <- getFullContext'
   popContext'
-  addInequalities (getSpan e1) l1 ls
+  addInstantiatedInequalities (getSpan e1) l1 il1 ls
   customTrace e2 (show e1 ++ " -> " ++ show l1 ++ " // " ++ show ls ++ " <- ")
   pis <- getPriorityInstantiations
   customTrace e2 ("Priority instantiations: " ++ show pis)
@@ -285,11 +286,12 @@ synthetise kEnv (E.App p e1 e2) = do
   registerEndpointPriorities e1 e2 p
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
+  il1 <- getUnwrappedPriorityInstantiation (show l1)
   newContext'
   l2 <- leveledCheckAgainst kEnv e2 u1
-  ls <- getContext'
+  ls <- getFullContext'
   popContext'
-  addInequalities (getSpan t) l1 ls
+  addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
   return (u2, upperBound)
@@ -336,13 +338,14 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
+  il1 <- getUnwrappedPriorityInstantiation (show l1)
   newContext'
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  ls <- getContext'
+  ls <- getFullContext'
   popContext'
-  addInequalities (getSpan t1) l1 ls
+  addInstantiatedInequalities (getSpan t1) l1 il1 ls
   lu1 <- getTypeLevel u1
   lu2 <- getTypeLevel u2
   addInequality (getSpan t1) (l1, lu1)
