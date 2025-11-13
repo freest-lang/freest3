@@ -636,6 +636,7 @@ registerEndpointPriorities e1 e2 p = do
   case ep of
     Just ePrio -> when fr $ do
       addFunctionCall' funcName (fst $ startPos p)
+      duplicateConstraintsInFunc' funcName
       param <- getFunctionParam funcName
       case param of
         Just param' -> addEndpointPriority (mkVar p param') funcName ePrio

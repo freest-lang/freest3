@@ -102,7 +102,7 @@ def check_inequalities(inequalities, file_path):
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
             print(f"{constraint} with ({x_instance}, {y_instance}) at {span} at thread {thread_num}")
-        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality}
+        constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality, "xinstance": x_instance, "yinstance": y_instance}
 
     unsat_constraints = []
     if solver.check() == sat:
@@ -118,6 +118,8 @@ def check_inequalities(inequalities, file_path):
                     "function": constraint_map[str(c)]["function"],
                     "thread_num": constraint_map[str(c)]["thread_num"],
                     "equality": constraint_map[str(c)]["equality"],
+                    "xinstance": constraint_map[str(c)]["xinstance"],
+                    "yinstance": constraint_map[str(c)]["yinstance"],
                     "file_path": file_path,
                 }
                 for c in unsat_core

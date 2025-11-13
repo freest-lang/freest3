@@ -19,7 +19,7 @@ import           Data.Maybe
 import qualified Data.Traversable as Traversable
 import           Data.Void
 import           Debug.Trace
-import           Data.Char (isAlphaNum)
+import           Data.Char (isAlphaNum, isDigit)
 
 type Warnings = [WarningType]
 type Errors = [ErrorType]
@@ -355,10 +355,7 @@ addInequality span inequality = do
   --       Just yi'' -> yi''
   --       Nothing   -> -1
   func <- getCurrentFunction (fst $ startPos span)
-  let call = case func of
-        "null" -> 0
-        _      -> 1
-  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality func call xi yi) (inequalities s) })
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality func 0 xi yi) (inequalities s) })
 
 addFullInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> m ()
 addFullInequality span inequality function threadNum = do
@@ -371,6 +368,10 @@ addFullInequality span inequality function threadNum = do
   -- let yi' = case yi of
   --       Just yi'' -> yi''
   --       Nothing   -> -1
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi yi) (inequalities s) })
+
+addFullInequality' :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> Int -> Int -> m ()
+addFullInequality' span inequality function threadNum xi yi = do
   S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi yi) (inequalities s) })
 
 addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
@@ -386,10 +387,7 @@ addInequalitiesInReverse span l1 ls = do
 addInstantiatedInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> Int -> InstantiatedContextSet -> m ()
 addInstantiatedInequalities span l i ctx = do
   func <- getCurrentFunction (fst $ startPos span)
-  let call = case func of
-        "null" -> 0
-        _      -> 1
-  mapM_ (\(l2, yi') -> S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span (l, l2) func call i yi') (inequalities s) }) ) (Set.toList ctx)
+  mapM_ (\(l2, yi') -> S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span (l, l2) func 0 i yi') (inequalities s) }) ) (Set.toList ctx)
 
 -- addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> String -> Int -> m ()
 -- addInequalities span l1 ctx function threadNum =
@@ -498,8 +496,9 @@ resetGlobalContext' = do
 updateContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 updateContext' l = do
   ctxStack <- S.gets context'
-  insts <- getPriorityInstantiations
-  let inst = Map.findWithDefault (-1) (show l) insts
+  inst <- getUnwrappedPriorityInstantiation (show l)
+  -- insts <- getPriorityInstantiations
+  -- let inst = Map.findWithDefault 0 (show l) insts
   case ctxStack of
     (x:xs) -> do
       let newTop = Set.insert (l, inst) x
@@ -529,8 +528,9 @@ newContext' = S.modify (\s -> s { context' = Set.empty : context' s })
 
 pushContext' :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushContext' l = do
-  insts <- getPriorityInstantiations
-  let inst = Map.findWithDefault (-1) (show l) insts
+  -- insts <- getPriorityInstantiations
+  -- let inst = Map.findWithDefault (-1) (show l) insts
+  inst <- getUnwrappedPriorityInstantiation (show l)
   S.modify (\s -> s { context' = Set.singleton (l, inst) : context' s })
 
 -- popContext' :: S.MonadState (FreestS a) m => m ()
@@ -574,16 +574,18 @@ checkRenamedContext l = do
 setFirstInContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 setFirstInContext l = do
   fic <- S.gets firstInContext'
-  if fic == T.Top
-    then S.modify (\s -> s { firstInContext' = l })
-    else return ()
+  -- if fic == T.Top
+  --   then S.modify (\s -> s { firstInContext' = l })
+  --   else return ()
+  S.when (fic == T.Top) $ S.modify (\ s -> s {firstInContext' = l})
 
 setPolyContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 setPolyContext l = do
   pc <- S.gets polyContext
-  if pc == T.Top
-    then S.modify (\s -> s { polyContext = l })
-    else return ()
+  -- if pc == T.Top
+  --   then S.modify (\s -> s { polyContext = l })
+  --   else return ()
+  S.when (pc == T.Top) $ S.modify (\ s -> s {polyContext = l})
 
 clearFirstInContext :: S.MonadState (FreestS a) m => m ()
 clearFirstInContext = do
@@ -824,6 +826,16 @@ duplicateConstraintsInFunc func ver = do
             addFullInequality p (l1, l2) func (ver + 1)
           else return ()
 
+duplicateConstraintsInFunc' :: S.MonadState (FreestS a) m => String -> m ()
+duplicateConstraintsInFunc' func = do
+  call <- getFunctionCallsOf' func
+  ineqs <- getInequalities
+  S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n xi yi) -> do
+    inFunc <- isInFunction func p
+    S.when inFunc $ do
+      S.when (n == 0) $ S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n xi yi) (inequalities s) })
+      addFullInequality' p (l1, l2) func call xi yi
+
 pushLevelToAbstractionContext :: S.MonadState (FreestS a) m => T.Level -> m ()
 pushLevelToAbstractionContext l = S.modify (\s -> s { abstractionContext = l : abstractionContext s })
 
@@ -946,6 +958,13 @@ addFunctionCall' func line = do
         Just l  -> l == line
         Nothing -> False
 
+getFunctionCallsOf' :: S.MonadState (FreestS a) m => String -> m Int
+getFunctionCallsOf' func = do
+  fps <- getFunctionPositions
+  case Map.lookup func fps of
+    Just fd -> return $ functionCallNum fd
+    Nothing -> return 0
+
 -- isMultipleArgFunctionCall :: S.MonadState (FreestS a) m => String -> Int -> m Bool
 -- isMultipleArgFunctionCall func line = do
 --   called <- S.gets calledFunctions
@@ -966,13 +985,24 @@ getPriorityInstantiations = S.gets priorityInstantiations
 
 getPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m (Maybe Int)
 getPriorityInstantiation var = do
+  let var' = isolateVarNum var
   m <- S.gets priorityInstantiations
-  return $ Map.lookup var m
+  return $ Map.lookup var' m
 
 getUnwrappedPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m Int
 getUnwrappedPriorityInstantiation var = do
+  let var' = isolateVarNum var
   m <- S.gets priorityInstantiations
-  return $ Map.findWithDefault (-1) var m
+  return $ Map.findWithDefault 0 var' m
 
 clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
 clearPriorityInstantiations = S.modify (\s -> s { priorityInstantiations = Map.empty })
+
+isolateVarNum :: String -> String
+isolateVarNum s = case filter isValid (splitPlus s) of
+  []    -> s
+  ws    -> last ws
+  where
+    splitPlus :: String -> [String]
+    splitPlus = words . map (\c -> if c == '+' then ' ' else c)
+    isValid w = not (all isDigit w) && w /= "+" && not (null w)

@@ -1,4 +1,4 @@
-type Stream = forall i:(bot,top) => !i() ; Stream
+type Stream = forall i:(bot,top) => !i() ; !i+1() ; Stream
 
 -- client : forall p:(bot,top) => Stream ->[top,bot] dualof Stream 1->[p,top] ()
 -- client c1 c2 =
@@ -25,15 +25,19 @@ type Stream = forall i:(bot,top) => !i() ; Stream
 sleep : Int ->[top,bot] Int ->[top,bot] ()
 sleep n m = if n == 0 || m == 0 then () else sleep (n-1) (m-1)
 
-test : forall p:(bot,top) => Stream ->[top,bot] dualof Stream 1->[i,c2] ()
+test : forall p:(bot,top) => Stream ->[top,bot] dualof Stream 1->[i,c2+1] ()
 test =
     forall p:(bot,top) =>
     \c1: Stream ->
     \c2: dualof Stream 1->
     let c1 = send () (inst c1) in
     let (_, c2) = receive (inst c2) in
+    let c1 = send () c1 in
+    let (_, c2) = receive c2 in
     let c1 = send () (inst c1) in
     let (_, c2) = receive (inst c2) in
+    let c1 = send () c1 in
+    let (_, c2) = receive c2 in
     test {priority c1} c1 c2
 
 main : ()
