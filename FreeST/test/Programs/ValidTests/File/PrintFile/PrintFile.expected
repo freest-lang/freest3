@@ -1,0 +1,13 @@
+import File
+
+readAndPrint : InStream -> ()
+readAndPrint inStream =
+  let (eof, inStream) = hIsEOF inStream in
+  if eof then hCloseIn inStream
+  else let (str, inStream) = hGetLine inStream in putStrLn str ; readAndPrint inStream
+
+printFile : FilePath -> ()
+printFile filename = readAndPrint $ openReadFile filename
+
+main : ()
+main = printFile "DoubleFree.fst"
