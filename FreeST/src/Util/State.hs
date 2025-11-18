@@ -70,6 +70,7 @@ data FreestS a = FreestS
   , endpointPriorities :: EndpointPriorities
   , latestFreshEndpoints :: (Variable, Variable)
   , priorityInstantiations :: Map.Map String Int
+  , globalPriorityInstantiations :: Map.Map String Int
   , calledFunctions :: Map.Map String Int
   }
 
@@ -107,6 +108,7 @@ initial ext = FreestS {
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   , priorityInstantiations = Map.empty
+  , globalPriorityInstantiations = Map.empty
   , calledFunctions = Map.empty
   }
 
@@ -140,6 +142,7 @@ initialS = FreestS {
   , endpointPriorities = Map.empty
   , latestFreshEndpoints = (mkVar defaultSpan "", mkVar defaultSpan "")
   , priorityInstantiations = Map.empty
+  , globalPriorityInstantiations = Map.empty
   , calledFunctions = Map.empty
   }
 
@@ -404,13 +407,10 @@ addEquality span equality function threadNum = do
   let (x,y) = equality
   xi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar x)
   yi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar y)
-  -- let xi' = case xi of
-  --       Just xi'' -> xi''
-  --       Nothing   -> -1
-  -- let yi' = case yi of
-  --       Just yi'' -> yi''
-  --       Nothing   -> -1
   S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum xi yi) (equalities s) })
+
+addEquality' :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> Int -> m ()
+addEquality' span equality function threadNum instantiation = S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum instantiation (-1)) (equalities s) })
 
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
@@ -996,7 +996,12 @@ getUnwrappedPriorityInstantiation var = do
   return $ Map.findWithDefault 0 var' m
 
 clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
-clearPriorityInstantiations = S.modify (\s -> s { priorityInstantiations = Map.empty })
+clearPriorityInstantiations = S.modify $ \s ->
+  let merged = Map.union (globalPriorityInstantiations s) (priorityInstantiations s)
+  in s { globalPriorityInstantiations = merged, priorityInstantiations = Map.empty }
+
+getGlobalPriorityInstantiations :: S.MonadState (FreestS a) m => m (Map.Map String Int)
+getGlobalPriorityInstantiations = S.gets globalPriorityInstantiations
 
 isolateVarNum :: String -> String
 isolateVarNum s = case filter isValid (splitPlus s) of
@@ -1006,3 +1011,10 @@ isolateVarNum s = case filter isValid (splitPlus s) of
     splitPlus :: String -> [String]
     splitPlus = words . map (\c -> if c == '+' then ' ' else c)
     isValid w = not (all isDigit w) && w /= "+" && not (null w)
+
+getFirstInequalitySpan :: S.MonadState (FreestS a) m => m (Maybe Span)
+getFirstInequalitySpan = do
+  ineqs <- S.gets inequalities
+  return $ case Set.toList ineqs of
+    (R.InequalityEntry span _ _ _ _ _ : _) -> Just span
+    [] -> Nothing

@@ -51,6 +51,7 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
 import qualified Data.Set as Set
+import           Data.Maybe (fromMaybe)
 
 import           Debug.Trace (trace)
 
@@ -78,6 +79,8 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
+
+    addEndpointPriorityEqualities
     -- * Check if set of inequalities is valid
     checkInequalities
     
@@ -190,7 +193,10 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
     then do 
       yi <- getPriorityInstantiation (show (head (Set.toList ls)))
       customTrace e2 ("xi: " ++ show xi ++ ", yi: " ++ show yi)
-    else customTrace e2 ("xi: " ++ show xi)
+    else do
+      gpi <- getGlobalPriorityInstantiations
+      customTrace e2 ("xi: " ++ show xi)
+      customTrace e2 ("Current priority instantiations: " ++ show gpi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
@@ -642,6 +648,26 @@ registerEndpointPriorities e1 e2 p = do
         Just param' -> addEndpointPriority (mkVar p param') funcName ePrio
         Nothing -> return ()
     Nothing -> return ()
+
+addEndpointPriorityEqualities ::  TypingState ()
+addEndpointPriorityEqualities = do
+  eps <- getEndpointPriorities
+  gpis <- getGlobalPriorityInstantiations
+  span <- getFirstInequalitySpan
+  let span' = Data.Maybe.fromMaybe defaultSpan span
+  forM_ (Map.toList eps) $ \((var, func, callNum), (a, _b)) -> do
+    customTrace (E.Unit span') ("Adding endpoint priority equality for " ++ show var ++ " in function " ++ func ++ " call " ++ show callNum ++ ": " ++ show a)
+    addEquality' span' (T.LVar var, T.LNum a) func callNum 0
+  forM_ (Map.toList gpis) $ \(varStr, x) -> do
+    let matching = [ ((var, func, callNum), (a, b))
+                   | ((var, func, callNum), (a, b)) <- Map.toList eps
+                   , extern var == varStr
+                   ]
+    forM_ matching $ \((var, func, callNum), (a, b)) -> do
+      forM_ [x, x-1 .. 1] $ \i -> do
+        let val = a + b * i
+        customTrace (E.Unit span') ("Adding endpoint priority equality for " ++ show var ++ " in function " ++ func ++ " call " ++ show callNum ++ ": " ++ show val ++ " using " ++ show a ++ " + " ++ show b ++ " * " ++ show i)
+        addEquality' span' (T.LVar var, T.LNum val) func callNum i
 
 customTrace :: E.Exp -> String -> TypingState ()
 customTrace e msg = do

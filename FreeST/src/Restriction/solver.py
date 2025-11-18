@@ -8,7 +8,7 @@ bot = Int('bot')
 top = Int('top')
 value = Function('value', Levels, IntSort())
 
-lower_id = r"\b[a-zA-Z][a-zA-Z0-9_'#:]*\b"
+lower_id = r"\b[a-zA-Z][a-zA-Z0-9_'#:$]*\b"
 
 def rewrite_expression(expr):
     if not isinstance(expr, str):
@@ -52,21 +52,22 @@ def add_level_equality(solver, z3_consts, l1, l2, name):
     solver.assert_and_track(constraint, name)
     return constraint
 
-def wrap_variables(level, function, thread_num):
+def wrap_variables(level, function, thread_num, instance):
     vars = extract_variables(level)
     wrapped_level = level
     for var in vars:
-        replacement = f"{function}:{var}#{thread_num}"
+        replacement = f"{function}:{var}#{thread_num}${instance}"
         wrapped_level = wrapped_level.replace(var, replacement)
     return wrapped_level
 
 def unwrap_variables(expr):
     if not isinstance(expr, str):
         return str(expr)
-    pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\:([a-zA-Z_][a-zA-Z0-9_']*)(#(\d+))"
+    pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\:([a-zA-Z_][a-zA-Z0-9_']*)(#(\d+))(\$(\d+))"
     matches = re.findall(pattern, expr)
     function = matches[0][0] if matches else None
     thread_num = int(matches[0][3]) if matches else None
+    instance = int(matches[0][5]) if matches else None
     def repl(m):
         return m.group(2)
     unwrapped_expr = re.sub(pattern, repl, expr)
@@ -90,20 +91,22 @@ def check_inequalities(inequalities, file_path):
         span = ineq["span"]
         function = ineq["function"]
         thread_num = ineq["thread_num"]
-        l1 = wrap_variables(ineq["l1"], function, thread_num)
-        l2 = wrap_variables(ineq["l2"], function, thread_num)
         equality = ineq["equality"]
         constraint_id = f"constraint_{i}"
         x_instance = ineq["xinstance"]
         y_instance = ineq["yinstance"]
+        l1 = wrap_variables(ineq["l1"], function, thread_num, x_instance)
+        l2 = wrap_variables(ineq["l2"], function, thread_num, y_instance)
         if equality:
             constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
+            print(f"EQUALITY {constraint} at {span} at thread {thread_num}")
             equalities.append(constraint)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
-            print(f"{constraint} with ({x_instance}, {y_instance}) at {span} at thread {thread_num}")
+            print(f"{constraint} at {span} at thread {thread_num}")
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality, "xinstance": x_instance, "yinstance": y_instance}
 
+    print(z3_consts)
     unsat_constraints = []
     if solver.check() == sat:
         return []
