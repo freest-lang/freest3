@@ -348,9 +348,14 @@ instance Message ErrorType where
     "Can't unify kinds. Got " ++  style red sty ts k1 ++ " <: " ++ style red sty ts k2
     ++ ", but " ++  style red sty ts k1 ++ " is not a subkind of " ++  style red sty ts k2
   -- Levels
+  -- msg (LevelMismatch s l1 l2 f n) sty ts =
+  --   "Level " ++ style red sty ts l1 ++ " does not precede level " ++ style red sty ts l2 ++ "\n" ++
+  --   "            at thread " ++ styleP red sty ts ("#" ++ show n) ++ "\n" ++
+  --   "            of function " ++ styleP red sty ts f ++ "\n" ++
+  --   "            at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (LevelMismatch s l1 l2 f n) sty ts =
-    "Level " ++ style red sty ts l1 ++ " does not precede level " ++ style red sty ts l2 ++ "\n" ++
-    "            at thread " ++ styleP red sty ts ("#" ++ show n) ++ "\n" ++
+    style red sty ts l1 ++ " does not have a higher priority than " ++ style red sty ts l2 ++ "\n" ++
+    "            at call " ++ styleP red sty ts ("#" ++ show n) ++ "\n" ++
     "            of function " ++ styleP red sty ts f ++ "\n" ++
     "            at " ++ moduleName s ++ ":" ++ show (startPos s)
   msg (LevelOutOfRange s l r) sty ts =

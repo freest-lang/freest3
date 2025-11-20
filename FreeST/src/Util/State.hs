@@ -412,6 +412,9 @@ addEquality span equality function threadNum = do
 addEquality' :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> Int -> m ()
 addEquality' span equality function threadNum instantiation = S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum instantiation (-1)) (equalities s) })
 
+addDoubleVarEquality' :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> Int -> m ()
+addDoubleVarEquality' span equality function threadNum instantiation = S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum instantiation 0) (equalities s) })
+
 -- getContextStack :: S.MonadState (FreestS a) m => m [T.Level]
 -- getContextStack = S.gets context
 

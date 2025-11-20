@@ -165,7 +165,6 @@ synthetise kEnv (E.Var _ x) =
       return (s, T.Bottom)
 -- Unary let
 synthetise kEnv (E.UnLet p x e1 e2) = do
-  customTrace e1 "UNARYLET"
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
   case e1 of
@@ -184,19 +183,16 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   ls <- getFullContext'
   popContext'
   addInstantiatedInequalities (getSpan e1) l1 il1 ls
-  customTrace e2 (show e1 ++ " -> " ++ show l1 ++ " // " ++ show ls ++ " <- ")
-  pis <- getPriorityInstantiations
-  customTrace e2 ("Priority instantiations: " ++ show pis)
-  
+  pis <- getPriorityInstantiations  
   xi <- getPriorityInstantiation (show l1)
-  if not (null ls) 
-    then do 
-      yi <- getPriorityInstantiation (show (head (Set.toList ls)))
-      customTrace e2 ("xi: " ++ show xi ++ ", yi: " ++ show yi)
-    else do
-      gpi <- getGlobalPriorityInstantiations
-      customTrace e2 ("xi: " ++ show xi)
-      customTrace e2 ("Current priority instantiations: " ++ show gpi)
+  -- if not (null ls) 
+  --   then do 
+  --     yi <- getPriorityInstantiation (show (head (Set.toList ls)))
+  --     customTrace e2 ("xi: " ++ show xi ++ ", yi: " ++ show yi)
+  --   else do
+  --     gpi <- getGlobalPriorityInstantiations
+  --     customTrace e2 ("xi: " ++ show xi)
+  --     customTrace e2 ("Current priority instantiations: " ++ show gpi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
@@ -248,11 +244,8 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (l1, u1, u2) <- Extract.leveledInput e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
   lu1 <- getTypeLevel u1
-  customTrace e ("Receive: adding inequality " ++ show (l1, lu1))
   addInequality (getSpan e) (l1, lu1)
   lu2 <- getTypeLevel u2
-  customTrace e ("RECEIVE TYPES: " ++ show u1 ++ " , " ++ show u2)
-  customTrace e ("Receive: added inequality " ++ show (l1, lu2))
   addInequality (getSpan e) (l1, lu2)
   updateContext' l1
   upperBound <- maxLevel' (getSpan t) [l, l1]
@@ -263,11 +256,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   (l1, u1, u2) <- Extract.leveledOutput e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
   lu1 <- getTypeLevel u1  
-  customTrace e1 ("Send: adding inequality " ++ show (l1, lu1))
   addInequality (getSpan e1) (l1, lu1)
   lu2 <- getTypeLevel u2
-  customTrace e1 ("SEND TYPES: " ++ show u1 ++ " , " ++ show u2)
-  customTrace e1 ("Send: added inequality " ++ show (l1, lu2))
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
   updateContext' l1
@@ -404,7 +394,6 @@ synthetise kEnv (E.LevelApp _ e l) = do
         T.LAdd T.Bottom T.Top -> do --this is for (inst e), it's an impossible value for the programmer to input so it identifies these cases
           addPriorityInstantiation (show e)
           pi <- getPriorityInstantiations
-          customTrace e ("Current priority instantiations: " ++ show pi)
           let l' = T.LVar (mkVar (getSpan e) (show e))
           let t'' = Rename.subsLevel l' y u
           return (t'', T.Bottom)
@@ -414,11 +403,13 @@ synthetise kEnv (E.LevelApp _ e l) = do
               let var = mkVar (getSpan e) (show l)
               currFunc <- getCurrentFunction (fst $ startPos (getSpan e))
               ep <- getEndpointPriorityByName (show l) currFunc
+              customTrace e ("Priority application at expr: " ++ show l ++ " at " ++ show p)
               case ep of
-                Just ePrio -> addEndpointPriority var f ePrio
+                Just ePrio -> do
+                  addEndpointPriority var f ePrio
+                  addEndpointPriority (mkVar p (show y)) f ePrio
                 Nothing -> addError $ PriorityNotInstantiated (getSpan e) l
-              eps <- getEndpointPriorities
-              customTrace e ("Current endpoint priorities: " ++ show eps)
+              -- eps <- getEndpointPriorities
               substituteAbstractionContext y l
               fic <- getFirstInContext
               case fic of --update variable in context to build abstraction properly
@@ -430,17 +421,29 @@ synthetise kEnv (E.LevelApp _ e l) = do
 --Priority peek
 synthetise kEnv (E.LevelPeek p e) = do
   let var = mkVar (getSpan e) (show e)
-  customTrace e ("Priority peek at expr: " ++ show var ++ " " ++ show p)
   return (T.Skip p, T.LVar var)
 -- Priority application defining function bounds
 synthetise kEnv (E.LevelAppBound p e1 e2) = do
   (t1, _) <- synthetise kEnv e1
   (_, l) <- synthetise kEnv e2
-  customTrace e1 ("Priority application with bound at expr: " ++ show l)
   t1' <- Extract.forall e1 t1
+  customTrace e1 ("LevelAppBound with level: " ++ show l)
   case t1' of
-    T.PForall p (Bind _ y r u) -> return (Rename.subsLevel l y u, T.Bottom)
-    T.Forall p (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
+    T.PForall p' (Bind _ y r u) -> do
+      currFunc <- getCurrentFunction (fst $ startPos p)
+      let f = takeWhile (/= ' ') (show e1)
+      ep <- getEndpointPriorityByName (show l) currFunc
+      case ep of
+        Just ePrio -> do
+          addEndpointPriority (mkVar p' (show y)) f ePrio
+        Nothing -> return () --do
+          -- call <- getFunctionCallsOf f
+          -- inst <- getUnwrappedPriorityInstantiation (show l)
+          -- addDoubleVarEquality' (getSpan e1) (l, T.LVar (mkVar p' (show y))) f (call+1) inst --call is +1 cause this is during the app and the calls haven't been updated
+      eps <- getEndpointPriorities
+      customTrace e1 ("Current endpoint priorities: " ++ show eps)
+      return (Rename.subsLevel l y u, T.Bottom)
+    T.Forall p' (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
 synthetiseMap :: K.KindEnv -> Signatures -> ([Variable], E.Exp)
               -> TypingState ([T.Type], [Signatures])
@@ -647,7 +650,7 @@ registerEndpointPriorities e1 e2 p = do
       case param of
         Just param' -> addEndpointPriority (mkVar p param') funcName ePrio
         Nothing -> return ()
-    Nothing -> return ()
+    Nothing -> when fr $ addFunctionCall' funcName (fst $ startPos p)
 
 addEndpointPriorityEqualities ::  TypingState ()
 addEndpointPriorityEqualities = do
@@ -656,7 +659,6 @@ addEndpointPriorityEqualities = do
   span <- getFirstInequalitySpan
   let span' = Data.Maybe.fromMaybe defaultSpan span
   forM_ (Map.toList eps) $ \((var, func, callNum), (a, _b)) -> do
-    customTrace (E.Unit span') ("Adding endpoint priority equality for " ++ show var ++ " in function " ++ func ++ " call " ++ show callNum ++ ": " ++ show a)
     addEquality' span' (T.LVar var, T.LNum a) func callNum 0
   forM_ (Map.toList gpis) $ \(varStr, x) -> do
     let matching = [ ((var, func, callNum), (a, b))
@@ -666,7 +668,6 @@ addEndpointPriorityEqualities = do
     forM_ matching $ \((var, func, callNum), (a, b)) -> do
       forM_ [x, x-1 .. 1] $ \i -> do
         let val = a + b * i
-        customTrace (E.Unit span') ("Adding endpoint priority equality for " ++ show var ++ " in function " ++ func ++ " call " ++ show callNum ++ ": " ++ show val ++ " using " ++ show a ++ " + " ++ show b ++ " * " ++ show i)
         addEquality' span' (T.LVar var, T.LNum val) func callNum i
 
 customTrace :: E.Exp -> String -> TypingState ()

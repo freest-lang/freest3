@@ -103,10 +103,8 @@ def check_inequalities(inequalities, file_path):
             equalities.append(constraint)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
-            print(f"{constraint} at {span} at thread {thread_num}")
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality, "xinstance": x_instance, "yinstance": y_instance}
 
-    print(z3_consts)
     unsat_constraints = []
     if solver.check() == sat:
         return []
