@@ -1,58 +1,79 @@
--- type PreviousSched = forall c : (bot,top) => &c{Next: PreviousSched}
--- type Worker = forall a : (bot,top) => +a{Start: ?a+1(); Worker}
--- type NextSched = forall b : (bot,top) => +b{Start: forall b1 : (bot,top) => +b1{Next: NextSched}} 
+type Worker = forall a : (bot,top) => +a{Start: ?a+2(); Worker}
+type Sched = forall b : (bot,top) => &b{Start: Sched, Next: Sched}
 
--- followUp : forall p:(bot,top) => PreviousSched ->[top,bot] Worker ->[a,bot] NextSched 1->[a,z] ()
--- followUp = 
---     forall p:(bot,top) =>
---     \x: PreviousSched ->
---     \y: Worker ->
---     \z: NextSched ->
---     match (inst x) with {
---         Next x -> 
---             let z = select Start (inst z) in 
---             let y = select Start (inst y) in 
---             let (_, y) = receive y in 
---             let z = select Next (inst z) in 
---             followUp {priority z} x y z
---     }
+follower : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[b,bot] dualof Sched 1->[b,next] ()
+follower = 
+    forall p:(bot,top) =>
+    \prev: Sched ->
+    \worker: Worker 1->
+    \next: dualof Sched 1->
+    match (inst prev) with {                                    --1
+        Start prev -> 
+            let worker = select Start (inst worker) in          --2
+            let next = select Start (inst next) in              --3
+            let (_, worker) = receive worker in                 --4
+            match (inst prev) with {                            --5
+                Next prev ->
+                    let next = select Next (inst next) in       --6
+                    follower {priority next} prev worker next         --p,w,n,w,p,n --- 1,2,3,4(+2),5(inst +4),6(inst +3)
+            }
+    }
 
--- kickOff : forall p:(bot,top) => PreviousSched ->[top,bot] Worker ->[top,bot] NextSched 1->[top,bot] ()
--- kickOff = 
---    forall p:(bot,top) =>
---    \x: PreviousSched ->
---    \y: Worker ->
---    \z: NextSched ->
---    let z = select Start (inst z) in 
---    let y = select Start (inst y) in 
---    let (_, y) = receive y in 
---    let z = select Next (inst z) in 
---    match (inst x) with {
---        Next x -> 
---           kickOff {priority z} x y z
---    }
---    followUp x y
+leader : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[b,bot] dualof Sched 1->[b,bot] Int 1->[b,next] ()
+leader = 
+    forall p:(bot,top) =>
+    \prev: Sched ->
+    \worker: Worker 1->
+    \next: dualof Sched 1->
+    \i: Int 1->
+    let worker = select Start (inst worker) in                  --1
+    let next = select Start (inst next) in                      --2 
+    let (_, worker) = receive worker in                         --3
+    let next = select Next (inst next) in                       --4
+    match (inst prev) with {                                    --5
+        Start prev ->
+            match (inst prev) with {                            --6
+                Next prev ->
+                    leader {priority next} prev worker next (i + 1)   --w,n,w,n,p,p --- 1,2,3(+2),4(inst +2),5,6(inst +1)
+            }
+    }
 
--- main : ()
--- main =
---     let (ps1, ns1) = new @PreviousSched {1,2} () in
---     let (w1r, w1w) = new @Worker {3,4} () in
---     let (ns2, ps2) = new @NextSched {5,6} () in
---     let (w2r, w2w) = new @Worker {7,8} () in
---     let (ns3, ps3) = new @NextSched {9,10} () in
---     let (w3r, w3w) = new @Worker {11,12} () in
---     let (ns4, ps4) = new @NextSched {13,14} () in
---     let (w4r, w4w) = new @Worker {15,16} () in
---     let (ns5, ps5) = new @NextSched {17,18} () in
---     let (w5r, w5w) = new @Worker {19,20} () in
---     let (ns6, ps6) = new @NextSched {21,22} () in
---     let (w6r, w6w) = new @Worker {23,24} () in
+worker : forall p:(bot,top) => dualof Worker ->[top,x+1] ()
+worker = 
+    forall p:(bot,top) =>
+    \x: dualof Worker ->
+    match (inst x) with {
+        Start x -> 
+            let x = send () x in 
+            worker {priority x} x
+    }
 
---     -- Connect the processes in a cycle
---     fork (\_:()1-> (kickOff {priority ns1}) ps1 w1r ns1);
---     fork (\_:()1-> (followUp {priority ns2}) ps2 w2r ns2);
---     fork (\_:()1-> (followUp {priority ns3}) ps3 w3r ns3);
---     fork (\_:()1-> (followUp {priority ns4}) ps4 w4r ns4);
---     fork (\_:()1-> (followUp {priority ns5}) ps5 w5r ns5);
---     followUp {priority ns6} ps6 w6r ns6;
---     ()
+main : ()
+main =
+    let (a1, b1) = new @Worker {13,14} () in
+    let (a2, b2) = new @Worker {15,16} () in
+    let (a3, b3) = new @Worker {17,18} () in
+    let (a4, b4) = new @Worker {19,20} () in
+    let (a5, b5) = new @Worker {21,22} () in
+    let (a6, b6) = new @Worker {23,24} () in
+    let (c1, d1) = new @Sched {1,2} () in
+    let (c2, d2) = new @Sched {3,4} () in
+    let (c3, d3) = new @Sched {5,6} () in
+    let (c4, d4) = new @Sched {7,8} () in
+    let (c5, d5) = new @Sched {9,10} () in
+    let (c6, d6) = new @Sched {11,12} () in
+
+    fork (\_:()1-> leader {priority d1} c6 a1 d1 0); --A1
+    fork (\_:()1-> follower {priority c1} c1 a2 d2); --A2
+    fork (\_:()1-> follower {priority c2} c2 a3 d3); --A3
+    fork (\_:()1-> follower {priority c3} c3 a4 d4); --A4
+    fork (\_:()1-> follower {priority c4} c4 a5 d5); --A5
+    fork (\_:()1-> follower {priority c5} c5 a6 d6); --A6
+
+    fork (\_:()1-> worker {priority b1} b1); --P1
+    fork (\_:()1-> worker {priority b2} b2); --P2
+    fork (\_:()1-> worker {priority b3} b3); --P3
+    fork (\_:()1-> worker {priority b4} b4); --P4
+    fork (\_:()1-> worker {priority b5} b5); --P5
+    worker {priority b6} b6;
+    ()
