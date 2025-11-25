@@ -194,6 +194,8 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   --     customTrace e2 ("xi: " ++ show xi)
   --     customTrace e2 ("Current priority instantiations: " ++ show gpi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
+  customTrace e2 ("Unary let at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  customTrace e2 ("L2 IS " ++ show l2 ++ " Also adding upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -287,9 +289,12 @@ synthetise kEnv (E.App p e1 e2) = do
   l2 <- leveledCheckAgainst kEnv e2 u1
   ls <- getFullContext'
   popContext'
+  updateContext' l3 --might have to remove this
   addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
+  customTrace e2 ("Application at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  customTrace e2 ("Also adding: " ++ show l2 ++ " < " ++ show l3 ++ " and upper bound is " ++ show upperBound)
   return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -314,9 +319,13 @@ synthetise kEnv (E.LevelTypeApp p new@(E.Var _ x) t (n,m)) | x == mkNew p = do
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   (u, _)                            <- synthetise kEnv e
-  ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
-  void $ K.checkAgainst kEnv k t
-  return (Rename.subs t y u', T.Bottom)
+  fa <- Extract.forall e u
+  case fa of
+    T.Forall _ (Bind _ y k u') -> do
+      void $ K.checkAgainst kEnv k t
+      return (Rename.subs t y u', T.Bottom)
+    T.PForall _ (Bind _ y r u') -> return (Rename.subs t y u', T.Bottom)
+    _ -> do return (u, T.Bottom)
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
@@ -347,6 +356,8 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
   upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  customTrace e2 ("Pair elimination at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  customTrace e2 ("Also adding: " ++ show l1 ++ " < " ++ show lu1 ++ " and " ++ show l1 ++ " < " ++ show lu2 ++ " and upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do

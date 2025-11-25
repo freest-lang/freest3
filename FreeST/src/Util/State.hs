@@ -634,12 +634,15 @@ maxLevel' span ls = do
   if isEdgeVal
     then return l'
     else do
-      n <- S.gets levelVarCounter
-      -- let newLevel = T.Num n
-      let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
-      incrementLevelVarCounter
-      mapM_ (\l -> addInequality span (l, newLevel)) ls
-      return newLevel
+      if all (\l -> R.compareLevels l (head ls)) ls
+        then return (head ls)
+        else do
+          n <- S.gets levelVarCounter
+          -- let newLevel = T.Num n
+          let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
+          incrementLevelVarCounter
+          mapM_ (\l -> addInequality span (l, newLevel)) ls
+          return newLevel
 
 checkMinTopBot :: [T.Level] -> (Bool, T.Level)
 checkMinTopBot [] = (True, T.Top)

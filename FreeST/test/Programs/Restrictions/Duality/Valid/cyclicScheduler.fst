@@ -1,0 +1,58 @@
+-- type PreviousSched = forall c : (bot,top) => &c{Next: PreviousSched}
+-- type Worker = forall a : (bot,top) => +a{Start: ?a+1(); Worker}
+-- type NextSched = forall b : (bot,top) => +b{Start: forall b1 : (bot,top) => +b1{Next: NextSched}} 
+
+-- followUp : forall p:(bot,top) => PreviousSched ->[top,bot] Worker ->[a,bot] NextSched 1->[a,z] ()
+-- followUp = 
+--     forall p:(bot,top) =>
+--     \x: PreviousSched ->
+--     \y: Worker ->
+--     \z: NextSched ->
+--     match (inst x) with {
+--         Next x -> 
+--             let z = select Start (inst z) in 
+--             let y = select Start (inst y) in 
+--             let (_, y) = receive y in 
+--             let z = select Next (inst z) in 
+--             followUp {priority z} x y z
+--     }
+
+-- kickOff : forall p:(bot,top) => PreviousSched ->[top,bot] Worker ->[top,bot] NextSched 1->[top,bot] ()
+-- kickOff = 
+--    forall p:(bot,top) =>
+--    \x: PreviousSched ->
+--    \y: Worker ->
+--    \z: NextSched ->
+--    let z = select Start (inst z) in 
+--    let y = select Start (inst y) in 
+--    let (_, y) = receive y in 
+--    let z = select Next (inst z) in 
+--    match (inst x) with {
+--        Next x -> 
+--           kickOff {priority z} x y z
+--    }
+--    followUp x y
+
+-- main : ()
+-- main =
+--     let (ps1, ns1) = new @PreviousSched {1,2} () in
+--     let (w1r, w1w) = new @Worker {3,4} () in
+--     let (ns2, ps2) = new @NextSched {5,6} () in
+--     let (w2r, w2w) = new @Worker {7,8} () in
+--     let (ns3, ps3) = new @NextSched {9,10} () in
+--     let (w3r, w3w) = new @Worker {11,12} () in
+--     let (ns4, ps4) = new @NextSched {13,14} () in
+--     let (w4r, w4w) = new @Worker {15,16} () in
+--     let (ns5, ps5) = new @NextSched {17,18} () in
+--     let (w5r, w5w) = new @Worker {19,20} () in
+--     let (ns6, ps6) = new @NextSched {21,22} () in
+--     let (w6r, w6w) = new @Worker {23,24} () in
+
+--     -- Connect the processes in a cycle
+--     fork (\_:()1-> (kickOff {priority ns1}) ps1 w1r ns1);
+--     fork (\_:()1-> (followUp {priority ns2}) ps2 w2r ns2);
+--     fork (\_:()1-> (followUp {priority ns3}) ps3 w3r ns3);
+--     fork (\_:()1-> (followUp {priority ns4}) ps4 w4r ns4);
+--     fork (\_:()1-> (followUp {priority ns5}) ps5 w5r ns5);
+--     followUp {priority ns6} ps6 w6r ns6;
+--     ()
