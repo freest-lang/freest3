@@ -32,6 +32,8 @@ import           Util.Error          ( internalError )
 
 import qualified Data.Map.Strict as Map
 
+import Debug.Trace ( trace )
+
 
 -- [t/a]u, substitute t for for every occurrence of a in u
 
@@ -93,7 +95,8 @@ subsLevelInType l a (T.Semi s t1 t2) = T.Semi s (subsLevelInType l a t1) (subsLe
 subsLevelInType l a (T.Message s l' p t1) = T.Message s (subsLevel l a l') p (subsLevelInType l a t1)
 -- Polymorphism and recursion
 subsLevelInType l a (T.Forall s b) = T.Forall s (subsLevelInBind l a b)
-subsLevelInType l a (T.Rec s b) = T.Rec s (subsLevelInBind l a b)
+-- subsLevelInType l a (T.Rec s b) = T.Rec s (subsLevelInBind l a b)
+subsLevelInType l a (T.Rec s b) = T.Rec s b
 subsLevelInType l a u@(T.Var s b) = u 
 -- Type operators
 subsLevelInType l a u@(T.Dualof s t) = T.Dualof s (subsLevelInType l a t)
@@ -103,6 +106,12 @@ subsLevelInType _ _ t = t
 
 subsLevelInBindWithRange :: T.Level -> Variable -> Bind T.LevelRange T.Type -> Bind (T.Level, T.Level) T.Type
 subsLevelInBindWithRange l a (Bind p b (l1, l2) u) = Bind p b (subsLevel l a l1, subsLevel l a l2) (subsLevelInType l a u)
+  -- let b' = if b == a then extractVarFromLevel l p (extern b) else b in
+  -- Bind p b' (subsLevel l a l1, subsLevel l a l2) (subsLevelInType l a u)
+
+-- extractVarFromLevel :: T.Level -> Span -> String -> Variable
+-- extractVarFromLevel (T.LVar v) _ _ = v
+-- extractVarFromLevel _ p s = mkVar p s
 
 subsLevelInBind :: T.Level -> Variable -> Bind k T.Type -> Bind k T.Type
 subsLevelInBind l a (Bind p b k u) = Bind p b k (subsLevelInType l a u)

@@ -230,6 +230,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     updateContext' l1
+    customTrace e ("UPDATING CONTEXT IN SELECT WITH " ++ show l1)
     l2 <- getTypeLevel t1
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
@@ -250,6 +251,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
   updateContext' l1
+  customTrace e ("UPDATING CONTEXT IN RECEIVE WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
@@ -263,6 +265,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
   updateContext' l1
+  customTrace e2 ("UPDATING CONTEXT IN SEND WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
@@ -278,6 +281,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan e) (l, l1)
   updateContext' l1
+  customTrace e ("UPDATING CONTEXT IN CLOSE/WAIT WITH " ++ show l1)
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
@@ -289,7 +293,7 @@ synthetise kEnv (E.App p e1 e2) = do
   l2 <- leveledCheckAgainst kEnv e2 u1
   ls <- getFullContext'
   popContext'
-  updateContext' l3 --might have to remove this
+  -- updateContext' l3 --might have to remove this
   addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
@@ -344,7 +348,11 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addToSignatures x u1
   addToSignatures y u2
   il1 <- getUnwrappedPriorityInstantiation (show l1)
+  ctx <- getFullContext'
+  customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   newContext'
+  ctx <- getFullContext'
+  customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
@@ -368,9 +376,9 @@ synthetise kEnv (E.Case p e fm) = do
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
   ls <- getGlobalContext'
-  case Map.toList fm' of
-    [(mkFalse, _), (mkTrue, _)] -> return ()
-    _ -> popContext'
+  -- case Map.toList fm' of
+  --   [(mkFalse, _), (mkTrue, _)] -> return ()
+  --   _ -> popContext'
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -556,7 +564,10 @@ compareTypes e t u = do
   progAbs <- checkAbstractionLevels t u []
   case checkAttempt of
     Just checks -> unless (checks && equalLevels t progAbs)
-                 $ addError (TypeMismatch (getSpan e) t u e)
+                 $ do
+                  case u of
+                    T.Semi _ u' T.Skip{} -> when (t /= u') $ addError (TypeMismatch (getSpan e) t u e)
+                    _ -> addError (TypeMismatch (getSpan e) t u e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
 checkAbstractionLevels :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
