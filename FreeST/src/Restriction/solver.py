@@ -99,14 +99,12 @@ def check_inequalities(inequalities, file_path):
         l2 = wrap_variables(ineq["l2"], function, thread_num, y_instance)
         if equality:
             constraint = add_level_equality(solver, z3_consts, l1, l2, constraint_id)
-            # print(f"EQUALITY {constraint} at {span} at thread {thread_num}")
             equalities.append(constraint)
         else:
             constraint = add_level_constraint(solver, z3_consts, l1, l2, constraint_id)
         constraint_map[constraint_id] = {"span": span, "l1": l1, "l2": l2, "constraint": constraint, "function": function, "thread_num": thread_num, "equality": equality, "xinstance": x_instance, "yinstance": y_instance}
 
     unsat_constraints = []
-    print("Running...")
     if solver.check() == sat:
         return []
     else:
@@ -128,21 +126,14 @@ def check_inequalities(inequalities, file_path):
             ])
 
             for c in unsat_core:
-                # print(unwrap_variables(constraint_map[str(c)]["l1"])
-                #       + (" = " if constraint_map[str(c)]["equality"] else " < ")
-                #       + unwrap_variables(constraint_map[str(c)]["l2"]))
                 constraint_id = str(c)
                 unsat_core_list.append(constraint_map[constraint_id])
                 if not constraint_map[constraint_id]["equality"]:
                     constraint_map.pop(constraint_id)
                     solver = rebuild_solver_without_constraint(constraint_map, constraint_id, truths)
-        
-        
-        
-                
+
         filtered_unsat_constraints = check_equalities(equalities, unsat_core_list, truths, unsat_constraints)
         return filtered_unsat_constraints
-        # return unsat_constraints
 
 def rebuild_solver_without_constraint(constraint_map, constraint_to_remove, truths):
     new_solver = Solver()

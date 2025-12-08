@@ -185,17 +185,7 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   addInstantiatedInequalities (getSpan e1) l1 il1 ls
   pis <- getPriorityInstantiations  
   xi <- getPriorityInstantiation (show l1)
-  -- if not (null ls) 
-  --   then do 
-  --     yi <- getPriorityInstantiation (show (head (Set.toList ls)))
-  --     customTrace e2 ("xi: " ++ show xi ++ ", yi: " ++ show yi)
-  --   else do
-  --     gpi <- getGlobalPriorityInstantiations
-  --     customTrace e2 ("xi: " ++ show xi)
-  --     customTrace e2 ("Current priority instantiations: " ++ show gpi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
-  -- customTrace e2 ("Unary let at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  -- customTrace e2 ("L2 IS " ++ show l2 ++ " Also adding upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -230,7 +220,6 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     updateContext' l1
-    -- customTrace e ("UPDATING CONTEXT IN SELECT WITH " ++ show l1)
     l2 <- getTypeLevel t1
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
@@ -251,7 +240,6 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
   updateContext' l1
-  -- customTrace e ("UPDATING CONTEXT IN RECEIVE WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
@@ -265,7 +253,6 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
   updateContext' l1
-  -- customTrace e2 ("UPDATING CONTEXT IN SEND WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
@@ -281,7 +268,6 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan e) (l, l1)
   updateContext' l1
-  -- customTrace e ("UPDATING CONTEXT IN CLOSE/WAIT WITH " ++ show l1)
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
@@ -297,8 +283,6 @@ synthetise kEnv (E.App p e1 e2) = do
   addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
-  -- customTrace e2 ("Application at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  -- customTrace e2 ("Also adding: " ++ show l2 ++ " < " ++ show l3 ++ " and upper bound is " ++ show upperBound)
   return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -349,10 +333,8 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addToSignatures y u2
   il1 <- getUnwrappedPriorityInstantiation (show l1)
   ctx <- getFullContext'
-  -- customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   newContext'
   ctx <- getFullContext'
-  -- customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
@@ -364,8 +346,6 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
   upperBound <- maxLevel' (getSpan t1) [l1, l2]
-  -- customTrace e2 ("Pair elimination at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  -- customTrace e2 ("Also adding: " ++ show l1 ++ " < " ++ show lu1 ++ " and " ++ show l1 ++ " < " ++ show lu2 ++ " and upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
@@ -417,18 +397,15 @@ synthetise kEnv (E.LevelApp _ e l) = do
           let t'' = Rename.subsLevel l' y u
           return (t'', T.Bottom)
         _ -> do --instantiate with a variable
-              -- customTrace e ("Priority application at expr: " ++ show l)
               let f = takeWhile (/= ' ') (show e)
               let var = mkVar (getSpan e) (show l)
               currFunc <- getCurrentFunction (fst $ startPos (getSpan e))
               ep <- getEndpointPriorityByName (show l) currFunc
-              -- customTrace e ("Priority application at expr: " ++ show l ++ " at " ++ show p)
               case ep of
                 Just ePrio -> do
                   addEndpointPriority var f ePrio
                   addEndpointPriority (mkVar p (show y)) f ePrio
                 Nothing -> addError $ PriorityNotInstantiated (getSpan e) l
-              -- eps <- getEndpointPriorities
               substituteAbstractionContext y l
               fic <- getFirstInContext
               case fic of --update variable in context to build abstraction properly
@@ -446,7 +423,6 @@ synthetise kEnv (E.LevelAppBound p e1 e2) = do
   (t1, _) <- synthetise kEnv e1
   (_, l) <- synthetise kEnv e2
   t1' <- Extract.forall e1 t1
-  -- customTrace e1 ("LevelAppBound with level: " ++ show l)
   case t1' of
     T.PForall p' (Bind _ y r u) -> do
       currFunc <- getCurrentFunction (fst $ startPos p)
@@ -455,12 +431,7 @@ synthetise kEnv (E.LevelAppBound p e1 e2) = do
       case ep of
         Just ePrio -> do
           addEndpointPriority (mkVar p' (show y)) f ePrio
-        Nothing -> return () --do
-          -- call <- getFunctionCallsOf f
-          -- inst <- getUnwrappedPriorityInstantiation (show l)
-          -- addDoubleVarEquality' (getSpan e1) (l, T.LVar (mkVar p' (show y))) f (call+1) inst --call is +1 cause this is during the app and the calls haven't been updated
-      eps <- getEndpointPriorities
-      -- customTrace e1 ("Current endpoint priorities: " ++ show eps)
+        Nothing -> return ()
       return (Rename.subsLevel l y u, T.Bottom)
     T.Forall p' (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
