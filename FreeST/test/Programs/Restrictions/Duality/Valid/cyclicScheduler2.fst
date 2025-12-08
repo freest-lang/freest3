@@ -1,7 +1,7 @@
 type Worker = forall a : (bot,top) => +a{Start: ?a+2()};Worker
 type Sched : 1S = forall b : (bot,top) => +b{Start: +b+4{Next: Sched}} -- troquei este tipo pq acho que Next tem que se seguir a Start e da forma como estava, podiamos escolher qq um em primeiro lugar
 
-follower : forall p:(bot,top) => dualof Sched ->[top,bot] Worker 1->[b,bot] Sched 1->[b,next+4] ()
+follower : forall p:(bot,top) => dualof Sched ->[top,bot] Worker 1->[p,bot] Sched 1->[p,next+4] ()
 follower = 
     forall p:(bot,top) =>
     \prev: dualof Sched ->
@@ -21,7 +21,7 @@ follower =
 
 --p,w,n,w,p,n
 
-leader : forall p:(bot,top) => Worker ->[top,bot] dualof Sched 1->[a,bot] Sched 1->[a,next+4] () -- troquei worker e prev pq o worker é o que tem menor prioridade. assim nao precisamos de 2 binders
+leader : forall p:(bot,top) => Worker ->[top,bot] dualof Sched 1->[p,bot] Sched 1->[p,next+4] () -- troquei worker e prev pq o worker é o que tem menor prioridade. assim nao precisamos de 2 binders
 leader = 
     forall p:(bot,top) =>
     \worker: Worker ->
@@ -47,12 +47,12 @@ worker =
 
 main : ()
 main = -- fiz a versão com 3 sched e 3 workers
-    let (a1, b1) = new @Worker {1,7} () in 
-    let (a2, b2) = new @Worker {3,7} () in 
-    let (a3, b3) = new @Worker {5,7} () in 
-    let (c1, d1) = new @Sched {2,7} () in 
-    let (c2, d2) = new @Sched {4,7} () in 
-    let (c3, d3) = new @Sched {6,7} () in 
+    let (a1, b1) = new @Worker {1,12} () in 
+    let (a2, b2) = new @Worker {3,12} () in 
+    let (a3, b3) = new @Worker {5,12} () in 
+    let (c1, d1) = new @Sched {2,12} () in 
+    let (c2, d2) = new @Sched {4,12} () in 
+    let (c3, d3) = new @Sched {6,12} () in 
 
     fork (\_:()1-> (leader {priority a1}) a1 d3 c1); --A1
     fork (\_:()1-> (follower {priority d1}) d1 a2 c2); --A2

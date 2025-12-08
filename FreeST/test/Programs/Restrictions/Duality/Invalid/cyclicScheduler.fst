@@ -1,7 +1,7 @@
 type Worker = forall a : (bot,top) => +a{Start: ?a+2(); Worker}
 type Sched = forall b : (bot,top) => &b{Start: Sched, Next: Sched}
 
-follower : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[b,bot] dualof Sched 1->[b,next] ()
+follower : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[p,bot] dualof Sched 1->[p,next] ()
 follower = 
     forall p:(bot,top) =>
     \prev: Sched ->
@@ -19,7 +19,7 @@ follower =
             }
     }
 
-leader : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[b,bot] dualof Sched 1->[b,bot] Int 1->[b,next] ()
+leader : forall p:(bot,top) => Sched ->[top,bot] Worker 1->[p,bot] dualof Sched 1->[p,bot] Int 1->[p,next] ()
 leader = 
     forall p:(bot,top) =>
     \prev: Sched ->
@@ -38,7 +38,7 @@ leader =
             }
     }
 
-worker : forall p:(bot,top) => dualof Worker ->[top,x+1] ()
+worker : forall p:(bot,top) => dualof Worker ->[top,x+2] ()
 worker = 
     forall p:(bot,top) =>
     \x: dualof Worker ->

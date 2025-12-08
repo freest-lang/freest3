@@ -194,8 +194,8 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
   --     customTrace e2 ("xi: " ++ show xi)
   --     customTrace e2 ("Current priority instantiations: " ++ show gpi)
   upperBound <- maxLevel' (getSpan e1) [l1,l2]
-  customTrace e2 ("Unary let at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  customTrace e2 ("L2 IS " ++ show l2 ++ " Also adding upper bound is " ++ show upperBound)
+  -- customTrace e2 ("Unary let at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  -- customTrace e2 ("L2 IS " ++ show l2 ++ " Also adding upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
@@ -230,7 +230,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
     updateContext' l1
-    customTrace e ("UPDATING CONTEXT IN SELECT WITH " ++ show l1)
+    -- customTrace e ("UPDATING CONTEXT IN SELECT WITH " ++ show l1)
     l2 <- getTypeLevel t1
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
@@ -251,7 +251,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
   updateContext' l1
-  customTrace e ("UPDATING CONTEXT IN RECEIVE WITH " ++ show l1)
+  -- customTrace e ("UPDATING CONTEXT IN RECEIVE WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
@@ -265,7 +265,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
   updateContext' l1
-  customTrace e2 ("UPDATING CONTEXT IN SEND WITH " ++ show l1)
+  -- customTrace e2 ("UPDATING CONTEXT IN SEND WITH " ++ show l1)
   upperBound <- maxLevel' (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
@@ -281,7 +281,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan e) (l, l1)
   updateContext' l1
-  customTrace e ("UPDATING CONTEXT IN CLOSE/WAIT WITH " ++ show l1)
+  -- customTrace e ("UPDATING CONTEXT IN CLOSE/WAIT WITH " ++ show l1)
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
@@ -297,8 +297,8 @@ synthetise kEnv (E.App p e1 e2) = do
   addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
   upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
-  customTrace e2 ("Application at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  customTrace e2 ("Also adding: " ++ show l2 ++ " < " ++ show l3 ++ " and upper bound is " ++ show upperBound)
+  -- customTrace e2 ("Application at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  -- customTrace e2 ("Also adding: " ++ show l2 ++ " < " ++ show l3 ++ " and upper bound is " ++ show upperBound)
   return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -349,10 +349,10 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addToSignatures y u2
   il1 <- getUnwrappedPriorityInstantiation (show l1)
   ctx <- getFullContext'
-  customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
+  -- customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   newContext'
   ctx <- getFullContext'
-  customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
+  -- customTrace e1 ("CONTEXT BEFORE NEW CONTEXT IN PAIR ELIMINATION: " ++ show ctx)
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
@@ -364,8 +364,8 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
   upperBound <- maxLevel' (getSpan t1) [l1, l2]
-  customTrace e2 ("Pair elimination at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
-  customTrace e2 ("Also adding: " ++ show l1 ++ " < " ++ show lu1 ++ " and " ++ show l1 ++ " < " ++ show lu2 ++ " and upper bound is " ++ show upperBound)
+  -- customTrace e2 ("Pair elimination at expr: " ++ show e1 ++ " with level " ++ show l1 ++ " and instantiated levels " ++ show ls)
+  -- customTrace e2 ("Also adding: " ++ show l1 ++ " < " ++ show lu1 ++ " and " ++ show l1 ++ " < " ++ show lu2 ++ " and upper bound is " ++ show upperBound)
   return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
@@ -422,7 +422,7 @@ synthetise kEnv (E.LevelApp _ e l) = do
               let var = mkVar (getSpan e) (show l)
               currFunc <- getCurrentFunction (fst $ startPos (getSpan e))
               ep <- getEndpointPriorityByName (show l) currFunc
-              customTrace e ("Priority application at expr: " ++ show l ++ " at " ++ show p)
+              -- customTrace e ("Priority application at expr: " ++ show l ++ " at " ++ show p)
               case ep of
                 Just ePrio -> do
                   addEndpointPriority var f ePrio
@@ -446,7 +446,7 @@ synthetise kEnv (E.LevelAppBound p e1 e2) = do
   (t1, _) <- synthetise kEnv e1
   (_, l) <- synthetise kEnv e2
   t1' <- Extract.forall e1 t1
-  customTrace e1 ("LevelAppBound with level: " ++ show l)
+  -- customTrace e1 ("LevelAppBound with level: " ++ show l)
   case t1' of
     T.PForall p' (Bind _ y r u) -> do
       currFunc <- getCurrentFunction (fst $ startPos p)
@@ -460,7 +460,7 @@ synthetise kEnv (E.LevelAppBound p e1 e2) = do
           -- inst <- getUnwrappedPriorityInstantiation (show l)
           -- addDoubleVarEquality' (getSpan e1) (l, T.LVar (mkVar p' (show y))) f (call+1) inst --call is +1 cause this is during the app and the calls haven't been updated
       eps <- getEndpointPriorities
-      customTrace e1 ("Current endpoint priorities: " ++ show eps)
+      -- customTrace e1 ("Current endpoint priorities: " ++ show eps)
       return (Rename.subsLevel l y u, T.Bottom)
     T.Forall p' (Bind _ y _ u) -> return (Rename.subsLevel l y u, T.Bottom)
 
@@ -561,32 +561,70 @@ compareTypes e t u = do
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   --t is programmer u is compiler
   clearAbstractionStack
-  progAbs <- checkAbstractionLevels t u []
+  -- progAbs <- checkAbstractionLevels t u []
+  progAbs <- checkAbstractionLevels' t u [] T.Top T.Bottom 
   case checkAttempt of
     Just checks -> unless (checks && equalLevels t progAbs)
                  $ do
                   case u of
-                    T.Semi _ u' T.Skip{} -> when (t /= u') $ addError (TypeMismatch (getSpan e) t u e)
-                    _ -> addError (TypeMismatch (getSpan e) t u e)
+                    T.Semi _ u' T.Skip{} -> when (t /= u') $ addError (TypeMismatch (getSpan e) t progAbs e)
+                    _ -> addError (TypeMismatch (getSpan e) t progAbs e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
 
-checkAbstractionLevels :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
-checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
+-- checkAbstractionLevels :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
+-- checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
+--   case ls of
+--     [] -> do
+--       when (l1 /= T.Top) $ addError (LevelNotInContext p1 l1)
+--       let ls' = ([l3 | l3 /= T.Top && l3 /= T.Bottom])
+--       t4' <- checkAbstractionLevels t2 t4 ls'
+--       checkLatentEffect t4'
+--     _ -> do
+--       let ls' = if l3 /= T.Top && l3 /= T.Bottom then ls ++ [l3] else ls
+--       unless (any (compareLevels l1) ls') $ addError (LevelNotInContext p1 l1)
+--       let ls'' = filter (not . compareLevels l1) ls'
+--       addInequalities2 p1 l1 ls''
+--       t4' <- checkAbstractionLevels t2 t4 ls'
+--       checkLatentEffect t4'
+--   where
+--     checkLatentEffect t4' = do
+--       case t4' of
+--         T.Arrow {} -> do
+--           resetGlobalContext'
+--           return (T.Arrow p2 m2 l1 l4 t3 t4')
+--         _ -> do
+--           gc <- getGlobalContext'
+--           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
+--             if not (any (compareLevels l2) gc)
+--               then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
+--               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
+--           resetGlobalContext'
+--           return (T.Arrow p2 m2 l1 l2 t3 t4')
+-- checkAbstractionLevels (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
+--   t1' <- checkAbstractionLevels t1 t2 ls
+--   return (T.Forall p (Bind p a k t1'))
+-- checkAbstractionLevels (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
+--   t1' <- checkAbstractionLevels t1 t2 ls
+--   return (T.Rec p (Bind p a k t1'))
+-- checkAbstractionLevels (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
+--   t1' <- checkAbstractionLevels t1 t2 ls
+--   return (T.PForall p (Bind p a k t1'))
+-- checkAbstractionLevels _ t2 _ = return t2
+
+checkAbstractionLevels' :: T.Type -> T.Type -> [T.Level] -> T.Level -> T.Level -> TypingState T.Type
+checkAbstractionLevels' (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls lb ub =
   case ls of
     [] -> do
       when (l1 /= T.Top) $ addError (LevelNotInContext p1 l1)
       let ls' = ([l3 | l3 /= T.Top && l3 /= T.Bottom])
-      t4' <- checkAbstractionLevels t2 t4 ls'
-      checkLatentEffect t4'
+      t4' <- checkAbstractionLevels' t2 t4 ls' lb ub
+      checkLatentEffect t4' lb ub
     _ -> do
       let ls' = if l3 /= T.Top && l3 /= T.Bottom then ls ++ [l3] else ls
-      unless (any (compareLevels l1) ls') $ addError (LevelNotInContext p1 l1)
-      let ls'' = filter (not . compareLevels l1) ls'
-      addInequalities2 p1 l1 ls''
-      t4' <- checkAbstractionLevels t2 t4 ls'
-      checkLatentEffect t4'
+      t4' <- checkAbstractionLevels' t2 t4 ls' lb ub
+      checkLatentEffect t4' lb ub
   where
-    checkLatentEffect t4' = do
+    checkLatentEffect t4' lb ub = do
       case t4' of
         T.Arrow {} -> do
           resetGlobalContext'
@@ -595,21 +633,24 @@ checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) l
           gc <- getGlobalContext'
           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
             if not (any (compareLevels l2) gc)
-              then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
+              then unless ((l2 == T.Bottom && null gc) || compareLevels l2 ub) $ addError (IncorrectLatentEffect p1 l2)
               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
           resetGlobalContext'
-          return (T.Arrow p2 m2 l1 l2 t3 t4')
-checkAbstractionLevels (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
-  t1' <- checkAbstractionLevels t1 t2 ls
+          let lb' = if null ls then l1 else lb
+          let ub' = if ub /= T.Bottom then ub else l2
+          return (T.Arrow p2 m2 lb' ub' t3 t4')
+checkAbstractionLevels' (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls lb ub = do
+  t1' <- checkAbstractionLevels' t1 t2 ls lb ub
   return (T.Forall p (Bind p a k t1'))
-checkAbstractionLevels (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
-  t1' <- checkAbstractionLevels t1 t2 ls
+checkAbstractionLevels' (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls lb ub = do
+  t1' <- checkAbstractionLevels' t1 t2 ls lb ub
   return (T.Rec p (Bind p a k t1'))
-checkAbstractionLevels (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
-  t1' <- checkAbstractionLevels t1 t2 ls
+checkAbstractionLevels' (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls lb ub = do
+  let lb' = if lb == T.Top then T.LVar a else lb
+  let ub' = if lb /= T.Top then T.LVar a else ub
+  t1' <- checkAbstractionLevels' t1 t2 ls lb' ub'
   return (T.PForall p (Bind p a k t1'))
-checkAbstractionLevels _ t2 _ = return t2
-    
+checkAbstractionLevels' _ t2 _ _ _ = return t2
 
 checkEquivEnvs :: Span -> (Span -> Signatures -> Signatures -> E.Exp -> ErrorType) ->
                    E.Exp -> K.KindEnv -> Signatures -> Signatures -> TypingState ()
