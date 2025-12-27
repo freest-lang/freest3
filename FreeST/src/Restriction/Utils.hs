@@ -1,0 +1,454 @@
+{-# LANGUAGE FlexibleContexts #-}
+module Restriction.Utils where
+
+import           Syntax.AST
+import           Syntax.Base
+import           Util.State
+import qualified Restriction.Restriction as R
+import qualified Syntax.Type as T
+
+import qualified Control.Monad.State as S
+import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
+import Data.List (sortOn, find, isPrefixOf)
+import Data.Char (isAlphaNum, isDigit)
+import Data.Maybe (listToMaybe)
+
+getInequalities :: S.MonadState (FreestS a) m => m Inequalities
+getInequalities = S.gets inequalities
+
+addInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> m ()
+addInequality span inequality = do
+  let (x,y) = inequality
+  xi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar x)
+  yi <- getUnwrappedPriorityInstantiation $ extern (R.getLevelVar y)
+  func <- getCurrentFunction (fst $ startPos span)
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality func 0 xi yi) (inequalities s) })
+
+addFullInequality :: S.MonadState (FreestS a) m => Span -> R.Inequality -> String -> Int -> Int -> Int -> m ()
+addFullInequality span inequality function threadNum xi yi = do
+  S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span inequality function threadNum xi yi) (inequalities s) })
+
+addInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> ContextSet -> m ()
+addInequalities span l1 ctx = mapM_ (\l2 -> addInequality span (l1, l2)) (Set.toList ctx)
+
+addInequalitiesInReverse :: S.MonadState (FreestS a) m => Span -> T.Level -> [T.Level] -> m ()
+addInequalitiesInReverse span l1 ls = do
+  mapM_ (\l2 -> addInequality span (l2, l1)) ls
+
+addInstantiatedInequalities :: S.MonadState (FreestS a) m => Span -> T.Level -> Int -> InstantiatedContextSet -> m ()
+addInstantiatedInequalities span l i ctx = do
+  func <- getCurrentFunction (fst $ startPos span)
+  mapM_ (\(l2, yi') -> S.modify (\s -> s { inequalities = Set.insert (R.InequalityEntry span (l, l2) func 0 i yi') (inequalities s) }) ) (Set.toList ctx)
+
+getEqualities :: S.MonadState (FreestS a) m => m Equalities
+getEqualities = S.gets equalities
+
+addEquality :: S.MonadState (FreestS a) m => Span -> R.Equality -> String -> Int -> Int -> m ()
+addEquality span equality function threadNum instantiation = S.modify (\s -> s { equalities = Set.insert (R.EqualityEntry span equality function threadNum instantiation (-1)) (equalities s) })
+
+getContextStack :: S.MonadState (FreestS a) m => m [ContextSet]
+getContextStack = do
+  stack <- S.gets context
+  return $ map (Set.map fst) stack
+
+getContext :: S.MonadState (FreestS a) m => m ContextSet
+getContext = do
+  ctx <- S.gets context
+  case ctx of
+    (x:_) -> return $ Set.map fst x
+    []    -> return Set.empty
+
+getFullContext :: S.MonadState (FreestS a) m => m InstantiatedContextSet
+getFullContext = do
+  ctx <- S.gets context
+  case ctx of
+    (x:_) -> return x
+    []    -> return Set.empty
+
+getGlobalContext :: S.MonadState (FreestS a) m => m ContextSet
+getGlobalContext = do
+  gctx <- S.gets globalContext
+  ctx <- getContext
+  ctxStack <- getContextStack
+  if gctx == Set.empty && length ctxStack == 1
+    then do
+      S.modify (\s -> s { globalContext = ctx })
+      return ctx
+    else return gctx
+
+resetGlobalContext :: S.MonadState (FreestS a) m => m ()
+resetGlobalContext = do
+  S.modify (\s -> s { globalContext = Set.empty })
+  S.modify (\s -> s { firstInContext = T.Top })
+
+updateContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+updateContext l = do
+  ctxStack <- S.gets context
+  inst <- getUnwrappedPriorityInstantiation (show l)
+  case ctxStack of
+    (x:xs) -> do
+      let newTop = Set.insert (l, inst) x
+      S.modify (\s -> s { context = newTop : xs })
+      if x == Set.empty 
+        then do
+          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
+        else do
+          S.modify (\s -> s { firstInContext = firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
+    [] -> do
+      gctx <- getGlobalContext
+      if gctx == Set.empty
+        then do
+          S.modify (\s -> s { globalContext = Set.singleton l })
+          S.modify (\s -> s { firstInContext = if firstInContext s == T.Top then l else firstInContext s })
+          S.modify (\s -> s { latestInContext = l })
+          pushContext l
+        else pushContext l
+
+newContext :: S.MonadState (FreestS a) m => m ()
+newContext = S.modify (\s -> s { context = Set.empty : context s })
+
+pushContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+pushContext l = do
+  inst <- getUnwrappedPriorityInstantiation (show l)
+  S.modify (\s -> s { context = Set.singleton (l, inst) : context s })
+
+popContext :: S.MonadState (FreestS a) m => m ()
+popContext = do
+  ctxStack <- S.gets context
+  case ctxStack of
+    (x:xs) -> do
+      gctx <- S.gets globalContext
+      S.modify (\s -> s { globalContext = Set.union (Set.map fst x) gctx })
+      S.modify (\s -> s { context = xs })
+    [] -> S.modify (\s -> s { context = [] })
+
+getFirstInContext :: S.MonadState (FreestS a) m => m T.Level
+getFirstInContext = S.gets firstInContext
+
+checkRenamedContext :: S.MonadState (FreestS a) m => T.Level -> m T.Level
+checkRenamedContext l = do
+  pc <- S.gets polyContext
+  if pc /= T.Top
+    then return pc
+    else return l
+
+setFirstInContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+setFirstInContext l = do
+  fic <- S.gets firstInContext
+  S.when (fic == T.Top) $ S.modify (\ s -> s {firstInContext = l})
+
+setPolyContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+setPolyContext l = do
+  pc <- S.gets polyContext
+  S.when (pc == T.Top) $ S.modify (\ s -> s {polyContext = l})
+
+clearFirstInContext :: S.MonadState (FreestS a) m => m ()
+clearFirstInContext = do
+  S.modify (\s -> s { firstInContext = T.Top })
+  S.modify (\s -> s { polyContext = T.Top })
+
+getLatestInContext :: S.MonadState (FreestS a) m => m T.Level
+getLatestInContext = S.gets latestInContext
+
+clearLatestInContext :: S.MonadState (FreestS a) m => m ()
+clearLatestInContext = S.modify (\s -> s { latestInContext = T.Top })
+
+incrementLevelVarCounter :: S.MonadState (FreestS a) m => m ()
+incrementLevelVarCounter = do
+  n <- S.gets levelVarCounter
+  S.modify (\s -> s { levelVarCounter = n + 1 })
+
+minLevel :: S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+minLevel span ls = do
+  let (isEdgeVal, l') = checkMinTopBot ls
+  if isEdgeVal
+    then return l'
+    else do
+      n <- S.gets levelVarCounter
+      let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
+      incrementLevelVarCounter
+      mapM_ (\l -> addInequality span (newLevel, l)) ls
+      return newLevel
+
+maxLevel :: S.MonadState (FreestS a) m => Span -> [T.Level] -> m T.Level
+maxLevel span ls = do
+  let (isEdgeVal, l') = checkMaxTopBot ls
+  if isEdgeVal
+    then return l'
+    else do
+      if all (\l -> R.compareLevels l (head ls)) ls
+        then return (head ls)
+        else do
+          n <- S.gets levelVarCounter
+          let newLevel = T.LVar $ mkVar defaultSpan ("levelVar" ++ show n)
+          incrementLevelVarCounter
+          mapM_ (\l -> addInequality span (l, newLevel)) ls
+          return newLevel
+
+checkMinTopBot :: [T.Level] -> (Bool, T.Level)
+checkMinTopBot [] = (True, T.Top)
+checkMinTopBot [x] = (True, x)
+checkMinTopBot xs
+  | any (== T.Bottom) xs = (True, T.Bottom)
+  | all (== T.Top) xs = (True, T.Top)
+  | length vars == 1 = (True, head vars)
+  | T.Top `elem` xs && any isVar xs = (False, T.Top)
+  | otherwise = (False, T.Top)
+  where
+    isVar T.Bottom = False
+    isVar T.Top = False
+    isVar _         = True
+    vars = filter isVar xs
+
+checkMaxTopBot :: [T.Level] -> (Bool, T.Level)
+checkMaxTopBot [] = (True, T.Top)
+checkMaxTopBot [x] = (True, x)
+checkMaxTopBot xs
+  | any (== T.Top) xs = (True, T.Top)
+  | all (== T.Bottom) xs = (True, T.Bottom)
+  | length vars == 1 = (True, head vars)
+  | T.Bottom `elem` xs && any isVar xs = (False, T.Top)
+  | otherwise = (False, T.Top)
+  where
+    isVar T.Bottom = False
+    isVar T.Top = False
+    isVar _         = True
+    vars = filter isVar xs
+
+levelOfTypeMap :: S.MonadState (FreestS a) m => Span -> T.TypeMap -> m T.Level
+levelOfTypeMap span tm
+  | Map.null tm = return T.Top
+  | otherwise = do
+      ls <- mapM l (Map.elems tm)
+      minLevel span ls
+  where
+    l (T.Labelled _ T.Record _ m)  = levelOfTypeMap span m
+    l (T.Labelled _ T.Variant _ m) = levelOfTypeMap span m
+    l t                            = return (R.level t)
+
+getTypeLevel :: S.MonadState (FreestS a) m => T.Type -> m T.Level
+getTypeLevel t = do
+  case t of
+    T.Labelled _ T.Record _ m  -> levelOfTypeMap (getSpan t) m
+    T.Labelled _ T.Variant _ m -> levelOfTypeMap (getSpan t) m
+    _                          -> return (R.level t)
+
+registerFunctionPositions :: (S.MonadState (FreestS a) m, Show (XDef a)) => Definitions a -> m ()
+registerFunctionPositions defs = do
+  S.forM_ (Map.toList defs) $ \(k, v) -> do
+    let span = getSpan k
+    let (startingPos, _) = startPos span
+    S.when (moduleName span /= "Prelude" && moduleName span /= "<default>") $ do
+      S.modify (\s -> s { functionPositions = Map.insert (extern k) (FunctionData (startingPos, -1) [] 0 0) (functionPositions s) })
+  orderFunctionPositions
+  updateFunctionParams defs
+
+getFunctionPositions :: S.MonadState (FreestS a) m => m (Map.Map String FunctionData)
+getFunctionPositions = S.gets functionPositions
+
+isFunctionRegistered :: S.MonadState (FreestS a) m => String -> m Bool
+isFunctionRegistered name = do
+  m <- S.gets functionPositions
+  return $ Map.member name m
+
+getCurrentFunction :: S.MonadState (FreestS a) m => Int -> m String
+getCurrentFunction pos = do
+  fps <- getFunctionPositions
+  let res = find
+        (\(_, FunctionData (start, end) _ _ _) ->
+            start <= pos && (end == -1 || end >= pos))
+        (Map.toList fps)
+  return $ maybe "null" fst res
+
+orderFunctionPositions :: S.MonadState (FreestS a) m => m ()
+orderFunctionPositions = do
+  m <- S.gets functionPositions
+  let xs = sortOn (\(_, FunctionData (start, _) _ _ _) -> start) (Map.toList m)
+      go [] = []
+      go [(name, FunctionData (start, _) params i callNum)] = [(name, FunctionData (start, -1) params i callNum)]
+      go ((name, FunctionData (start, _) params i callNum) : rest@((_, FunctionData (nextStart, _) _ _ _):_)) =
+        (name, FunctionData (start, nextStart - 1) params i callNum) : go rest
+      newMap = Map.fromList (go xs)
+  S.modify (\s -> s { functionPositions = newMap })
+
+isInFunction :: S.MonadState (FreestS a) m => String -> Span -> m Bool
+isInFunction name span = do
+  m <- getFunctionPositions
+  return $ case Map.lookup name m of
+    Just (FunctionData (start, end) _ _ _) -> 
+      let (pos, _) = startPos span
+      in pos >= start && lesserThan pos end
+    Nothing -> False
+    where
+      lesserThan n1 n2 = n2 == -1 || n1 < n2
+
+updateFunctionParams :: (S.MonadState (FreestS a) m, Show (XDef a)) => Definitions a -> m ()
+updateFunctionParams defs = do
+  fps <- getFunctionPositions
+  let updateParams name fd =
+        case [ v | (k, v) <- Map.toList defs, extern k == name ] of
+          (v:_) ->
+            let params = extractVars (show v)
+            in fd { funcParams = params, funcParamIndex = length params - 1 }
+          [] -> fd
+      newMap = Map.mapWithKey updateParams fps
+  S.modify (\s -> s { functionPositions = newMap })
+  where
+    extractVars s =
+      [ takeWhile isAlphaNum (dropWhile (== '\\') w)
+      | w <- words s
+      , "\\" `isPrefixOf` w
+      , ':' `elem` w
+      ]
+
+duplicateConstraintsInFunc :: S.MonadState (FreestS a) m => String -> m ()
+duplicateConstraintsInFunc func = do
+  call <- getFunctionCallsOf func
+  ineqs <- getInequalities
+  S.forM_ (Set.toList ineqs) $ \(R.InequalityEntry p (l1,l2) f n xi yi) -> do
+    inFunc <- isInFunction func p
+    S.when inFunc $ do
+      S.when (n == 0) $ S.modify (\s -> s { inequalities = Set.delete (R.InequalityEntry p (l1, l2) f n xi yi) (inequalities s) })
+      addFullInequality p (l1, l2) func call xi yi
+
+pushLevelToAbstractionContext :: S.MonadState (FreestS a) m => T.Level -> m ()
+pushLevelToAbstractionContext l = S.modify (\s -> s { abstractionContext = l : abstractionContext s })
+
+popLevelFromAbstractionContext :: S.MonadState (FreestS a) m => m T.Level
+popLevelFromAbstractionContext = S.state $ \s -> case abstractionContext s of
+  []     -> (T.Top, s)
+  (x:xs) -> (x, s { abstractionContext = xs, abstractionStack = x : abstractionStack s })
+
+substituteAbstractionContext :: S.MonadState (FreestS a) m => Variable -> T.Level -> m ()
+substituteAbstractionContext v l = S.modify $ \s ->
+  s { abstractionContext = map (substLevel v l) (abstractionContext s) }
+  where
+    substLevel v l (T.LVar v')
+      | v == v'   = l
+      | otherwise = T.LVar v'
+    substLevel v l (T.LAdd l1 l2) = T.LAdd (substLevel v l l1) (substLevel v l l2)
+    substLevel _ _ l =  l
+
+clearAbstractionStack :: S.MonadState (FreestS a) m => m ()
+clearAbstractionStack = S.modify (\s -> s { abstractionStack = [] })
+
+addEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> (Int, Int) -> m ()
+addEndpointPriority v func (x, y) = do
+  fps <- getFunctionPositions
+  let callNum = maybe 0 functionCallNum (Map.lookup func fps)
+  S.modify (\s -> s { endpointPriorities = Map.insert (v, func, callNum) (x, y) (endpointPriorities s) })
+
+addEndpointPriorities :: S.MonadState (FreestS a) m => (Variable, Variable) -> String -> (Int, Int) -> m ()
+addEndpointPriorities (v1, v2) func p = do
+  addEndpointPriority v1 func p
+  addEndpointPriority v2 func p
+
+getEndpointPriorities :: S.MonadState (FreestS a) m => m EndpointPriorities
+getEndpointPriorities = S.gets endpointPriorities
+
+getEndpointPriority :: S.MonadState (FreestS a) m => Variable -> String -> m (Maybe (Int, Int))
+getEndpointPriority v func = do
+  fps <- getFunctionPositions
+  let callNum =  maybe 0 functionCallNum (Map.lookup func fps)
+  Map.lookup (v, func, callNum) <$> getEndpointPriorities
+
+getEndpointPriorityByName :: S.MonadState (FreestS a) m => String -> String -> m (Maybe (Int, Int))
+getEndpointPriorityByName varName funcName = do
+  fps <- getFunctionPositions
+  let callNum = maybe 0 functionCallNum (Map.lookup funcName fps)
+  mp <- getEndpointPriorities
+  let match = [ epd
+              | ((v, f, c), epd) <- Map.toList mp
+              , extern v == varName
+              , f == funcName
+              , c == callNum
+              ]
+  return $ listToMaybe match
+
+updateLatestFreshEndpoints :: S.MonadState (FreestS a) m => (Variable, Variable) -> m ()
+updateLatestFreshEndpoints ep = S.modify (\s -> s { latestFreshEndpoints = ep })
+
+getLatestFreshEndpoints :: S.MonadState (FreestS a) m => m (Variable, Variable)
+getLatestFreshEndpoints = S.gets latestFreshEndpoints
+
+getFunctionParam :: S.MonadState (FreestS a) m => String -> m (Maybe String)
+getFunctionParam func = do
+  fps <- getFunctionPositions
+  case Map.lookup func fps of
+    Just fd@(FunctionData pos params paramIndex callNum) ->
+      if paramIndex >= 0 && paramIndex < length params
+        then do
+          let param = params !! paramIndex
+              newIndex = if paramIndex == 0 then length params - 1 else paramIndex - 1
+              newFd = fd { funcParamIndex = newIndex }
+          S.modify (\s -> s { functionPositions = Map.insert func newFd fps })
+          return $ Just param
+        else return Nothing
+    Nothing -> return Nothing
+
+addFunctionCall :: S.MonadState (FreestS a) m => String -> Int -> m ()
+addFunctionCall func line = do
+  multi <- isMultipleArgFunctionCall func line
+  S.unless multi $ do
+    fps <- getFunctionPositions
+    case Map.lookup func fps of
+      Just fd@(FunctionData pos params paramIndex callNum) -> do
+        let newFd = fd { functionCallNum = callNum + 1 }
+        S.modify (\s -> s { functionPositions = Map.insert func newFd fps })
+        S.modify (\s -> s { calledFunctions = Map.insert func line (calledFunctions s) })
+      Nothing -> return ()
+  where
+    isMultipleArgFunctionCall :: S.MonadState (FreestS a) m => String -> Int -> m Bool
+    isMultipleArgFunctionCall func line = do
+      called <- S.gets calledFunctions
+      return $ case Map.lookup func called of
+        Just l  -> l == line
+        Nothing -> False
+
+getFunctionCallsOf :: S.MonadState (FreestS a) m => String -> m Int
+getFunctionCallsOf func = do
+  fps <- getFunctionPositions
+  case Map.lookup func fps of
+    Just fd -> return $ functionCallNum fd
+    Nothing -> return 0
+
+addPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m ()
+addPriorityInstantiation var = do
+  m <- S.gets priorityInstantiations
+  let newMap = case Map.lookup var m of
+        Nothing -> Map.insert var 0 m
+        Just v  -> Map.insert var (v + 1) m
+  S.modify (\s -> s { priorityInstantiations = newMap })
+
+getUnwrappedPriorityInstantiation :: S.MonadState (FreestS a) m => String -> m Int
+getUnwrappedPriorityInstantiation var = do
+  let var' = isolateVarNum var
+  m <- S.gets priorityInstantiations
+  return $ Map.findWithDefault 0 var' m
+
+clearPriorityInstantiations :: S.MonadState (FreestS a) m => m ()
+clearPriorityInstantiations = S.modify $ \s ->
+  let merged = Map.union (globalPriorityInstantiations s) (priorityInstantiations s)
+  in s { globalPriorityInstantiations = merged, priorityInstantiations = Map.empty }
+
+getGlobalPriorityInstantiations :: S.MonadState (FreestS a) m => m (Map.Map String Int)
+getGlobalPriorityInstantiations = S.gets globalPriorityInstantiations
+
+isolateVarNum :: String -> String
+isolateVarNum s = case filter isValid (splitPlus s) of
+  []    -> s
+  ws    -> last ws
+  where
+    splitPlus :: String -> [String]
+    splitPlus = words . map (\c -> if c == '+' then ' ' else c)
+    isValid w = not (all isDigit w) && w /= "+" && not (null w)
+
+getFirstInequalitySpan :: S.MonadState (FreestS a) m => m (Maybe Span)
+getFirstInequalitySpan = do
+  ineqs <- S.gets inequalities
+  return $ case Set.toList ineqs of
+    (R.InequalityEntry span _ _ _ _ _ : _) -> Just span
+    [] -> Nothing

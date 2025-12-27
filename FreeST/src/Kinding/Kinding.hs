@@ -33,6 +33,7 @@ import           Kinding.Contractive
 import           Kinding.Norm
 import           Kinding.Subkind ( (<:), join, meet )
 import           Restriction.Restriction
+import           Restriction.Utils
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor

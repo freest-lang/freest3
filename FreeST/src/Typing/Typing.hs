@@ -43,6 +43,7 @@ import           Util.Warning
 import           Parse.Unparser () -- debug
 import           Restriction.Restriction
 import           Restriction.Solver
+import           Restriction.Utils
 
 import           Control.Exception (evaluate)
 import           Control.Monad
@@ -52,8 +53,6 @@ import qualified Data.Map.Strict as Map
 import           System.Timeout (timeout)
 import qualified Data.Set as Set
 import           Data.Maybe (fromMaybe)
-
-import           Debug.Trace (trace)
 
 
 typeCheck :: TypingState ()
@@ -79,7 +78,7 @@ typeCheck = do
     checkMainFunction
     -- * Checking final environment for linearity
     checkLinearity
-
+    -- * Adds equality constraints for all endpoint priorities
     addEndpointPriorityEqualities
     -- * Check if set of inequalities is valid
     checkInequalities
@@ -177,22 +176,20 @@ synthetise kEnv (E.UnLet p x e1 e2) = do
         Nothing -> return ()
     _ -> return ()
   il1 <- getUnwrappedPriorityInstantiation (show l1)
-  newContext'
+  newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  ls <- getFullContext'
-  popContext'
+  ls <- getFullContext
+  popContext
   addInstantiatedInequalities (getSpan e1) l1 il1 ls
-  pis <- getPriorityInstantiations  
-  xi <- getPriorityInstantiation (show l1)
-  upperBound <- maxLevel' (getSpan e1) [l1,l2]
+  upperBound <- maxLevel (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
-  -- newContext'
+  -- newContext
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
   setFirstInContext l1'
@@ -219,7 +216,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (t, l) <- synthetise kEnv e
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
-    updateContext' l1
+    updateContext l1
     l2 <- getTypeLevel t1
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
@@ -227,7 +224,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
   (l1, tm) <- Extract.leveledOutChoiceMap e t
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (T.Labelled p T.Variant l1
           (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), upperBound)
   -- Receive e
@@ -239,8 +236,8 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   addInequality (getSpan e) (l1, lu1)
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
-  updateContext' l1
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  updateContext l1
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
@@ -252,8 +249,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   lu2 <- getTypeLevel u2
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
-  updateContext' l1
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  updateContext l1
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
@@ -267,7 +264,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   l1 <- Extract.leveledEnd e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan e) (l, l1)
-  updateContext' l1
+  updateContext l1
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
@@ -275,14 +272,13 @@ synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
   il1 <- getUnwrappedPriorityInstantiation (show l1)
-  newContext'
+  newContext
   l2 <- leveledCheckAgainst kEnv e2 u1
-  ls <- getFullContext'
-  popContext'
-  -- updateContext' l3 --might have to remove this
+  ls <- getFullContext
+  popContext
   addInstantiatedInequalities (getSpan t) l1 il1 ls
   addInequality (getSpan t) (l2, l3)
-  upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
+  upperBound <- maxLevel (getSpan t) [l1, l2, l4]
   return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -322,7 +318,7 @@ synthetise kEnv (E.Pair p e1 e2) = do
   addInequality (getSpan t2) (l1, l)
   l1 <- getTypeLevel t1
   l2 <- levelOfTypeMap (getSpan t2) $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
-  upperBound <- maxLevel' (getSpan t2) [l1, l2]
+  upperBound <- maxLevel (getSpan t2) [l1, l2]
   return (T.Labelled p T.Record l1 $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), upperBound)
 -- Pair elimination
@@ -332,33 +328,30 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addToSignatures x u1
   addToSignatures y u2
   il1 <- getUnwrappedPriorityInstantiation (show l1)
-  ctx <- getFullContext'
-  newContext'
-  ctx <- getFullContext'
+  ctx <- getFullContext
+  newContext
+  ctx <- getFullContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  ls <- getFullContext'
-  popContext'
+  ls <- getFullContext
+  popContext
   addInstantiatedInequalities (getSpan t1) l1 il1 ls
   lu1 <- getTypeLevel u1
   lu2 <- getTypeLevel u2
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
-  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  upperBound <- maxLevel (getSpan t1) [l1, l2]
   return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, l1) <- synthetise kEnv e
   fm'  <- buildMap p fm =<< Extract.datatypeMap e t1
   sigs <- getSignatures
-  resetGlobalContext'
+  resetGlobalContext
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  ls <- getGlobalContext'
-  -- case Map.toList fm' of
-  --   [(mkFalse, _), (mkTrue, _)] -> return ()
-  --   _ -> popContext'
+  ls <- getGlobalContext
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -376,23 +369,22 @@ synthetise kEnv (E.LevelApp _ e l) = do
   case t' of
     T.PForall p (Bind _ y r u) -> do
       case l of
-        T.LNum n -> do --instantiate with a number
-          let f = takeWhile (/= ' ') (show e)
-          let (r1, r2) = r
-          let l' = T.LVar y
-          if f == show e
-            then do --single instantiation
-              n <- addFunctionCall f
-              duplicateConstraintsInFunc f n
-              addLevelAppConstraints y e l' r1 r2 l f (n+1)
-            else do --multiple instantiations
-              n <- getFunctionCallsOf f
-              addLevelAppConstraints y e l' r1 r2 l f (n+1)
-          let t'' = Rename.subsLevel l y u
-          return (t'', T.Bottom)
+        -- T.LNum n -> do --instantiate with a number
+        --   let f = takeWhile (/= ' ') (show e)
+        --   let (r1, r2) = r
+        --   let l' = T.LVar y
+        --   if f == show e
+        --     then do --single instantiation
+        --       n <- addFunctionCall f
+        --       duplicateConstraintsInFunc f n
+        --       addLevelAppConstraints y e l' r1 r2 l f (n+1)
+        --     else do --multiple instantiations
+        --       n <- getFunctionCallsOf f
+        --       addLevelAppConstraints y e l' r1 r2 l f (n+1)
+        --   let t'' = Rename.subsLevel l y u
+        --   return (t'', T.Bottom)
         T.LAdd T.Bottom T.Top -> do --this is for (inst e), it's an impossible value for the programmer to input so it identifies these cases
           addPriorityInstantiation (show e)
-          pi <- getPriorityInstantiations
           let l' = T.LVar (mkVar (getSpan e) (show e))
           let t'' = Rename.subsLevel l' y u
           return (t'', T.Bottom)
@@ -507,7 +499,7 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  upperBound <- maxLevel (getSpan t1) [l1, l2]
   return upperBound
 leveledCheckAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
@@ -530,9 +522,7 @@ compareTypes e t u = do
   timeout_ms   <- subTimeout_ms <$> getRunOpts
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
-  --t is programmer u is compiler
   clearAbstractionStack
-  -- progAbs <- checkAbstractionLevels t u []
   progAbs <- checkAbstractionLevels' t u [] T.Top T.Bottom 
   case checkAttempt of
     Just checks -> unless (checks && equalLevels t progAbs)
@@ -541,46 +531,6 @@ compareTypes e t u = do
                     T.Semi _ u' T.Skip{} -> when (t /= u') $ addError (TypeMismatch (getSpan e) t progAbs e)
                     _ -> addError (TypeMismatch (getSpan e) t progAbs e)
     Nothing     -> addError (TypeCheckTimeout (getSpan e) sub t u e timeout_ms)
-
--- checkAbstractionLevels :: T.Type -> T.Type -> [T.Level] -> TypingState T.Type
--- checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls = do
---   case ls of
---     [] -> do
---       when (l1 /= T.Top) $ addError (LevelNotInContext p1 l1)
---       let ls' = ([l3 | l3 /= T.Top && l3 /= T.Bottom])
---       t4' <- checkAbstractionLevels t2 t4 ls'
---       checkLatentEffect t4'
---     _ -> do
---       let ls' = if l3 /= T.Top && l3 /= T.Bottom then ls ++ [l3] else ls
---       unless (any (compareLevels l1) ls') $ addError (LevelNotInContext p1 l1)
---       let ls'' = filter (not . compareLevels l1) ls'
---       addInequalities2 p1 l1 ls''
---       t4' <- checkAbstractionLevels t2 t4 ls'
---       checkLatentEffect t4'
---   where
---     checkLatentEffect t4' = do
---       case t4' of
---         T.Arrow {} -> do
---           resetGlobalContext'
---           return (T.Arrow p2 m2 l1 l4 t3 t4')
---         _ -> do
---           gc <- getGlobalContext'
---           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
---             if not (any (compareLevels l2) gc)
---               then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
---               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
---           resetGlobalContext'
---           return (T.Arrow p2 m2 l1 l2 t3 t4')
--- checkAbstractionLevels (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
---   t1' <- checkAbstractionLevels t1 t2 ls
---   return (T.Forall p (Bind p a k t1'))
--- checkAbstractionLevels (T.Rec p (Bind _ a k t1)) (T.Rec _ (Bind _ _ _ t2)) ls = do
---   t1' <- checkAbstractionLevels t1 t2 ls
---   return (T.Rec p (Bind p a k t1'))
--- checkAbstractionLevels (T.PForall p (Bind _ a k t1)) (T.PForall _ (Bind _ _ _ t2)) ls = do
---   t1' <- checkAbstractionLevels t1 t2 ls
---   return (T.PForall p (Bind p a k t1'))
--- checkAbstractionLevels _ t2 _ = return t2
 
 checkAbstractionLevels' :: T.Type -> T.Type -> [T.Level] -> T.Level -> T.Level -> TypingState T.Type
 checkAbstractionLevels' (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) ls lb ub =
@@ -598,15 +548,15 @@ checkAbstractionLevels' (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) 
     checkLatentEffect t4' lb ub = do
       case t4' of
         T.Arrow {} -> do
-          resetGlobalContext'
+          resetGlobalContext
           return (T.Arrow p2 m2 l1 l4 t3 t4')
         _ -> do
-          gc <- getGlobalContext'
+          gc <- getGlobalContext
           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
             if not (any (compareLevels l2) gc)
               then unless ((l2 == T.Bottom && null gc) || compareLevels l2 ub) $ addError (IncorrectLatentEffect p1 l2)
               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
-          resetGlobalContext'
+          resetGlobalContext
           let lb' = if null ls then l1 else lb
           let ub' = if ub /= T.Bottom then ub else l2
           return (T.Arrow p2 m2 lb' ub' t3 t4')
@@ -664,11 +614,11 @@ checkInequalities = do
   forM_ (Set.toList solvedIneqs) $ \(InequalityEntry span (l1, l2) f n _ _) -> do
     addError (LevelMismatch span l1 l2 f n)
 
-addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()
-addLevelAppConstraints y e l r1 r2 n f threadNum = do
-  addFullInequality (getSpan y) (r1, l) f threadNum
-  addFullInequality (getSpan y) (l, r2) f threadNum
-  addEquality (getSpan e) (l, n) f threadNum
+-- addLevelAppConstraints :: Variable -> E.Exp -> T.Level -> T.Level -> T.Level -> T.Level -> String -> Int -> TypingState ()
+-- addLevelAppConstraints y e l r1 r2 n f threadNum = do
+--   addFullInequality (getSpan y) (r1, l) f threadNum
+--   addFullInequality (getSpan y) (l, r2) f threadNum
+--   addEquality (getSpan e) (l, n) f threadNum
 
 registerEndpointPriorities :: E.Exp -> E.Exp -> Span -> TypingState ()
 registerEndpointPriorities e1 e2 p = do
@@ -678,13 +628,13 @@ registerEndpointPriorities e1 e2 p = do
   ep <- getEndpointPriorityByName (show e2) currFunc
   case ep of
     Just ePrio -> when fr $ do
-      addFunctionCall' funcName (fst $ startPos p)
-      duplicateConstraintsInFunc' funcName
+      addFunctionCall funcName (fst $ startPos p)
+      duplicateConstraintsInFunc funcName
       param <- getFunctionParam funcName
       case param of
         Just param' -> addEndpointPriority (mkVar p param') funcName ePrio
         Nothing -> return ()
-    Nothing -> when fr $ addFunctionCall' funcName (fst $ startPos p)
+    Nothing -> when fr $ addFunctionCall funcName (fst $ startPos p)
 
 addEndpointPriorityEqualities ::  TypingState ()
 addEndpointPriorityEqualities = do
@@ -692,8 +642,8 @@ addEndpointPriorityEqualities = do
   gpis <- getGlobalPriorityInstantiations
   span <- getFirstInequalitySpan
   let span' = Data.Maybe.fromMaybe defaultSpan span
-  forM_ (Map.toList eps) $ \((var, func, callNum), (a, _b)) -> do
-    addEquality' span' (T.LVar var, T.LNum a) func callNum 0
+  forM_ (Map.toList eps) $ \((var, func, callNum), (a, _)) -> do
+    addEquality span' (T.LVar var, T.LNum a) func callNum 0
   forM_ (Map.toList gpis) $ \(varStr, x) -> do
     let matching = [ ((var, func, callNum), (a, b))
                    | ((var, func, callNum), (a, b)) <- Map.toList eps
@@ -702,10 +652,4 @@ addEndpointPriorityEqualities = do
     forM_ matching $ \((var, func, callNum), (a, b)) -> do
       forM_ [x, x-1 .. 1] $ \i -> do
         let val = a + b * i
-        addEquality' span' (T.LVar var, T.LNum val) func callNum i
-
-customTrace :: E.Exp -> String -> TypingState ()
-customTrace e msg = do
-  if moduleName (getSpan e) /= "Prelude"
-    then trace (msg ++ " || " ++ show e) return()
-    else trace "" return()
+        addEquality span' (T.LVar var, T.LNum val) func callNum i
