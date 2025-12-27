@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Restriction.Restriction
@@ -7,11 +6,9 @@ module Restriction.Restriction
     , InequalityEntry(..)
     , EqualityEntry(..)
     , Leveled(..)
-    -- , minLevel
-    -- , maxLevel
+
     , equalLevels
     , compareLevels
-    -- , checkLevelRange
     )
 where
 
@@ -61,26 +58,6 @@ instance Leveled T.Type where
     level (T.Dualof _ t) = level t
     level (T.PForall _ (Bind _ _ _ t)) = level t
 
--- instance Leveled T.TypeMap where
---     level tm
---         | Map.null tm = T.Top
---         | otherwise = trace ("  NOT " ++ show tm) $ do
---             foldr minLevel T.Top (map level (Map.elems tm))
-
--- instance Leveled T.TypeMap where
---     level tm
---         | Map.null tm = T.Top
---         | otherwise = foldr minLevel T.Top (map level (Map.elems tm))
-    --   where
-    --     e (T.Labelled _ T.Record _ m)  = levelOfTypeMap m
-    --     e (T.Labelled _ T.Variant _ m) = levelOfTypeMap m
-    --     e t                           = level t
-
--- instance Leveled T.TypeMap where
---     level tm
---         | Map.null tm = T.Top
---         | otherwise = minLevel' (getSpan tm) (map level (Map.elems tm))
-
 equalLevels :: T.Type -> T.Type -> Bool
 equalLevels (T.Arrow _ _ l1 l2 t1 t2) (T.Arrow _ _ l3 l4 u1 u2) = do
     compareLevels l1 l3 && checkDefaultAbs l1 l2 l4 && equalLevels t1 u1 && equalLevels t2 u2
@@ -100,16 +77,6 @@ equalLevels t1 t2 = True
 checkDefaultAbs :: T.Level -> T.Level -> T.Level -> Bool
 checkDefaultAbs T.Top T.Bottom _ = True
 checkDefaultAbs _ l1 l2 = compareLevels l1 l2
--- checkDefaultAbs _ l1 l2 = compareLevels (normalizeLevel l1) (normalizeLevel l2)
---   where
---     normalizeLevel l = rebuild (flatten l)
---       where
---         flatten (T.LAdd x y) = flatten x ++ flatten y
---         flatten x = [x]
---         rebuild [] = error "normalizeLevel: empty addition"
---         rebuild [x] = x
---         rebuild (x:xs) = T.LAdd x (rebuild xs)
---use this ^ if you have to switch the method of parsing
 
 isTypeMapLevelEqual :: (Ord k, Eq k) => Map.Map k T.Type -> Map.Map k T.Type -> Bool
 isTypeMapLevelEqual m1 m2 =
@@ -122,80 +89,4 @@ compareLevels T.Bottom T.Bottom = True
 compareLevels (T.LVar x) (T.LVar y) = extern x == extern y
 compareLevels (T.LNum n1) (T.LNum n2) = n1 == n2
 compareLevels (T.LAdd l1 l2) (T.LAdd l3 l4) = compareLevels l1 l3 && compareLevels l2 l4
--- compareLevels (T.LParens l1) (T.LParens l2) = compareLevels l1 l2
 compareLevels _ _ = False
-
-toString :: T.Level -> String
-toString T.Top = "top"
-toString T.Bottom = "bot"
-toString (T.LVar x) = extern x
-toString (T.LNum n) = show n
-toString (T.LAdd l1 l2) = toString l1 ++ "+" ++ toString l2
--- toString (T.LParens l) = "(" ++ toString l ++ ")"
-
-toString2 :: T.Level -> String
-toString2 T.Top = "top"
-toString2 T.Bottom = "bot"
-toString2 (T.LVar x) = extern x
-toString2 (T.LNum n) = show n
-toString2 (T.LAdd l1 l2) = "Add " ++ toString2 l1 ++ " " ++ toString2 l2
--- toString2 (T.LParens l) = "Parens " ++ toString2 l
-
--- checkLevelRange :: T.Level -> T.LevelRange -> Bool
--- checkLevelRange l (l1, l2) = levelGT l l1 && levelLT l l2 
-
--- --read as l1 > l2
--- levelGT :: T.Level -> T.Level -> Bool
--- levelGT l1 l2 =
---   case (evalLevel l1, evalLevel l2) of
---     (Just n1, Just n2) -> n1 > n2
---     _ ->
---       case (l1, l2) of
---         (T.Top, _) -> True
---         (_, T.Top) -> False
---         (_, T.Bottom) -> True
---         (T.Bottom, _) -> False
---         (T.LParens x, y) -> levelGT x y
---         (x, T.LParens y) -> levelGT x y
---         _ -> False
-
--- --read as l1 < l2
--- levelLT :: T.Level -> T.Level -> Bool
--- levelLT l1 l2 =
---   case (evalLevel l1, evalLevel l2) of
---     (Just n1, Just n2) -> n1 < n2
---     _ ->
---       case (l1, l2) of
---         (T.Bottom, _) -> True
---         (_, T.Bottom) -> False
---         (_, T.Top) -> True
---         (T.Top, _) -> False
---         (T.LParens x, y) -> levelLT x y
---         (x, T.LParens y) -> levelLT x y
---         _ -> False
-
--- evalLevel :: T.Level -> Maybe Int
--- evalLevel (T.LNum n) = Just n
--- evalLevel (T.LAdd l1 l2) = (+) <$> evalLevel l1 <*> evalLevel l2
--- evalLevel (T.LParens l) = evalLevel l
--- evalLevel _ = Nothing
-
-
--- minLevel :: T.Level -> T.Level -> T.Level
--- minLevel T.Bottom _ = T.Bottom
--- minLevel _ T.Bottom = T.Bottom
--- minLevel T.Top l = l
--- minLevel l T.Top = l
--- minLevel (T.Num n1) (T.Num n2) = T.Num (min n1 n2)
-
--- maxLevel :: T.Level -> T.Level -> T.Level
--- maxLevel T.Top _ = T.Top
--- maxLevel _ T.Top = T.Top
--- maxLevel T.Bottom l = l
--- maxLevel l T.Bottom = l
--- maxLevel (T.Num n1) (T.Num n2) = T.Num (max n1 n2)
-
--- levelOfTypeMap :: T.TypeMap -> T.Level
--- levelOfTypeMap tm
---     | Map.null tm = T.Top 
---     | otherwise = trace ("HERE: " ++ show tm) $ level tm

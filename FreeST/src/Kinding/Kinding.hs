@@ -33,6 +33,7 @@ import           Kinding.Contractive
 import           Kinding.Norm
 import           Kinding.Subkind ( (<:), join, meet )
 import           Restriction.Restriction
+import           Restriction.Utils
 
 import           Control.Monad.State hiding (join)
 import           Data.Functor
@@ -53,10 +54,10 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 synthetise' :: MonadState (FreestS a) m =>  K.PolyVars -> K.KindEnv -> T.Type -> m (K.Kind, T.Level)
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ (K.ut p, T.Top)
-synthetise' _ _ (T.Float  p) = return $ (K.ut p, T.Top)
-synthetise' _ _ (T.Char   p) = return $ (K.ut p, T.Top)
-synthetise' _ _ (T.String p) = return $ (K.ut p, T.Top)
+synthetise' _ _ (T.Int    p) = return (K.ut p, T.Top)
+synthetise' _ _ (T.Float  p) = return (K.ut p, T.Top)
+synthetise' _ _ (T.Char   p) = return (K.ut p, T.Top)
+synthetise' _ _ (T.String p) = return (K.ut p, T.Top)
 synthetise' s kEnv (T.Arrow p m l1 l2 t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> (K.Kind p m K.Top, l1)
 synthetise' s kEnv (T.Labelled p t l m) | t == T.Variant || t == T.Record = do
@@ -64,8 +65,7 @@ synthetise' s kEnv (T.Labelled p t l m) | t == T.Variant || t == T.Record = do
   let K.Kind _ n _ = foldr (join . fst) (K.ut defaultSpan) ks
   ltm <-levelOfTypeMap p m
   addInequality p (l, ltm)
-  -- addInequality p (l, level m)
-  return $ (K.Kind p n K.Top, l)
+  return (K.Kind p n K.Top, l)
 -- Shared session types
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@T.Message{} (T.Var _ b))))
   | a == b = checkAgainstSession' s kEnv u $> (K.ua p, T.Bottom)
@@ -79,15 +79,14 @@ synthetise' s kEnv (T.Semi p t u) = do
   ~k2@(K.Kind _ mu vu, _) <- synthetise' s kEnv u
   unless (vt <: K.Session) (addError (ExpectingSession (getSpan t) t (fst k1)))
   unless (vu <: K.Session) (addError (ExpectingSession (getSpan u) u (fst k2)))
-  -- addInequality p (level t, level u)
   case t of
     T.Labelled _ T.Variant _ m -> do
       ltm <- levelOfTypeMap p m
-      return $ (K.Kind p (join mt mu) (meet vt vu), ltm)
+      return (K.Kind p (join mt mu) (meet vt vu), ltm)
     T.Labelled _ T.Record _ m -> do
       ltm <- levelOfTypeMap p m
-      return $ (K.Kind p (join mt mu) (meet vt vu), ltm)
-    _ -> return $ (K.Kind p (join mt mu) (meet vt vu), level t)
+      return (K.Kind p (join mt mu) (meet vt vu), ltm)
+    _ -> return (K.Kind p (join mt mu) (meet vt vu), level t)
   -- return $ (K.Kind p (join mt mu) (meet vt vu), level t)
 synthetise' s kEnv (T.Message p l _ t) = do
   case t of
@@ -98,11 +97,9 @@ synthetise' s kEnv (T.Message p l _ t) = do
       ltm <- levelOfTypeMap p m
       addInequality p (l, ltm)
     _ -> addInequality p (l, level t)
-  -- addInequality p (l, level t)
   checkAgainst' s kEnv (K.lt p) t $> (K.ls p, l)
 synthetise' s kEnv (T.Labelled p T.Choice{} l m) = do
   ks <- tMapM (checkAgainstSession' s kEnv) m
-  -- addInequality p (l, level m)
   ltm <- levelOfTypeMap p m
   addInequality p (l, ltm)
   return $ (Map.foldr (\(K.Kind _ _ v1) (K.Kind p _ v2) -> K.Kind p K.Lin (meet v1 v2))

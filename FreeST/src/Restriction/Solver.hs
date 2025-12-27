@@ -28,16 +28,6 @@ import Control.Monad.State (liftIO)
 import Text.ParserCombinators.ReadP
 import Debug.Trace (trace)
 
--- data InequalityEntry = InequalityEntry
---     { iSpan       :: Span
---     , inequality :: R.Inequality
---     } deriving (Eq, Show)
-
--- data EqualityEntry = EqualityEntry
---     { eSpan       :: Span
---     , equality   :: R.Equality
---     } deriving (Eq, Show)
-
 data Entry
   = EntryIneq R.InequalityEntry
   | EntryEq R.EqualityEntry
@@ -58,12 +48,9 @@ instance FromJSON Span where
 instance ToJSON T.Level where
     toJSON T.Top      = String "top"
     toJSON T.Bottom   = String "bot"
-    -- toJSON (T.Num n)  = Number (fromIntegral n)
-    -- toJSON (T.Literal s)  = String (Text.pack s)
     toJSON (T.LVar x)  = String (Text.pack (extern x))
     toJSON (T.LNum n)  = Number (fromIntegral n)
     toJSON (T.LAdd l1 l2) = String (Text.pack (show l1 ++ "+" ++ show l2))
-    -- toJSON (T.LParens l) = String (Text.pack ("(" ++ show l ++ ")"))
 
 instance FromJSON T.Level where
     parseJSON (String "top")    = return T.Top
@@ -78,30 +65,12 @@ parseLevel s =
         (l:_) -> l
         []    -> T.LVar $ mkVar defaultSpan s
 
--- levelP :: ReadP T.Level
--- levelP = parensP <++ addP
-
--- parensP :: ReadP T.Level
--- parensP = do
---     skipSpaces
---     _ <- char '('
---     l <- levelP
---     skipSpaces
---     _ <- char ')'
---     return (T.LParens l)
-
--- addP :: ReadP T.Level
--- addP = chainl1 termP addOp
-
 addOp :: ReadP (T.Level -> T.Level -> T.Level)
 addOp = do
     skipSpaces
     _ <- char '+'
     skipSpaces
     return T.LAdd
-
--- termP :: ReadP T.Level
--- termP = parensP <++ numP <++ varP
 
 levelP :: ReadP T.Level
 levelP = addP
@@ -173,17 +142,9 @@ instance FromJSON R.EqualityEntry where
         n     <- v .: "thread_num"
         return $ R.EqualityEntry eSpan (l1, l2) f n
 
--- serializeInequalities :: Inequalities -> BL.ByteString
--- serializeInequalities ineqs =
---     encode $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList ineqs)
-
 serializeInequalities :: Inequalities -> BL.ByteString
 serializeInequalities ineqs =
     encode $ map (\(R.InequalityEntry span (l1, l2) f n) -> R.InequalityEntry span (l1, l2) f n) (Set.toList ineqs)
-
--- serializeEqualities :: Equalities -> BL.ByteString
--- serializeEqualities eqs =
---     encode $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList eqs)
 
 serializeEqualities :: Equalities -> BL.ByteString
 serializeEqualities eqs =
@@ -200,26 +161,6 @@ deserializeEntries contents =
               partition (EntryEq entry)   (is, es) = (is, entry:es)
       in (Set.fromList ineqs, Set.fromList eqs)
     Nothing -> error "Failed to parse constraints from JSON"
-
--- deserializeInequalities :: BL.ByteString -> Inequalities
--- deserializeInequalities contents =
---     case decode contents of
---         Just entries -> Set.fromList $ map (\(InequalityEntry span ineq) -> (span, ineq)) entries
---         Nothing      -> error "Failed to parse inequalities from JSON"
-
--- writeInequalitiesToFile :: Inequalities -> IO ()
--- writeInequalitiesToFile ineqs = do
---     let filteredIneqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") ineqs
---     let serialized = encodePretty $ map (\(span, ineq) -> InequalityEntry span ineq) (Set.toList filteredIneqs)
---     filePath <- inequalitiesFilePath
---     BL.writeFile filePath serialized
-
--- writeEqualitiesToFile :: Equalities -> IO ()
--- writeEqualitiesToFile eqs = do
---     let filteredEqs = Set.filter (\(Span moduleName _ _, _) -> moduleName /= "Prelude" && moduleName /= "<default>") eqs
---     let serialized = encodePretty $ map (\(span, eq) -> EqualityEntry span eq) (Set.toList filteredEqs)
---     filePath <- inequalitiesFilePath
---     BL.writeFile filePath serialized
 
 writeEntriesToFile :: Inequalities -> Equalities -> IO ()
 writeEntriesToFile ineqs eqs = do
@@ -241,17 +182,6 @@ readEntriesFromFile = do
         else do
             let (ineqs, eqs) = deserializeEntries contents
             ineqs `seq` eqs `seq` return (ineqs, eqs)
-
-
--- readInequalitiesFromFile :: IO Inequalities
--- readInequalitiesFromFile = do
---     filePath <- inequalitiesFilePath
---     contents <- BL.readFile filePath
---     if BL.null contents
---         then return Set.empty
---         else do
---             let ineqs = deserializeInequalities contents
---             ineqs `seq` return ineqs  --handle wasn't being released here, need to prevent lazy eval
 
 getSourcePath :: IO FilePath
 getSourcePath = do

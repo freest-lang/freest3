@@ -43,6 +43,7 @@ import           Util.Warning
 import           Parse.Unparser () -- debug
 import           Restriction.Restriction
 import           Restriction.Solver
+import           Restriction.Utils
 
 import           Control.Exception (evaluate)
 import           Control.Monad
@@ -162,20 +163,19 @@ synthetise kEnv (E.Var _ x) =
 synthetise kEnv (E.UnLet p x e1 e2) = do
   (t1, l1) <- synthetise kEnv e1
   addToSignatures x t1
-  newContext'
+  newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
-  ls <- getContext'
-  popContext'
+  ls <- getContext
+  popContext
   addInequalities (getSpan e1) l1 ls
-  upperBound <- maxLevel' (getSpan e1) [l1,l2]
+  upperBound <- maxLevel (getSpan e1) [l1,l2]
   return (t2, upperBound)
 -- Abstraction
 synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   sigs1 <- getSignatures -- Redundant when mult == Lin
   addToSignatures x t1
-  -- newContext'
   fic <- getFirstInContext
   l1' <- getTypeLevel t1
   setFirstInContext l1'
@@ -202,7 +202,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     (t, l) <- synthetise kEnv e
     (l1, m) <- Extract.leveledInChoiceMap e t
     t1 <- Extract.choiceBranch p m c t
-    updateContext' l1
+    updateContext l1
     l2 <- getTypeLevel t1
     addInequality (getSpan t) (l1, l2)
     return (t1, T.Bottom)
@@ -210,7 +210,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   (t, l) <- synthetise kEnv e
   (l1, tm) <- Extract.leveledOutChoiceMap e t
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (T.Labelled p T.Variant l1
           (Map.map (T.Labelled p T.Record l1 . Map.singleton (head mkTupleLabels p)) tm), upperBound)
   -- Receive e
@@ -222,8 +222,8 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   addInequality (getSpan e) (l1, lu1)
   lu2 <- getTypeLevel u2
   addInequality (getSpan e) (l1, lu2)
-  updateContext' l1
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  updateContext l1
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (T.tuple p [u1, u2], upperBound)
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
@@ -235,8 +235,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   lu2 <- getTypeLevel u2  
   addInequality (getSpan e1) (l1, lu2)
   checkAgainst kEnv e1 u1
-  updateContext' l1
-  upperBound <- maxLevel' (getSpan t) [l, l1]
+  updateContext l1
+  upperBound <- maxLevel (getSpan t) [l, l1]
   return (u2, upperBound)
   -- fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
@@ -250,19 +250,19 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p || x == mkWait p = do
   l1 <- Extract.leveledEnd e t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) t
   addInequality (getSpan e) (l, l1)
-  updateContext' l1
+  updateContext l1
   return (T.unit p, l1)
 -- Application, general case
 synthetise kEnv (E.App p e1 e2) = do
   (t, l1) <- synthetise kEnv e1
   (_, l3, l4, u1, u2) <- Extract.leveledFunction e1 t
-  newContext'
+  newContext
   l2 <- leveledCheckAgainst kEnv e2 u1
-  ls <- getContext'
-  popContext'
+  ls <- getContext
+  popContext
   addInequalities (getSpan t) l1 ls
   addInequality (getSpan t) (l2, l3)
-  upperBound <- maxLevel' (getSpan t) [l1, l2, l4]
+  upperBound <- maxLevel (getSpan t) [l1, l2, l4]
   return (u2, upperBound)
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) = do
@@ -289,7 +289,7 @@ synthetise kEnv (E.Pair p e1 e2) = do
   addInequality (getSpan t2) (l1, l)
   l1 <- getTypeLevel t1
   l2 <- levelOfTypeMap (getSpan t2) $ Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
-  upperBound <- maxLevel' (getSpan t2) [l1, l2]
+  upperBound <- maxLevel (getSpan t2) [l1, l2]
   return (T.Labelled p T.Record l1 $
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2]), upperBound)
 -- Pair elimination
@@ -298,31 +298,31 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToSignatures x u1
   addToSignatures y u2
-  newContext'
+  newContext
   (t2, l2) <- synthetise kEnv e2
   difference kEnv x
   difference kEnv y
-  ls <- getContext'
-  popContext'
+  ls <- getContext
+  popContext
   addInequalities (getSpan t1) l1 ls
   lu1 <- getTypeLevel u1
   lu2 <- getTypeLevel u2
   addInequality (getSpan t1) (l1, lu1)
   addInequality (getSpan t1) (l1, lu2)
-  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  upperBound <- maxLevel (getSpan t1) [l1, l2]
   return (t2, upperBound)
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   (t1, l1) <- synthetise kEnv e
   fm'  <- buildMap p fm =<< Extract.datatypeMap e t1
   sigs <- getSignatures
-  resetGlobalContext'
+  resetGlobalContext
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv sigs)
                                  (return ([], [])) fm'
-  ls <- getGlobalContext'
+  ls <- getGlobalContext
   case Map.toList fm' of
     [(mkFalse, _), (mkTrue, _)] -> return ()
-    _ -> popContext'
+    _ -> popContext
   addInequalities (getSpan t1) l1 ls
   mapM_ (compareTypes e t) ts
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
@@ -433,7 +433,7 @@ leveledCheckAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   l2 <- leveledCheckAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
-  upperBound <- maxLevel' (getSpan t1) [l1, l2]
+  upperBound <- maxLevel (getSpan t1) [l1, l2]
   return upperBound
 leveledCheckAgainst kEnv e t = do 
   sub <- subtyping <$> getRunOpts
@@ -483,15 +483,15 @@ checkAbstractionLevels (T.Arrow p1 m1 l1 l2 t1 t2) (T.Arrow p2 m2 l3 l4 t3 t4) l
     checkLatentEffect t4' = do
       case t4' of
         T.Arrow {} -> do
-          resetGlobalContext'
+          resetGlobalContext
           return (T.Arrow p2 m2 l1 l4 t3 t4')
         _ -> do
-          gc <- getGlobalContext'
+          gc <- getGlobalContext
           when (moduleName p1 /= "Prelude" && moduleName p1 /= "<default>") $ do
             if not (any (compareLevels l2) gc)
               then unless (l2 == T.Bottom && null gc) $ addError (IncorrectLatentEffect p1 l2)
               else addInequalitiesInReverse p1 l2 $ filter (not . compareLevels l2) (Set.toList gc)
-          resetGlobalContext'
+          resetGlobalContext
           return (T.Arrow p2 m2 l1 l2 t3 t4')
 checkAbstractionLevels (T.Forall p (Bind _ a k t1)) (T.Forall _ (Bind _ _ _ t2)) ls = do
   t1' <- checkAbstractionLevels t1 t2 ls
@@ -551,9 +551,3 @@ addLevelAppConstraints y e l r1 r2 n f threadNum = do
   addFullInequality (getSpan y) (r1, l) f threadNum
   addFullInequality (getSpan y) (l, r2) f threadNum
   addEquality (getSpan e) (l, n) f threadNum
-
-customTrace :: E.Exp -> String -> TypingState ()
-customTrace e msg = do
-  if moduleName (getSpan e) /= "Prelude"
-    then trace (msg ++ " || " ++ show e) return()
-    else trace "" return()
