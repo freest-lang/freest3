@@ -9,6 +9,9 @@ import Test.Hspec -- (Spec, runIO, describe, parallel)
 import           Control.Monad.Extra
 
 import Test.Hspec
+import Util.State (RunOpts)
+import Options.Applicative
+import Util.CmdLine
 
 getSource :: [String] -> String
 getSource [] = ""
@@ -16,28 +19,37 @@ getSource (x:xs)
   | ".fst" `isExtensionOf` x = x
   | otherwise = getSource xs
 
-specTest' :: String -> FilePath -> (FilePath -> (FilePath,String) -> Expectation) -> Spec
-specTest' desc dir f = do
+specTestValid :: String -> FilePath -> (FilePath -> (FilePath, String, [String]) -> Expectation) -> Spec
+specTestValid desc dir f = do
   baseDir <- runIO getCurrentDirectory
   testDirs <- runIO $ directoryContents (baseDir ++ dir)
-  
-  describe desc $ 
+  describe desc $
     forM_ testDirs $
       \group -> do
         describe group $ do
           test <- runIO $ directoryContents (baseDir ++ dir ++ group)
-          forM_ test $ 
+          forM_ test $
             \testDir -> let d = baseDir ++ dir ++ group ++ "/" ++ testDir in
-            before (beforeHandle d) $ 
-            it ((last $ splitDirectories testDir) -<.> "fst") $ f d
-                  
+            before (beforeHandle d) $
+            it (last (splitDirectories testDir) -<.> "fst") $ f d
+  where
+    beforeHandle :: FilePath -> IO (FilePath, String, [String])
+    beforeHandle d = do
+      let ds = splitDirectories d -- (baseDir ++ baseTestDir ++ testingDir)
+      let progFP = joinPath $ ds ++ [last ds -<.> ".fst"]
+      let expFP = progFP -<.> "expected"
+      let optsFP = progFP -<.> "opts"
+      whenM (not <$> doesFileExist progFP) (error $ "File " ++ progFP ++ " does not exist.")
+      whenM (not <$> doesFileExist expFP) (error $ "File " ++ expFP ++ " does not exist.")
+      opts <- ifM (doesFileExist optsFP) (words <$> readFile optsFP) (pure [])
+      (progFP,, opts) <$> readFile expFP
 
-specTest :: String -> String -> (String -> String -> Spec) -> Spec
-specTest desc dir f = do
+specTestInvalid :: String -> String -> (String -> String -> Spec) -> Spec
+specTestInvalid desc dir f = do
   baseDir <- runIO getCurrentDirectory
   testDirs <- runIO $ directoryContents (baseDir ++ dir)
   parallel $
-    describe desc $ 
+    describe desc $
       forM_ testDirs $
         \group -> do
           describe group $ do
@@ -46,22 +58,15 @@ specTest desc dir f = do
                \testingDir ->
                   f baseDir (group ++ "/" ++ testingDir)
 
-
 directoryContents :: FilePath -> IO [FilePath]
 directoryContents dir =
   filter (('.' /=) . head) <$> listDirectory dir
-
 
 safeRead :: FilePath -> IO (Maybe String)
 safeRead f =
   ifM (doesFileExist f) (fmap Just (readFile f)) (pure Nothing)
 
-
-beforeHandle :: FilePath -> IO (FilePath, String)
-beforeHandle d = do
-  let ds = splitDirectories d -- (baseDir ++ baseTestDir ++ testingDir)
-  let file = joinPath $ ds ++ [last ds -<.> ".fst"]
-  let exp  = file -<.> "expected"
-  whenM (not <$> doesFileExist file) (error $ "File " ++ file ++ " does not exist.")
-  whenM (not <$> doesFileExist exp) (error $ "File " ++ exp ++ " does not exist.")
-  (file,) <$> readFile exp
+parseOpts :: FilePath -> [String] -> RunOpts
+parseOpts file opts = case execParserPure (prefs mempty) (info runOptsParser mempty) (file : opts) of
+  Success parsedOpts -> parsedOpts
+  _                  -> error $ "Error parsing command line options: " ++ unwords opts

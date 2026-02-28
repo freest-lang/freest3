@@ -26,6 +26,8 @@ import Test.HUnit ( assertFailure )
 import Test.Hspec
 -- import Util.FreestState
 import           Util.State hiding (void)
+import Options.Applicative (execParserPure, prefs, info, ParserResult (..))
+import Util.CmdLine (runOptsParser)
 
 data TestResult = Timeout | Passed | Failed
 
@@ -33,15 +35,15 @@ baseTestDir :: String
 baseTestDir = "/test/Programs/ValidTests/"
 
 spec :: Spec
-spec = specTest' "Valid Tests" baseTestDir validTest
+spec = specTestValid "Valid Tests" baseTestDir validTest
 -- spec = specTest "Valid Tests" baseTestDir testValid
 
-validTest :: FilePath -> (FilePath, String) -> Expectation
-validTest dir (testFile, exp) = 
+validTest :: FilePath -> (FilePath, String, [String]) -> Expectation
+validTest dir (testFile, exp, opts) = 
   if "<pending>" `isPrefixOf` exp
     then pendingMessage exp
     else do
-     (out, res) <- testOne testFile
+     (out, res) <- testOne testFile opts
      case res of
       Timeout -> doExpectationsMatch "<timeout>" exp
       Failed  -> void $ assertFailure out
@@ -55,23 +57,23 @@ doExpectationsMatch out exp = out `shouldSatisfy` (`elem` expectedOutputs)
   where
     expectedOutputs = map (read . (\line -> "\"" ++ line ++ "\"")) . lines $ exp
 
-testOne :: FilePath -> IO (String, TestResult)
-testOne file = hCapture [stdout, stderr] $
+testOne :: FilePath -> [String] -> IO (String, TestResult)
+testOne file opts = hCapture [stdout, stderr] $
    catches runTest
     [ Handler (\(e :: ExitCode) -> exitProgram e)
-    , Handler (\(_ :: SomeException) -> pure Failed)
+    , Handler (\(e :: SomeException) -> pure Failed)
     ]
  where
-  exitProgram :: ExitCode -> IO TestResult
-  exitProgram ExitSuccess = pure Passed
-  exitProgram _           = pure Failed
-
   runTest :: IO TestResult
   runTest =
-    timeout timeInMicro (checkAndRun defaultOpts { runFilePath = file, quietmode = True })
+    timeout timeInMicro (checkAndRun (parseOpts file opts){quietmode = True})
       >>= \case
             Just _  -> pure Passed
             Nothing -> pure Timeout
+  
+  exitProgram :: ExitCode -> IO TestResult
+  exitProgram ExitSuccess = pure Passed
+  exitProgram _           = pure Failed
 
 -- n microseconds (1/10^6 seconds).
 timeInMicro :: Int

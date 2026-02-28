@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase, BlockArguments #-}
 module CompilerInvalidSpec
   ( spec
   )
@@ -23,12 +23,13 @@ import           Util.State hiding (void)
 
 import           System.FilePath
 import           Data.List
+import Control.Monad.Extra (ifM)
 
 baseTestDir :: String
 baseTestDir = "/test/Programs/InvalidTests/"
 
 spec :: Spec
-spec = specTest "Invalid Tests" baseTestDir testDir
+spec = specTestInvalid "Invalid Tests" baseTestDir testDir
 
 testDir :: String -> String -> Spec
 testDir baseDir invalidTest = do
@@ -38,12 +39,13 @@ testDir baseDir invalidTest = do
   testInvalid (dir ++ "/" ++ source) source
 
 
-testInvalid :: String -> String -> Spec
+testInvalid :: FilePath -> String -> Spec
 testInvalid test filename = do
+  let optsFP = test -<.> "opts"
+  opts <- runIO $ ifM (doesFileExist optsFP) (words <$> readFile optsFP) (pure [])
   b <- runIO $ hSilence [stdout, stderr] $ catches
-    (  checkAndRun defaultOpts { runFilePath = test, quietmode = True }
-    >> return (Just errorExpected)
-    )
+    do checkAndRun (parseOpts test opts){quietmode = True}
+       return (Just errorExpected)
     [ Handler (\(e :: ExitCode) -> return $ exitProgram e)
     , Handler (\(e :: SomeException) -> return $ Just $ "(Internal error) "++show e)
     ]
@@ -61,7 +63,6 @@ testInvalid test filename = do
     
   assert' (Just err) = it ("Testing " ++ filename) $ void $ assertFailure err
   assert' _ = it ("Testing " ++ filename) $ assertEqual "OK. Passed!" 1 1
-
   
 exitProgram :: ExitCode -> Maybe String
 exitProgram ExitSuccess = Just errorExpected
