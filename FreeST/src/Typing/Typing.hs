@@ -312,7 +312,7 @@ checkAgainst kEnv e t = do
 compareTypes :: E.Exp -> T.Type -> T.Type -> TypingState () 
 compareTypes e t u = do 
   sub <- subtyping <$> getRunOpts
-  timeout_ms   <- subTimeout_ms <$> getRunOpts
+  timeout_ms   <- tcTimeout_ms <$> getRunOpts
   let cmp = if sub then subtype else equivalent 
   checkAttempt <- liftIO $ timeout (timeout_ms * 10^3) (evaluate $ cmp u t)
   case checkAttempt of 

@@ -271,11 +271,10 @@ instance Message ErrorType where
   msg (TypeCheckTimeout _ sub t u e to) sty ts =
     "Timeout when matching expected type " ++ style red sty ts t ++ "\n" ++
     "                     with actual type " ++ style red sty ts u ++ "\n" ++
-    "                       for expression " ++ style red sty ts e ++ "\n" ++
-    (if sub then "    Subtyping "++bold sty "enabled"++", timeout set to "++red sty (show to++"ms")++"\n"++ 
-                 "  Subtyping for context-free session types is undecidable, so FreeST may not be able to determine relation between certain types.\n" 
-            else "  Subtyping "++style bold sty ts "disabled"++", timeout set to "++show to++"ms \n") ++ 
-    "  Consider " ++ (if sub then "disabling subtyping with the "++bold sty "'--no-sub'"++" flag, or " else "") ++ "setting a higher timeout limit with the "++bold sty "'--check-timeout TIME'"++" option." ++ "\n" ++
+    "                       for expression " ++ style red sty ts e ++ "\n" ++ 
+    "  "++bold sty ("Timeout is set to "++ show to ++" ms.") ++" Consider setting a higher timeout with the "++bold sty "`--check-timeout TIME`"++" option.\n" ++
+    (if sub then "  "++bold sty "Subtyping is enabled." ++ " Since it is undecidable, it may not be possible to determine relation between these types.\n" 
+            else "") ++
     "  Please report this to the FreeST development team at "++bold sty "freest-lang@listas.ciencias.ulisboa.pt"
   msg (NonEquivEnvsInUnFun _ sigs1 sigs2 e) sty ts
     | Map.null diff =

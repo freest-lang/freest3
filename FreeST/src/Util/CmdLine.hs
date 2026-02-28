@@ -40,9 +40,9 @@ runOptsParser = RunOpts
      ( long "quiet"
     <> short 'q'
     <> help "Suppress warnings" )
-  <*> flag True False
-     ( long "no-sub"
-    <> help "Disable subtyping")
+  <*> flag False True
+     ( long "subtyping"
+    <> help "Enable subtyping")
   <*> option auto 
      ( value (6*10^4) 
     <> long "check-timeout" 

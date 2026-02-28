@@ -183,7 +183,7 @@ data RunOpts = RunOpts { runFilePath   :: FilePath
                        , isStylable    :: Bool
                        , quietmode     :: Bool
                        , subtyping     :: Bool 
-                       , subTimeout_ms :: Int 
+                       , tcTimeout_ms :: Int 
                        } deriving Show
 
 defaultOpts :: RunOpts
@@ -193,8 +193,8 @@ defaultOpts = RunOpts { runFilePath   = ""
                       , mainFunction  = Nothing
                       , isStylable    = True
                       , quietmode     = False
-                      , subtyping     = True 
-                      , subTimeout_ms = 6*10^4 -- 1min
+                      , subtyping     = False 
+                      , tcTimeout_ms = 6*10^4 -- 1min
                       }
 
 
